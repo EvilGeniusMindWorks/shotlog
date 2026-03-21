@@ -1,0 +1,2020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blast Report — Stevens Quarry — BR-2026-0321-SQ</title>
+  <style>
+    /* ─── Color Variables ─────────────────────────────────────────── */
+    :root {
+      --navy:       #1A365D;
+      --navy-mid:   #2A4A7F;
+      --navy-light: #EBF0F8;
+      --orange:     #DD6B20;
+      --orange-lt:  #F6AD55;
+      --orange-bg:  #FFF7ED;
+      --green:      #38A169;
+      --green-bg:   #F0FFF4;
+      --green-lt:   #68D391;
+      --red:        #E53E3E;
+      --red-bg:     #FFF5F5;
+      --blue:       #3182CE;
+      --blue-lt:    #63B3ED;
+      --gray-50:    #F7FAFC;
+      --gray-100:   #EDF2F7;
+      --gray-200:   #E2E8F0;
+      --gray-300:   #CBD5E0;
+      --gray-400:   #A0AEC0;
+      --gray-500:   #718096;
+      --gray-600:   #4A5568;
+      --gray-700:   #2D3748;
+      --gray-800:   #1A202C;
+      --text:       #1A202C;
+      --muted:      #718096;
+      --border:     #E2E8F0;
+      --shadow:     0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md:  0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
+      --radius:     6px;
+      --mono:       'SF Mono', 'Fira Code', 'Courier New', monospace;
+      --sans:       system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    }
+
+    /* ─── Reset & Base ────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--sans);
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text);
+      background: #E8ECF0;
+    }
+
+    /* ─── Page Shell ──────────────────────────────────────────────── */
+    .page {
+      width: 8.5in;
+      min-height: 11in;
+      margin: 0 auto 32px;
+      background: #fff;
+      padding: 0.55in 0.6in 0.5in;
+      position: relative;
+    }
+
+    .page + .page {
+      border-top: none;
+    }
+
+    /* ─── Typography Helpers ──────────────────────────────────────── */
+    .label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .value {
+      font-family: var(--mono);
+      font-weight: 700;
+      color: var(--navy);
+    }
+
+    .section-title {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ─── Cards ───────────────────────────────────────────────────── */
+    .card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card-inner {
+      padding: 14px 16px;
+    }
+
+    /* ─── Utilities ───────────────────────────────────────────────── */
+    .grid-2  { display: grid; grid-template-columns: 1fr 1fr;       gap: 12px; }
+    .grid-3  { display: grid; grid-template-columns: 1fr 1fr 1fr;   gap: 12px; }
+    .grid-4  { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; }
+    .flex    { display: flex; }
+    .gap-8   { gap: 8px; }
+    .gap-12  { gap: 12px; }
+    .gap-16  { gap: 16px; }
+    .mb-8    { margin-bottom: 8px; }
+    .mb-12   { margin-bottom: 12px; }
+    .mb-16   { margin-bottom: 16px; }
+    .mb-20   { margin-bottom: 20px; }
+    .mb-24   { margin-bottom: 24px; }
+
+
+    /* ══════════════════════════════════════════════════════════════
+       PAGE 1 — COVER / SUMMARY
+    ══════════════════════════════════════════════════════════════ */
+
+    /* Header bar */
+    .report-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 22px;
+      padding-bottom: 18px;
+      border-bottom: 2px solid var(--navy);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo-wrap {
+      flex-shrink: 0;
+    }
+
+    .brand-block {}
+
+    .brand-name {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--orange);
+      line-height: 1.1;
+    }
+
+    .company-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--navy);
+      margin-top: 1px;
+    }
+
+    .report-title-block {
+      text-align: right;
+    }
+
+    .report-title {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--navy);
+      line-height: 1;
+    }
+
+    .report-title span {
+      color: var(--orange);
+    }
+
+    .report-date {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gray-600);
+      margin-top: 4px;
+    }
+
+    .report-id {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+      letter-spacing: 0.04em;
+    }
+
+    /* Job Info Card */
+    .job-info-card {
+      margin-bottom: 16px;
+    }
+
+    .job-info-header {
+      background: var(--navy);
+      color: #fff;
+      padding: 8px 16px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .job-info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+
+    .job-info-item {
+      padding: 9px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .job-info-item:nth-child(odd) {
+      border-right: 1px solid var(--border);
+    }
+
+    .job-info-item:nth-last-child(-n+2) {
+      border-bottom: none;
+    }
+
+    /* KPI Boxes */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .kpi-box {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px 12px;
+      text-align: center;
+      background: var(--gray-50);
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .kpi-box::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--navy);
+    }
+
+    .kpi-box.accent::before { background: var(--orange); }
+    .kpi-box.green::before  { background: var(--green); }
+    .kpi-box.blue::before   { background: var(--blue); }
+
+    .kpi-number {
+      font-size: 32px;
+      font-weight: 800;
+      font-family: var(--mono);
+      color: var(--navy);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .kpi-box.accent .kpi-number { color: var(--orange); }
+    .kpi-box.green  .kpi-number { color: var(--green); }
+    .kpi-box.blue   .kpi-number { color: var(--blue); }
+
+    .kpi-unit {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-left: 2px;
+    }
+
+    .kpi-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* Conditions Chips */
+    .conditions-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 16px;
+      align-items: center;
+    }
+
+    .conditions-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-right: 4px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: var(--gray-50);
+      color: var(--gray-700);
+    }
+
+    .chip-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--gray-400);
+      flex-shrink: 0;
+    }
+
+    .chip.sunny .chip-dot  { background: #ECC94B; }
+    .chip.wind .chip-dot   { background: var(--blue-lt); }
+    .chip.temp .chip-dot   { background: var(--orange-lt); }
+    .chip.fire .chip-dot   { background: var(--red); }
+    .chip.work .chip-dot   { background: var(--navy); }
+    .chip.ground .chip-dot { background: var(--green); }
+
+    /* Site Diagram */
+    .site-diagram-wrap {
+      margin-bottom: 0;
+    }
+
+    .site-diagram-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .diagram-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      background: var(--navy-light);
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--navy);
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       PAGE 2 — SHOT DETAILS
+    ══════════════════════════════════════════════════════════════ */
+
+    .page-header-band {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--navy);
+    }
+
+    .page-header-band .ph-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--navy);
+      letter-spacing: -0.01em;
+    }
+
+    .page-header-band .ph-sub {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .ph-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ph-logo-text {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .shot-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .shot-card-header {
+      background: var(--navy);
+      color: #fff;
+      padding: 9px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .shot-number {
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+    }
+
+    .shot-time {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--orange-lt);
+    }
+
+    .shot-section {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .shot-section:last-child {
+      border-bottom: none;
+    }
+
+    /* Drill params micro-grid */
+    .drill-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+
+    .drill-item {
+      padding: 5px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      border-bottom: 1px dotted var(--border);
+    }
+
+    .drill-item:nth-child(2n-1) {
+      padding-right: 12px;
+    }
+
+    .drill-item:last-child,
+    .drill-item:nth-last-child(2) {
+      border-bottom: none;
+    }
+
+    .drill-key {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .drill-val {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--navy);
+    }
+
+    /* Totals highlight row */
+    .totals-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .total-item {
+      background: var(--navy-light);
+      border-radius: 4px;
+      padding: 6px 8px;
+      text-align: center;
+    }
+
+    .total-val {
+      font-family: var(--mono);
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--navy);
+      display: block;
+      line-height: 1.2;
+    }
+
+    .total-lbl {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* Shot diagram dot grid */
+    .delay-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 5px;
+      margin-bottom: 8px;
+    }
+
+    .delay-dot {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 1.5px solid rgba(0,0,0,0.12);
+    }
+
+    .dd-empty { background: var(--gray-100); border-color: var(--gray-200); }
+    .dd-1     { background: #FC8181; border-color: #E53E3E; }
+    .dd-2     { background: #F6AD55; border-color: #DD6B20; }
+    .dd-3     { background: #F6E05E; border-color: #D69E2E; }
+    .dd-4     { background: #68D391; border-color: #38A169; }
+    .dd-5     { background: #63B3ED; border-color: #3182CE; }
+
+    .delay-legend {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--gray-600);
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(0,0,0,0.15);
+    }
+
+    /* Borehole column visual */
+    .borehole-wrap {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .borehole-bar {
+      width: 28px;
+      border: 1.5px solid var(--gray-300);
+      border-radius: 4px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .bh-segment {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8px;
+      font-weight: 800;
+      color: rgba(255,255,255,0.85);
+      font-family: var(--mono);
+    }
+
+    .bh-stemming { background: var(--gray-400); }
+    .bh-explosive { background: var(--red); }
+    .bh-airdeck {
+      background: rgba(99,179,237,0.3);
+      border: 1.5px dashed var(--blue-lt);
+      margin: 0 -1px;
+    }
+    .bh-subdrill { background: var(--gray-600); }
+
+    .borehole-labels {
+      flex: 1;
+    }
+
+    .bh-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .bh-label-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .bh-booster-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .bh-booster-icon {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--orange);
+      flex-shrink: 0;
+    }
+
+    /* Explosives table */
+    .exp-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11.5px;
+    }
+
+    .exp-table thead tr {
+      background: var(--navy);
+      color: #fff;
+    }
+
+    .exp-table thead th {
+      padding: 7px 10px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      text-align: right;
+    }
+
+    .exp-table thead th:first-child {
+      text-align: left;
+    }
+
+    .exp-table tbody tr {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .exp-table tbody tr:nth-child(even) {
+      background: var(--gray-50);
+    }
+
+    .exp-table tbody td {
+      padding: 6px 10px;
+      text-align: right;
+      color: var(--gray-700);
+    }
+
+    .exp-table tbody td:first-child {
+      text-align: left;
+      font-weight: 500;
+    }
+
+    .exp-table tbody td.mono {
+      font-family: var(--mono);
+      font-weight: 700;
+      color: var(--navy);
+    }
+
+    .exp-table .total-row {
+      background: var(--orange-bg) !important;
+      border-top: 2px solid var(--orange);
+    }
+
+    .exp-table .total-row td {
+      font-weight: 700;
+      color: var(--orange);
+    }
+
+    .exp-table .total-row td.mono {
+      color: var(--orange);
+    }
+
+    .exp-table tfoot td {
+      padding: 5px 10px;
+      font-size: 10.5px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+    }
+
+    .exp-table tfoot td.mono {
+      font-family: var(--mono);
+      font-weight: 600;
+      color: var(--gray-600);
+    }
+
+    .exp-divider-row td {
+      padding: 3px 10px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--gray-100) !important;
+      border-bottom: none !important;
+      border-top: 1px solid var(--border) !important;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       PAGE 3 — COMPLIANCE + OPERATIONS
+    ══════════════════════════════════════════════════════════════ */
+
+    /* Compliance stat boxes */
+    .compliance-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .comp-stat {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      background: var(--gray-50);
+      text-align: center;
+    }
+
+    .comp-stat.highlight {
+      background: var(--navy-light);
+      border-color: var(--navy-mid);
+    }
+
+    .comp-num {
+      font-family: var(--mono);
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--navy);
+      line-height: 1.1;
+    }
+
+    .comp-unit {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    /* Regulation rows */
+    .reg-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .reg-row {
+      display: flex;
+      align-items: center;
+      padding: 9px 14px;
+      background: var(--green-bg);
+      border-bottom: 1px solid #C6F6D5;
+      gap: 10px;
+    }
+
+    .reg-row:last-child {
+      border-bottom: none;
+    }
+
+    .reg-check {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .reg-name {
+      font-weight: 700;
+      color: var(--gray-700);
+      font-size: 12px;
+      flex: 1;
+    }
+
+    .reg-desc {
+      font-size: 11px;
+      color: var(--muted);
+      flex: 2;
+    }
+
+    .reg-pass {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--green);
+      letter-spacing: 0.05em;
+    }
+
+    /* Seismo table */
+    .seismo-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11.5px;
+    }
+
+    .seismo-table thead tr {
+      background: var(--gray-700);
+      color: #fff;
+    }
+
+    .seismo-table thead th {
+      padding: 7px 12px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      text-align: left;
+    }
+
+    .seismo-table tbody tr {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .seismo-table tbody tr:nth-child(even) {
+      background: var(--gray-50);
+    }
+
+    .seismo-table tbody td {
+      padding: 8px 12px;
+      color: var(--gray-700);
+    }
+
+    .seismo-table .ppv-val {
+      font-family: var(--mono);
+      font-weight: 700;
+      color: var(--green);
+    }
+
+    /* Crew table */
+    .crew-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11.5px;
+    }
+
+    .crew-table thead tr {
+      background: var(--navy);
+      color: #fff;
+    }
+
+    .crew-table thead th {
+      padding: 7px 12px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      text-align: left;
+    }
+
+    .crew-table tbody tr {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .crew-table tbody tr:nth-child(even) {
+      background: var(--gray-50);
+    }
+
+    .crew-table tbody td {
+      padding: 7px 12px;
+      color: var(--gray-700);
+    }
+
+    .crew-table .name-cell {
+      font-weight: 700;
+      color: var(--navy);
+    }
+
+    .crew-table .role-cell {
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .hours-cell {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    /* Equipment chips */
+    .equip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .equip-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      border-radius: var(--radius);
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--navy-light);
+      color: var(--navy);
+      border: 1px solid #BED0E8;
+    }
+
+    .equip-chip-icon {
+      font-size: 12px;
+    }
+
+    .equip-time {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+      font-weight: 400;
+    }
+
+    /* Hazard pills */
+    .hazard-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .hazard-pill {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .hazard-pill.warn {
+      background: #FFF3CD;
+      color: #856404;
+      border: 1px solid #FFEAA0;
+    }
+
+    .hazard-pill.safe {
+      background: var(--green-bg);
+      color: #276749;
+      border: 1px solid #C6F6D5;
+    }
+
+    /* Sign-off */
+    .signoff-block {
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      display: flex;
+      gap: 32px;
+      align-items: flex-end;
+    }
+
+    .sig-field {
+      flex: 1;
+    }
+
+    .sig-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .sig-line {
+      border-bottom: 1.5px solid var(--gray-700);
+      height: 36px;
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      padding-bottom: 3px;
+    }
+
+    .sig-cursive {
+      font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
+      font-style: italic;
+      font-size: 22px;
+      color: var(--navy);
+      letter-spacing: -0.01em;
+      opacity: 0.85;
+    }
+
+    .sig-name {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    /* Formula display */
+    .formula-box {
+      background: var(--gray-50);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--navy);
+      border-radius: 0 4px 4px 0;
+      padding: 8px 12px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--gray-600);
+      margin-bottom: 14px;
+    }
+
+    .formula-box span.hi {
+      color: var(--navy);
+      font-weight: 700;
+    }
+
+    /* Restrictive bar */
+    .restrict-bar {
+      margin-top: 10px;
+      padding: 10px 14px;
+      background: var(--orange-bg);
+      border: 1px solid #FBD38D;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .restrict-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gray-600);
+    }
+
+    .restrict-val {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--orange);
+    }
+
+    .limit-bar-wrap {
+      flex: 1;
+      margin: 0 16px;
+    }
+
+    .limit-bar-bg {
+      height: 6px;
+      background: var(--gray-200);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .limit-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: var(--green);
+      width: 58%;
+    }
+
+    .limit-pct {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--green);
+      margin-top: 3px;
+    }
+
+    /* Footer */
+    .report-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 12px;
+      margin-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-brand {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+
+    .footer-brand strong {
+      color: var(--navy);
+    }
+
+    .footer-page {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .footer-id {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    /* ─── Print Styles ─────────────────────────────────────────── */
+    @page {
+      size: letter;
+      margin: 0;
+    }
+
+    @media print {
+      body {
+        background: #fff;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .page {
+        width: 8.5in;
+        min-height: 11in;
+        margin: 0;
+        padding: 0.55in 0.6in 0.5in;
+        page-break-after: always;
+        box-shadow: none;
+      }
+
+      .page:last-child {
+        page-break-after: avoid;
+      }
+
+      .kpi-box::before,
+      .shot-card-header,
+      .job-info-header,
+      .exp-table thead tr,
+      .crew-table thead tr,
+      .seismo-table thead tr,
+      .reg-row,
+      .total-item,
+      .exp-table .total-row {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     PAGE 1 — COVER / SUMMARY
+══════════════════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <!-- Header -->
+  <header class="report-header">
+    <div class="header-left">
+      <div class="logo-wrap">
+        <svg viewBox="0 0 200 200" width="44" height="44" aria-label="ShotLog">
+          <rect width="200" height="200" rx="44" fill="#1A365D"/>
+          <g transform="translate(100,100)">
+            <circle cx="0" cy="0" r="50" fill="none" stroke="#DD6B20" stroke-width="4" opacity="0.3"/>
+            <line x1="0" y1="-12" x2="0" y2="-34" stroke="#DD6B20" stroke-width="5" stroke-linecap="round"/>
+            <line x1="0" y1="12" x2="0" y2="34" stroke="#DD6B20" stroke-width="5" stroke-linecap="round"/>
+            <line x1="-12" y1="0" x2="-34" y2="0" stroke="#DD6B20" stroke-width="5" stroke-linecap="round"/>
+            <line x1="12" y1="0" x2="34" y2="0" stroke="#DD6B20" stroke-width="5" stroke-linecap="round"/>
+            <circle cx="0" cy="0" r="13" fill="#DD6B20"/>
+            <circle cx="0" cy="0" r="8" fill="#F6AD55"/>
+            <circle cx="0" cy="0" r="4" fill="#FBD38D"/>
+          </g>
+        </svg>
+      </div>
+      <div class="brand-block">
+        <div class="brand-name">ShotLog</div>
+        <div class="company-name">Baystate Blasting, Inc.</div>
+      </div>
+    </div>
+    <div class="report-title-block">
+      <div class="report-title">BLAST <span>REPORT</span></div>
+      <div class="report-date">March 21, 2026</div>
+      <div class="report-id">BR-2026-0321-SQ</div>
+    </div>
+  </header>
+
+  <!-- Job Info Card -->
+  <div class="card job-info-card mb-16">
+    <div class="job-info-header">Job Information</div>
+    <div class="job-info-grid">
+      <div class="job-info-item">
+        <span class="label">Job / Site</span>
+        <span class="value" style="font-size:14px;">Stevens Quarry</span>
+      </div>
+      <div class="job-info-item">
+        <span class="label">Customer</span>
+        <span class="value">Teakwood Builder</span>
+      </div>
+      <div class="job-info-item">
+        <span class="label">Address</span>
+        <span class="value" style="font-size:11px;letter-spacing:0;">61 Loomis Rd, Whately, MA</span>
+      </div>
+      <div class="job-info-item">
+        <span class="label">Rock Type</span>
+        <span class="value">Trap Rock</span>
+      </div>
+      <div class="job-info-item">
+        <span class="label">K Factor</span>
+        <span class="value">142</span>
+      </div>
+      <div class="job-info-item">
+        <span class="label">Blaster of Record</span>
+        <span class="value">Mark Swihart</span>
+      </div>
+      <div class="job-info-item">
+        <span class="label">License #</span>
+        <span class="value">6-MA-013-26 <span style="font-size:10px;color:var(--muted);font-weight:500;">(Massachusetts)</span></span>
+      </div>
+      <div class="job-info-item">
+        <span class="label">Report Date</span>
+        <span class="value">03/21/2026</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI Row -->
+  <div class="kpi-row mb-16">
+    <div class="kpi-box">
+      <div class="kpi-number">2</div>
+      <div class="kpi-label">Shots</div>
+    </div>
+    <div class="kpi-box blue">
+      <div class="kpi-number">34</div>
+      <div class="kpi-label">Total Holes</div>
+    </div>
+    <div class="kpi-box accent">
+      <div class="kpi-number">680<span class="kpi-unit">lbs</span></div>
+      <div class="kpi-label">Total Explosive</div>
+    </div>
+    <div class="kpi-box green">
+      <div class="kpi-number">1.42</div>
+      <div class="kpi-label">Powder Factor</div>
+    </div>
+  </div>
+
+  <!-- Conditions Bar -->
+  <div class="conditions-bar mb-16">
+    <span class="conditions-label">Conditions</span>
+    <span class="chip temp"><span class="chip-dot"></span>MOD 50–80°</span>
+    <span class="chip sunny"><span class="chip-dot"></span>Sunny</span>
+    <span class="chip wind"><span class="chip-dot"></span>E 8 mph</span>
+    <span class="chip ground"><span class="chip-dot"></span>Normal Ground</span>
+    <span class="chip fire"><span class="chip-dot"></span>Fire Detail: Yes</span>
+    <span class="chip work"><span class="chip-dot"></span>Blasting</span>
+  </div>
+
+  <!-- Site Diagram -->
+  <div class="site-diagram-wrap">
+    <div class="site-diagram-header">
+      <div class="section-title" style="margin-bottom:0;border-bottom:none;">Site Diagram</div>
+      <div style="display:flex;gap:8px;">
+        <div class="diagram-badge">
+          <svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="#DD6B20"/></svg>
+          Blast Zone
+        </div>
+        <div class="diagram-badge">
+          <svg width="8" height="8" viewBox="0 0 8 8"><rect width="8" height="8" rx="1" fill="#e53e3e" opacity="0.7"/></svg>
+          Structure
+        </div>
+        <div class="diagram-badge">
+          <svg width="14" height="4" viewBox="0 0 14 4"><line x1="0" y1="2" x2="14" y2="2" stroke="#F6AD55" stroke-width="1.5" stroke-dasharray="4,2"/></svg>
+          175 ft Buffer
+        </div>
+      </div>
+    </div>
+    <svg viewBox="0 0 400 200" width="100%" style="border-radius:6px;border:1px solid #e2e8f0;display:block;">
+      <defs>
+        <linearGradient id="q1" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%"   stop-color="#8B7D6B"/>
+          <stop offset="35%"  stop-color="#9E9485"/>
+          <stop offset="60%"  stop-color="#7A8B6A"/>
+          <stop offset="100%" stop-color="#6B7B5A"/>
+        </linearGradient>
+        <linearGradient id="q2" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="rgba(0,0,0,0)" />
+          <stop offset="100%" stop-color="rgba(0,0,0,0.18)" />
+        </linearGradient>
+      </defs>
+      <rect width="400" height="200" fill="url(#q1)"/>
+      <rect width="400" height="200" fill="url(#q2)"/>
+      <!-- Terrain contour lines -->
+      <path d="M0,80 Q60,75 120,82 Q180,90 200,78 Q250,65 320,72 Q380,78 400,70" fill="none" stroke="#6B5B4A" stroke-width="2.5" opacity="0.5"/>
+      <path d="M0,110 Q80,105 150,115 Q220,120 280,108 Q340,100 400,106" fill="none" stroke="#6B5B4A" stroke-width="2" opacity="0.4"/>
+      <path d="M0,140 Q90,138 180,145 Q280,150 400,138" fill="none" stroke="#6B5B4A" stroke-width="1.5" opacity="0.3"/>
+      <!-- Blast zone -->
+      <rect x="80" y="70" width="160" height="65" rx="4" fill="#A09080" opacity="0.35"/>
+      <!-- Blast perimeter dashed -->
+      <rect x="110" y="85" width="100" height="50" rx="3" fill="none" stroke="#DD6B20" stroke-width="2.5" stroke-dasharray="6,3" opacity="0.8"/>
+      <!-- Blast epicenter -->
+      <circle cx="160" cy="110" r="14" fill="#DD6B20" opacity="0.2"/>
+      <circle cx="160" cy="110" r="10" fill="#DD6B20" opacity="0.6"/>
+      <circle cx="160" cy="110" r="6"  fill="#F6AD55" opacity="0.85"/>
+      <circle cx="160" cy="110" r="3"  fill="#FBD38D"/>
+      <!-- Distance line -->
+      <line x1="160" y1="105" x2="308" y2="43" stroke="#F6AD55" stroke-width="1.5" stroke-dasharray="5,3" opacity="0.85"/>
+      <!-- Distance label -->
+      <rect x="215" y="56" width="44" height="15" rx="3" fill="rgba(0,0,0,0.45)"/>
+      <text x="237" y="67" font-size="9.5" fill="#F6AD55" font-weight="800" text-anchor="middle" font-family="system-ui, sans-serif">175 ft</text>
+      <!-- Structure -->
+      <rect x="298" y="28" width="32" height="24" rx="3" fill="#e53e3e" opacity="0.65"/>
+      <rect x="306" y="28" width="16" height="14" rx="1" fill="rgba(255,255,255,0.2)"/>
+      <polygon points="298,28 330,28 314,18" fill="#c53030" opacity="0.7"/>
+      <text x="314" y="62" font-size="8" fill="#FC8181" text-anchor="middle" font-weight="800" font-family="system-ui, sans-serif">Stevens</text>
+      <!-- Road -->
+      <path d="M0,170 Q100,165 200,172 Q300,178 400,168" fill="none" stroke="#A09888" stroke-width="8" opacity="0.3"/>
+      <path d="M0,170 Q100,165 200,172 Q300,178 400,168" fill="none" stroke="#C8BBA8" stroke-width="2" opacity="0.4" stroke-dasharray="12,8"/>
+      <!-- North arrow -->
+      <g transform="translate(375,24)">
+        <circle r="13" fill="rgba(0,0,0,0.45)"/>
+        <text y="5" text-anchor="middle" font-size="11" fill="white" font-weight="800" font-family="system-ui, sans-serif">N</text>
+        <line x1="0" y1="-7" x2="0" y2="-12" stroke="white" stroke-width="1.5"/>
+      </g>
+      <!-- Scale bar -->
+      <g transform="translate(18,182)">
+        <line x1="0" y1="0" x2="60" y2="0" stroke="rgba(255,255,255,0.6)" stroke-width="2"/>
+        <line x1="0" y1="-3" x2="0" y2="3" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+        <line x1="60" y1="-3" x2="60" y2="3" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+        <text x="30" y="-5" font-size="8" fill="rgba(255,255,255,0.7)" text-anchor="middle" font-family="system-ui, sans-serif">100 ft</text>
+      </g>
+    </svg>
+  </div>
+
+  <!-- Footer -->
+  <div class="report-footer">
+    <div class="footer-brand">Generated by <strong>ShotLog</strong> — Baystate Blasting, Inc.</div>
+    <div class="footer-id">BR-2026-0321-SQ</div>
+    <div class="footer-page">Page 1 of 3</div>
+  </div>
+
+</div><!-- /page 1 -->
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     PAGE 2 — SHOT DETAILS
+══════════════════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <!-- Page header band -->
+  <div class="page-header-band">
+    <div>
+      <div class="ph-title">Shot Details</div>
+      <div class="ph-sub">Stevens Quarry &nbsp;·&nbsp; March 21, 2026 &nbsp;·&nbsp; BR-2026-0321-SQ</div>
+    </div>
+    <div class="ph-logo">
+      <svg viewBox="0 0 200 200" width="28" height="28">
+        <rect width="200" height="200" rx="44" fill="#1A365D"/>
+        <g transform="translate(100,100)">
+          <circle cx="0" cy="0" r="50" fill="none" stroke="#DD6B20" stroke-width="4" opacity="0.3"/>
+          <line x1="0" y1="-12" x2="0" y2="-34" stroke="#DD6B20" stroke-width="5" stroke-linecap="round"/>
+          <line x1="0" y1="12" x2="0" y2="34" stroke="#DD6B20" stroke-width="5" stroke-linecap="round"/>
+          <line x1="-12" y1="0" x2="-34" y2="0" stroke="#DD6B20" stroke-width="5" stroke-linecap="round"/>
+          <line x1="12" y1="0" x2="34" y2="0" stroke="#DD6B20" stroke-width="5" stroke-linecap="round"/>
+          <circle cx="0" cy="0" r="13" fill="#DD6B20"/>
+          <circle cx="0" cy="0" r="8" fill="#F6AD55"/>
+          <circle cx="0" cy="0" r="4" fill="#FBD38D"/>
+        </g>
+      </svg>
+      <span class="ph-logo-text">ShotLog</span>
+    </div>
+  </div>
+
+  <!-- Two-column shot cards -->
+  <div class="grid-2 mb-16">
+
+    <!-- ── SHOT 1 ── -->
+    <div class="shot-card">
+      <div class="shot-card-header">
+        <span class="shot-number">SHOT #1</span>
+        <span class="shot-time">09:20</span>
+      </div>
+
+      <!-- Drill Params -->
+      <div class="shot-section">
+        <div class="section-title">Drill Parameters</div>
+        <div class="drill-grid">
+          <div class="drill-item"><span class="drill-key">Operation</span><span class="drill-val">Quarry</span></div>
+          <div class="drill-item"><span class="drill-key">Hole Dia.</span><span class="drill-val">3.5"</span></div>
+          <div class="drill-item"><span class="drill-key">Burden</span><span class="drill-val">6'</span></div>
+          <div class="drill-item"><span class="drill-key">Spacing</span><span class="drill-val">7'</span></div>
+          <div class="drill-item"><span class="drill-key">Stemming</span><span class="drill-val">4'</span></div>
+          <div class="drill-item"><span class="drill-key">Sub Drill</span><span class="drill-val">2'</span></div>
+        </div>
+      </div>
+
+      <!-- Totals -->
+      <div class="shot-section">
+        <div class="section-title">Totals</div>
+        <div class="totals-grid">
+          <div class="total-item"><span class="total-val">18</span><span class="total-lbl">Holes</span></div>
+          <div class="total-item"><span class="total-val">756</span><span class="total-lbl">Sq Ft</span></div>
+          <div class="total-item"><span class="total-val">12.0'</span><span class="total-lbl">Avg Depth</span></div>
+          <div class="total-item"><span class="total-val">216'</span><span class="total-lbl">Drill Ftg</span></div>
+          <div class="total-item"><span class="total-val">336</span><span class="total-lbl">Pay Yards</span></div>
+          <div class="total-item"><span class="total-val">305.9</span><span class="total-lbl" style="color:var(--orange);">lbs</span></div>
+        </div>
+      </div>
+
+      <!-- Shot Diagram -->
+      <div class="shot-section">
+        <div class="section-title">Delay Pattern</div>
+        <!--
+          8-column grid, 4 rows, representing the shot layout:
+          Row 1: empty, empty, d1, d1, d2, d2, d3, empty
+          Row 2: empty, d1, d2, d3, d3, d4, d4, empty
+          Row 3: empty, d2, d3, d4, d5, d5, d5, empty
+          Row 4: empty, empty, d3, d4, d5, empty, empty, empty
+        -->
+        <div class="delay-grid">
+          <!-- Row 1 -->
+          <div class="delay-dot dd-empty"></div>
+          <div class="delay-dot dd-empty"></div>
+          <div class="delay-dot dd-1"></div>
+          <div class="delay-dot dd-1"></div>
+          <div class="delay-dot dd-2"></div>
+          <div class="delay-dot dd-2"></div>
+          <div class="delay-dot dd-3"></div>
+          <div class="delay-dot dd-empty"></div>
+          <!-- Row 2 -->
+          <div class="delay-dot dd-empty"></div>
+          <div class="delay-dot dd-1"></div>
+          <div class="delay-dot dd-2"></div>
+          <div class="delay-dot dd-3"></div>
+          <div class="delay-dot dd-3"></div>
+          <div class="delay-dot dd-4"></div>
+          <div class="delay-dot dd-4"></div>
+          <div class="delay-dot dd-empty"></div>
+          <!-- Row 3 -->
+          <div class="delay-dot dd-empty"></div>
+          <div class="delay-dot dd-2"></div>
+          <div class="delay-dot dd-3"></div>
+          <div class="delay-dot dd-4"></div>
+          <div class="delay-dot dd-5"></div>
+          <div class="delay-dot dd-5"></div>
+          <div class="delay-dot dd-5"></div>
+          <div class="delay-dot dd-empty"></div>
+          <!-- Row 4 -->
+          <div class="delay-dot dd-empty"></div>
+          <div class="delay-dot dd-empty"></div>
+          <div class="delay-dot dd-3"></div>
+          <div class="delay-dot dd-4"></div>
+          <div class="delay-dot dd-5"></div>
+          <div class="delay-dot dd-empty"></div>
+          <div class="delay-dot dd-empty"></div>
+          <div class="delay-dot dd-empty"></div>
+        </div>
+        <div class="delay-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#FC8181;border-color:#E53E3E;"></div>9 ms</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#F6AD55;border-color:#DD6B20;"></div>17 ms</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#F6E05E;border-color:#D69E2E;"></div>24 ms</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#68D391;border-color:#38A169;"></div>42 ms</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#63B3ED;border-color:#3182CE;"></div>65 ms</div>
+        </div>
+      </div>
+
+      <!-- Typical Column -->
+      <div class="shot-section">
+        <div class="section-title">Typical Column — 12' Total</div>
+        <div class="borehole-wrap">
+          <div class="borehole-bar">
+            <!-- Stemming: 4' of 12' = 33% -->
+            <div class="bh-segment bh-stemming" style="height:52px;">4'</div>
+            <!-- Explosive: 5' -->
+            <div class="bh-segment bh-explosive" style="height:64px;">5'</div>
+            <!-- Air Deck: 1' -->
+            <div class="bh-segment bh-airdeck" style="height:14px;"></div>
+            <!-- Sub Drill: 2' -->
+            <div class="bh-segment bh-subdrill" style="height:26px;">2'</div>
+          </div>
+          <div class="borehole-labels">
+            <div class="bh-label" style="height:52px;align-items:flex-start;padding-top:4px;">
+              <div class="bh-label-dot" style="background:var(--gray-400);"></div>
+              <div>
+                <div style="font-size:11px;font-weight:700;color:var(--gray-600);">Stemming</div>
+                <div style="font-family:var(--mono);font-size:10px;color:var(--muted);">4' — crushed stone</div>
+              </div>
+            </div>
+            <div class="bh-booster-row" style="margin-top:-12px;margin-bottom:2px;">
+              <div class="bh-booster-icon"></div>
+              <div style="font-size:10px;font-weight:700;color:var(--orange);">Booster — 1/3 lb</div>
+            </div>
+            <div class="bh-label" style="height:52px;align-items:flex-start;padding-top:2px;">
+              <div class="bh-label-dot" style="background:var(--red);"></div>
+              <div>
+                <div style="font-size:11px;font-weight:700;color:var(--red);">Explosive</div>
+                <div style="font-family:var(--mono);font-size:10px;color:var(--muted);">5' — Bulk Emulsion / ANFO</div>
+              </div>
+            </div>
+            <div class="bh-label" style="height:14px;align-items:center;">
+              <div class="bh-label-dot" style="background:var(--blue-lt);"></div>
+              <div style="font-size:10px;color:var(--blue);font-weight:700;">Air Deck — 1'</div>
+            </div>
+            <div class="bh-label" style="height:26px;align-items:center;">
+              <div class="bh-label-dot" style="background:var(--gray-600);"></div>
+              <div>
+                <div style="font-size:11px;font-weight:700;color:var(--gray-600);">Sub Drill</div>
+                <div style="font-family:var(--mono);font-size:10px;color:var(--muted);">2'</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SHOT 2 ── -->
+    <div class="shot-card">
+      <div class="shot-card-header" style="background:var(--gray-700);">
+        <span class="shot-number">SHOT #2</span>
+        <span class="shot-time">11:45</span>
+      </div>
+
+      <!-- Drill Params -->
+      <div class="shot-section">
+        <div class="section-title">Drill Parameters</div>
+        <div class="drill-grid">
+          <div class="drill-item"><span class="drill-key">Operation</span><span class="drill-val">Quarry</span></div>
+          <div class="drill-item"><span class="drill-key">Hole Dia.</span><span class="drill-val">3.5"</span></div>
+          <div class="drill-item"><span class="drill-key">Burden</span><span class="drill-val">6'</span></div>
+          <div class="drill-item"><span class="drill-key">Spacing</span><span class="drill-val">7'</span></div>
+          <div class="drill-item"><span class="drill-key">Stemming</span><span class="drill-val">4'</span></div>
+          <div class="drill-item"><span class="drill-key">Sub Drill</span><span class="drill-val">2'</span></div>
+        </div>
+      </div>
+
+      <!-- Totals -->
+      <div class="shot-section">
+        <div class="section-title">Totals</div>
+        <div class="totals-grid">
+          <div class="total-item"><span class="total-val">16</span><span class="total-lbl">Holes</span></div>
+          <div class="total-item"><span class="total-val">672</span><span class="total-lbl">Sq Ft</span></div>
+          <div class="total-item"><span class="total-val">11.0'</span><span class="total-lbl">Avg Depth</span></div>
+          <div class="total-item"><span class="total-val">176'</span><span class="total-lbl">Drill Ftg</span></div>
+          <div class="total-item"><span class="total-val">274</span><span class="total-lbl">Pay Yards</span></div>
+          <div class="total-item"><span class="total-val">374.1</span><span class="total-lbl" style="color:var(--orange);">lbs</span></div>
+        </div>
+      </div>
+
+      <!-- Shot 2 Diagram (different pattern) -->
+      <div class="shot-section">
+        <div class="section-title">Delay Pattern</div>
+        <div class="delay-grid">
+          <!-- Row 1 -->
+          <div class="delay-dot dd-empty"></div>
+          <div class="delay-dot dd-1"></div>
+          <div class="delay-dot dd-1"></div>
+          <div class="delay-dot dd-2"></div>
+          <div class="delay-dot dd-2"></div>
+          <div class="delay-dot dd-3"></div>
+          <div class="delay-dot dd-3"></div>
+          <div class="delay-dot dd-empty"></div>
+          <!-- Row 2 -->
+          <div class="delay-dot dd-1"></div>
+          <div class="delay-dot dd-2"></div>
+          <div class="delay-dot dd-2"></div>
+          <div class="delay-dot dd-3"></div>
+          <div class="delay-dot dd-4"></div>
+          <div class="delay-dot dd-4"></div>
+          <div class="delay-dot dd-5"></div>
+          <div class="delay-dot dd-empty"></div>
+          <!-- Row 3 -->
+          <div class="delay-dot dd-empty"></div>
+          <div class="delay-dot dd-2"></div>
+          <div class="delay-dot dd-3"></div>
+          <div class="delay-dot dd-4"></div>
+          <div class="delay-dot dd-4"></div>
+          <div class="delay-dot dd-5"></div>
+          <div class="delay-dot dd-empty"></div>
+          <div class="delay-dot dd-empty"></div>
+          <!-- Row 4 (partial) -->
+          <div class="delay-dot dd-empty"></div>
+          <div class="delay-dot dd-empty"></div>
+          <div class="delay-dot dd-3"></div>
+          <div class="delay-dot dd-4"></div>
+          <div class="delay-dot dd-5"></div>
+          <div class="delay-dot dd-empty"></div>
+          <div class="delay-dot dd-empty"></div>
+          <div class="delay-dot dd-empty"></div>
+        </div>
+        <div class="delay-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#FC8181;border-color:#E53E3E;"></div>9 ms</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#F6AD55;border-color:#DD6B20;"></div>17 ms</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#F6E05E;border-color:#D69E2E;"></div>24 ms</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#68D391;border-color:#38A169;"></div>42 ms</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#63B3ED;border-color:#3182CE;"></div>65 ms</div>
+        </div>
+      </div>
+
+      <!-- Typical Column (Shot 2) -->
+      <div class="shot-section">
+        <div class="section-title">Typical Column — 11' Total</div>
+        <div class="borehole-wrap">
+          <div class="borehole-bar">
+            <div class="bh-segment bh-stemming" style="height:48px;">4'</div>
+            <div class="bh-segment bh-explosive" style="height:58px;">5'</div>
+            <div class="bh-segment bh-airdeck" style="height:0px;"></div>
+            <div class="bh-segment bh-subdrill" style="height:26px;">2'</div>
+          </div>
+          <div class="borehole-labels">
+            <div class="bh-label" style="height:48px;align-items:flex-start;padding-top:4px;">
+              <div class="bh-label-dot" style="background:var(--gray-400);"></div>
+              <div>
+                <div style="font-size:11px;font-weight:700;color:var(--gray-600);">Stemming</div>
+                <div style="font-family:var(--mono);font-size:10px;color:var(--muted);">4' — crushed stone</div>
+              </div>
+            </div>
+            <div class="bh-booster-row" style="margin-top:-10px;margin-bottom:2px;">
+              <div class="bh-booster-icon"></div>
+              <div style="font-size:10px;font-weight:700;color:var(--orange);">Booster — 1/3 lb</div>
+            </div>
+            <div class="bh-label" style="height:48px;align-items:flex-start;padding-top:2px;">
+              <div class="bh-label-dot" style="background:var(--red);"></div>
+              <div>
+                <div style="font-size:11px;font-weight:700;color:var(--red);">Explosive</div>
+                <div style="font-family:var(--mono);font-size:10px;color:var(--muted);">5' — Bulk Emulsion / ANFO</div>
+              </div>
+            </div>
+            <div class="bh-label" style="height:26px;align-items:center;">
+              <div class="bh-label-dot" style="background:var(--gray-600);"></div>
+              <div>
+                <div style="font-size:11px;font-weight:700;color:var(--gray-600);">Sub Drill</div>
+                <div style="font-family:var(--mono);font-size:10px;color:var(--muted);">2'</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /grid-2 shots -->
+
+  <!-- Explosives Table -->
+  <div class="card mb-8">
+    <div class="job-info-header" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>Explosives &amp; Initiation</span>
+      <span style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--orange-lt);">Total: 680.0 lbs</span>
+    </div>
+    <table class="exp-table">
+      <thead>
+        <tr>
+          <th style="text-align:left;width:38%;">Product</th>
+          <th>Shot #1</th>
+          <th>Shot #2</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="exp-divider-row"><td colspan="4">Explosives</td></tr>
+        <tr>
+          <td>Bulk Emulsion</td>
+          <td class="mono">10</td>
+          <td class="mono">8</td>
+          <td class="mono">18</td>
+        </tr>
+        <tr>
+          <td>ANFO 50lb</td>
+          <td class="mono">2</td>
+          <td class="mono">2</td>
+          <td class="mono">4</td>
+        </tr>
+        <tr>
+          <td>1/3 lb Booster</td>
+          <td class="mono">18</td>
+          <td class="mono">16</td>
+          <td class="mono">34</td>
+        </tr>
+        <tr class="total-row">
+          <td><strong>Total Lbs</strong></td>
+          <td class="mono">305.9</td>
+          <td class="mono">374.1</td>
+          <td class="mono">680.0</td>
+        </tr>
+        <tr class="exp-divider-row"><td colspan="4">Initiation / Detonators</td></tr>
+        <tr>
+          <td>QR-12 9MS</td>
+          <td class="mono">12</td>
+          <td class="mono">8</td>
+          <td class="mono">20</td>
+        </tr>
+        <tr>
+          <td>QR-12 17MS</td>
+          <td class="mono">4</td>
+          <td class="mono">6</td>
+          <td class="mono">10</td>
+        </tr>
+        <tr>
+          <td>QR-12 24MS</td>
+          <td class="mono">2</td>
+          <td class="mono">2</td>
+          <td class="mono">4</td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td>Lead Line</td>
+          <td class="mono">500' × 1</td>
+          <td class="mono">500' × 1</td>
+          <td class="mono">—</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- Footer -->
+  <div class="report-footer">
+    <div class="footer-brand">Generated by <strong>ShotLog</strong> — Baystate Blasting, Inc.</div>
+    <div class="footer-id">BR-2026-0321-SQ</div>
+    <div class="footer-page">Page 2 of 3</div>
+  </div>
+
+</div><!-- /page 2 -->
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     PAGE 3 — COMPLIANCE + OPERATIONS
+══════════════════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <!-- Page header band -->
+  <div class="page-header-band">
+    <div>
+      <div class="ph-title">Compliance &amp; Operations</div>
+      <div class="ph-sub">Stevens Quarry &nbsp;·&nbsp; March 21, 2026 &nbsp;·&nbsp; BR-2026-0321-SQ</div>
+    </div>
+    <div class="ph-logo">
+      <svg viewBox="0 0 200 200" width="28" height="28">
+        <rect width="200" height="200" rx="44" fill="#1A365D"/>
+        <g transform="translate(100,100)">
+          <circle cx="0" cy="0" r="50" fill="none" stroke="#DD6B20" stroke-width="4" opacity="0.3"/>
+          <line x1="0" y1="-12" x2="0" y2="-34" stroke="#DD6B20" stroke-width="5" stroke-linecap="round"/>
+          <line x1="0" y1="12" x2="0" y2="34" stroke="#DD6B20" stroke-width="5" stroke-linecap="round"/>
+          <line x1="-12" y1="0" x2="-34" y2="0" stroke="#DD6B20" stroke-width="5" stroke-linecap="round"/>
+          <line x1="12" y1="0" x2="34" y2="0" stroke="#DD6B20" stroke-width="5" stroke-linecap="round"/>
+          <circle cx="0" cy="0" r="13" fill="#DD6B20"/>
+          <circle cx="0" cy="0" r="8" fill="#F6AD55"/>
+          <circle cx="0" cy="0" r="4" fill="#FBD38D"/>
+        </g>
+      </svg>
+      <span class="ph-logo-text">ShotLog</span>
+    </div>
+  </div>
+
+  <!-- Top two-column: Compliance card + Seismo -->
+  <div class="grid-2 mb-16" style="gap:14px;">
+
+    <!-- Compliance -->
+    <div>
+      <div class="section-title">Vibration Compliance</div>
+      <div class="card mb-12">
+        <div class="card-inner" style="padding-bottom:10px;">
+          <!-- Structure info -->
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);">
+            <div>
+              <div class="label">Closest Structure</div>
+              <div style="font-weight:700;color:var(--navy);font-size:13px;margin-top:2px;">Stevens Residence — NE Corner</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="label">Distance</div>
+              <div class="value" style="font-size:18px;">175 ft</div>
+            </div>
+          </div>
+
+          <!-- Stat boxes -->
+          <div class="compliance-stats" style="margin-bottom:10px;">
+            <div class="comp-stat highlight">
+              <div class="comp-num">56.6</div>
+              <div class="comp-unit">Scaled Distance</div>
+            </div>
+            <div class="comp-stat highlight">
+              <div class="comp-num">0.42</div>
+              <div class="comp-unit">PPV in/s</div>
+            </div>
+            <div class="comp-stat highlight">
+              <div class="comp-num">142</div>
+              <div class="comp-unit">K Factor</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:baseline;font-size:11.5px;color:var(--muted);margin-bottom:8px;">
+            <span>Max lbs/delay:</span>
+            <span class="value" style="font-size:14px;">9.6</span>
+          </div>
+
+          <!-- Formula -->
+          <div class="formula-box">
+            <span class="hi">SD</span> = 175 / √9.6 = <span class="hi">56.6</span>
+            &nbsp;&nbsp;|&nbsp;&nbsp;
+            <span class="hi">PPV</span> = 142 × 56.6<sup>−1.6</sup> = <span class="hi">0.42 in/s</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Regulation checks -->
+      <div class="section-title">Regulation Check</div>
+      <div class="reg-list mb-12">
+        <div class="reg-row">
+          <div class="reg-check">✓</div>
+          <div class="reg-name">USBM RI 8507</div>
+          <div class="reg-desc">PPV 0.42 &lt; 2.0 in/s</div>
+          <div class="reg-pass">PASS</div>
+        </div>
+        <div class="reg-row">
+          <div class="reg-check">✓</div>
+          <div class="reg-name">OSMRE 30 CFR</div>
+          <div class="reg-desc">PPV 0.42 &lt; 1.25 in/s (0–300 ft)</div>
+          <div class="reg-pass">PASS</div>
+        </div>
+        <div class="reg-row">
+          <div class="reg-check">✓</div>
+          <div class="reg-name">MA 540 CMR</div>
+          <div class="reg-desc">PPV 0.42 &lt; 2.0 in/s</div>
+          <div class="reg-pass">PASS</div>
+        </div>
+        <div class="reg-row">
+          <div class="reg-check">✓</div>
+          <div class="reg-name">Whately Local</div>
+          <div class="reg-desc">PPV 0.42 &lt; 1.0 in/s override</div>
+          <div class="reg-pass">PASS</div>
+        </div>
+      </div>
+
+      <!-- Most restrictive bar -->
+      <div class="restrict-bar">
+        <div>
+          <div class="label" style="margin-bottom:2px;">Most Restrictive Limit</div>
+          <div style="font-weight:700;font-size:12px;color:var(--gray-700);">Whately Local — 1.0 in/s</div>
+        </div>
+        <div class="limit-bar-wrap">
+          <div class="limit-bar-bg">
+            <div class="limit-bar-fill"></div>
+          </div>
+          <div class="limit-pct">58% of limit used</div>
+        </div>
+        <div class="restrict-val">0.42 / 1.0</div>
+      </div>
+    </div>
+
+    <!-- Seismograph Readings -->
+    <div>
+      <div class="section-title">Seismograph Readings</div>
+      <div class="card mb-16" style="overflow:hidden;">
+        <table class="seismo-table">
+          <thead>
+            <tr>
+              <th>Shot</th>
+              <th>PPV (in/s)</th>
+              <th>Freq (Hz)</th>
+              <th>Airblast (dB)</th>
+              <th>Location</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong style="color:var(--navy);">#1</strong></td>
+              <td><span class="ppv-val">0.38</span></td>
+              <td style="font-family:var(--mono);font-weight:600;">22</td>
+              <td style="font-family:var(--mono);font-weight:600;">119 dB</td>
+              <td style="color:var(--muted);font-size:10.5px;">Stevens res NE</td>
+            </tr>
+            <tr>
+              <td><strong style="color:var(--navy);">#2</strong></td>
+              <td><span class="ppv-val">0.42</span></td>
+              <td style="font-family:var(--mono);font-weight:600;">18</td>
+              <td style="font-family:var(--mono);font-weight:600;">122 dB</td>
+              <td style="color:var(--muted);font-size:10.5px;">Stevens res NE</td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="padding:8px 12px;background:var(--gray-50);border-top:1px solid var(--border);display:flex;gap:16px;font-size:10.5px;color:var(--muted);">
+          <span>Instrument: <strong style="color:var(--navy);">Instantel Micromate #1</strong></span>
+          <span>S/N: <strong style="color:var(--navy);">UM6686</strong></span>
+        </div>
+      </div>
+
+      <!-- Crew -->
+      <div class="section-title">Work Force</div>
+      <div class="card mb-16" style="overflow:hidden;">
+        <table class="crew-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Hours</th>
+              <th>ST / OT</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="name-cell">Mark Swihart</td>
+              <td class="role-cell">Blaster</td>
+              <td style="font-family:var(--mono);font-size:11px;color:var(--muted);">06:00–15:30</td>
+              <td class="hours-cell">8 ST + 1.5 OT</td>
+            </tr>
+            <tr>
+              <td class="name-cell">Jake Daniels</td>
+              <td class="role-cell">Driller</td>
+              <td style="font-family:var(--mono);font-size:11px;color:var(--muted);">06:00–15:30</td>
+              <td class="hours-cell">8 ST + 1.5 OT</td>
+            </tr>
+            <tr>
+              <td class="name-cell">Tom Pelletier</td>
+              <td class="role-cell">Helper</td>
+              <td style="font-family:var(--mono);font-size:11px;color:var(--muted);">06:30–15:30</td>
+              <td class="hours-cell">8 ST + 1 OT</td>
+            </tr>
+            <tr>
+              <td class="name-cell">Rick Kowalski</td>
+              <td class="role-cell">Operator</td>
+              <td style="font-family:var(--mono);font-size:11px;color:var(--muted);">07:00–14:00</td>
+              <td class="hours-cell">7 ST</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Equipment -->
+      <div class="section-title">Equipment</div>
+      <div class="equip-list mb-16">
+        <div class="equip-chip">
+          <span class="equip-chip-icon">🚛</span>
+          F-250 #12
+          <span class="equip-time">06:00–15:30</span>
+        </div>
+        <div class="equip-chip">
+          <span class="equip-chip-icon">🚛</span>
+          F-350 #07
+          <span class="equip-time">06:00–15:00</span>
+        </div>
+        <div class="equip-chip">
+          <span class="equip-chip-icon">⚙️</span>
+          Atlas D50 Drill
+          <span class="equip-time">07:00–14:00</span>
+        </div>
+        <div class="equip-chip">
+          <span class="equip-chip-icon">📡</span>
+          Instantel Micromate #1
+          <span class="equip-time">08:00–14:00</span>
+        </div>
+        <div class="equip-chip">
+          <span class="equip-chip-icon">🛡</span>
+          Blast Mats ×4
+          <span class="equip-time">06:30–14:30</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /grid-2 compliance + operations -->
+
+  <!-- Hazards & Precautions -->
+  <div class="card mb-16">
+    <div class="job-info-header">Hazards &amp; Precautions</div>
+    <div class="card-inner" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;">
+      <div>
+        <div class="label mb-8">Hazards Present</div>
+        <div class="hazard-list">
+          <span class="hazard-pill warn">Overhead Lines</span>
+          <span class="hazard-pill warn">Water Main</span>
+        </div>
+      </div>
+      <div>
+        <div class="label mb-8">Precautions Taken</div>
+        <div class="hazard-list">
+          <span class="hazard-pill safe">Blast Mats</span>
+          <span class="hazard-pill safe">Road Guards</span>
+          <span class="hazard-pill safe">Flagging</span>
+        </div>
+      </div>
+      <div>
+        <div class="label mb-8">Cover Type</div>
+        <div style="font-weight:600;color:var(--navy);font-size:12px;margin-top:4px;">Blast Mats</div>
+      </div>
+      <div>
+        <div class="label mb-8">On-Site Delivery</div>
+        <div style="display:inline-flex;align-items:center;gap:5px;margin-top:4px;">
+          <span style="width:16px;height:16px;border-radius:50%;background:var(--green);display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:800;">✓</span>
+          <span style="font-weight:700;color:var(--green);font-size:12px;">Yes</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sign-off -->
+  <div class="section-title">Blaster Certification</div>
+  <div class="signoff-block mb-16">
+    <div class="sig-field" style="flex:2;">
+      <div class="sig-label">Blaster Signature</div>
+      <div class="sig-line">
+        <span class="sig-cursive">Mark Swihart</span>
+      </div>
+      <div class="sig-name">Mark Swihart — Blaster of Record</div>
+    </div>
+    <div class="sig-field">
+      <div class="sig-label">License Number</div>
+      <div class="sig-line" style="align-items:center;">
+        <span class="value" style="font-size:14px;">6-MA-013-26</span>
+      </div>
+      <div class="sig-name">Massachusetts</div>
+    </div>
+    <div class="sig-field">
+      <div class="sig-label">Date</div>
+      <div class="sig-line" style="align-items:center;">
+        <span class="value" style="font-size:14px;">03/21/2026</span>
+      </div>
+      <div class="sig-name">Blast Day</div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="report-footer">
+    <div class="footer-brand">Generated by <strong>ShotLog</strong> — Baystate Blasting, Inc.</div>
+    <div class="footer-id">BR-2026-0321-SQ</div>
+    <div class="footer-page">Page 3 of 3</div>
+  </div>
+
+</div><!-- /page 3 -->
+
+</body>
+</html>
