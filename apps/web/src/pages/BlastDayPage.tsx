@@ -7,9 +7,8 @@ import { nowISO, formatDate, dayOfWeek } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
+import { ChipSelect } from '@/components/ui/chip-select';
 import { BlastLogForm } from '@/components/forms/BlastLogForm';
 import { DailyReportForm } from '@/components/forms/DailyReportForm';
 
@@ -42,6 +41,11 @@ const WORK_TYPE_OPTIONS = [
   { value: 'blasting', label: 'Blasting' },
   { value: 'crushing', label: 'Crushing' },
 ];
+
+const WIND_OPTIONS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'].map((d) => ({
+  value: d,
+  label: d,
+}));
 
 type Tab = 'blast-log' | 'daily-report';
 
@@ -90,7 +94,7 @@ export function BlastDayPage() {
 
         {/* Shared conditions (collapsible) */}
         <button
-          className="flex items-center gap-1 text-sm text-navy font-medium w-full"
+          className="flex items-center gap-1 text-sm text-navy font-medium w-full min-h-[44px]"
           onClick={() => setShowConditions(!showConditions)}
         >
           Conditions & Environment
@@ -98,58 +102,62 @@ export function BlastDayPage() {
         </button>
 
         {showConditions && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3 pb-2">
+          <div className="space-y-3 mt-3 pb-2">
             <div>
               <Label className="text-xs">Temperature</Label>
-              <Select
+              <ChipSelect
+                className="mt-1"
                 value={blastDay.conditions.temperatureRange}
-                onChange={(e) => updateConditions('temperatureRange', e.target.value)}
+                onChange={(v) => updateConditions('temperatureRange', v)}
                 options={TEMP_OPTIONS}
               />
             </div>
             <div>
               <Label className="text-xs">Weather</Label>
-              <Select
+              <ChipSelect
+                className="mt-1"
                 value={blastDay.conditions.weather}
-                onChange={(e) => updateConditions('weather', e.target.value)}
+                onChange={(v) => updateConditions('weather', v)}
                 options={WEATHER_OPTIONS}
               />
             </div>
             <div>
               <Label className="text-xs">Wind Direction</Label>
-              <Input
+              <ChipSelect
+                className="mt-1"
                 value={blastDay.conditions.windDirection}
-                onChange={(e) => updateConditions('windDirection', e.target.value)}
-                placeholder="NW"
+                onChange={(v) => updateConditions('windDirection', v)}
+                options={WIND_OPTIONS}
+                allowEmpty
               />
             </div>
             <div>
               <Label className="text-xs">Ground</Label>
-              <Select
+              <ChipSelect
+                className="mt-1"
                 value={blastDay.conditions.groundConditions}
-                onChange={(e) => updateConditions('groundConditions', e.target.value)}
+                onChange={(v) => updateConditions('groundConditions', v)}
                 options={GROUND_OPTIONS}
               />
             </div>
             <div>
               <Label className="text-xs">Type of Work</Label>
-              <Select
+              <ChipSelect
+                className="mt-1"
                 value={blastDay.typeOfWork}
-                onChange={(e) => updateBlastDay('typeOfWork', e.target.value)}
+                onChange={(v) => updateBlastDay('typeOfWork', v)}
                 options={WORK_TYPE_OPTIONS}
               />
             </div>
-            <div className="flex items-end">
-              <label className="flex items-center gap-2 h-10 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={blastDay.fireDetail}
-                  onChange={(e) => updateBlastDay('fireDetail', e.target.checked)}
-                  className="h-5 w-5 rounded border-gray-300 text-navy focus:ring-navy-400"
-                />
-                <span className="text-sm">Fire Detail</span>
-              </label>
-            </div>
+            <label className="flex items-center gap-2 min-h-[44px] cursor-pointer">
+              <input
+                type="checkbox"
+                checked={blastDay.fireDetail}
+                onChange={(e) => updateBlastDay('fireDetail', e.target.checked)}
+                className="h-5 w-5 rounded border-gray-300 text-navy focus:ring-navy-400"
+              />
+              <span className="text-sm font-medium">Fire Detail</span>
+            </label>
           </div>
         )}
       </div>

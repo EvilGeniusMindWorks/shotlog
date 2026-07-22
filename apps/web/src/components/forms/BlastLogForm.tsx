@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select } from '@/components/ui/select';
+import { ChipSelect, ChipMultiSelect } from '@/components/ui/chip-select';
 import { Badge } from '@/components/ui/badge';
 import { ShotForm } from './ShotForm';
 import { ExplosiveUsageForm } from './ExplosiveUsageForm';
@@ -29,6 +29,21 @@ const OPERATION_OPTIONS = [
   { value: 'quarry', label: 'Quarry' },
   { value: 'trench', label: 'Trench' },
   { value: 'open', label: 'Open' },
+];
+
+// Spec §4.5 — common hazards and precautions as tap-to-toggle chips
+const HAZARD_OPTIONS = [
+  { value: 'overhead_lines', label: 'Overhead Lines' },
+  { value: 'gas_line', label: 'Gas Line' },
+  { value: 'water_main', label: 'Water Main' },
+  { value: 'residential', label: 'Residential' },
+  { value: 'highway', label: 'Highway' },
+];
+const PRECAUTION_OPTIONS = [
+  { value: 'blast_mats', label: 'Blast Mats' },
+  { value: 'road_guards', label: 'Road Guards' },
+  { value: 'siren', label: 'Siren' },
+  { value: 'flagging', label: 'Flagging' },
 ];
 
 interface Props {
@@ -86,15 +101,16 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
           <CardTitle className="text-base">Blast Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <div>
-              <Label className="text-xs">Operation</Label>
-              <Select
-                value={draft.operation}
-                onChange={(e) => setField('operation', e.target.value as BlastLog['operation'])}
-                options={OPERATION_OPTIONS}
-              />
-            </div>
+          <div>
+            <Label className="text-xs">Operation</Label>
+            <ChipSelect
+              className="mt-1"
+              value={draft.operation}
+              onChange={(v) => setField('operation', v as BlastLog['operation'])}
+              options={OPERATION_OPTIONS}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Type of Rock</Label>
               <Input
@@ -114,18 +130,20 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
           </div>
           <div>
             <Label className="text-xs">Identify Hazards</Label>
-            <Textarea
+            <ChipMultiSelect
+              className="mt-1"
               value={draft.hazards}
-              onChange={(e) => setField('hazards', e.target.value)}
-              rows={2}
+              onChange={(v) => setField('hazards', v)}
+              options={HAZARD_OPTIONS}
             />
           </div>
           <div>
             <Label className="text-xs">Precautions Taken</Label>
-            <Textarea
+            <ChipMultiSelect
+              className="mt-1"
               value={draft.precautions}
-              onChange={(e) => setField('precautions', e.target.value)}
-              rows={2}
+              onChange={(v) => setField('precautions', v)}
+              options={PRECAUTION_OPTIONS}
             />
           </div>
         </CardContent>
