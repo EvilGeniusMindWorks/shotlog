@@ -23,7 +23,8 @@ const OPERATION_OPTIONS = [
 ];
 
 export function NewBlastDayDialog({ onClose, onCreate }: Props) {
-  const jobs = useLiveQuery(() => db.jobs.where('isActive').equals(1).toArray()) ?? [];
+  // NOTE: boolean fields can't be indexed in IndexedDB — use filter(), not where()
+  const jobs = useLiveQuery(() => db.jobs.filter((j) => j.isActive).toArray()) ?? [];
   const [selectedJobId, setSelectedJobId] = useState('');
   const [date, setDate] = useState(todayISO());
   const [showNewJob, setShowNewJob] = useState(false);

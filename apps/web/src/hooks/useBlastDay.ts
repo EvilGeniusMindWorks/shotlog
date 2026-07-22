@@ -40,7 +40,8 @@ export function useBlastDay(id: string | undefined) {
 }
 
 export function useJobs() {
-  const jobs = useLiveQuery(() => db.jobs.where('isActive').equals(1).toArray());
+  // NOTE: boolean fields can't be indexed in IndexedDB — use filter(), not where()
+  const jobs = useLiveQuery(() => db.jobs.filter((j) => j.isActive).toArray());
   return jobs ?? [];
 }
 
@@ -148,8 +149,8 @@ export async function createBlastDay(jobId: string, date?: string): Promise<stri
     await db.dailyReports.add(dailyReport);
   });
 
-  // Auto-fill blaster profile
-  const blaster = await db.blasterProfiles.where('isCurrentUser').equals(1).first();
+  // Auto-fill blaster profile (filter, not where — boolean fields aren't indexable)
+  const blaster = await db.blasterProfiles.filter((b) => b.isCurrentUser).first();
   if (blaster && job) {
     const license = blaster.licenses.find((l) => l.state === job.state && l.isActive);
     if (license) {
