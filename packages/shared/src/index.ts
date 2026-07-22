@@ -27,3 +27,6 @@ export {
 } from './calculations.js';
 
 export type { ComplianceStatus } from './calculations.js';
+
+export { distributeByHoles } from './distribution.js';
+export type { ShotHoleCount, DistributionResult } from './distribution.js';

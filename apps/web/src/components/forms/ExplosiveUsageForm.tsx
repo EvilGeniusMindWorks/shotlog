@@ -1,8 +1,10 @@
 import { useState, useMemo } from 'react';
-import { Plus, Trash2, Search, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, Search, ChevronDown, ChevronRight, X } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { distributeByHoles } from '@shotlog/shared';
 import { db } from '@/db';
 import { nowISO } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 import type { ExplosiveUsage, ExplosiveLineItem, Shot, ProductCatalogItem } from '@/db/schema';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,10 +52,27 @@ export function ExplosiveUsageForm({ explosiveUsage, shots }: Props) {
     updateUsage({ products, totalPoundsShot: calcTotal(products) });
   };
 
-  const updateAllocation = (index: number, shotId: string, qty: number) => {
+  // shotAllocations holds MANUAL OVERRIDES only. Effective per-shot quantities
+  // are computed live: overridden shots keep their value, the rest of the
+  // total auto-distributes by hole-count ratio (top-down entry, Spec §4.6.3).
+  const holeCounts = useMemo(
+    () => shots.map((s) => ({ shotId: s.id, holes: s.totals.numHoles })),
+    [shots],
+  );
+
+  const overrideAllocation = (index: number, shotId: string, qty: number) => {
     const products = [...explosiveUsage.products];
     const item = { ...products[index] };
     item.shotAllocations = { ...item.shotAllocations, [shotId]: qty };
+    products[index] = item;
+    updateUsage({ products });
+  };
+
+  const resetAllocation = (index: number, shotId: string) => {
+    const products = [...explosiveUsage.products];
+    const item = { ...products[index] };
+    const { [shotId]: _removed, ...rest } = item.shotAllocations;
+    item.shotAllocations = rest;
     products[index] = item;
     updateUsage({ products });
   };
@@ -119,47 +138,83 @@ export function ExplosiveUsageForm({ explosiveUsage, shots }: Props) {
                 </div>
               </div>
 
-              {/* Per-shot allocation (optional, collapsible) */}
-              {shots.length > 1 && (
-                <div>
-                  <button
-                    className="text-xs text-navy flex items-center gap-1"
-                    onClick={() => toggleAllocation(idx)}
-                  >
-                    {expandedAllocations.has(idx) ? (
-                      <ChevronDown className="h-3 w-3" />
-                    ) : (
-                      <ChevronRight className="h-3 w-3" />
-                    )}
-                    Per-Shot Allocation
-                  </button>
-                  {expandedAllocations.has(idx) && (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2 pl-4 border-l-2 border-gray-100">
-                      {shots.map((shot) => (
-                        <div key={shot.id}>
-                          <Label className="text-xs">Shot #{shot.shotNumber}</Label>
-                          <Input
-                            type="number"
-                            step="1"
-                            value={item.shotAllocations[shot.id] || ''}
-                            onChange={(e) =>
-                              updateAllocation(idx, shot.id, parseFloat(e.target.value) || 0)
-                            }
-                            placeholder="0"
-                          />
+              {/* Per-shot allocation: auto-distributed by hole count, tap to override */}
+              {shots.length > 1 &&
+                (() => {
+                  const dist = distributeByHoles(item.quantity, holeCounts, item.shotAllocations);
+                  return (
+                    <div>
+                      <button
+                        className="text-xs text-navy flex items-center gap-1"
+                        onClick={() => toggleAllocation(idx)}
+                      >
+                        {expandedAllocations.has(idx) ? (
+                          <ChevronDown className="h-3 w-3" />
+                        ) : (
+                          <ChevronRight className="h-3 w-3" />
+                        )}
+                        Per-Shot Allocation
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                          Auto
+                        </Badge>
+                      </button>
+                      {expandedAllocations.has(idx) && (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2 pl-4 border-l-2 border-gray-100">
+                          {shots.map((shot) => {
+                            const overridden = item.shotAllocations[shot.id] !== undefined;
+                            return (
+                              <div key={shot.id}>
+                                <div className="flex items-center gap-1">
+                                  <Label className="text-xs">
+                                    Shot #{shot.shotNumber}
+                                    <span className="text-gray-400 font-normal">
+                                      {' '}
+                                      · {shot.totals.numHoles} holes
+                                    </span>
+                                  </Label>
+                                  {overridden && (
+                                    <button
+                                      title="Reset to auto"
+                                      className="text-gray-400 hover:text-gray-600"
+                                      onClick={() => resetAllocation(idx, shot.id)}
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </button>
+                                  )}
+                                </div>
+                                <Input
+                                  type="number"
+                                  step="1"
+                                  inputMode="decimal"
+                                  value={dist.allocations[shot.id] ?? ''}
+                                  onChange={(e) =>
+                                    overrideAllocation(
+                                      idx,
+                                      shot.id,
+                                      parseFloat(e.target.value) || 0,
+                                    )
+                                  }
+                                  className={overridden ? 'border-safety font-semibold' : ''}
+                                  placeholder="0"
+                                />
+                              </div>
+                            );
+                          })}
+                          {dist.remaining !== 0 && (
+                            <div>
+                              <Label className="text-xs text-red-500">
+                                {dist.remaining < 0 ? 'Over-allocated' : 'Unallocated'}
+                              </Label>
+                              <p className="h-10 flex items-center font-mono text-sm text-red-600">
+                                {Math.abs(dist.remaining)} {item.unitType}s
+                              </p>
+                            </div>
+                          )}
                         </div>
-                      ))}
-                      <div>
-                        <Label className="text-xs text-gray-400">Remaining</Label>
-                        <p className="h-10 flex items-center font-mono text-sm">
-                          {item.quantity -
-                            Object.values(item.shotAllocations).reduce((s, v) => s + v, 0)}
-                        </p>
-                      </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              )}
+                  );
+                })()}
             </div>
           ))
         )}
@@ -216,7 +271,8 @@ function ProductPickerDialog({
   onClose: () => void;
 }) {
   const [search, setSearch] = useState('');
-  const products = useLiveQuery(() => db.productCatalog.where('isActive').equals(1).toArray()) ?? [];
+  // NOTE: boolean fields can't be indexed in IndexedDB — use filter(), not where()
+  const products = useLiveQuery(() => db.productCatalog.filter((p) => p.isActive).toArray()) ?? [];
 
   const filtered = useMemo(() => {
     if (!search) return products;
