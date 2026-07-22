@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/db';
-import { createJob } from '@/hooks/useBlastDay';
+import { createJob, type CopyFromPrevious } from '@/hooks/useBlastDay';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,8 +12,16 @@ import { Plus, X } from 'lucide-react';
 
 interface Props {
   onClose: () => void;
-  onCreate: (jobId: string, date: string) => void;
+  onCreate: (jobId: string, date: string, copy?: CopyFromPrevious) => void;
 }
+
+const COPY_SECTIONS = [
+  { key: 'blastInfo', label: 'Blast Info' },
+  { key: 'drillParams', label: 'Drill Params' },
+  { key: 'designPlan', label: 'Design Plan' },
+  { key: 'explosives', label: 'Explosives' },
+  { key: 'crewEquipment', label: 'Crew & Equipment' },
+] as const;
 
 const OPERATION_OPTIONS = [
   { value: 'construction', label: 'Construction' },
@@ -33,6 +41,18 @@ export function NewBlastDayDialog({ onClose, onCreate }: Props) {
     typeOfRock: '', typeOfTerrain: '',
   });
 
+  // Copy from Previous: offered when the selected job has existing blast days
+  const previousDays =
+    useLiveQuery(async () => {
+      if (!selectedJobId) return [];
+      const days = await db.blastDays.where('jobId').equals(selectedJobId).sortBy('date');
+      return days.reverse();
+    }, [selectedJobId]) ?? [];
+  const [copySourceId, setCopySourceId] = useState(''); // '' = start blank
+  const [copySections, setCopySections] = useState<Record<string, boolean>>({
+    blastInfo: true, drillParams: true, designPlan: true, explosives: true, crewEquipment: true,
+  });
+
   const handleCreate = async () => {
     let jobId = selectedJobId;
     if (showNewJob) {
@@ -48,7 +68,18 @@ export function NewBlastDayDialog({ onClose, onCreate }: Props) {
       });
     }
     if (!jobId) return;
-    onCreate(jobId, date);
+    const copy: CopyFromPrevious | undefined =
+      !showNewJob && copySourceId
+        ? {
+            sourceBlastDayId: copySourceId,
+            blastInfo: copySections.blastInfo,
+            drillParams: copySections.drillParams,
+            designPlan: copySections.designPlan,
+            explosives: copySections.explosives,
+            crewEquipment: copySections.crewEquipment,
+          }
+        : undefined;
+    onCreate(jobId, date, copy);
   };
 
   const canCreate = showNewJob ? newJob.name && newJob.customer : selectedJobId;
@@ -85,6 +116,41 @@ export function NewBlastDayDialog({ onClose, onCreate }: Props) {
               >
                 <Plus className="h-4 w-4 mr-1" /> Create New Job
               </Button>
+
+              {previousDays.length > 0 && (
+                <div className="mt-3 border border-gray-200 rounded-lg p-3 space-y-2">
+                  <Label>Copy from Previous</Label>
+                  <Select
+                    value={copySourceId}
+                    onChange={(e) => setCopySourceId(e.target.value)}
+                    placeholder="Start blank"
+                    options={previousDays.slice(0, 10).map((d) => ({
+                      value: d.id,
+                      label: `${d.date} — ${d.status.replace('_', ' ')}`,
+                    }))}
+                  />
+                  {copySourceId && (
+                    <div className="grid grid-cols-2 gap-1 pt-1">
+                      {COPY_SECTIONS.map(({ key, label }) => (
+                        <label
+                          key={key}
+                          className="flex items-center gap-2 py-1.5 cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            className="h-5 w-5 rounded border-gray-300 text-navy focus:ring-navy-400"
+                            checked={copySections[key]}
+                            onChange={(e) =>
+                              setCopySections((prev) => ({ ...prev, [key]: e.target.checked }))
+                            }
+                          />
+                          <span className="text-sm">{label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-3 border border-gray-200 rounded-lg p-3">

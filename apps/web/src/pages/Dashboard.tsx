@@ -99,8 +99,8 @@ export function Dashboard() {
       {showNewDialog && (
         <NewBlastDayDialog
           onClose={() => setShowNewDialog(false)}
-          onCreate={async (jobId, date) => {
-            const id = await createBlastDay(jobId, date);
+          onCreate={async (jobId, date, copy) => {
+            const id = await createBlastDay(jobId, date, copy);
             setShowNewDialog(false);
             navigate(`/blast-day/${id}`);
           }}

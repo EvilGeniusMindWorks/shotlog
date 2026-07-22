@@ -45,7 +45,21 @@ export function useJobs() {
   return jobs ?? [];
 }
 
-export async function createBlastDay(jobId: string, date?: string): Promise<string> {
+/** What to carry forward from a previous blast day (Spec §11 Copy from Previous) */
+export interface CopyFromPrevious {
+  sourceBlastDayId: string;
+  blastInfo: boolean; // operation, rock, terrain, hazards, precautions
+  drillParams: boolean; // one shot per source shot with drill params (totals cleared)
+  designPlan: boolean; // per-shot structure/distance/K compliance inputs
+  explosives: boolean; // product lines + lead/cover (per-shot overrides cleared)
+  crewEquipment: boolean; // daily report crew + equipment rows (times/hours cleared)
+}
+
+export async function createBlastDay(
+  jobId: string,
+  date?: string,
+  copy?: CopyFromPrevious,
+): Promise<string> {
   const now = nowISO();
   const blastDayId = generateId();
   const blastLogId = generateId();
@@ -54,6 +68,22 @@ export async function createBlastDay(jobId: string, date?: string): Promise<stri
   const shotId = generateId();
 
   const job = await db.jobs.get(jobId);
+
+  // Load source records when copying from a previous blast day
+  const sourceLog = copy
+    ? await db.blastLogs.where('blastDayId').equals(copy.sourceBlastDayId).first()
+    : undefined;
+  const sourceShots = sourceLog
+    ? (await db.shots.where('blastLogId').equals(sourceLog.id).toArray()).sort(
+        (a, b) => a.shotNumber - b.shotNumber,
+      )
+    : [];
+  const sourceUsage = sourceLog
+    ? await db.explosiveUsages.where('blastLogId').equals(sourceLog.id).first()
+    : undefined;
+  const sourceReport = copy
+    ? await db.dailyReports.where('blastDayId').equals(copy.sourceBlastDayId).first()
+    : undefined;
 
   const blastDay: BlastDay = {
     id: blastDayId,
@@ -74,14 +104,15 @@ export async function createBlastDay(jobId: string, date?: string): Promise<stri
     syncStatus: 'local',
   };
 
+  const copyInfo = copy?.blastInfo && sourceLog;
   const blastLog: BlastLog = {
     id: blastLogId,
     blastDayId,
-    operation: job?.operation ?? 'construction',
-    typeOfRock: job?.typeOfRock ?? '',
-    typeOfTerrain: job?.typeOfTerrain ?? '',
-    hazards: job?.defaultHazards ?? '',
-    precautions: job?.defaultPrecautions ?? '',
+    operation: copyInfo ? sourceLog.operation : (job?.operation ?? 'construction'),
+    typeOfRock: copyInfo ? sourceLog.typeOfRock : (job?.typeOfRock ?? ''),
+    typeOfTerrain: copyInfo ? sourceLog.typeOfTerrain : (job?.typeOfTerrain ?? ''),
+    hazards: copyInfo ? sourceLog.hazards : (job?.defaultHazards ?? ''),
+    precautions: copyInfo ? sourceLog.precautions : (job?.defaultPrecautions ?? ''),
     onsiteDelivery: false,
     blasterName: '',
     licenseNumber: '',
@@ -106,27 +137,53 @@ export async function createBlastDay(jobId: string, date?: string): Promise<stri
     scaledDistance: 0, predictedPPV: 0, kFactor: job?.kFactor ?? 180,
   };
 
-  const shot: Shot = {
-    id: shotId,
-    blastLogId,
-    shotNumber: 1,
-    time: '',
-    drillParams: defaultDrillParams,
-    totals: defaultTotals,
-    designPlan: defaultDesignPlan,
-    createdAt: now,
-    updatedAt: now,
-    syncStatus: 'local',
-  };
+  // Shots: mirror the source shot list when copying drill params or design
+  // plans, otherwise start with one blank shot. Totals and times always reset —
+  // hole counts and blast times belong to the new day.
+  const copyShots = (copy?.drillParams || copy?.designPlan) && sourceShots.length > 0;
+  const shots: Shot[] = copyShots
+    ? sourceShots.map((src, i) => ({
+        id: i === 0 ? shotId : generateId(),
+        blastLogId,
+        shotNumber: i + 1,
+        time: '',
+        drillParams: copy?.drillParams ? { ...src.drillParams } : defaultDrillParams,
+        totals: { ...defaultTotals },
+        designPlan: copy?.designPlan
+          ? { ...src.designPlan, scaledDistance: 0, predictedPPV: 0 }
+          : { ...defaultDesignPlan },
+        createdAt: now,
+        updatedAt: now,
+        syncStatus: 'local' as const,
+      }))
+    : [
+        {
+          id: shotId,
+          blastLogId,
+          shotNumber: 1,
+          time: '',
+          drillParams: defaultDrillParams,
+          totals: defaultTotals,
+          designPlan: defaultDesignPlan,
+          createdAt: now,
+          updatedAt: now,
+          syncStatus: 'local' as const,
+        },
+      ];
 
+  // Explosives: carry the product list forward (per-shot overrides cleared —
+  // the new day's hole counts drive a fresh auto-distribution)
+  const copyUsage = copy?.explosives && sourceUsage;
   const explosiveUsage: ExplosiveUsage = {
     id: explosiveUsageId,
     blastLogId,
-    products: [],
-    totalPoundsShot: 0,
-    detonators: [],
-    leadLine: 0,
-    coverType: '',
+    products: copyUsage
+      ? sourceUsage.products.map((p) => ({ ...p, shotAllocations: {} }))
+      : [],
+    totalPoundsShot: copyUsage ? sourceUsage.totalPoundsShot : 0,
+    detonators: copyUsage ? sourceUsage.detonators.map((d) => ({ ...d })) : [],
+    leadLine: copyUsage ? sourceUsage.leadLine : 0,
+    coverType: copyUsage ? sourceUsage.coverType : '',
     createdAt: now,
     updatedAt: now,
     syncStatus: 'local',
@@ -141,13 +198,55 @@ export async function createBlastDay(jobId: string, date?: string): Promise<stri
     syncStatus: 'local',
   };
 
-  await db.transaction('rw', [db.blastDays, db.blastLogs, db.shots, db.explosiveUsages, db.dailyReports], async () => {
-    await db.blastDays.add(blastDay);
-    await db.blastLogs.add(blastLog);
-    await db.shots.add(shot);
-    await db.explosiveUsages.add(explosiveUsage);
-    await db.dailyReports.add(dailyReport);
-  });
+  // Crew & equipment: carry rosters forward with times/hours cleared
+  const crewRows =
+    copy?.crewEquipment && sourceReport
+      ? (await db.workForceEntries.where('dailyReportId').equals(sourceReport.id).toArray()).map(
+          (w) => ({
+            ...w,
+            id: generateId(),
+            dailyReportId,
+            timeIn: '',
+            timeOut: '',
+            straightTime: 0,
+            overtime: 0,
+            truckHours: 0,
+            travelHours: 0,
+            createdAt: now,
+            updatedAt: now,
+            syncStatus: 'local' as const,
+          }),
+        )
+      : [];
+  const equipRows =
+    copy?.crewEquipment && sourceReport
+      ? (await db.equipmentEntries.where('dailyReportId').equals(sourceReport.id).toArray()).map(
+          (e) => ({
+            ...e,
+            id: generateId(),
+            dailyReportId,
+            hoursStart: 0,
+            hoursEnd: 0,
+            createdAt: now,
+            updatedAt: now,
+            syncStatus: 'local' as const,
+          }),
+        )
+      : [];
+
+  await db.transaction(
+    'rw',
+    [db.blastDays, db.blastLogs, db.shots, db.explosiveUsages, db.dailyReports, db.workForceEntries, db.equipmentEntries],
+    async () => {
+      await db.blastDays.add(blastDay);
+      await db.blastLogs.add(blastLog);
+      await db.shots.bulkAdd(shots);
+      await db.explosiveUsages.add(explosiveUsage);
+      await db.dailyReports.add(dailyReport);
+      if (crewRows.length) await db.workForceEntries.bulkAdd(crewRows);
+      if (equipRows.length) await db.equipmentEntries.bulkAdd(equipRows);
+    },
+  );
 
   // Auto-fill blaster profile (filter, not where — boolean fields aren't indexable)
   const blaster = await db.blasterProfiles.filter((b) => b.isCurrentUser).first();
