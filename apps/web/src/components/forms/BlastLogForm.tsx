@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Plus, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 import { db } from '@/db';
-import { nowISO } from '@/lib/utils';
 import { addShot, deleteShot } from '@/hooks/useBlastDay';
+import { useDraftRecord } from '@/hooks/useDraftRecord';
 import type { BlastDay, BlastLog, Shot, ExplosiveUsage, Job } from '@/db/schema';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -53,9 +53,8 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
     });
   };
 
-  const updateBlastLog = (field: string, value: string | boolean) => {
-    db.blastLogs.update(blastLog.id, { [field]: value, updatedAt: nowISO() });
-  };
+  // Debounced write-through: edits show instantly, IndexedDB writes are batched
+  const { draft, setField } = useDraftRecord(db.blastLogs, blastLog);
 
   const handleAddShot = async () => {
     const id = await addShot(blastLog.id, job?.kFactor ?? 180);
@@ -91,24 +90,24 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
             <div>
               <Label className="text-xs">Operation</Label>
               <Select
-                value={blastLog.operation}
-                onChange={(e) => updateBlastLog('operation', e.target.value)}
+                value={draft.operation}
+                onChange={(e) => setField('operation', e.target.value as BlastLog['operation'])}
                 options={OPERATION_OPTIONS}
               />
             </div>
             <div>
               <Label className="text-xs">Type of Rock</Label>
               <Input
-                value={blastLog.typeOfRock}
-                onChange={(e) => updateBlastLog('typeOfRock', e.target.value)}
+                value={draft.typeOfRock}
+                onChange={(e) => setField('typeOfRock', e.target.value)}
                 placeholder="Granite"
               />
             </div>
             <div>
               <Label className="text-xs">Type of Terrain</Label>
               <Input
-                value={blastLog.typeOfTerrain}
-                onChange={(e) => updateBlastLog('typeOfTerrain', e.target.value)}
+                value={draft.typeOfTerrain}
+                onChange={(e) => setField('typeOfTerrain', e.target.value)}
                 placeholder="Flat"
               />
             </div>
@@ -116,16 +115,16 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
           <div>
             <Label className="text-xs">Identify Hazards</Label>
             <Textarea
-              value={blastLog.hazards}
-              onChange={(e) => updateBlastLog('hazards', e.target.value)}
+              value={draft.hazards}
+              onChange={(e) => setField('hazards', e.target.value)}
               rows={2}
             />
           </div>
           <div>
             <Label className="text-xs">Precautions Taken</Label>
             <Textarea
-              value={blastLog.precautions}
-              onChange={(e) => updateBlastLog('precautions', e.target.value)}
+              value={draft.precautions}
+              onChange={(e) => setField('precautions', e.target.value)}
               rows={2}
             />
           </div>
@@ -234,22 +233,22 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
             <div>
               <Label className="text-xs">Blaster Name</Label>
               <Input
-                value={blastLog.blasterName}
-                onChange={(e) => updateBlastLog('blasterName', e.target.value)}
+                value={draft.blasterName}
+                onChange={(e) => setField('blasterName', e.target.value)}
               />
             </div>
             <div>
               <Label className="text-xs">License #</Label>
               <Input
-                value={blastLog.licenseNumber}
-                onChange={(e) => updateBlastLog('licenseNumber', e.target.value)}
+                value={draft.licenseNumber}
+                onChange={(e) => setField('licenseNumber', e.target.value)}
               />
             </div>
             <div>
               <Label className="text-xs">State</Label>
               <Input
-                value={blastLog.licenseState}
-                onChange={(e) => updateBlastLog('licenseState', e.target.value.toUpperCase().slice(0, 2))}
+                value={draft.licenseState}
+                onChange={(e) => setField('licenseState', e.target.value.toUpperCase().slice(0, 2))}
                 maxLength={2}
               />
             </div>
@@ -257,8 +256,8 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
-              checked={blastLog.onsiteDelivery}
-              onChange={(e) => updateBlastLog('onsiteDelivery', e.target.checked)}
+              checked={draft.onsiteDelivery}
+              onChange={(e) => setField('onsiteDelivery', e.target.checked)}
               className="h-5 w-5 rounded border-gray-300 text-navy focus:ring-navy-400"
             />
             <span className="text-sm">Onsite Delivery</span>
@@ -266,8 +265,8 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
           <div>
             <Label className="text-xs">Notes</Label>
             <Textarea
-              value={blastLog.notes}
-              onChange={(e) => updateBlastLog('notes', e.target.value)}
+              value={draft.notes}
+              onChange={(e) => setField('notes', e.target.value)}
               rows={3}
             />
           </div>

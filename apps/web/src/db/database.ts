@@ -19,6 +19,27 @@ import type {
   Attachment,
 } from './schema';
 
+/**
+ * SCHEMA MIGRATION RULES — read before touching any version() block.
+ *
+ * Field devices hold real blast records that only exist locally until sync
+ * ships. A botched migration is unrecoverable data loss. Therefore:
+ *
+ * 1. NEVER edit or delete an existing this.version(n) block once it has been
+ *    released — not even to add an index. Past versions are frozen history.
+ * 2. To change the schema, ADD a new block:
+ *      this.version(n + 1).stores({ ...only tables whose indexes changed... })
+ *    and, if records need reshaping, chain .upgrade(async (tx) => { ... }).
+ *    Dexie applies upgrades sequentially, so a device that skipped several
+ *    app updates still walks every step.
+ * 3. stores() lists INDEXED fields only — adding a plain (non-queried) field
+ *    to a record type needs no schema bump at all. Only bump for new tables,
+ *    new indexes, or data reshaping.
+ * 4. Upgrade functions must be idempotent and must not throw on records that
+ *    are already in the new shape (sync may deliver new-shape records early).
+ * 5. Test every migration against a populated old-version DB before release
+ *    (export a fixture via the browser devtools, load it, upgrade, verify).
+ */
 class ShotLogDB extends Dexie {
   jobs!: EntityTable<Job, 'id'>;
   blasterProfiles!: EntityTable<BlasterProfile, 'id'>;
