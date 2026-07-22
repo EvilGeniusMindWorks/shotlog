@@ -1,6 +1,15 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/db';
-import type { BlastDay, BlastLog, Shot, DailyReport, ExplosiveUsage, Job } from '@/db/schema';
+import type {
+  BlastDay,
+  BlastLog,
+  Shot,
+  DailyReport,
+  ExplosiveUsage,
+  Job,
+  WorkForceEntry,
+  EquipmentEntry,
+} from '@/db/schema';
 import { generateId, nowISO, todayISO } from '@/lib/utils';
 
 export function useBlastDays() {
@@ -198,41 +207,70 @@ export async function createBlastDay(
     syncStatus: 'local',
   };
 
-  // Crew & equipment: carry rosters forward with times/hours cleared
-  const crewRows =
-    copy?.crewEquipment && sourceReport
-      ? (await db.workForceEntries.where('dailyReportId').equals(sourceReport.id).toArray()).map(
-          (w) => ({
-            ...w,
-            id: generateId(),
-            dailyReportId,
-            timeIn: '',
-            timeOut: '',
-            straightTime: 0,
-            overtime: 0,
-            truckHours: 0,
-            travelHours: 0,
-            createdAt: now,
-            updatedAt: now,
-            syncStatus: 'local' as const,
-          }),
-        )
-      : [];
-  const equipRows =
-    copy?.crewEquipment && sourceReport
-      ? (await db.equipmentEntries.where('dailyReportId').equals(sourceReport.id).toArray()).map(
-          (e) => ({
-            ...e,
-            id: generateId(),
-            dailyReportId,
-            hoursStart: 0,
-            hoursEnd: 0,
-            createdAt: now,
-            updatedAt: now,
-            syncStatus: 'local' as const,
-          }),
-        )
-      : [];
+  // Crew & equipment: carry the previous day's rows forward when copying,
+  // otherwise auto-populate from the Settings rosters (Spec §15). Times and
+  // meter hours always start blank.
+  let crewRows: WorkForceEntry[] = [];
+  let equipRows: EquipmentEntry[] = [];
+  if (copy?.crewEquipment && sourceReport) {
+    crewRows = (
+      await db.workForceEntries.where('dailyReportId').equals(sourceReport.id).toArray()
+    ).map((w) => ({
+      ...w,
+      id: generateId(),
+      dailyReportId,
+      timeIn: '',
+      timeOut: '',
+      straightTime: 0,
+      overtime: 0,
+      truckHours: 0,
+      travelHours: 0,
+      createdAt: now,
+      updatedAt: now,
+      syncStatus: 'local' as const,
+    }));
+    equipRows = (
+      await db.equipmentEntries.where('dailyReportId').equals(sourceReport.id).toArray()
+    ).map((e) => ({
+      ...e,
+      id: generateId(),
+      dailyReportId,
+      hoursStart: 0,
+      hoursEnd: 0,
+      createdAt: now,
+      updatedAt: now,
+      syncStatus: 'local' as const,
+    }));
+  } else {
+    const roster = await db.crewMembers.filter((c) => c.isActive).toArray();
+    crewRows = roster.map((member, i) => ({
+      id: generateId(),
+      dailyReportId,
+      rowNumber: i + 1,
+      workerName: member.name,
+      timeIn: '',
+      timeOut: '',
+      straightTime: 0,
+      overtime: 0,
+      truckHours: 0,
+      travelHours: 0,
+      createdAt: now,
+      updatedAt: now,
+      syncStatus: 'local' as const,
+    }));
+    const machines = await db.equipment.filter((e) => e.isActive).toArray();
+    equipRows = machines.map((m) => ({
+      id: generateId(),
+      dailyReportId,
+      category: m.category,
+      assetNumber: m.assetNumber || m.description,
+      hoursStart: 0,
+      hoursEnd: 0,
+      createdAt: now,
+      updatedAt: now,
+      syncStatus: 'local' as const,
+    }));
+  }
 
   await db.transaction(
     'rw',

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/db';
 import { createJob } from '@/hooks/useBlastDay';
@@ -18,17 +19,18 @@ const OPERATION_OPTIONS = [
 ];
 
 export function JobsPage() {
+  const navigate = useNavigate();
   const jobs = useLiveQuery(() => db.jobs.orderBy('updatedAt').reverse().toArray()) ?? [];
   const [showNew, setShowNew] = useState(false);
   const [form, setForm] = useState({
     name: '', customer: '', address: '', city: '', state: '', operation: 'construction' as const,
-    typeOfRock: '', typeOfTerrain: '', defaultHazards: '', defaultPrecautions: '',
+    typeOfRock: '', typeOfTerrain: '', defaultHazards: '', defaultPrecautions: '', kFactor: 180,
   });
 
   const handleCreate = async () => {
     await createJob(form);
     setShowNew(false);
-    setForm({ name: '', customer: '', address: '', city: '', state: '', operation: 'construction', typeOfRock: '', typeOfTerrain: '', defaultHazards: '', defaultPrecautions: '' });
+    setForm({ name: '', customer: '', address: '', city: '', state: '', operation: 'construction', typeOfRock: '', typeOfTerrain: '', defaultHazards: '', defaultPrecautions: '', kFactor: 180 });
   };
 
   return (
@@ -53,6 +55,7 @@ export function JobsPage() {
               <div><Label>Operation</Label><Select value={form.operation} onChange={(e) => setForm({...form, operation: e.target.value as typeof form.operation})} options={OPERATION_OPTIONS} /></div>
               <div><Label>Rock Type</Label><Input value={form.typeOfRock} onChange={(e) => setForm({...form, typeOfRock: e.target.value})} /></div>
               <div><Label>Terrain</Label><Input value={form.typeOfTerrain} onChange={(e) => setForm({...form, typeOfTerrain: e.target.value})} /></div>
+              <div><Label>K Factor</Label><Input type="number" inputMode="decimal" value={form.kFactor || ''} onChange={(e) => setForm({...form, kFactor: parseFloat(e.target.value) || 0})} /></div>
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowNew(false)}>Cancel</Button>
@@ -64,7 +67,11 @@ export function JobsPage() {
 
       <div className="space-y-2">
         {jobs.map((job) => (
-          <Card key={job.id}>
+          <Card
+            key={job.id}
+            className="cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors"
+            onClick={() => navigate(`/jobs/${job.id}`)}
+          >
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>

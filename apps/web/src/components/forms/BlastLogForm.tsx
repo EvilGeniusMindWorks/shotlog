@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ChipSelect, ChipMultiSelect } from '@/components/ui/chip-select';
+import { SignatureField } from '@/components/ui/signature-field';
 import { Badge } from '@/components/ui/badge';
 import { ShotForm } from './ShotForm';
 import { ExplosiveUsageForm } from './ExplosiveUsageForm';
@@ -287,6 +288,15 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
               onChange={(e) => setField('notes', e.target.value)}
               rows={3}
             />
+          </div>
+          <div>
+            <Label className="text-xs">Blaster Signature</Label>
+            <div className="mt-1">
+              <SignatureField
+                value={draft.signatureImage}
+                onChange={(blob) => setField('signatureImage', blob)}
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
