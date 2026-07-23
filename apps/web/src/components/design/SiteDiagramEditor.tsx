@@ -53,18 +53,31 @@ export function SiteDiagramEditor({ value, onChange, jobAddress, onUseClosest }:
   const [mode, setMode] = useState<PinMode>('pan');
   const [busy, setBusy] = useState<string | null>(null);
 
-  // Refs so map event handlers always see current state without re-binding
-  const valueRef = useRef(value);
-  valueRef.current = value;
+  // liveRef is the single source of truth for map event handlers. It updates
+  // SYNCHRONOUSLY on every mutation — waiting for React's render round-trip
+  // (the previous approach) let rapid events (pin, pan, remount) read stale
+  // state and clobber just-placed pins.
+  const liveRef = useRef(value);
+  useEffect(() => {
+    liveRef.current = value;
+  }, [value]);
   const modeRef = useRef(mode);
   modeRef.current = mode;
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
+  const mutate = (updater: (v: SiteDiagram) => SiteDiagram) => {
+    const next = updater(liveRef.current);
+    liveRef.current = next; // later events in the same tick see the new state
+    onChangeRef.current(next);
+  };
+  const mutateRef = useRef(mutate);
+  mutateRef.current = mutate;
+
   // Create the map once
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
-    const v = valueRef.current;
+    const v = liveRef.current;
     const map = L.map(containerRef.current, {
       center: v.center ?? { lat: 42.44, lng: -72.63 }, // western MA fallback
       zoom: v.zoom,
@@ -72,35 +85,47 @@ export function SiteDiagramEditor({ value, onChange, jobAddress, onUseClosest }:
     });
     mapRef.current = map;
     pinsRef.current = L.layerGroup().addTo(map);
+    // The container can be mid-layout when the map mounts — recalc once settled
+    window.setTimeout(() => map.invalidateSize(), 100);
 
     map.on('click', (e: L.LeafletMouseEvent) => {
-      const current = valueRef.current;
       const m = modeRef.current;
       if (m === 'blast') {
-        onChangeRef.current({ ...current, blastPin: { lat: e.latlng.lat, lng: e.latlng.lng } });
+        mutateRef.current((cur) => ({
+          ...cur,
+          blastPin: { lat: e.latlng.lat, lng: e.latlng.lng },
+        }));
         setMode('pan');
       } else if (m === 'structure') {
-        onChangeRef.current({
-          ...current,
+        mutateRef.current((cur) => ({
+          ...cur,
           structures: [
-            ...current.structures,
+            ...cur.structures,
             {
               id: generateId(),
               lat: e.latlng.lat,
               lng: e.latlng.lng,
-              label: `Structure ${current.structures.length + 1}`,
+              label: `Structure ${cur.structures.length + 1}`,
             },
           ],
-        });
+        }));
         setMode('pan');
       }
     });
     map.on('moveend zoomend', () => {
       const c = map.getCenter();
-      onChangeRef.current({
-        ...valueRef.current,
-        center: { lat: c.lat, lng: c.lng },
-        zoom: map.getZoom(),
+      const zoom = map.getZoom();
+      mutateRef.current((cur) => {
+        // Skip no-op writes (init, programmatic setView to the same place)
+        if (
+          cur.center &&
+          Math.abs(cur.center.lat - c.lat) < 1e-9 &&
+          Math.abs(cur.center.lng - c.lng) < 1e-9 &&
+          cur.zoom === zoom
+        ) {
+          return cur;
+        }
+        return { ...cur, center: { lat: c.lat, lng: c.lng }, zoom };
       });
     });
 
@@ -159,14 +184,13 @@ export function SiteDiagramEditor({ value, onChange, jobAddress, onUseClosest }:
       const target = e.target as HTMLElement;
       const removeId = target.dataset?.remove;
       if (!removeId) return;
-      const current = valueRef.current;
       if (removeId === 'blast') {
-        onChangeRef.current({ ...current, blastPin: null });
+        mutateRef.current((cur) => ({ ...cur, blastPin: null }));
       } else {
-        onChangeRef.current({
-          ...current,
-          structures: current.structures.filter((s) => s.id !== removeId),
-        });
+        mutateRef.current((cur) => ({
+          ...cur,
+          structures: cur.structures.filter((s) => s.id !== removeId),
+        }));
       }
       mapRef.current?.closePopup();
     };
@@ -242,7 +266,10 @@ export function SiteDiagramEditor({ value, onChange, jobAddress, onUseClosest }:
           variant="outline"
           size="sm"
           onClick={() =>
-            onChange({ ...value, baseLayer: value.baseLayer === 'street' ? 'satellite' : 'street' })
+            mutate((cur) => ({
+              ...cur,
+              baseLayer: cur.baseLayer === 'street' ? 'satellite' : 'street',
+            }))
           }
         >
           <Layers className="h-4 w-4 mr-1" />
@@ -264,11 +291,12 @@ export function SiteDiagramEditor({ value, onChange, jobAddress, onUseClosest }:
         </div>
       )}
 
-      {/* Map */}
+      {/* Map — `isolate` traps Leaflet's internal z-indexes (up to 1000) so
+          controls/pins never bleed over the app's sticky header */}
       <div
         ref={containerRef}
         className={cn(
-          'h-80 rounded-lg border border-gray-300 z-0',
+          'h-80 rounded-lg border border-gray-300 z-0 isolate',
           mode !== 'pan' && 'cursor-crosshair',
         )}
       />
