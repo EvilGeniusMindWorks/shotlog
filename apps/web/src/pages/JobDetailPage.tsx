@@ -171,6 +171,31 @@ function JobConfigCard({ job }: { job: Job }) {
             onChange={(e) => setField('typeOfTerrain', e.target.value)}
           />
         </div>
+        <div>
+          <Label className="text-xs">
+            Local Regulation
+            <span className="text-gray-400 font-normal"> — e.g. Whately Bylaw</span>
+          </Label>
+          <Input
+            value={draft.localRegName ?? ''}
+            onChange={(e) => setField('localRegName', e.target.value)}
+            placeholder="None"
+          />
+        </div>
+        <div>
+          <Label className="text-xs">
+            Local PPV Limit (in/s)
+            <span className="text-gray-400 font-normal"> — most restrictive wins</span>
+          </Label>
+          <Input
+            type="number"
+            inputMode="decimal"
+            step="0.1"
+            value={draft.localPPVLimit || ''}
+            onChange={(e) => setField('localPPVLimit', parseFloat(e.target.value) || 0)}
+            placeholder="—"
+          />
+        </div>
       </CardContent>
     </Card>
   );

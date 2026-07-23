@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Crosshair, Home, Layers, MapPin, Search } from 'lucide-react';
+import { Copy, Crosshair, Home, Layers, MapPin, Ruler, Search } from 'lucide-react';
 import { cn, generateId } from '@/lib/utils';
 import {
   closestStructure,
@@ -10,7 +10,7 @@ import {
 } from '@/lib/siteDiagram';
 import { Button } from '@/components/ui/button';
 
-type PinMode = 'pan' | 'blast' | 'structure';
+type PinMode = 'pan' | 'blast' | 'structure' | 'measure';
 
 const TILE_LAYERS = {
   street: {
@@ -50,6 +50,9 @@ interface Props {
   onUseClosest?: (distanceFeet: number, label: string) => void;
   /** Called with a rendered PNG of the map + annotations after edits settle */
   onSnapshot?: (blob: Blob) => void;
+  /** Sibling shots this diagram can be cloned to */
+  cloneTargets?: { id: string; label: string }[];
+  onClone?: (targetShotId: string) => void;
 }
 
 /**
@@ -133,13 +136,26 @@ async function captureSnapshot(
   }
 }
 
-export function SiteDiagramEditor({ value, onChange, jobAddress, onUseClosest, onSnapshot }: Props) {
+export function SiteDiagramEditor({
+  value,
+  onChange,
+  jobAddress,
+  onUseClosest,
+  onSnapshot,
+  cloneTargets,
+  onClone,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const tileRef = useRef<L.TileLayer | null>(null);
   const pinsRef = useRef<L.LayerGroup | null>(null);
   const [mode, setMode] = useState<PinMode>('pan');
   const [busy, setBusy] = useState<string | null>(null);
+  // Transient measure tool: two taps → distance line (not persisted)
+  const [measurePts, setMeasurePts] = useState<{ lat: number; lng: number }[]>([]);
+  const measureRef = useRef(measurePts);
+  measureRef.current = measurePts;
+  const measureLayerRef = useRef<L.LayerGroup | null>(null);
 
   // liveRef is the single source of truth for map event handlers. It updates
   // SYNCHRONOUSLY on every mutation — waiting for React's render round-trip
@@ -196,6 +212,13 @@ export function SiteDiagramEditor({ value, onChange, jobAddress, onUseClosest, o
 
     map.on('click', (e: L.LeafletMouseEvent) => {
       const m = modeRef.current;
+      if (m === 'measure') {
+        const pts = measureRef.current;
+        setMeasurePts(
+          pts.length >= 2 ? [{ lat: e.latlng.lat, lng: e.latlng.lng }] : [...pts, { lat: e.latlng.lat, lng: e.latlng.lng }],
+        );
+        return;
+      }
       if (m === 'blast') {
         mutateRef.current((cur) => ({
           ...cur,
@@ -255,6 +278,35 @@ export function SiteDiagramEditor({ value, onChange, jobAddress, onUseClosest, o
     }).addTo(map);
   }, [value.baseLayer]);
 
+  // Transient measure line
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (!measureLayerRef.current) measureLayerRef.current = L.layerGroup().addTo(map);
+    const layer = measureLayerRef.current;
+    layer.clearLayers();
+    for (const p of measurePts) {
+      L.circleMarker(p, { radius: 5, color: '#7c3aed', fillColor: '#7c3aed', fillOpacity: 1 }).addTo(layer);
+    }
+    if (measurePts.length === 2) {
+      const ft = Math.round(distanceFt(measurePts[0], measurePts[1]));
+      L.polyline(measurePts, { color: '#7c3aed', weight: 3, dashArray: '8,5' }).addTo(layer);
+      const mid = {
+        lat: (measurePts[0].lat + measurePts[1].lat) / 2,
+        lng: (measurePts[0].lng + measurePts[1].lng) / 2,
+      };
+      L.marker(mid, {
+        icon: L.divIcon({
+          className: '',
+          html: `<div style="background:#7c3aed;color:white;border-radius:6px;padding:2px 8px;font-size:12px;font-weight:700;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.3);">${ft} ft</div>`,
+          iconSize: [60, 22],
+          iconAnchor: [30, 11],
+        }),
+        interactive: false,
+      }).addTo(layer);
+    }
+  }, [measurePts]);
+
   // Redraw pins + distance lines whenever annotations change
   useEffect(() => {
     const pins = pinsRef.current;
@@ -262,6 +314,16 @@ export function SiteDiagramEditor({ value, onChange, jobAddress, onUseClosest, o
     pins.clearLayers();
     const { blastPin, structures } = value;
     if (blastPin) {
+      // Dashed blast-zone rectangle around the pin (wireframe style)
+      const dLat = 0.00022;
+      const dLng = 0.0003;
+      L.rectangle(
+        [
+          [blastPin.lat - dLat, blastPin.lng - dLng],
+          [blastPin.lat + dLat, blastPin.lng + dLng],
+        ],
+        { color: '#dd6b20', weight: 2, dashArray: '6,4', fill: false, interactive: false },
+      ).addTo(pins);
       L.marker(blastPin, { icon: blastIcon })
         .addTo(pins)
         .bindPopup(
@@ -364,6 +426,20 @@ export function SiteDiagramEditor({ value, onChange, jobAddress, onUseClosest, o
         >
           <Home className="h-4 w-4 mr-1" /> Pin Structure
         </Button>
+        <Button
+          variant={mode === 'measure' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => {
+            if (mode === 'measure') {
+              setMode('pan');
+              setMeasurePts([]);
+            } else {
+              setMode('measure');
+            }
+          }}
+        >
+          <Ruler className="h-4 w-4 mr-1" /> Measure
+        </Button>
         <div className="flex-1" />
         {jobAddress && (
           <Button variant="outline" size="sm" onClick={findAddress} title={jobAddress}>
@@ -398,22 +474,43 @@ export function SiteDiagramEditor({ value, onChange, jobAddress, onUseClosest, o
           {busy ??
             (mode === 'blast'
               ? 'Tap the map to place the blast location'
-              : 'Tap the map to add a structure pin')}
+              : mode === 'structure'
+                ? 'Tap the map to add a structure pin'
+                : measurePts.length === 0
+                  ? 'Tap two points to measure the distance'
+                  : measurePts.length === 1
+                    ? 'Tap the second point'
+                    : 'Tap again to start a new measurement')}
         </div>
       )}
 
-      {/* Map. The className MUST stay constant: Leaflet adds its own classes
-          (leaflet-container etc.) to this div, and any React className change
-          rewrites the attribute wholesale — wiping Leaflet's classes and
-          collapsing the tile panes (map goes blank). Cursor changes go through
-          inline style, which React manages independently of className.
-          `isolate` traps Leaflet's internal z-indexes (up to 1000) so
-          controls/pins never bleed over the app's sticky header. */}
-      <div
-        ref={containerRef}
-        className="h-80 rounded-lg border border-gray-300 z-0 isolate"
-        style={{ cursor: mode !== 'pan' ? 'crosshair' : undefined }}
-      />
+      {/* Map wrapper: compass overlay + Leaflet container.
+          The container className MUST stay constant: Leaflet adds its own
+          classes and any React className change wipes them (blank map).
+          Cursor changes go through inline style. `isolate` traps Leaflet's
+          internal z-indexes so controls never bleed over sticky headers. */}
+      <div className="relative">
+        <div
+          ref={containerRef}
+          className="h-80 rounded-lg border border-gray-300 z-0 isolate"
+          style={{ cursor: mode !== 'pan' ? 'crosshair' : undefined }}
+        />
+        <div className="absolute top-2 right-2 h-9 w-9 rounded-full bg-gray-900/80 text-white flex flex-col items-center justify-center pointer-events-none z-10">
+          <span className="text-[8px] leading-none">▲</span>
+          <span className="text-[10px] font-bold leading-none">N</span>
+        </div>
+      </div>
+
+      {/* Clone to sibling shots */}
+      {onClone && cloneTargets && cloneTargets.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {cloneTargets.map((t) => (
+            <Button key={t.id} variant="outline" size="sm" onClick={() => onClone(t.id)}>
+              <Copy className="h-4 w-4 mr-1" /> Clone to {t.label}
+            </Button>
+          ))}
+        </div>
+      )}
 
       {/* Closest structure → compliance auto-fill */}
       {closest && (

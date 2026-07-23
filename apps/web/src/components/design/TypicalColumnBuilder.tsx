@@ -112,16 +112,14 @@ export function TypicalColumnBuilder({ shotId }: { shotId: string }) {
 
   return (
     <div className="space-y-3">
-      {/* Column tabs */}
-      <div className="flex flex-wrap items-center gap-1 border-b border-gray-200 pb-2">
+      {/* Column tabs — navy bar (wireframe §5.5) */}
+      <div className="flex items-center bg-navy rounded-lg overflow-hidden">
         {columns.map((col) => (
           <button
             key={col.id}
             className={cn(
-              'min-h-[40px] px-3 rounded-t-md text-sm font-medium border-b-2 -mb-[9px]',
-              active?.id === col.id
-                ? 'border-navy text-navy bg-navy-50'
-                : 'border-transparent text-gray-500',
+              'min-h-[40px] px-4 text-sm font-semibold transition-colors',
+              active?.id === col.id ? 'bg-white/15 text-white' : 'text-navy-200 hover:text-white',
             )}
             onClick={() => {
               setActiveId(col.id);
@@ -131,18 +129,30 @@ export function TypicalColumnBuilder({ shotId }: { shotId: string }) {
             {col.name}
           </button>
         ))}
-        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={addColumn} title="Add column">
+        <button
+          className="min-h-[40px] px-3 text-navy-200 hover:text-white"
+          onClick={addColumn}
+          title="Add column"
+        >
           <Plus className="h-4 w-4" />
-        </Button>
+        </button>
         {active && (
-          <>
-            <Button variant="ghost" size="icon" className="h-9 w-9 ml-auto" onClick={() => setRenaming(true)} title="Rename">
-              <Pencil className="h-4 w-4 text-gray-400" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={deleteColumn} title="Delete column">
-              <Trash2 className="h-4 w-4 text-gray-400" />
-            </Button>
-          </>
+          <span className="ml-auto flex">
+            <button
+              className="min-h-[40px] px-2.5 text-navy-200 hover:text-white"
+              onClick={() => setRenaming(true)}
+              title="Rename"
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
+            <button
+              className="min-h-[40px] px-2.5 text-navy-200 hover:text-white"
+              onClick={deleteColumn}
+              title="Delete column"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </span>
         )}
       </div>
 
@@ -193,19 +203,26 @@ export function TypicalColumnBuilder({ shotId }: { shotId: string }) {
                   }}
                 >
                   <span className="text-sm font-medium flex-1">{style.label}</span>
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    className="w-20 h-9 text-right font-mono"
-                    value={layer.lengthFt || ''}
-                    placeholder="0"
-                    onChange={(e) => {
-                      const next = [...topDown];
-                      next[i] = { ...layer, lengthFt: parseFloat(e.target.value) || 0 };
-                      saveLayers(next);
-                    }}
-                  />
-                  <span className="text-xs text-gray-500">ft</span>
+                  {layer.layerType === 'booster' && layer.lengthFt === 0 ? (
+                    // Boosters are point charges unless given a length (wireframe)
+                    <span className="text-xs italic text-gray-400 w-24 text-right pr-1">point</span>
+                  ) : (
+                    <>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        className="w-20 h-9 text-right font-mono"
+                        value={layer.lengthFt || ''}
+                        placeholder="0"
+                        onChange={(e) => {
+                          const next = [...topDown];
+                          next[i] = { ...layer, lengthFt: parseFloat(e.target.value) || 0 };
+                          saveLayers(next);
+                        }}
+                      />
+                      <span className="text-xs text-gray-500">ft</span>
+                    </>
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -287,25 +304,30 @@ export function ColumnVisual({
     >
       {layers.map((layer, i) => {
         const style = LAYER_STYLES[layer.layerType];
+        const isPoint = layer.layerType === 'booster' && layer.lengthFt === 0;
         return (
           <div
             key={i}
             className="flex items-center justify-center text-white font-bold"
             style={{
-              flexGrow: layer.lengthFt,
-              flexBasis: 0,
+              flexGrow: isPoint ? 0 : layer.lengthFt,
+              flexBasis: isPoint ? 8 : 0,
               backgroundColor: style.color,
-              fontSize: 9,
+              fontSize: isPoint ? 6 : 9,
               border: style.dashed ? '1px dashed white' : undefined,
-              minHeight: layer.lengthFt > 0 ? 12 : 0,
+              minHeight: isPoint ? 8 : layer.lengthFt > 0 ? 12 : 0,
             }}
           >
-            {layer.lengthFt > 0 && (
-              <span className="leading-tight text-center">
-                {style.label.slice(0, 4)}
-                <br />
-                {layer.lengthFt}'
-              </span>
+            {isPoint ? (
+              '●'
+            ) : (
+              layer.lengthFt > 0 && (
+                <span className="leading-tight text-center">
+                  {style.label.slice(0, 4)}
+                  <br />
+                  {layer.lengthFt}'
+                </span>
+              )
             )}
           </div>
         );

@@ -35,6 +35,10 @@ export interface Job extends BaseRecord {
   defaultPrecautions: string;
   kFactor: number;
   kFactorHistory: KFactorHistoryEntry[];
+  // Local/municipal PPV override (Spec §16.1, e.g. Whately Bylaw 1.0 in/s).
+  // Optional plain fields — no index change needed.
+  localRegName?: string;
+  localPPVLimit?: number;
   isActive: boolean;
 }
 

@@ -23,9 +23,9 @@ export function App() {
           <Route path="/reference" element={<ReferencePage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/blast-day/:id" element={<BlastDayPage />} />
+          <Route path="/blast-day/:id/design/:shotId" element={<DesignPlanPage />} />
+          <Route path="/blast-day/:id/seismo/:shotId" element={<SeismoPage />} />
         </Route>
-        <Route path="/blast-day/:id/design/:shotId" element={<DesignPlanPage />} />
-        <Route path="/blast-day/:id/seismo/:shotId" element={<SeismoPage />} />
         <Route path="/blast-day/:id/print" element={<PrintBlastLogPage />} />
         <Route path="/blast-day/:id/print-daily" element={<PrintDailyReportPage />} />
         <Route path="/blast-day/:id/report" element={<BlastReportPage />} />

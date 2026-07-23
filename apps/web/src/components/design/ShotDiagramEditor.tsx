@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Cable, Eraser, Minus, Plus, Undo2 } from 'lucide-react';
+import { Cable, Copy, Eraser, Minus, PaintBucket, Plus, Undo2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   DELAY_COLORS,
@@ -16,7 +16,8 @@ type UndoAction =
   | { type: 'paint'; idx: number; prev: number | undefined }
   | { type: 'wire'; wire: Wire }
   | { type: 'unwire'; wire: Wire }
-  | { type: 'clearWires'; prevWires: Wire[] };
+  | { type: 'clearWires'; prevWires: Wire[] }
+  | { type: 'fillAll'; prevDelays: Record<number, number> };
 
 const HOLE_SPACING = 44; // px between hole centers — glove-sized tap targets
 const HOLE_RADIUS = 15;
@@ -25,9 +26,11 @@ const PAD = 26;
 interface Props {
   diagram: ShotDiagram;
   onChange: (diagram: ShotDiagram) => void;
+  cloneTargets?: { id: string; label: string }[];
+  onClone?: (targetShotId: string) => void;
 }
 
-export function ShotDiagramEditor({ diagram, onChange }: Props) {
+export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone }: Props) {
   const [activeDelay, setActiveDelay] = useState<number | 'eraser'>(DELAY_SERIES[0]);
   const [wireMode, setWireMode] = useState(false);
   const [wireSource, setWireSource] = useState<number | null>(null);
@@ -114,12 +117,30 @@ export function ShotDiagramEditor({ diagram, onChange }: Props) {
       case 'clearWires':
         onChange({ ...diagram, wires: action.prevWires });
         break;
+      case 'fillAll':
+        onChange({ ...diagram, delays: action.prevDelays });
+        break;
     }
   };
 
   const clearWires = () => {
     if (wires.length === 0) return;
     commit({ ...diagram, wires: [] }, { type: 'clearWires', prevWires: wires });
+  };
+
+  /** Paint every unpainted hole with the active delay */
+  const fillAll = () => {
+    if (activeDelay === 'eraser') return;
+    const nextDelays = { ...delays };
+    let changed = false;
+    for (let i = 0; i < holeCount; i++) {
+      if (nextDelays[i] === undefined) {
+        nextDelays[i] = activeDelay;
+        changed = true;
+      }
+    }
+    if (!changed) return;
+    commit({ ...diagram, delays: nextDelays }, { type: 'fillAll', prevDelays: delays });
   };
 
   const resize = (field: 'rows' | 'cols', delta: number) => {
@@ -152,15 +173,18 @@ export function ShotDiagramEditor({ diagram, onChange }: Props) {
 
   return (
     <div className="space-y-2">
-      {/* Toolbar */}
+      {/* TIMING toolbar (wireframe style) */}
       <div
         className={cn(
-          'flex flex-wrap items-center gap-2 rounded-lg p-2 transition-colors',
-          wireMode ? 'bg-navy-50 border border-navy' : 'bg-gray-50 border border-gray-200',
+          'flex flex-wrap items-center gap-2 rounded-lg p-2 border transition-colors',
+          wireMode ? 'bg-navy-50 border-navy' : 'bg-white border-gray-200',
         )}
       >
         {!wireMode ? (
           <>
+            <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase pl-1">
+              Timing:
+            </span>
             {DELAY_SERIES.map((ms) => (
               <button
                 key={ms}
@@ -204,14 +228,6 @@ export function ShotDiagramEditor({ diagram, onChange }: Props) {
           title="Wire / tie-in mode"
         >
           <Cable className="h-4 w-4 mr-1" /> Wire
-        </Button>
-        {wireMode && (
-          <Button variant="outline" size="sm" onClick={clearWires} disabled={wires.length === 0}>
-            Clear Wires
-          </Button>
-        )}
-        <Button variant="outline" size="sm" onClick={undo} title="Undo">
-          <Undo2 className="h-4 w-4" />
         </Button>
       </div>
 
@@ -283,6 +299,26 @@ export function ShotDiagramEditor({ diagram, onChange }: Props) {
             );
           })}
         </svg>
+      </div>
+
+      {/* Action row (wireframe: Fill All / Undo / Clear Wires / Clone) */}
+      <div className="grid grid-cols-4 gap-2">
+        <Button variant="outline" size="sm" onClick={fillAll} disabled={activeDelay === 'eraser'}>
+          <PaintBucket className="h-4 w-4 mr-1" /> Fill All
+        </Button>
+        <Button variant="outline" size="sm" onClick={undo}>
+          <Undo2 className="h-4 w-4 mr-1" /> Undo
+        </Button>
+        <Button variant="outline" size="sm" onClick={clearWires} disabled={wires.length === 0}>
+          Clear Wires
+        </Button>
+        {onClone && cloneTargets && cloneTargets.length > 0 ? (
+          <Button variant="outline" size="sm" onClick={() => onClone(cloneTargets[0].id)} title={`Clone to ${cloneTargets[0].label}`}>
+            <Copy className="h-4 w-4 mr-1" /> Clone
+          </Button>
+        ) : (
+          <span />
+        )}
       </div>
 
       {/* Grid size controls */}
