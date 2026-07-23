@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 import { db } from '@/db';
 import { nowISO } from '@/lib/utils';
 import { parseDiagram, serializeDiagram, delayCounts, type ShotDiagram } from '@/lib/shotDiagram';
+import { parseSiteDiagram, serializeSiteDiagram, type SiteDiagram } from '@/lib/siteDiagram';
 import { scaledDistance, predictedPPV, osmPPVLimit, usbmRI8507Limit } from '@shotlog/shared';
 import type { Shot, Job } from '@/db/schema';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ShotDiagramEditor } from '@/components/design/ShotDiagramEditor';
 import { TypicalColumnBuilder } from '@/components/design/TypicalColumnBuilder';
+import { SiteDiagramEditor } from '@/components/design/SiteDiagramEditor';
 
 export function DesignPlanPage() {
   const { id, shotId } = useParams<{ id: string; shotId: string }>();
@@ -43,24 +45,28 @@ function DesignPlanInner({
   const [diagram, setDiagram] = useState<ShotDiagram>(() =>
     parseDiagram(shot.designPlan.shotDiagramData),
   );
+  const [siteDiagram, setSiteDiagram] = useState<SiteDiagram>(() =>
+    parseSiteDiagram(shot.designPlan.siteSketchData),
+  );
   const saveTimer = useRef<number | undefined>(undefined);
-  const dirty = useRef<ShotDiagram | null>(null);
+  const dirty = useRef<{ shot?: ShotDiagram; site?: SiteDiagram }>({});
 
   const flush = useCallback(() => {
     window.clearTimeout(saveTimer.current);
     const d = dirty.current;
-    if (!d) return;
-    dirty.current = null;
-    void db.shots
-      .get(shot.id)
-      .then((current) =>
-        current
-          ? db.shots.update(shot.id, {
-              designPlan: { ...current.designPlan, shotDiagramData: serializeDiagram(d) },
-              updatedAt: nowISO(),
-            })
-          : undefined,
-      );
+    if (!d.shot && !d.site) return;
+    dirty.current = {};
+    void db.shots.get(shot.id).then((current) => {
+      if (!current) return;
+      return db.shots.update(shot.id, {
+        designPlan: {
+          ...current.designPlan,
+          ...(d.shot ? { shotDiagramData: serializeDiagram(d.shot) } : {}),
+          ...(d.site ? { siteSketchData: serializeSiteDiagram(d.site) } : {}),
+        },
+        updatedAt: nowISO(),
+      });
+    });
   }, [shot.id]);
 
   useEffect(() => {
@@ -78,9 +84,30 @@ function DesignPlanInner({
 
   const handleChange = (next: ShotDiagram) => {
     setDiagram(next);
-    dirty.current = next;
+    dirty.current.shot = next;
     window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(flush, 400);
+  };
+
+  const handleSiteChange = (next: SiteDiagram) => {
+    setSiteDiagram(next);
+    dirty.current.site = next;
+    window.clearTimeout(saveTimer.current);
+    saveTimer.current = window.setTimeout(flush, 400);
+  };
+
+  const useClosestForCompliance = (distanceFeet: number, label: string) => {
+    void db.shots.get(shot.id).then((current) => {
+      if (!current) return;
+      return db.shots.update(shot.id, {
+        designPlan: {
+          ...current.designPlan,
+          closestStructureDistance: distanceFeet,
+          closestStructureLocation: label,
+        },
+        updatedAt: nowISO(),
+      });
+    });
   };
 
   // Live compliance strip from the shot's design inputs
@@ -150,15 +177,20 @@ function DesignPlanInner({
           </CardContent>
         </Card>
 
-        {/* Site diagram — coming next */}
+        {/* Site diagram */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Site Diagram</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-40 border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center text-sm text-gray-400">
-              Map with structure pins — next up
-            </div>
+            <SiteDiagramEditor
+              value={siteDiagram}
+              onChange={handleSiteChange}
+              jobAddress={
+                job ? [job.address, job.city, job.state].filter(Boolean).join(', ') : undefined
+              }
+              onUseClosest={useClosestForCompliance}
+            />
           </CardContent>
         </Card>
       </div>
