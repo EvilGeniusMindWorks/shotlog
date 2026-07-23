@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ShotDiagramEditor } from '@/components/design/ShotDiagramEditor';
+import { TypicalColumnBuilder } from '@/components/design/TypicalColumnBuilder';
 
 export function DesignPlanPage() {
   const { id, shotId } = useParams<{ id: string; shotId: string }>();
@@ -139,29 +140,27 @@ function DesignPlanInner({
           </CardContent>
         </Card>
 
-        {/* Coming panels */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Site Diagram</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-40 border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center text-sm text-gray-400">
-                Map with structure pins — next up
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Typical Column</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-40 border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center text-sm text-gray-400">
-                Column builder — next up
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Typical Column Builder */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Typical Column</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TypicalColumnBuilder shotId={shot.id} />
+          </CardContent>
+        </Card>
+
+        {/* Site diagram — coming next */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Site Diagram</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-40 border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center text-sm text-gray-400">
+              Map with structure pins — next up
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

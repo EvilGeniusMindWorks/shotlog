@@ -224,6 +224,7 @@ export interface ColumnLayer {
 
 export interface TypicalColumn extends BaseRecord {
   shotId: string;
+  name: string; // tab label, e.g. "Column 1" (plain field — not indexed)
   holeDepth: number; // ft
   holeDiameter: number; // in
   layers: ColumnLayer[];

@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { ArrowLeft, Printer, TriangleAlert } from 'lucide-react';
+import { db } from '@/db';
 import { useBlastDay } from '@/hooks/useBlastDay';
+import { ColumnVisual } from '@/components/design/TypicalColumnBuilder';
 import { distributeByHoles, powderFactor } from '@shotlog/shared';
 import { validateForPrint } from '@/lib/validation';
 import { DELAY_COLORS, parseDiagram } from '@/lib/shotDiagram';
@@ -38,6 +41,12 @@ function dash(v: string | number | null | undefined, suffix = ''): string {
 export function PrintBlastLogPage() {
   const { id } = useParams<{ id: string }>();
   const { blastDay, job, blastLog, shots, explosiveUsage } = useBlastDay(id);
+  const typicalColumns =
+    useLiveQuery(async () => {
+      const shotIds = shots.map((s) => s.id);
+      if (shotIds.length === 0) return [];
+      return db.typicalColumns.where('shotId').anyOf(shotIds).toArray();
+    }, [shots.map((s) => s.id).join(',')]) ?? [];
   const [sigUrl, setSigUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -447,17 +456,47 @@ export function PrintBlastLogPage() {
           </div>
         ))}
 
-        {/* Formulas */}
-        <div className="mt4">
-          <div className="formulas-box">
-            <div className="bold f8" style={{ fontFamily: 'Arial', marginBottom: 2 }}>
-              Formulas:
+        {/* Formulas + Typical Columns */}
+        <div className="diagram-row mt4" style={{ alignItems: 'flex-start' }}>
+          <div style={{ flex: '0 0 auto' }}>
+            <div className="formulas-box">
+              <div className="bold f8" style={{ fontFamily: 'Arial', marginBottom: 2 }}>
+                Formulas:
+              </div>
+              SD = D / W ^ .5
+              <br />
+              PPV = K x (SD) ^ -1.6
+              <br />K = PPV x SD ^ 1.6
             </div>
-            SD = D / W ^ .5
-            <br />
-            PPV = K x (SD) ^ -1.6
-            <br />K = PPV x SD ^ 1.6
           </div>
+          {typicalColumns.length > 0 && (
+            <div style={{ flex: 1, textAlign: 'center' }}>
+              <div className="bold f9 underline" style={{ marginBottom: 4 }}>
+                Typical Columns
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 20 }}>
+                {shots.map((s) =>
+                  typicalColumns
+                    .filter((c) => c.shotId === s.id)
+                    .map((col) => {
+                      const topDown = [...col.layers].sort((a, b) => b.layerOrder - a.layerOrder);
+                      const total = topDown.reduce((sum, l) => sum + l.lengthFt, 0);
+                      return (
+                        <div key={col.id}>
+                          <div className="f7" style={{ marginBottom: 2 }}>
+                            Shot #{s.shotNumber} — {col.name}
+                          </div>
+                          <ColumnVisual layers={topDown} heightPx={95} widthPx={40} />
+                          <div className="f7 bold" style={{ marginTop: 2 }}>
+                            {total > 0 ? `${total.toFixed(1)}'` : ''}
+                          </div>
+                        </div>
+                      );
+                    }),
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Structure / compliance tables — data-driven */}
