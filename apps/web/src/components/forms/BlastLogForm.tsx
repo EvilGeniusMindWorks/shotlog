@@ -14,6 +14,7 @@ import { SignatureField } from '@/components/ui/signature-field';
 import { Badge } from '@/components/ui/badge';
 import { ShotForm } from './ShotForm';
 import { ExplosiveUsageForm } from './ExplosiveUsageForm';
+import { AttachmentsCard } from './AttachmentsCard';
 
 import {
   totalSqFt,
@@ -162,9 +163,13 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
 
       {shots.map((shot) => (
         <Card key={shot.id}>
-          <button
-            className="w-full flex items-center justify-between p-4 text-left"
+          {/* div, not button: contains the delete Button (nested buttons are invalid HTML) */}
+          <div
+            role="button"
+            tabIndex={0}
+            className="w-full flex items-center justify-between p-4 text-left cursor-pointer"
             onClick={() => toggleShot(shot.id)}
+            onKeyDown={(e) => e.key === 'Enter' && toggleShot(shot.id)}
           >
             <div className="flex items-center gap-2">
               {expandedShots.has(shot.id) ? (
@@ -190,7 +195,7 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
                 <Trash2 className="h-4 w-4 text-gray-400" />
               </Button>
             )}
-          </button>
+          </div>
           {expandedShots.has(shot.id) && (
             <CardContent>
               <ShotForm shot={shot} kFactor={job?.kFactor ?? 180} blastDayId={blastDay.id} />
@@ -241,6 +246,9 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
           </div>
         </CardContent>
       </Card>
+
+      {/* Attachments */}
+      <AttachmentsCard blastDayId={blastDay.id} />
 
       {/* Sign-off */}
       <Card>

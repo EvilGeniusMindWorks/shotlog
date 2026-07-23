@@ -1,3 +1,35 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ── Dark mode (v1) ─────────────────────────────────────────────────────
+   Pragmatic utility remap: the app's components use a small, consistent
+   set of light-theme utilities, remapped here under .dark. Print pages
+   are excluded — paper is always light. */
+.dark body {
+  background: #0f1722;
+}
+.dark .bg-gray-50:not(.print-blast-log *) { background-color: #0f1722; }
+.dark .bg-white:not(.print-blast-log *) { background-color: #1a2432; }
+.dark .bg-gray-100:not(.print-blast-log *) { background-color: #243144; }
+.dark .bg-navy-50:not(.print-blast-log *) { background-color: #243144; }
+.dark .text-gray-900:not(.print-blast-log *) { color: #e8edf4; }
+.dark .text-gray-800:not(.print-blast-log *) { color: #dbe3ee; }
+.dark .text-gray-700:not(.print-blast-log *) { color: #c5d1e4; }
+.dark .text-gray-600:not(.print-blast-log *) { color: #9fb3d1; }
+.dark .text-gray-500:not(.print-blast-log *) { color: #8497b3; }
+.dark .text-navy:not(.print-blast-log *) { color: #9fb3d1; }
+.dark .border-gray-200:not(.print-blast-log *),
+.dark .border-gray-300:not(.print-blast-log *) { border-color: #33415a; }
+.dark .font-semibold:not(.print-blast-log *):not([class*='text-']) { color: #e8edf4; }
+.dark input:not(.print-blast-log *),
+.dark select:not(.print-blast-log *),
+.dark textarea:not(.print-blast-log *) {
+  background-color: #101a28;
+  color: #e8edf4;
+  border-color: #33415a;
+}
+.dark .hover\:bg-gray-50:hover:not(.print-blast-log *) { background-color: #243144; }
+.dark .active\:bg-gray-100:active:not(.print-blast-log *) { background-color: #2c3b52; }
+/* Leaflet + print pages keep their own colors */
+.dark .leaflet-container { background: #1a2432; }
