@@ -174,6 +174,7 @@ export interface SeismoReading extends BaseRecord {
   sensorCheckPassed: boolean;
   calibrationDate: string; // ISO date
   complianceStatus: 'compliant' | 'warning' | 'violation';
+  printoutImage: Blob | null; // camera capture of the seismograph printout
 }
 
 // ══════════════════════════════════════════════════════

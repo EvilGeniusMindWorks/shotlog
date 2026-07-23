@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Grid3x3 } from 'lucide-react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { Activity, Grid3x3 } from 'lucide-react';
 import { db } from '@/db';
 import { nowISO } from '@/lib/utils';
 import type { Shot, DrillParams, ShotTotals, DesignPlan } from '@/db/schema';
@@ -26,6 +27,8 @@ interface Props {
 
 export function ShotForm({ shot, kFactor, blastDayId }: Props) {
   const navigate = useNavigate();
+  const seismoCount =
+    useLiveQuery(() => db.seismoReadings.where('shotId').equals(shot.id).count(), [shot.id]) ?? 0;
   const updateShot = useCallback(
     (updates: Partial<Shot>) => {
       db.shots.update(shot.id, { ...updates, updatedAt: nowISO() });
@@ -186,13 +189,23 @@ export function ShotForm({ shot, kFactor, blastDayId }: Props) {
         <div className="flex items-center justify-between mb-2">
           <h4 className="text-sm font-semibold text-gray-700">Design Plan — Compliance</h4>
           {blastDayId && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate(`/blast-day/${blastDayId}/design/${shot.id}`)}
-            >
-              <Grid3x3 className="h-4 w-4 mr-1" /> Open Designer
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/blast-day/${blastDayId}/seismo/${shot.id}`)}
+              >
+                <Activity className="h-4 w-4 mr-1" />
+                Seismo{seismoCount > 0 ? ` (${seismoCount})` : ''}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/blast-day/${blastDayId}/design/${shot.id}`)}
+              >
+                <Grid3x3 className="h-4 w-4 mr-1" /> Open Designer
+              </Button>
+            </div>
           )}
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">

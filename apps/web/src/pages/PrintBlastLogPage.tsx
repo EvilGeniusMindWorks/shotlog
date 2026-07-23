@@ -48,6 +48,12 @@ export function PrintBlastLogPage() {
       if (shotIds.length === 0) return [];
       return db.typicalColumns.where('shotId').anyOf(shotIds).toArray();
     }, [shots.map((s) => s.id).join(',')]) ?? [];
+  const seismoReadings =
+    useLiveQuery(async () => {
+      const shotIds = shots.map((s) => s.id);
+      if (shotIds.length === 0) return [];
+      return db.seismoReadings.where('shotId').anyOf(shotIds).toArray();
+    }, [shots.map((s) => s.id).join(',')]) ?? [];
   const [sigUrl, setSigUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -349,38 +355,71 @@ export function PrintBlastLogPage() {
               </tbody>
             </table>
 
-            {/* Seismic monitoring — blank for hand-fill until seismo capture ships */}
+            {/* Seismic monitoring — measured readings; blank cells for hand-fill */}
             <div className="seismo-title">Seismic Monitoring Info:</div>
-            {shots.map((s) => (
-              <table key={s.id} className="f85 mt4">
-                <tbody>
-                  <tr className="shade">
-                    <td className="bold" style={{ width: 80 }}>
-                      SHOT #{s.shotNumber}
-                    </td>
-                    <td className="bold center">Graph 1</td>
-                    <td className="bold center">Graph 2</td>
-                    <td className="bold center">Graph 3</td>
-                  </tr>
-                  {['Graph (Seis) #:', 'PPV:', 'Frequency:', 'dB:'].map((label) => (
-                    <tr key={label}>
-                      <td>{label}</td>
-                      <td>&nbsp;</td>
-                      <td>&nbsp;</td>
-                      <td>&nbsp;</td>
+            {shots.map((s) => {
+              const graphs = seismoReadings
+                .filter((r) => r.shotId === s.id)
+                .sort((a, b) => a.graphNumber - b.graphNumber)
+                .slice(0, 3);
+              const cell = (i: number, fn: (r: (typeof graphs)[number]) => string) =>
+                graphs[i] ? <span className="val">{fn(graphs[i])}</span> : <>&nbsp;</>;
+              const first = graphs[0];
+              return (
+                <table key={s.id} className="f85 mt4">
+                  <tbody>
+                    <tr className="shade">
+                      <td className="bold" style={{ width: 80 }}>
+                        SHOT #{s.shotNumber}
+                      </td>
+                      <td className="bold center">Graph 1</td>
+                      <td className="bold center">Graph 2</td>
+                      <td className="bold center">Graph 3</td>
                     </tr>
-                  ))}
-                  <tr>
-                    <td>Operator:</td>
-                    <td colSpan={3}>&nbsp;</td>
-                  </tr>
-                  <tr>
-                    <td>Location:</td>
-                    <td colSpan={3}>&nbsp;</td>
-                  </tr>
-                </tbody>
-              </table>
-            ))}
+                    <tr>
+                      <td>Graph (Seis) #:</td>
+                      {[0, 1, 2].map((i) => (
+                        <td key={i} className="center">{cell(i, (r) => r.seismographId || String(r.graphNumber))}</td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td>PPV:</td>
+                      {[0, 1, 2].map((i) => (
+                        <td key={i} className="center">
+                          {cell(i, (r) => Math.max(r.ppvTran, r.ppvVert, r.ppvLong).toFixed(3))}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td>Frequency:</td>
+                      {[0, 1, 2].map((i) => (
+                        <td key={i} className="center">{cell(i, (r) => `${r.frequency} Hz`)}</td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td>dB:</td>
+                      {[0, 1, 2].map((i) => (
+                        <td key={i} className="center">
+                          {cell(i, (r) => (r.airOverpressure ? r.airOverpressure.toFixed(2) : '—'))}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td>Operator:</td>
+                      <td className="center" colSpan={3}>
+                        {first?.operator ? <span className="val">{first.operator}</span> : <>&nbsp;</>}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Location:</td>
+                      <td className="center" colSpan={3}>
+                        {first?.location ? <span className="val">{first.location}</span> : <>&nbsp;</>}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              );
+            })}
           </div>
         </div>
 
