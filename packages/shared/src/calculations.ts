@@ -34,12 +34,31 @@ export function minSafeDistance(chargeWeightLbs: number, targetSD: number): numb
 // COMPLIANCE CHECKS
 // ══════════════════════════════════════════════════════
 
-/** USBM RI8507 frequency-dependent PPV limit (stepped curve) */
-export function usbmRI8507Limit(frequencyHz: number): number {
-  if (frequencyHz <= 4) return 0.5;
-  if (frequencyHz <= 12) return 0.5 + (frequencyHz - 4) * (0.5 / 8);  // 0.5→1.0
-  if (frequencyHz <= 30) return 1.0 + (frequencyHz - 12) * (1.0 / 18); // 1.0→2.0
-  return 2.0;
+export type StructureType = 'drywall' | 'plaster';
+
+/**
+ * USBM RI 8507 frequency-dependent safe PPV limit (Siskind et al. 1980,
+ * Figure B-1 — the "Z-curve" as adopted by OSMRE's blasting-level chart).
+ *
+ * The curve is the minimum of three bounds:
+ * - Low-frequency displacement line: 0.030 in → PPV = 2π·f·0.030
+ * - Mid-band plateau: 0.75 in/s (drywall / modern homes) or 0.50 in/s
+ *   (plaster / older homes), which the 0.008-in displacement line
+ *   (PPV = 2π·f·0.008) rises out of toward high frequency
+ * - High-frequency cap: 2.0 in/s (reached at 40 Hz)
+ *
+ * Continuity checks: 0.030·2π·4 ≈ 0.75 (drywall plateau start),
+ * 0.008·2π·15 ≈ 0.75 (drywall plateau end), 0.008·2π·40 ≈ 2.0.
+ */
+export function usbmRI8507Limit(
+  frequencyHz: number,
+  structureType: StructureType = 'drywall',
+): number {
+  const f = Math.max(frequencyHz, 0);
+  const plateau = structureType === 'plaster' ? 0.5 : 0.75;
+  const lowDisplacementLine = 2 * Math.PI * f * 0.03; // 0.030 in
+  const highDisplacementLine = 2 * Math.PI * f * 0.008; // 0.008 in
+  return Math.min(lowDisplacementLine, Math.max(plateau, highDisplacementLine), 2.0);
 }
 
 /** OSM Regulations distance-dependent PPV limit */
@@ -63,12 +82,13 @@ export function checkCompliance(
   ppv: number,
   frequencyHz: number,
   distanceFt: number,
+  structureType: StructureType = 'drywall',
 ): {
   usbm: { status: ComplianceStatus; limit: number; actual: number };
   osm: { status: ComplianceStatus; limit: number; actual: number };
   overall: ComplianceStatus;
 } {
-  const usbmLimit = usbmRI8507Limit(frequencyHz);
+  const usbmLimit = usbmRI8507Limit(frequencyHz, structureType);
   const osmLimit = osmPPVLimit(distanceFt);
 
   const usbm = { status: checkAgainstLimit(ppv, usbmLimit), limit: usbmLimit, actual: ppv };

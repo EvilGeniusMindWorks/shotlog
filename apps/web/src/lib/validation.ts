@@ -1,3 +1,4 @@
+import { distributeByHoles } from '@shotlog/shared';
 import type { BlastLog, Shot, ExplosiveUsage, DailyReport } from '@/db/schema';
 
 export interface ValidationError {
@@ -54,4 +55,39 @@ export function validateForSubmit(
 ): boolean {
   const errors = validateBlastLog(blastLog, shots, explosiveUsage);
   return errors.length === 0;
+}
+
+/**
+ * Everything that should be flagged before handing this log to a regulator:
+ * the base field checks plus signature presence and explosive allocation
+ * consistency (overridden per-shot quantities that don't reconcile with the
+ * entered total would print a log whose columns don't sum).
+ */
+export function validateForPrint(
+  blastLog: BlastLog,
+  shots: Shot[],
+  explosiveUsage: ExplosiveUsage | undefined
+): ValidationError[] {
+  const errors = validateBlastLog(blastLog, shots, explosiveUsage);
+
+  if (!blastLog.signatureImage) {
+    errors.push({ field: 'signature', section: 'Sign-off', message: 'Signature is missing' });
+  }
+
+  if (explosiveUsage) {
+    const holeCounts = shots.map((s) => ({ shotId: s.id, holes: s.totals.numHoles }));
+    for (const p of explosiveUsage.products) {
+      const { remaining } = distributeByHoles(p.quantity, holeCounts, p.shotAllocations);
+      if (remaining !== 0) {
+        const kind = remaining < 0 ? 'over-allocated' : 'unallocated';
+        errors.push({
+          field: `product-${p.productName}-alloc`,
+          section: 'Explosive Usage',
+          message: `${p.productName}: ${Math.abs(remaining)} ${p.unitType}s ${kind} — per-shot quantities don't match the total`,
+        });
+      }
+    }
+  }
+
+  return errors;
 }

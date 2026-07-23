@@ -236,12 +236,37 @@
   padding-left: 16px;
 }
 
+/* Screen-only pre-print validation banner */
+.print-blast-log .print-warnings {
+  max-width: 7.7in;
+  margin: 0 auto 12px;
+  background: #fef3c7;
+  border: 2px solid #d97706;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13px;
+  color: #78350f;
+}
+.print-blast-log .print-warnings .title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.print-blast-log .print-warnings ul {
+  margin: 0;
+  padding-left: 22px;
+}
+
 @media print {
   .print-blast-log {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-  .print-blast-log .print-toolbar {
+  .print-blast-log .print-toolbar,
+  .print-blast-log .print-warnings {
     display: none;
   }
 }

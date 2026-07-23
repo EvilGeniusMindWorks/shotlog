@@ -150,60 +150,67 @@ describe('minSafeDistance', () => {
 // COMPLIANCE CHECKS
 // ══════════════════════════════════════════════════════
 
-describe('usbmRI8507Limit', () => {
-  it('returns 0.5 at 1 Hz', () => {
-    expect(usbmRI8507Limit(1)).toBe(0.5);
+describe('usbmRI8507Limit (RI 8507 Figure B-1 Z-curve)', () => {
+  // Drywall (modern homes) — default
+  it('follows the 0.030-in displacement line at low frequency', () => {
+    // PPV = 2π·f·0.030 → at 1 Hz ≈ 0.188, at 2 Hz ≈ 0.377
+    expect(usbmRI8507Limit(1)).toBeCloseTo(2 * Math.PI * 0.03, 10);
+    expect(usbmRI8507Limit(2)).toBeCloseTo(2 * Math.PI * 2 * 0.03, 10);
   });
 
-  it('returns 0.5 at exactly 4 Hz', () => {
-    expect(usbmRI8507Limit(4)).toBe(0.5);
+  it('reaches the 0.75 in/s drywall plateau at ~4 Hz', () => {
+    // 2π·4·0.030 ≈ 0.754 — the displacement line meets the plateau here
+    expect(usbmRI8507Limit(4)).toBeCloseTo(0.75, 1);
+    expect(usbmRI8507Limit(5)).toBe(0.75);
+    expect(usbmRI8507Limit(10)).toBe(0.75);
+    expect(usbmRI8507Limit(14)).toBe(0.75);
   });
 
-  it('interpolates between 4-12 Hz', () => {
-    // At 8 Hz: 0.5 + (8-4)*(0.5/8) = 0.5 + 0.25 = 0.75
-    expect(usbmRI8507Limit(8)).toBeCloseTo(0.75, 10);
+  it('rises along the 0.008-in displacement line between 15 and 40 Hz', () => {
+    // PPV = 2π·f·0.008 → at 20 Hz ≈ 1.005, at 30 Hz ≈ 1.508
+    expect(usbmRI8507Limit(20)).toBeCloseTo(2 * Math.PI * 20 * 0.008, 10);
+    expect(usbmRI8507Limit(30)).toBeCloseTo(2 * Math.PI * 30 * 0.008, 10);
+    // The old implementation allowed 2.0 at 30 Hz — the standard does not
+    expect(usbmRI8507Limit(30)).toBeLessThan(1.6);
   });
 
-  it('returns 1.0 at exactly 12 Hz', () => {
-    expect(usbmRI8507Limit(12)).toBeCloseTo(1.0, 10);
-  });
-
-  it('interpolates between 12-30 Hz', () => {
-    // At 21 Hz: 1.0 + (21-12)*(1.0/18) = 1.0 + 0.5 = 1.5
-    expect(usbmRI8507Limit(21)).toBeCloseTo(1.5, 10);
-  });
-
-  it('returns 2.0 at exactly 30 Hz', () => {
-    expect(usbmRI8507Limit(30)).toBeCloseTo(2.0, 10);
-  });
-
-  it('returns 2.0 above 30 Hz', () => {
+  it('caps at 2.0 in/s from ~40 Hz up', () => {
+    // 2π·40·0.008 ≈ 2.01 — the displacement line meets the cap here
+    expect(usbmRI8507Limit(40)).toBeCloseTo(2.0, 1);
     expect(usbmRI8507Limit(50)).toBe(2.0);
     expect(usbmRI8507Limit(100)).toBe(2.0);
   });
 
-  it('returns 0.5 for very low frequencies', () => {
-    expect(usbmRI8507Limit(0.1)).toBe(0.5);
+  it('is monotonically non-decreasing', () => {
+    let prev = 0;
+    for (let f = 0; f <= 100; f += 0.5) {
+      const limit = usbmRI8507Limit(f);
+      expect(limit).toBeGreaterThanOrEqual(prev);
+      prev = limit;
+    }
   });
 
-  it('returns 0.5 for negative frequencies', () => {
-    expect(usbmRI8507Limit(-1)).toBe(0.5);
+  it('clamps negative/zero frequency to zero limit', () => {
+    expect(usbmRI8507Limit(0)).toBe(0);
+    expect(usbmRI8507Limit(-5)).toBe(0);
   });
 
-  it('handles boundary just above 4 Hz', () => {
-    const limit = usbmRI8507Limit(4.001);
-    expect(limit).toBeGreaterThan(0.5);
-    expect(limit).toBeLessThan(0.501);
+  // Plaster (older homes)
+  it('uses the 0.50 in/s plateau for plaster structures', () => {
+    expect(usbmRI8507Limit(5, 'plaster')).toBe(0.5);
+    expect(usbmRI8507Limit(9, 'plaster')).toBe(0.5);
   });
 
-  it('handles boundary just below 12 Hz', () => {
-    const limit = usbmRI8507Limit(11.999);
-    expect(limit).toBeLessThan(1.0);
-    expect(limit).toBeGreaterThan(0.999);
+  it('plaster leaves the plateau at ~10 Hz along the 0.008-in line', () => {
+    // 2π·10·0.008 ≈ 0.503 — crossover out of the 0.5 plateau
+    expect(usbmRI8507Limit(12, 'plaster')).toBeCloseTo(2 * Math.PI * 12 * 0.008, 10);
+    expect(usbmRI8507Limit(40, 'plaster')).toBeCloseTo(2.0, 1);
   });
 
-  it('handles boundary just above 30 Hz', () => {
-    expect(usbmRI8507Limit(30.001)).toBe(2.0);
+  it('plaster is never more permissive than drywall', () => {
+    for (let f = 0.5; f <= 100; f += 0.5) {
+      expect(usbmRI8507Limit(f, 'plaster')).toBeLessThanOrEqual(usbmRI8507Limit(f, 'drywall'));
+    }
   });
 });
 
