@@ -90,8 +90,14 @@ export function BlastDayPage() {
           <Button
             variant="ghost"
             size="icon"
-            title="Print Blasting Log"
-            onClick={() => navigate(`/blast-day/${blastDay.id}/print`)}
+            title={activeTab === 'blast-log' ? 'Print Blasting Log' : 'Print Daily Report'}
+            onClick={() =>
+              navigate(
+                activeTab === 'blast-log'
+                  ? `/blast-day/${blastDay.id}/print`
+                  : `/blast-day/${blastDay.id}/print-daily`,
+              )
+            }
           >
             <Printer className="h-5 w-5" />
           </Button>

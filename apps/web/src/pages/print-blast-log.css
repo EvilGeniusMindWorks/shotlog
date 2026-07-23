@@ -193,6 +193,49 @@
   background: #dd6b20;
 }
 
+/* Daily Report specifics */
+.print-blast-log .circled {
+  border: 2px solid #1a365d;
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-weight: bold;
+  display: inline-block;
+  background: #ebf4ff;
+}
+.print-blast-log .cond-option { display: inline-block; margin: 0 3px; }
+.print-blast-log .red { color: #c53030; }
+.print-blast-log .date-box {
+  border: 3px solid #000;
+  padding: 4px 12px;
+  font-size: 22px;
+  font-weight: 900;
+  margin-bottom: 2px;
+  text-align: center;
+}
+.print-blast-log .dow-strip {
+  font-size: 10px;
+  letter-spacing: 5px;
+  font-weight: bold;
+  text-align: center;
+}
+.print-blast-log .totals-banner {
+  margin-top: 16px;
+  border: 2px solid #1a365d;
+  border-radius: 4px;
+  padding: 8px 12px;
+  background: #f7fafc;
+}
+.print-blast-log .totals-banner .row {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  text-align: center;
+}
+.print-blast-log .totals-banner .divider {
+  border-left: 2px solid #1a365d;
+  padding-left: 16px;
+}
+
 @media print {
   .print-blast-log {
     -webkit-print-color-adjust: exact;

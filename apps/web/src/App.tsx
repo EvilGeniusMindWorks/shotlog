@@ -6,6 +6,7 @@ import { JobsPage } from '@/pages/JobsPage';
 import { JobDetailPage } from '@/pages/JobDetailPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { PrintBlastLogPage } from '@/pages/PrintBlastLogPage';
+import { PrintDailyReportPage } from '@/pages/PrintDailyReportPage';
 
 export function App() {
   return (
@@ -19,6 +20,7 @@ export function App() {
         </Route>
         <Route path="/blast-day/:id" element={<BlastDayPage />} />
         <Route path="/blast-day/:id/print" element={<PrintBlastLogPage />} />
+        <Route path="/blast-day/:id/print-daily" element={<PrintDailyReportPage />} />
       </Routes>
     </BrowserRouter>
   );
