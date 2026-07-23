@@ -4,7 +4,7 @@ import { FileText, Plus, X } from 'lucide-react';
 import { db } from '@/db';
 import { generateId, nowISO } from '@/lib/utils';
 import type { Attachment } from '@/db/schema';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { SectionCard } from '@/components/ui/section-card';
 
 /** Photo/document attachments for a blast day (Spec §4.8) */
 export function AttachmentsCard({ blastDayId }: { blastDayId: string }) {
@@ -34,11 +34,12 @@ export function AttachmentsCard({ blastDayId }: { blastDayId: string }) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Attachments</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <SectionCard
+      title="Attachments"
+      summary={attachments.length > 0 ? `${attachments.length} file${attachments.length > 1 ? 's' : ''}` : undefined}
+      defaultOpen={attachments.length > 0}
+    >
+      <div>
         <input
           ref={fileRef}
           type="file"
@@ -62,8 +63,8 @@ export function AttachmentsCard({ blastDayId }: { blastDayId: string }) {
             <Plus className="h-6 w-6" />
           </button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </SectionCard>
   );
 }
 

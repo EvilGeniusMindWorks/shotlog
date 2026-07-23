@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, ClipboardList, ChevronDown, ChevronUp, FileBarChart, Printer } from 'lucide-react';
 import { useBlastDay } from '@/hooks/useBlastDay';
@@ -48,6 +48,20 @@ const WIND_OPTIONS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'].map((d) => ({
 }));
 
 type Tab = 'blast-log' | 'daily-report';
+
+function CondChip({ children, accent }: { children: ReactNode; accent?: boolean }) {
+  return (
+    <span
+      className={
+        accent
+          ? 'inline-flex items-center rounded-full bg-orange-50 text-safety-orange border border-orange-200 px-2.5 py-1 text-xs font-semibold'
+          : 'inline-flex items-center rounded-full bg-gray-100 text-gray-700 px-2.5 py-1 text-xs font-medium'
+      }
+    >
+      {children}
+    </span>
+  );
+}
 
 export function BlastDayPage() {
   const { id } = useParams<{ id: string }>();
@@ -114,14 +128,22 @@ export function BlastDayPage() {
           </Badge>
         </div>
 
-        {/* Shared conditions (collapsible) */}
-        <button
-          className="flex items-center gap-1 text-sm text-navy font-medium w-full min-h-[44px]"
-          onClick={() => setShowConditions(!showConditions)}
-        >
-          Conditions & Environment
-          {showConditions ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </button>
+        {/* Conditions summary chips + Edit (wireframe §4.2) */}
+        <div className="flex items-center gap-1.5 flex-wrap min-h-[36px] pt-1">
+          <CondChip>{TEMP_OPTIONS.find((o) => o.value === blastDay.conditions.temperatureRange)?.label.split(' ')[0]}</CondChip>
+          <CondChip>{WEATHER_OPTIONS.find((o) => o.value === blastDay.conditions.weather)?.label}</CondChip>
+          {blastDay.conditions.windDirection && <CondChip>Wind {blastDay.conditions.windDirection}</CondChip>}
+          <CondChip>{GROUND_OPTIONS.find((o) => o.value === blastDay.conditions.groundConditions)?.label}</CondChip>
+          <CondChip>{WORK_TYPE_OPTIONS.find((o) => o.value === blastDay.typeOfWork)?.label}</CondChip>
+          {blastDay.fireDetail && <CondChip accent>Fire Detail</CondChip>}
+          <button
+            className="ml-auto text-sm text-navy font-semibold min-h-[36px] px-2 flex items-center gap-1"
+            onClick={() => setShowConditions(!showConditions)}
+          >
+            Edit
+            {showConditions ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </button>
+        </div>
 
         {showConditions && (
           <div className="space-y-3 mt-3 pb-2">

@@ -5,7 +5,8 @@ import { addShot, deleteShot } from '@/hooks/useBlastDay';
 import { useDraftRecord } from '@/hooks/useDraftRecord';
 import type { BlastDay, BlastLog, Shot, ExplosiveUsage, Job } from '@/db/schema';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { SectionCard } from '@/components/ui/section-card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -95,14 +96,32 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
   const totalPounds = explosiveUsage?.totalPoundsShot ?? 0;
   const pf = totalYards > 0 ? calcPowderFactor(totalPounds, totalYards) : 0;
 
+  const blastInfoComplete = Boolean(draft.operation && draft.typeOfRock && draft.typeOfTerrain);
+  const signoffComplete = Boolean(draft.blasterName && draft.licenseNumber && draft.signatureImage);
+
   return (
     <div className="space-y-4">
-      {/* Blast Log Header */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Blast Information</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
+      {/* Summary stats bar (§4.4) — live, always visible */}
+      <div className="grid grid-cols-4 gap-2">
+        <StatBox label="Shots" value={String(shots.length)} />
+        <StatBox label="Holes" value={totalHoles ? String(totalHoles) : '—'} />
+        <StatBox label="Total Lbs" value={totalPounds ? totalPounds.toFixed(1) : '—'} />
+        <StatBox label="PF (lbs/yd³)" value={pf ? pf.toFixed(2) : '—'} accent />
+      </div>
+      <p className="text-xs text-gray-400 -mt-2 px-1">
+        PF = Total Lbs ÷ Total Yd³
+        {pf > 0 && (
+          <>
+            {' '}= {totalPounds.toFixed(0)} ÷ {totalYards.toFixed(0)} — {powderFactorAssessment(pf)}
+          </>
+        )}
+      </p>
+
+      {/* Two-column on desktop: shots main, totals/sign-off sidebar (§4.7) */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-4 items-start">
+        <div className="space-y-4">
+      <SectionCard title="Blast Information" complete={blastInfoComplete}>
+        <div className="space-y-3">
           <div>
             <Label className="text-xs">Operation</Label>
             <ChipSelect
@@ -148,8 +167,8 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
               options={PRECAUTION_OPTIONS}
             />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </SectionCard>
 
       {/* Shots */}
       <div className="flex items-center justify-between">
@@ -203,59 +222,25 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
           )}
         </Card>
       ))}
+        </div>
 
+        {/* Sidebar column: totals, attachments, sign-off (§4.7–4.9) */}
+        <div className="space-y-4">
       {/* Explosive Usage */}
       {explosiveUsage && (
         <ExplosiveUsageForm explosiveUsage={explosiveUsage} shots={shots} />
       )}
 
-      {/* Summary Totals */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Blast Summary</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div>
-              <Label className="text-xs text-gray-500">Total Holes</Label>
-              <p className="font-mono text-lg font-semibold">{totalHoles}</p>
-            </div>
-            <div>
-              <Label className="text-xs text-gray-500">Total Drill Footage</Label>
-              <p className="font-mono text-lg font-semibold">{totalFootage.toFixed(1)} ft</p>
-            </div>
-            <div>
-              <Label className="text-xs text-gray-500">Total Yards Shot</Label>
-              <p className="font-mono text-lg font-semibold">{totalYards.toFixed(1)} yd³</p>
-            </div>
-            <div>
-              <Label className="text-xs text-gray-500">Total Pounds Shot</Label>
-              <p className="font-mono text-lg font-semibold">{totalPounds.toFixed(1)} lbs</p>
-            </div>
-            {pf > 0 && (
-              <div className="col-span-2 sm:col-span-4">
-                <Label className="text-xs text-gray-500">Powder Factor</Label>
-                <p className="font-mono font-semibold">
-                  {pf.toFixed(2)} lbs/yd³
-                  <span className="text-sm font-normal text-gray-500 ml-2">
-                    — {powderFactorAssessment(pf)}
-                  </span>
-                </p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Attachments */}
       <AttachmentsCard blastDayId={blastDay.id} />
 
       {/* Sign-off */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Sign-off</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
+      <SectionCard
+        title="Sign-off"
+        complete={signoffComplete}
+        summary={draft.blasterName || undefined}
+      >
+        <div className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <Label className="text-xs">Blaster Name</Label>
@@ -306,8 +291,25 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
               />
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </SectionCard>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatBox({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div
+      className={
+        accent
+          ? 'bg-navy text-white rounded-xl p-3 text-center'
+          : 'bg-white border border-gray-200 rounded-xl p-3 text-center'
+      }
+    >
+      <p className={`font-mono text-lg font-bold ${accent ? '' : 'text-navy'}`}>{value}</p>
+      <p className={`text-[10px] ${accent ? 'text-navy-200' : 'text-gray-500'}`}>{label}</p>
     </div>
   );
 }

@@ -9,7 +9,7 @@ import type { ExplosiveUsage, ExplosiveLineItem, Shot, ProductCatalogItem } from
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { SectionCard } from '@/components/ui/section-card';
 
 interface Props {
   explosiveUsage: ExplosiveUsage;
@@ -91,15 +91,25 @@ export function ExplosiveUsageForm({ explosiveUsage, shots }: Props) {
     });
   };
 
+  const usageComplete =
+    explosiveUsage.products.length > 0 && explosiveUsage.products.every((p) => p.quantity > 0);
+
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-base">Explosive Usage</CardTitle>
+    <SectionCard
+      title="Explosive Usage"
+      complete={usageComplete}
+      summary={
+        explosiveUsage.totalPoundsShot > 0
+          ? `${explosiveUsage.totalPoundsShot.toFixed(0)} lbs`
+          : undefined
+      }
+      actions={
         <Button size="sm" onClick={() => setShowProductPicker(true)}>
           <Plus className="h-4 w-4 mr-1" /> Add Item
         </Button>
-      </CardHeader>
-      <CardContent className="space-y-3">
+      }
+    >
+      <div className="space-y-3">
         {explosiveUsage.products.length === 0 ? (
           <p className="text-sm text-gray-400 text-center py-4">
             No explosive products added yet. Tap "Add Item" to start.
@@ -250,12 +260,12 @@ export function ExplosiveUsageForm({ explosiveUsage, shots }: Props) {
             {explosiveUsage.totalPoundsShot.toFixed(1)} lbs
           </span>
         </div>
-      </CardContent>
+      </div>
 
       {showProductPicker && (
         <ProductPickerDialog onSelect={addProduct} onClose={() => setShowProductPicker(false)} />
       )}
-    </Card>
+    </SectionCard>
   );
 }
 

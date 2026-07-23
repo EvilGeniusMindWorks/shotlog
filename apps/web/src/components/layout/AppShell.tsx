@@ -24,9 +24,28 @@ export function AppShell() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <header className="bg-navy text-white px-4 py-3 shadow-md flex items-center justify-between shrink-0">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight">ShotLog</h1>
-          <p className="text-sm text-navy-200">Blasting Log & Daily Report</p>
+        <div className="flex items-center gap-3">
+          {/* Logo mark — burst from the prototype */}
+          <svg viewBox="0 0 200 200" className="h-9 w-9 shrink-0" aria-hidden>
+            <rect width="200" height="200" rx="44" fill="#DD6B20" />
+            <g transform="translate(100,100)">
+              <circle cx="0" cy="0" r="50" fill="none" stroke="#fff" strokeWidth="4" opacity="0.3" />
+              <line x1="0" y1="-12" x2="0" y2="-34" stroke="#fff" strokeWidth="5" strokeLinecap="round" />
+              <line x1="0" y1="12" x2="0" y2="34" stroke="#fff" strokeWidth="5" strokeLinecap="round" />
+              <line x1="-12" y1="0" x2="-34" y2="0" stroke="#fff" strokeWidth="5" strokeLinecap="round" />
+              <line x1="12" y1="0" x2="34" y2="0" stroke="#fff" strokeWidth="5" strokeLinecap="round" />
+              <circle cx="0" cy="0" r="13" fill="#fff" />
+              <circle cx="0" cy="0" r="8" fill="#F6AD55" />
+              <circle cx="0" cy="0" r="4" fill="#1a365d" />
+            </g>
+          </svg>
+          <div>
+            <h1 className="text-xl tracking-tight leading-none">
+              <span className="font-light">SHOT</span>
+              <span className="font-extrabold text-safety-orange">LOG</span>
+            </h1>
+            <p className="text-xs text-navy-200 mt-0.5">Blasting Log & Daily Report</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <button
