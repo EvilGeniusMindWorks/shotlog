@@ -1,7 +1,10 @@
 import { useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Grid3x3 } from 'lucide-react';
 import { db } from '@/db';
 import { nowISO } from '@/lib/utils';
 import type { Shot, DrillParams, ShotTotals, DesignPlan } from '@/db/schema';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -18,9 +21,11 @@ import {
 interface Props {
   shot: Shot;
   kFactor: number;
+  blastDayId?: string;
 }
 
-export function ShotForm({ shot, kFactor }: Props) {
+export function ShotForm({ shot, kFactor, blastDayId }: Props) {
+  const navigate = useNavigate();
   const updateShot = useCallback(
     (updates: Partial<Shot>) => {
       db.shots.update(shot.id, { ...updates, updatedAt: nowISO() });
@@ -178,7 +183,18 @@ export function ShotForm({ shot, kFactor }: Props) {
 
       {/* Design Plan — Compliance Calcs */}
       <div>
-        <h4 className="text-sm font-semibold text-gray-700 mb-2">Design Plan — Compliance</h4>
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-sm font-semibold text-gray-700">Design Plan — Compliance</h4>
+          {blastDayId && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/blast-day/${blastDayId}/design/${shot.id}`)}
+            >
+              <Grid3x3 className="h-4 w-4 mr-1" /> Open Designer
+            </Button>
+          )}
+        </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           <div>
             <Label className="text-xs">Closest Structure</Label>

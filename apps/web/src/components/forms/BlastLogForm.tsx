@@ -193,7 +193,7 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
           </button>
           {expandedShots.has(shot.id) && (
             <CardContent>
-              <ShotForm shot={shot} kFactor={job?.kFactor ?? 180} />
+              <ShotForm shot={shot} kFactor={job?.kFactor ?? 180} blastDayId={blastDay.id} />
             </CardContent>
           )}
         </Card>
