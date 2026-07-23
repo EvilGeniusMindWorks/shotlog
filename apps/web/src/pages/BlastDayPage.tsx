@@ -54,8 +54,8 @@ function CondChip({ children, accent }: { children: ReactNode; accent?: boolean 
     <span
       className={
         accent
-          ? 'inline-flex items-center rounded-full bg-orange-50 text-safety-orange border border-orange-200 px-2.5 py-1 text-xs font-semibold'
-          : 'inline-flex items-center rounded-full bg-gray-100 text-gray-700 px-2.5 py-1 text-xs font-medium'
+          ? 'inline-flex items-center rounded-md bg-safety-orange text-white px-2.5 py-1 text-xs font-bold'
+          : 'inline-flex items-center rounded-md bg-navy text-white px-2.5 py-1 text-xs font-semibold'
       }
     >
       {children}
@@ -88,30 +88,35 @@ export function BlastDayPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-10">
-        <div className="flex items-center gap-3 mb-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+    <div>
+      {/* Navy context header (wireframe §4.1) */}
+      <div className="bg-navy text-white px-4 py-3 sticky top-0 z-20">
+        <div className="max-w-5xl mx-auto flex items-center gap-3">
+          <button
+            className="h-10 w-10 rounded-lg flex items-center justify-center text-navy-200 hover:text-white hover:bg-white/10"
+            onClick={() => navigate('/')}
+          >
             <ArrowLeft className="h-5 w-5" />
-          </Button>
+          </button>
           <div className="flex-1 min-w-0">
-            <h2 className="font-bold text-lg truncate">{job?.name ?? 'Blast Day'}</h2>
-            <p className="text-sm text-gray-500">
-              {formatDate(blastDay.date)} ({dayOfWeek(blastDay.date)}) — {job?.customer}
+            <h2 className="font-bold text-lg truncate leading-tight">{job?.name ?? 'Blast Day'}</h2>
+            <p className="text-xs text-navy-200 truncate">
+              {formatDate(blastDay.date)} ({dayOfWeek(blastDay.date)}) ·{' '}
+              {[job?.address, job?.city, job?.state].filter(Boolean).join(', ') || job?.customer}
             </p>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
+          <Badge variant={blastDay.status as 'draft' | 'submitted' | 'approved'}>
+            {blastDay.status}
+          </Badge>
+          <button
+            className="h-10 w-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20"
             title="Visual Blast Report"
             onClick={() => navigate(`/blast-day/${blastDay.id}/report`)}
           >
             <FileBarChart className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
+          </button>
+          <button
+            className="h-10 w-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20"
             title={activeTab === 'blast-log' ? 'Print Blasting Log' : 'Print Daily Report'}
             onClick={() =>
               navigate(
@@ -122,28 +127,34 @@ export function BlastDayPage() {
             }
           >
             <Printer className="h-5 w-5" />
-          </Button>
-          <Badge variant={blastDay.status as 'draft' | 'submitted' | 'approved'}>
-            {blastDay.status}
-          </Badge>
-        </div>
-
-        {/* Conditions summary chips + Edit (wireframe §4.2) */}
-        <div className="flex items-center gap-1.5 flex-wrap min-h-[36px] pt-1">
-          <CondChip>{TEMP_OPTIONS.find((o) => o.value === blastDay.conditions.temperatureRange)?.label.split(' ')[0]}</CondChip>
-          <CondChip>{WEATHER_OPTIONS.find((o) => o.value === blastDay.conditions.weather)?.label}</CondChip>
-          {blastDay.conditions.windDirection && <CondChip>Wind {blastDay.conditions.windDirection}</CondChip>}
-          <CondChip>{GROUND_OPTIONS.find((o) => o.value === blastDay.conditions.groundConditions)?.label}</CondChip>
-          <CondChip>{WORK_TYPE_OPTIONS.find((o) => o.value === blastDay.typeOfWork)?.label}</CondChip>
-          {blastDay.fireDetail && <CondChip accent>Fire Detail</CondChip>}
-          <button
-            className="ml-auto text-sm text-navy font-semibold min-h-[36px] px-2 flex items-center gap-1"
-            onClick={() => setShowConditions(!showConditions)}
-          >
-            Edit
-            {showConditions ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </button>
         </div>
+      </div>
+
+      {/* Conditions bar (wireframe §4.2) */}
+      <div className="bg-white border-b border-gray-200 px-4 py-2.5 sticky top-[64px] z-10">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase mr-1">
+              Conditions
+            </span>
+            <span className="text-[10px] font-bold text-blue-500 border border-blue-200 bg-blue-50 rounded px-1.5 py-0.5 mr-2">
+              NWS
+            </span>
+            <CondChip>{TEMP_OPTIONS.find((o) => o.value === blastDay.conditions.temperatureRange)?.label.split(' ')[0]}</CondChip>
+            <CondChip>{WEATHER_OPTIONS.find((o) => o.value === blastDay.conditions.weather)?.label}</CondChip>
+            {blastDay.conditions.windDirection && <CondChip>{blastDay.conditions.windDirection}</CondChip>}
+            <CondChip>{GROUND_OPTIONS.find((o) => o.value === blastDay.conditions.groundConditions)?.label}</CondChip>
+            <CondChip>{WORK_TYPE_OPTIONS.find((o) => o.value === blastDay.typeOfWork)?.label}</CondChip>
+            {blastDay.fireDetail && <CondChip accent>⚑ Fire Detail</CondChip>}
+            <button
+              className="ml-auto text-sm text-blue-600 font-semibold min-h-[36px] px-2 flex items-center gap-1"
+              onClick={() => setShowConditions(!showConditions)}
+            >
+              Edit
+              {showConditions ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
+          </div>
 
         {showConditions && (
           <div className="space-y-3 mt-3 pb-2">
@@ -204,36 +215,38 @@ export function BlastDayPage() {
             </label>
           </div>
         )}
+        </div>
       </div>
 
-      {/* Tab bar */}
-      <div className="flex border-b border-gray-200 bg-white sticky top-[72px] z-10">
-        <button
-          className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === 'blast-log'
-              ? 'border-navy text-navy'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
-          }`}
-          onClick={() => setActiveTab('blast-log')}
-        >
-          <FileText className="h-4 w-4" />
-          Blast Log
-        </button>
-        <button
-          className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === 'daily-report'
-              ? 'border-navy text-navy'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
-          }`}
-          onClick={() => setActiveTab('daily-report')}
-        >
-          <ClipboardList className="h-4 w-4" />
-          Daily Report
-        </button>
+      {/* Segmented tab control (wireframe §4.3) */}
+      <div className="px-4 pt-3">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex bg-gray-100 rounded-lg p-1">
+            {(
+              [
+                ['blast-log', 'Blast Log', FileText],
+                ['daily-report', 'Daily Report', ClipboardList],
+              ] as const
+            ).map(([key, label, Icon]) => (
+              <button
+                key={key}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-md transition-all min-h-[44px] ${
+                  activeTab === key
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+                onClick={() => setActiveTab(key)}
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Tab content */}
-      <div className="p-4">
+      <div className="p-4 max-w-5xl mx-auto">
         {activeTab === 'blast-log' && blastLog && (
           <BlastLogForm
             blastDay={blastDay}

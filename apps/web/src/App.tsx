@@ -22,8 +22,8 @@ export function App() {
           <Route path="/jobs/:id" element={<JobDetailPage />} />
           <Route path="/reference" element={<ReferencePage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/blast-day/:id" element={<BlastDayPage />} />
         </Route>
-        <Route path="/blast-day/:id" element={<BlastDayPage />} />
         <Route path="/blast-day/:id/design/:shotId" element={<DesignPlanPage />} />
         <Route path="/blast-day/:id/seismo/:shotId" element={<SeismoPage />} />
         <Route path="/blast-day/:id/print" element={<PrintBlastLogPage />} />

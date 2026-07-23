@@ -7,10 +7,12 @@ import { nowISO } from '@/lib/utils';
 import { parseDiagram, serializeDiagram, delayCounts, type ShotDiagram } from '@/lib/shotDiagram';
 import { parseSiteDiagram, serializeSiteDiagram, type SiteDiagram } from '@/lib/siteDiagram';
 import { scaledDistance, predictedPPV, osmPPVLimit, usbmRI8507Limit } from '@shotlog/shared';
-import type { Shot, Job } from '@/db/schema';
+import type { Shot, Job, DesignPlan } from '@/db/schema';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { ShotDiagramEditor } from '@/components/design/ShotDiagramEditor';
 import { TypicalColumnBuilder } from '@/components/design/TypicalColumnBuilder';
 import { SiteDiagramEditor } from '@/components/design/SiteDiagramEditor';
@@ -29,6 +31,99 @@ export function DesignPlanPage() {
   }
   // Key by shot id so local editor state resets when navigating between shots
   return <DesignPlanInner key={shot.id} blastDayId={id} shot={shot} job={job} />;
+}
+
+/** Structure & compliance inputs — live SD/PPV recompute, pass/fail rows */
+function ComplianceInputs({ shot, defaultK }: { shot: Shot; defaultK: number }) {
+  const dp = shot.designPlan;
+
+  const update = (field: keyof DesignPlan, value: string | number) => {
+    void db.shots.get(shot.id).then((current) => {
+      if (!current) return;
+      const plan = {
+        ...current.designPlan,
+        [field]: typeof value === 'string' ? value : value,
+      };
+      if (plan.closestStructureDistance > 0 && plan.maxPoundsPerDelay > 0) {
+        plan.scaledDistance = scaledDistance(plan.closestStructureDistance, plan.maxPoundsPerDelay);
+        const k = plan.kFactor || defaultK;
+        plan.predictedPPV = plan.scaledDistance > 0 && k > 0 ? predictedPPV(k, plan.scaledDistance) : 0;
+      }
+      return db.shots.update(shot.id, { designPlan: plan, updatedAt: nowISO() });
+    });
+  };
+  const num = (field: keyof DesignPlan) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    update(field, parseFloat(e.target.value) || 0);
+
+  const usbmLimit = usbmRI8507Limit(15);
+  const osmLimit = dp.closestStructureDistance > 0 ? osmPPVLimit(dp.closestStructureDistance) : null;
+  const rows =
+    dp.predictedPPV > 0
+      ? [
+          { name: 'USBM RI 8507 (15 Hz est)', limit: usbmLimit },
+          ...(osmLimit !== null ? [{ name: 'OSMRE', limit: osmLimit }] : []),
+        ]
+      : [];
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="col-span-2">
+          <Label className="text-[10px] uppercase tracking-wide text-gray-500">
+            Location of Closest Structure
+          </Label>
+          <Input
+            defaultValue={dp.closestStructureLocation}
+            onBlur={(e) => update('closestStructureLocation', e.target.value)}
+            placeholder="Stevens residence — NE corner"
+          />
+        </div>
+        {(
+          [
+            ['closestStructureDistance', 'Distance to Structure (ft)'],
+            ['closestBoreholeDistance', 'Closest Borehole (ft)'],
+            ['maxHolesPerDelay', 'Max Holes / Delay'],
+            ['maxPoundsPerDelay', 'Max Lbs / Delay (W)'],
+            ['kFactor', 'K Factor'],
+          ] as const
+        ).map(([field, label]) => (
+          <div key={field}>
+            <Label className="text-[10px] uppercase tracking-wide text-gray-500">{label}</Label>
+            <Input
+              type="number"
+              inputMode="decimal"
+              defaultValue={dp[field] || ''}
+              onBlur={num(field)}
+              placeholder="0"
+            />
+          </div>
+        ))}
+        <div>
+          <Label className="text-[10px] uppercase tracking-wide text-gray-400">Scaled Distance (auto)</Label>
+          <p className="h-10 flex items-center font-mono font-bold text-navy">
+            {dp.scaledDistance > 0 ? dp.scaledDistance.toFixed(1) : '—'}
+          </p>
+        </div>
+      </div>
+
+      {rows.length > 0 && (
+        <div className="border border-gray-200 rounded-lg divide-y divide-gray-100">
+          {rows.map((r) => {
+            const pass = dp.predictedPPV <= r.limit;
+            return (
+              <div key={r.name} className="flex items-center gap-2 px-3 py-2 text-sm">
+                <span className="flex-1">{r.name}</span>
+                <span className="font-mono text-xs text-gray-500">
+                  {dp.predictedPPV.toFixed(2)} vs {r.limit.toFixed(2)} in/s
+                </span>
+                <Badge variant={pass ? 'compliant' : 'violation'}>{pass ? 'PASS' : 'FAIL'}</Badge>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function DesignPlanInner({
@@ -185,6 +280,16 @@ function DesignPlanInner({
           </CardHeader>
           <CardContent>
             <ShotDiagramEditor diagram={diagram} onChange={handleChange} />
+          </CardContent>
+        </Card>
+
+        {/* Structure & Compliance (wireframe §5.4) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Structure & Compliance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ComplianceInputs shot={shot} defaultK={job?.kFactor ?? 180} />
           </CardContent>
         </Card>
 

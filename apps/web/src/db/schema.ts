@@ -112,6 +112,7 @@ export interface DrillParams {
   spacing: number; // ft
   stemming: number; // ft
   subDrill: number; // ft
+  blastMats?: boolean; // Spec §4.6.1 — optional: pre-existing records lack it
 }
 
 export interface ShotTotals {

@@ -1,24 +1,30 @@
-import { useState, useMemo } from 'react';
-import { Plus, Trash2, Search, ChevronDown, ChevronRight, X } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Flame, Pencil, Search, Target, Trash2, X, Zap } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { distributeByHoles } from '@shotlog/shared';
 import { db } from '@/db';
 import { nowISO } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
-import type { ExplosiveUsage, ExplosiveLineItem, Shot, ProductCatalogItem } from '@/db/schema';
+import type {
+  DetonatorLineItem,
+  ExplosiveUsage,
+  ExplosiveLineItem,
+  ProductCatalogItem,
+  ProductCategory,
+  Shot,
+} from '@/db/schema';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { SectionCard } from '@/components/ui/section-card';
+import { SectionCard, IconChip } from '@/components/ui/section-card';
+
+const BOOSTER_CATEGORIES: ProductCategory[] = ['booster', 'booster_electronic'];
 
 interface Props {
   explosiveUsage: ExplosiveUsage;
   shots: Shot[];
 }
 
-export function ExplosiveUsageForm({ explosiveUsage, shots }: Props) {
-  const [showProductPicker, setShowProductPicker] = useState(false);
-  const [expandedAllocations, setExpandedAllocations] = useState<Set<number>>(new Set());
+export function ExplosiveUsageForm({ explosiveUsage, shots: _shots }: Props) {
+  const [picker, setPicker] = useState<'explosive' | 'booster' | null>(null);
 
   const updateUsage = (updates: Partial<ExplosiveUsage>) => {
     db.explosiveUsages.update(explosiveUsage.id, { ...updates, updatedAt: nowISO() });
@@ -38,43 +44,17 @@ export function ExplosiveUsageForm({ explosiveUsage, shots }: Props) {
     };
     const products = [...explosiveUsage.products, item];
     updateUsage({ products, totalPoundsShot: calcTotal(products) });
-    setShowProductPicker(false);
+    setPicker(null);
   };
 
-  const updateProduct = (index: number, field: keyof ExplosiveLineItem, value: number) => {
+  const setQuantity = (index: number, qty: number) => {
     const products = [...explosiveUsage.products];
-    const item = { ...products[index] };
-    if (field === 'quantity') {
-      item.quantity = value;
-      item.totalWeight = value * item.weightMultiplier;
-    }
-    products[index] = item;
+    products[index] = {
+      ...products[index],
+      quantity: qty,
+      totalWeight: qty * products[index].weightMultiplier,
+    };
     updateUsage({ products, totalPoundsShot: calcTotal(products) });
-  };
-
-  // shotAllocations holds MANUAL OVERRIDES only. Effective per-shot quantities
-  // are computed live: overridden shots keep their value, the rest of the
-  // total auto-distributes by hole-count ratio (top-down entry, Spec §4.6.3).
-  const holeCounts = useMemo(
-    () => shots.map((s) => ({ shotId: s.id, holes: s.totals.numHoles })),
-    [shots],
-  );
-
-  const overrideAllocation = (index: number, shotId: string, qty: number) => {
-    const products = [...explosiveUsage.products];
-    const item = { ...products[index] };
-    item.shotAllocations = { ...item.shotAllocations, [shotId]: qty };
-    products[index] = item;
-    updateUsage({ products });
-  };
-
-  const resetAllocation = (index: number, shotId: string) => {
-    const products = [...explosiveUsage.products];
-    const item = { ...products[index] };
-    const { [shotId]: _removed, ...rest } = item.shotAllocations;
-    item.shotAllocations = rest;
-    products[index] = item;
-    updateUsage({ products });
   };
 
   const removeProduct = (index: number) => {
@@ -82,188 +62,268 @@ export function ExplosiveUsageForm({ explosiveUsage, shots }: Props) {
     updateUsage({ products, totalPoundsShot: calcTotal(products) });
   };
 
-  const toggleAllocation = (index: number) => {
-    setExpandedAllocations((prev) => {
-      const next = new Set(prev);
-      if (next.has(index)) next.delete(index);
-      else next.add(index);
-      return next;
-    });
-  };
+  const isBooster = (item: ExplosiveLineItem) =>
+    BOOSTER_CATEGORIES.includes(item.category as ProductCategory);
+  const explosives = explosiveUsage.products
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => !isBooster(item));
+  const boosters = explosiveUsage.products
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => isBooster(item));
 
-  const usageComplete =
-    explosiveUsage.products.length > 0 && explosiveUsage.products.every((p) => p.quantity > 0);
+  const explosivesLbs = explosives.reduce((s, { item }) => s + item.totalWeight, 0);
+  const boosterLbs = boosters.reduce((s, { item }) => s + item.totalWeight, 0);
+  const detCount = explosiveUsage.detonators.reduce((s, d) => s + d.quantity, 0);
+
+  return (
+    <>
+      {/* ── Explosives ── */}
+      <SectionCard
+        title="Explosives"
+        icon={<IconChip tint="red"><Flame className="h-4 w-4" /></IconChip>}
+        subtitle="Blasting agents & high explosives"
+        complete={explosives.length > 0 && explosives.every(({ item }) => item.quantity > 0)}
+      >
+        <p className="text-xs text-gray-400">
+          Enter total quantity. Per-shot breakdown auto-calculated.
+        </p>
+        {explosives.map(({ item, index }) => (
+          <ProductLine
+            key={index}
+            item={item}
+            onQuantity={(q) => setQuantity(index, q)}
+            onRemove={() => removeProduct(index)}
+          />
+        ))}
+        <button
+          className="text-sm font-semibold text-blue-600 min-h-[40px]"
+          onClick={() => setPicker('explosive')}
+        >
+          + Add Product
+        </button>
+      </SectionCard>
+
+      {/* ── Boosters ── */}
+      <SectionCard
+        title="Boosters"
+        icon={<IconChip tint="orange"><Target className="h-4 w-4" /></IconChip>}
+        subtitle={
+          boosters.length > 0
+            ? boosters.map(({ item }) => `${item.productName.match(/[\d/]+ ?lb/i)?.[0] ?? item.productName} × ${item.quantity} ea`).join(', ')
+            : 'Cast primers'
+        }
+        complete={boosters.length === 0 ? undefined : boosters.every(({ item }) => item.quantity > 0)}
+      >
+        {boosters.map(({ item, index }) => (
+          <ProductLine
+            key={index}
+            item={item}
+            onQuantity={(q) => setQuantity(index, q)}
+            onRemove={() => removeProduct(index)}
+          />
+        ))}
+        <button
+          className="text-sm font-semibold text-blue-600 min-h-[40px]"
+          onClick={() => setPicker('booster')}
+        >
+          + Add Booster
+        </button>
+      </SectionCard>
+
+      {/* ── Detonators & Lead ── */}
+      <DetonatorsCard explosiveUsage={explosiveUsage} onUpdate={updateUsage} />
+
+      {/* ── Total banner ── */}
+      <div className="bg-navy rounded-xl px-4 py-3 flex items-center justify-between">
+        <div>
+          <div className="text-[11px] font-bold tracking-widest text-navy-200 uppercase">
+            Total Pounds Shot
+          </div>
+          <div className="text-[11px] text-navy-300">Explosives + Boosters</div>
+        </div>
+        <span className="font-mono text-3xl font-bold text-safety-orange">
+          {(explosivesLbs + boosterLbs).toFixed(1)}
+        </span>
+      </div>
+      {detCount > 0 && (
+        <p className="text-[11px] text-gray-400 text-right px-1 !mt-1">
+          + {detCount} detonators (not in pounds total)
+        </p>
+      )}
+
+      {picker && (
+        <ProductPickerDialog
+          boosters={picker === 'booster'}
+          onSelect={addProduct}
+          onClose={() => setPicker(null)}
+        />
+      )}
+    </>
+  );
+}
+
+/** One product line: name + lbs/unit subtitle · qty · lbs · edit · delete */
+function ProductLine({
+  item,
+  onQuantity,
+  onRemove,
+}: {
+  item: ExplosiveLineItem;
+  onQuantity: (qty: number) => void;
+  onRemove: () => void;
+}) {
+  const [editing, setEditing] = useState(item.quantity === 0);
+  return (
+    <div className="flex items-center gap-2 py-1.5 border-b border-gray-50 last:border-0">
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-semibold truncate">{item.productName}</div>
+        <div className="text-[11px] text-gray-400">
+          {item.weightMultiplier} lbs/{item.unitType}
+        </div>
+      </div>
+      {editing ? (
+        <Input
+          autoFocus
+          type="number"
+          inputMode="decimal"
+          className="w-20 h-9 text-right font-mono"
+          defaultValue={item.quantity || ''}
+          placeholder="0"
+          onBlur={(e) => {
+            onQuantity(parseFloat(e.target.value) || 0);
+            setEditing(false);
+          }}
+          onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+        />
+      ) : (
+        <span className="font-mono font-bold text-[15px]">{item.quantity}</span>
+      )}
+      <span className="font-mono text-xs text-gray-500 w-16 text-right shrink-0">
+        {item.totalWeight > 0 ? `${item.totalWeight.toFixed(1)} lbs` : '—'}
+      </span>
+      <button
+        className="h-8 w-8 flex items-center justify-center text-gray-300 hover:text-gray-500"
+        title="Edit quantity"
+        onClick={() => setEditing(true)}
+      >
+        <Pencil className="h-3.5 w-3.5" />
+      </button>
+      <button
+        className="h-8 w-8 flex items-center justify-center text-gray-300 hover:text-red-500"
+        title="Remove"
+        onClick={onRemove}
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
+
+/** Detonators by delay series + lead line (wireframe §4.7) */
+function DetonatorsCard({
+  explosiveUsage,
+  onUpdate,
+}: {
+  explosiveUsage: ExplosiveUsage;
+  onUpdate: (updates: Partial<ExplosiveUsage>) => void;
+}) {
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState({ name: '', quantity: '' });
+  const dets = explosiveUsage.detonators;
+
+  const subtitle =
+    [
+      dets.length > 0 && `${dets[0].name.split('—')[0].trim()} × ${dets.reduce((s, d) => s + d.quantity, 0)}`,
+      explosiveUsage.leadLine > 0 && `Lead ${explosiveUsage.leadLine}'`,
+    ]
+      .filter(Boolean)
+      .join(', ') || 'Delay series & lead wire';
+
+  const addDetonator = () => {
+    if (!form.name.trim()) return;
+    const det: DetonatorLineItem = {
+      name: form.name.trim(),
+      unitLength: '',
+      quantity: parseFloat(form.quantity) || 0,
+      shipment1Qty: 0,
+      shipment2Qty: 0,
+    };
+    onUpdate({ detonators: [...dets, det] });
+    setForm({ name: '', quantity: '' });
+    setAdding(false);
+  };
 
   return (
     <SectionCard
-      title="Explosive Usage"
-      complete={usageComplete}
-      summary={
-        explosiveUsage.totalPoundsShot > 0
-          ? `${explosiveUsage.totalPoundsShot.toFixed(0)} lbs`
-          : undefined
-      }
-      actions={
-        <Button size="sm" onClick={() => setShowProductPicker(true)}>
-          <Plus className="h-4 w-4 mr-1" /> Add Item
-        </Button>
-      }
+      title="Detonators & Lead"
+      icon={<IconChip tint="yellow"><Zap className="h-4 w-4" /></IconChip>}
+      subtitle={subtitle}
+      complete={dets.length > 0 ? true : undefined}
     >
-      <div className="space-y-3">
-        {explosiveUsage.products.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-4">
-            No explosive products added yet. Tap "Add Item" to start.
-          </p>
-        ) : (
-          explosiveUsage.products.map((item, idx) => (
-            <div key={idx} className="border border-gray-200 rounded-lg p-3 space-y-2">
-              <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{item.productName}</p>
-                  <p className="text-xs text-gray-500">
-                    {item.manufacturer} — {item.category.replace('_', ' ')}
-                  </p>
-                </div>
-                <Button variant="ghost" size="icon" onClick={() => removeProduct(idx)}>
-                  <Trash2 className="h-4 w-4 text-gray-400" />
-                </Button>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="flex-1">
-                  <Label className="text-xs">Total Qty ({item.unitType}s)</Label>
-                  <Input
-                    type="number"
-                    step="1"
-                    value={item.quantity || ''}
-                    onChange={(e) => updateProduct(idx, 'quantity', parseFloat(e.target.value) || 0)}
-                    placeholder="0"
-                  />
-                </div>
-                <div className="text-right">
-                  <Label className="text-xs text-gray-400">Weight</Label>
-                  <p className="font-mono text-lg font-semibold">
-                    {item.totalWeight > 0 ? item.totalWeight.toFixed(1) : '0'} lbs
-                  </p>
-                </div>
-              </div>
-
-              {/* Per-shot allocation: auto-distributed by hole count, tap to override */}
-              {shots.length > 1 &&
-                (() => {
-                  const dist = distributeByHoles(item.quantity, holeCounts, item.shotAllocations);
-                  return (
-                    <div>
-                      <button
-                        className="text-xs text-navy flex items-center gap-1"
-                        onClick={() => toggleAllocation(idx)}
-                      >
-                        {expandedAllocations.has(idx) ? (
-                          <ChevronDown className="h-3 w-3" />
-                        ) : (
-                          <ChevronRight className="h-3 w-3" />
-                        )}
-                        Per-Shot Allocation
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                          Auto
-                        </Badge>
-                      </button>
-                      {expandedAllocations.has(idx) && (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2 pl-4 border-l-2 border-gray-100">
-                          {shots.map((shot) => {
-                            const overridden = item.shotAllocations[shot.id] !== undefined;
-                            return (
-                              <div key={shot.id}>
-                                <div className="flex items-center gap-1">
-                                  <Label className="text-xs">
-                                    Shot #{shot.shotNumber}
-                                    <span className="text-gray-400 font-normal">
-                                      {' '}
-                                      · {shot.totals.numHoles} holes
-                                    </span>
-                                  </Label>
-                                  {overridden && (
-                                    <button
-                                      title="Reset to auto"
-                                      className="text-gray-400 hover:text-gray-600"
-                                      onClick={() => resetAllocation(idx, shot.id)}
-                                    >
-                                      <X className="h-3 w-3" />
-                                    </button>
-                                  )}
-                                </div>
-                                <Input
-                                  type="number"
-                                  step="1"
-                                  inputMode="decimal"
-                                  value={dist.allocations[shot.id] ?? ''}
-                                  onChange={(e) =>
-                                    overrideAllocation(
-                                      idx,
-                                      shot.id,
-                                      parseFloat(e.target.value) || 0,
-                                    )
-                                  }
-                                  className={overridden ? 'border-safety font-semibold' : ''}
-                                  placeholder="0"
-                                />
-                              </div>
-                            );
-                          })}
-                          {dist.remaining !== 0 && (
-                            <div>
-                              <Label className="text-xs text-red-500">
-                                {dist.remaining < 0 ? 'Over-allocated' : 'Unallocated'}
-                              </Label>
-                              <p className="h-10 flex items-center font-mono text-sm text-red-600">
-                                {Math.abs(dist.remaining)} {item.unitType}s
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-            </div>
-          ))
-        )}
-
-        {/* Detonator section */}
-        <div className="border-t border-gray-200 pt-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs">Lead Line (LF)</Label>
-              <Input
-                type="number"
-                step="1"
-                value={explosiveUsage.leadLine || ''}
-                onChange={(e) => updateUsage({ leadLine: parseFloat(e.target.value) || 0 })}
-                placeholder="0"
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Type of Cover</Label>
-              <Input
-                value={explosiveUsage.coverType}
-                onChange={(e) => updateUsage({ coverType: e.target.value })}
-                placeholder="Dirt, Mats"
-              />
-            </div>
-          </div>
+      {dets.map((det, i) => (
+        <div key={i} className="flex items-center gap-2 py-1.5 border-b border-gray-50 last:border-0">
+          <span className="text-sm font-semibold flex-1 truncate">{det.name}</span>
+          <span className="font-mono font-bold text-[15px]">{det.quantity}</span>
+          <span className="text-xs text-gray-400 w-8">ea</span>
+          <button
+            className="h-8 w-8 flex items-center justify-center text-gray-300 hover:text-red-500"
+            title="Remove"
+            onClick={() => onUpdate({ detonators: dets.filter((_, j) => j !== i) })}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
         </div>
+      ))}
 
-        {/* Total */}
-        <div className="bg-navy-50 rounded-lg p-3 flex items-center justify-between">
-          <span className="font-semibold text-navy">TOTAL POUNDS SHOT</span>
-          <span className="font-mono text-xl font-bold text-navy">
-            {explosiveUsage.totalPoundsShot.toFixed(1)} lbs
-          </span>
-        </div>
+      {/* Lead line */}
+      <div className="flex items-center gap-2 py-1.5">
+        <span className="text-sm font-semibold flex-1">Lead In Line</span>
+        <Input
+          type="number"
+          inputMode="decimal"
+          className="w-24 h-9 text-right font-mono"
+          value={explosiveUsage.leadLine || ''}
+          onChange={(e) => onUpdate({ leadLine: parseFloat(e.target.value) || 0 })}
+          placeholder="0"
+        />
+        <span className="text-xs text-gray-400 w-8">LF</span>
       </div>
 
-      {showProductPicker && (
-        <ProductPickerDialog onSelect={addProduct} onClose={() => setShowProductPicker(false)} />
+      {adding ? (
+        <div className="flex gap-2 items-end border border-navy rounded-lg p-2">
+          <div className="flex-1">
+            <Label className="text-[10px] uppercase text-gray-500">Series (e.g. QR-12 — 9MS)</Label>
+            <Input
+              autoFocus
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onKeyDown={(e) => e.key === 'Enter' && addDetonator()}
+            />
+          </div>
+          <div className="w-20">
+            <Label className="text-[10px] uppercase text-gray-500">Qty</Label>
+            <Input
+              type="number"
+              inputMode="numeric"
+              value={form.quantity}
+              onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+              onKeyDown={(e) => e.key === 'Enter' && addDetonator()}
+            />
+          </div>
+          <Button size="sm" onClick={addDetonator} disabled={!form.name.trim()}>
+            Add
+          </Button>
+          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setAdding(false)}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : (
+        <button
+          className="text-sm font-semibold text-blue-600 min-h-[40px]"
+          onClick={() => setAdding(true)}
+        >
+          + Add Detonator / Lead
+        </button>
       )}
     </SectionCard>
   );
@@ -274,28 +334,35 @@ function calcTotal(products: ExplosiveLineItem[]): number {
 }
 
 function ProductPickerDialog({
+  boosters,
   onSelect,
   onClose,
 }: {
+  boosters: boolean;
   onSelect: (p: ProductCatalogItem) => void;
   onClose: () => void;
 }) {
   const [search, setSearch] = useState('');
   // NOTE: boolean fields can't be indexed in IndexedDB — use filter(), not where()
-  const products = useLiveQuery(() => db.productCatalog.filter((p) => p.isActive).toArray()) ?? [];
+  const products =
+    useLiveQuery(() => db.productCatalog.filter((p) => p.isActive).toArray()) ?? [];
 
   const filtered = useMemo(() => {
-    if (!search) return products;
-    const q = search.toLowerCase();
-    return products.filter(
-      (p) =>
-        p.productName.toLowerCase().includes(q) ||
-        p.manufacturer.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q)
+    let list = products.filter(
+      (p) => BOOSTER_CATEGORIES.includes(p.category) === boosters,
     );
-  }, [products, search]);
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (p) =>
+          p.productName.toLowerCase().includes(q) ||
+          p.manufacturer.toLowerCase().includes(q) ||
+          p.category.toLowerCase().includes(q),
+      );
+    }
+    return list;
+  }, [products, search, boosters]);
 
-  // Group by manufacturer
   const grouped = useMemo(() => {
     const map = new Map<string, ProductCatalogItem[]>();
     for (const p of filtered) {
@@ -311,7 +378,7 @@ function ProductPickerDialog({
       <div className="bg-white w-full sm:max-w-lg max-h-[85vh] flex flex-col rounded-t-xl sm:rounded-xl">
         <div className="p-4 border-b border-gray-200 shrink-0">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold">Select Product</h3>
+            <h3 className="font-semibold">{boosters ? 'Select Booster' : 'Select Product'}</h3>
             <Button variant="ghost" size="sm" onClick={onClose}>
               Cancel
             </Button>

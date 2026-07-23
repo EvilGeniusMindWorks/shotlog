@@ -1,299 +1,316 @@
-import { useCallback } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Activity, Grid3x3 } from 'lucide-react';
+import { Activity, BarChart3, Flame, MapPin, Wrench } from 'lucide-react';
 import { db } from '@/db';
 import { nowISO } from '@/lib/utils';
-import type { Shot, DrillParams, ShotTotals, DesignPlan } from '@/db/schema';
-import { Button } from '@/components/ui/button';
+import { distributeByHoles, totalSqFt, avgDrillDepth, totalYardsShot } from '@shotlog/shared';
+import type { Shot, DrillParams, ShotTotals, ExplosiveUsage } from '@/db/schema';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-
-import {
-  totalSqFt,
-  avgDrillDepth,
-  totalYardsShot,
-  scaledDistance,
-  predictedPPV,
-  checkCompliance,
-} from '@shotlog/shared';
+import { ChipSelect } from '@/components/ui/chip-select';
+import { IconChip, SubSection } from '@/components/ui/section-card';
 
 interface Props {
   shot: Shot;
+  allShots: Shot[];
+  explosiveUsage: ExplosiveUsage | undefined;
   kFactor: number;
   blastDayId?: string;
 }
 
-export function ShotForm({ shot, kFactor, blastDayId }: Props) {
+export function ShotForm({ shot, allShots, explosiveUsage, kFactor: _kFactor, blastDayId }: Props) {
   const navigate = useNavigate();
-  const seismoCount =
-    useLiveQuery(() => db.seismoReadings.where('shotId').equals(shot.id).count(), [shot.id]) ?? 0;
+  const seismo =
+    useLiveQuery(() => db.seismoReadings.where('shotId').equals(shot.id).toArray(), [shot.id]) ??
+    [];
+
   const updateShot = useCallback(
     (updates: Partial<Shot>) => {
       db.shots.update(shot.id, { ...updates, updatedAt: nowISO() });
     },
-    [shot.id]
+    [shot.id],
   );
 
-  const updateDrillParam = (field: keyof DrillParams, value: string) => {
-    const num = parseFloat(value) || 0;
-    const dp = { ...shot.drillParams, [field]: num };
-
-    // Auto-recalculate totals
-    const t = { ...shot.totals };
-    t.totalSqFt = totalSqFt(dp.burden, dp.spacing, t.numHoles);
-    if (t.numHoles > 0 && t.totalDrillFootage > 0) {
-      t.avgDrillDepth = avgDrillDepth(t.totalDrillFootage, t.numHoles);
+  const recalc = (dp: DrillParams, t: ShotTotals): ShotTotals => {
+    const next = { ...t };
+    next.totalSqFt = totalSqFt(dp.burden, dp.spacing, next.numHoles);
+    if (next.numHoles > 0 && next.totalDrillFootage > 0) {
+      next.avgDrillDepth = avgDrillDepth(next.totalDrillFootage, next.numHoles);
     }
-    if (dp.burden > 0 && dp.spacing > 0 && t.totalDrillFootage > 0) {
-      t.totalYardsShot = totalYardsShot(dp.burden, dp.spacing, t.totalDrillFootage);
+    if (dp.burden > 0 && dp.spacing > 0 && next.totalDrillFootage > 0) {
+      next.totalYardsShot = totalYardsShot(dp.burden, dp.spacing, next.totalDrillFootage);
     }
+    return next;
+  };
 
-    updateShot({ drillParams: dp, totals: t });
+  const updateDrillParam = (field: keyof DrillParams, value: string | boolean) => {
+    const dp = {
+      ...shot.drillParams,
+      [field]: typeof value === 'boolean' ? value : parseFloat(value) || 0,
+    };
+    updateShot({ drillParams: dp, totals: recalc(dp, shot.totals) });
   };
 
   const updateTotal = (field: keyof ShotTotals, value: string) => {
-    const num = parseFloat(value) || 0;
-    const dp = shot.drillParams;
-    const t = { ...shot.totals, [field]: num };
-
-    // Auto-recalculate dependent fields
-    t.totalSqFt = totalSqFt(dp.burden, dp.spacing, t.numHoles);
-    if (t.numHoles > 0 && t.totalDrillFootage > 0) {
-      t.avgDrillDepth = avgDrillDepth(t.totalDrillFootage, t.numHoles);
-    }
-    if (dp.burden > 0 && dp.spacing > 0 && t.totalDrillFootage > 0) {
-      t.totalYardsShot = totalYardsShot(dp.burden, dp.spacing, t.totalDrillFootage);
-    }
-
-    updateShot({ totals: t });
+    const t = { ...shot.totals, [field]: parseFloat(value) || 0 };
+    updateShot({ totals: recalc(shot.drillParams, t) });
   };
 
-  const updateDesignPlan = (field: keyof DesignPlan, value: string | number) => {
-    const plan = { ...shot.designPlan, [field]: typeof value === 'string' ? (parseFloat(value) || 0) : value };
+  const dp = shot.drillParams;
+  const t = shot.totals;
 
-    // Auto-calculate SD and PPV
-    if (plan.closestStructureDistance > 0 && plan.maxPoundsPerDelay > 0) {
-      plan.scaledDistance = scaledDistance(plan.closestStructureDistance, plan.maxPoundsPerDelay);
-      const k = plan.kFactor || kFactor;
-      if (plan.scaledDistance > 0 && k > 0) {
-        plan.predictedPPV = predictedPPV(k, plan.scaledDistance);
-      }
-    }
-
-    updateShot({ designPlan: plan });
-  };
-
-  // Compute compliance if we have predicted PPV
-  const sd = shot.designPlan.scaledDistance;
-  const ppv = shot.designPlan.predictedPPV;
-  const dist = shot.designPlan.closestStructureDistance;
+  // Sub-section summaries (wireframe style)
+  const drillSummary =
+    [dp.holeDiameter && `${dp.holeDiameter}"`, dp.burden && dp.spacing && `${dp.burden}x${dp.spacing}`, t.avgDrillDepth > 0 && `${t.avgDrillDepth.toFixed(1)}'`]
+      .filter(Boolean)
+      .join(' · ') || '—';
+  const totalsSummary =
+    [t.numHoles > 0 && `${t.numHoles} holes`, t.totalDrillFootage > 0 && `${Math.round(t.totalDrillFootage)} ft`]
+      .filter(Boolean)
+      .join(' · ') || '—';
+  const designPlan = shot.designPlan;
+  const designSummary = [
+    designPlan.siteSketchData ? 'Site' : null,
+    designPlan.shotDiagramData ? 'Shot' : null,
+    designPlan.closestStructureDistance > 0 ? 'Compliance' : null,
+  ].filter(Boolean);
+  const seismoWorst = seismo.some((r) => r.complianceStatus === 'violation')
+    ? 'Violation'
+    : seismo.some((r) => r.complianceStatus === 'warning')
+      ? 'Warning'
+      : 'Compliant';
 
   return (
-    <div className="space-y-4">
-      {/* Time */}
-      <div className="w-32">
-        <Label className="text-xs">Blast Time</Label>
-        <Input
-          type="time"
-          value={shot.time}
-          onChange={(e) => updateShot({ time: e.target.value })}
-        />
-      </div>
-
+    <div>
       {/* Drill Parameters */}
-      <div>
-        <h4 className="text-sm font-semibold text-gray-700 mb-2">Drill Parameters</h4>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-          {([
-            ['waterDepth', 'Water Depth', 'ft'],
-            ['holeDiameter', 'Hole Dia.', 'in'],
-            ['burden', 'Burden', 'ft'],
-            ['spacing', 'Spacing', 'ft'],
-            ['stemming', 'Stemming', 'ft'],
-            ['subDrill', 'Sub Drill', 'ft'],
-          ] as const).map(([field, label, unit]) => (
+      <SubSection
+        icon={<IconChip tint="blue"><Wrench className="h-4 w-4" /></IconChip>}
+        title="Drill Parameters"
+        summary={drillSummary}
+        defaultOpen={t.numHoles === 0}
+      >
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label className="text-[10px] uppercase tracking-wide text-gray-500">Time</Label>
+            <Input type="time" value={shot.time} onChange={(e) => updateShot({ time: e.target.value })} />
+          </div>
+          <div>
+            <Label className="text-[10px] uppercase tracking-wide text-gray-500">Blast Mats</Label>
+            <ChipSelect
+              className="mt-1"
+              value={dp.blastMats === true ? 'yes' : dp.blastMats === false ? 'no' : ''}
+              onChange={(v) => updateDrillParam('blastMats', v === 'yes')}
+              options={[
+                { value: 'yes', label: 'Yes' },
+                { value: 'no', label: 'No' },
+              ]}
+            />
+          </div>
+          {(
+            [
+              ['holeDiameter', 'Hole Dia (in)'],
+              ['burden', 'Burden (ft)'],
+              ['spacing', 'Spacing (ft)'],
+              ['stemming', 'Stemming (ft)'],
+              ['subDrill', 'Sub Drill (ft)'],
+              ['waterDepth', 'Water Depth (ft)'],
+            ] as const
+          ).map(([field, label]) => (
             <div key={field}>
-              <Label className="text-xs">{label} ({unit})</Label>
+              <Label className="text-[10px] uppercase tracking-wide text-gray-500">{label}</Label>
               <Input
                 type="number"
+                inputMode="decimal"
                 step="0.1"
-                value={shot.drillParams[field] || ''}
+                value={dp[field] || ''}
                 onChange={(e) => updateDrillParam(field, e.target.value)}
                 placeholder="0"
               />
             </div>
           ))}
         </div>
-      </div>
+      </SubSection>
 
       {/* Totals */}
-      <div>
-        <h4 className="text-sm font-semibold text-gray-700 mb-2">Totals</h4>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          <div>
-            <Label className="text-xs"># Holes</Label>
+      <SubSection
+        icon={<IconChip tint="green"><BarChart3 className="h-4 w-4" /></IconChip>}
+        title="Totals"
+        summary={totalsSummary}
+        defaultOpen={t.numHoles === 0}
+      >
+        <div className="grid grid-cols-3 border border-gray-200 rounded-lg overflow-hidden divide-x divide-y divide-gray-200 -space-y-px">
+          <TotalsCell label="# Holes">
             <Input
               type="number"
-              value={shot.totals.numHoles || ''}
+              inputMode="numeric"
+              className="h-8 border-0 px-0 font-mono font-bold text-[15px] focus-visible:ring-0"
+              value={t.numHoles || ''}
               onChange={(e) => updateTotal('numHoles', e.target.value)}
               placeholder="0"
             />
-          </div>
-          <div>
-            <Label className="text-xs">Total Drill Footage (ft)</Label>
+          </TotalsCell>
+          <TotalsCell label="Sq Ft" value={t.totalSqFt > 0 ? String(Math.round(t.totalSqFt)) : '—'} />
+          <TotalsCell label="Avg Depth" value={t.avgDrillDepth > 0 ? `${t.avgDrillDepth.toFixed(1)}'` : '—'} />
+          <TotalsCell label="Drill Footage">
+            <div className="flex items-baseline">
+              <Input
+                type="number"
+                inputMode="decimal"
+                className="h-8 border-0 px-0 font-mono font-bold text-[15px] focus-visible:ring-0"
+                value={t.totalDrillFootage || ''}
+                onChange={(e) => updateTotal('totalDrillFootage', e.target.value)}
+                placeholder="0"
+              />
+              <span className="text-xs text-gray-400">'</span>
+            </div>
+          </TotalsCell>
+          <TotalsCell label="Pay Yards">
             <Input
               type="number"
-              step="0.1"
-              value={shot.totals.totalDrillFootage || ''}
-              onChange={(e) => updateTotal('totalDrillFootage', e.target.value)}
-              placeholder="0"
-            />
-          </div>
-          <div>
-            <Label className="text-xs">Total Pay Yards (yd³)</Label>
-            <Input
-              type="number"
-              step="0.1"
-              value={shot.totals.totalPayYards || ''}
+              inputMode="decimal"
+              className="h-8 border-0 px-0 font-mono font-bold text-[15px] focus-visible:ring-0"
+              value={t.totalPayYards || ''}
               onChange={(e) => updateTotal('totalPayYards', e.target.value)}
               placeholder="0"
             />
-          </div>
-
-          {/* Auto-calculated fields */}
-          <div>
-            <Label className="text-xs text-gray-400">Total Sq Ft (auto)</Label>
-            <p className="h-10 flex items-center font-mono text-sm bg-gray-50 rounded-md px-3 border border-gray-200">
-              {shot.totals.totalSqFt > 0 ? shot.totals.totalSqFt.toFixed(1) : '—'}
-            </p>
-          </div>
-          <div>
-            <Label className="text-xs text-gray-400">Avg Drill Depth (auto)</Label>
-            <p className="h-10 flex items-center font-mono text-sm bg-gray-50 rounded-md px-3 border border-gray-200">
-              {shot.totals.avgDrillDepth > 0 ? shot.totals.avgDrillDepth.toFixed(1) + ' ft' : '—'}
-            </p>
-          </div>
-          <div>
-            <Label className="text-xs text-gray-400">Total Yards Shot (auto)</Label>
-            <p className="h-10 flex items-center font-mono text-sm bg-gray-50 rounded-md px-3 border border-gray-200">
-              {shot.totals.totalYardsShot > 0 ? shot.totals.totalYardsShot.toFixed(1) + ' yd³' : '—'}
-            </p>
-          </div>
+          </TotalsCell>
+          <TotalsCell label="Yards Shot" value={t.totalYardsShot > 0 ? String(Math.round(t.totalYardsShot)) : '—'} />
         </div>
-      </div>
+      </SubSection>
 
-      {/* Design Plan — Compliance Calcs */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="text-sm font-semibold text-gray-700">Design Plan — Compliance</h4>
-          {blastDayId && (
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate(`/blast-day/${blastDayId}/seismo/${shot.id}`)}
-              >
-                <Activity className="h-4 w-4 mr-1" />
-                Seismo{seismoCount > 0 ? ` (${seismoCount})` : ''}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate(`/blast-day/${blastDayId}/design/${shot.id}`)}
-              >
-                <Grid3x3 className="h-4 w-4 mr-1" /> Open Designer
-              </Button>
-            </div>
-          )}
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          <div>
-            <Label className="text-xs">Closest Structure</Label>
-            <Input
-              value={shot.designPlan.closestStructureLocation}
-              onChange={(e) => {
-                const plan = { ...shot.designPlan, closestStructureLocation: e.target.value };
-                updateShot({ designPlan: plan });
-              }}
-              placeholder="Stevens Residence"
-            />
-          </div>
-          <div>
-            <Label className="text-xs">Distance (ft)</Label>
-            <Input
-              type="number"
-              step="1"
-              value={shot.designPlan.closestStructureDistance || ''}
-              onChange={(e) => updateDesignPlan('closestStructureDistance', e.target.value)}
-              placeholder="0"
-            />
-          </div>
-          <div>
-            <Label className="text-xs">Max Holes/Delay</Label>
-            <Input
-              type="number"
-              value={shot.designPlan.maxHolesPerDelay || ''}
-              onChange={(e) => updateDesignPlan('maxHolesPerDelay', e.target.value)}
-              placeholder="0"
-            />
-          </div>
-          <div>
-            <Label className="text-xs">Max lbs/Delay (W)</Label>
-            <Input
-              type="number"
-              step="0.1"
-              value={shot.designPlan.maxPoundsPerDelay || ''}
-              onChange={(e) => updateDesignPlan('maxPoundsPerDelay', e.target.value)}
-              placeholder="0"
-            />
-          </div>
-          <div>
-            <Label className="text-xs">K Factor</Label>
-            <Input
-              type="number"
-              step="1"
-              value={shot.designPlan.kFactor || ''}
-              onChange={(e) => updateDesignPlan('kFactor', e.target.value)}
-              placeholder="180"
-            />
-          </div>
+      {/* Explosives (this shot) — auto-distributed */}
+      <SubSection
+        icon={<IconChip tint="red"><Flame className="h-4 w-4" /></IconChip>}
+        title="Explosives (this shot)"
+        summary={<Badge variant="secondary" className="text-[10px]">Auto</Badge>}
+      >
+        <ShotExplosives shot={shot} allShots={allShots} explosiveUsage={explosiveUsage} />
+      </SubSection>
 
-          {/* Auto-calculated compliance fields */}
-          <div>
-            <Label className="text-xs text-gray-400">Scaled Distance (auto)</Label>
-            <p className="h-10 flex items-center font-mono text-sm bg-gray-50 rounded-md px-3 border border-gray-200">
-              {sd > 0 && sd !== Infinity ? sd.toFixed(1) + ' ft/lb⁰·⁵' : '—'}
-            </p>
-          </div>
-          <div className="col-span-2 sm:col-span-3">
-            <Label className="text-xs text-gray-400">Predicted PPV (auto)</Label>
-            <div className="flex items-center gap-2">
-              <p className="h-10 flex items-center font-mono text-sm bg-gray-50 rounded-md px-3 border border-gray-200 flex-1">
-                {ppv > 0 && ppv !== Infinity ? ppv.toFixed(3) + ' in/s' : '—'}
-              </p>
-              {ppv > 0 && ppv !== Infinity && dist > 0 && (
-                <ComplianceBadge ppv={ppv} distance={dist} />
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Design Plan → full screen */}
+      {blastDayId && (
+        <SubSection
+          icon={<IconChip tint="orange"><MapPin className="h-4 w-4" /></IconChip>}
+          title="Design Plan"
+          summary={designSummary.length > 0 ? designSummary.join(' · ') : 'Site · Shot · Column · Compliance'}
+          navigate={() => navigate(`/blast-day/${blastDayId}/design/${shot.id}`)}
+        />
+      )}
+
+      {/* Seismo → full screen */}
+      {blastDayId && (
+        <SubSection
+          icon={<IconChip tint="navy"><Activity className="h-4 w-4" /></IconChip>}
+          title="Seismo Readings"
+          summary={seismo.length > 0 ? `${seismo.length} graph${seismo.length > 1 ? 's' : ''} · ${seismoWorst}` : 'No readings yet'}
+          navigate={() => navigate(`/blast-day/${blastDayId}/seismo/${shot.id}`)}
+        />
+      )}
     </div>
   );
 }
 
-function ComplianceBadge({ ppv, distance }: { ppv: number; distance: number }) {
-  // Use a mid-range frequency estimate for predictive compliance
-  // (actual frequency will come from seismo readings)
-  const result = checkCompliance(ppv, 15, distance);
-  const variant = result.overall;
-  const label = variant === 'compliant' ? 'COMPLIANT' : variant === 'warning' ? 'WARNING' : 'VIOLATION';
+function TotalsCell({
+  label,
+  value,
+  children,
+}: {
+  label: string;
+  value?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <div className="p-2.5">
+      <div className="text-[10px] uppercase tracking-wide text-gray-400">{label}</div>
+      {children ?? <div className="font-mono font-bold text-[15px]">{value}</div>}
+    </div>
+  );
+}
+
+/** Per-shot auto-distributed quantities with tap-to-override (Spec §4.6.3) */
+function ShotExplosives({
+  shot,
+  allShots,
+  explosiveUsage,
+}: {
+  shot: Shot;
+  allShots: Shot[];
+  explosiveUsage: ExplosiveUsage | undefined;
+}) {
+  const [editing, setEditing] = useState<number | null>(null);
+  if (!explosiveUsage || explosiveUsage.products.length === 0) {
+    return (
+      <p className="text-sm text-gray-400">
+        Add products in Explosive Totals — quantities distribute here automatically.
+      </p>
+    );
+  }
+  const holeCounts = allShots.map((s) => ({ shotId: s.id, holes: s.totals.numHoles }));
+  const totalHoles = holeCounts.reduce((s, h) => s + h.holes, 0);
+  const pct =
+    totalHoles > 0 && shot.totals.numHoles > 0
+      ? ` (${shot.totals.numHoles}/${totalHoles} = ${Math.round((shot.totals.numHoles / totalHoles) * 100)}%)`
+      : '';
+
+  const setOverride = (index: number, qty: number) => {
+    const products = [...explosiveUsage.products];
+    const item = { ...products[index] };
+    item.shotAllocations = { ...item.shotAllocations, [shot.id]: qty };
+    products[index] = item;
+    void db.explosiveUsages.update(explosiveUsage.id, { products, updatedAt: nowISO() });
+  };
+
+  let subtotal = 0;
+  const rows = explosiveUsage.products.map((item, i) => {
+    const dist = distributeByHoles(item.quantity, holeCounts, item.shotAllocations);
+    const qty = dist.allocations[shot.id] ?? 0;
+    const lbs = qty * item.weightMultiplier;
+    subtotal += lbs;
+    const overridden = item.shotAllocations[shot.id] !== undefined;
+    return { item, i, qty, lbs, overridden };
+  });
 
   return (
-    <Badge variant={variant}>
-      {label}
-    </Badge>
+    <div className="space-y-1">
+      <p className="text-xs text-gray-400 mb-2">
+        Auto-distributed from totals{pct}. Tap to override.
+      </p>
+      {rows.map(({ item, i, qty, lbs, overridden }) => (
+        <div
+          key={i}
+          className="flex items-center gap-2 py-1.5 border-b border-gray-50 last:border-0 cursor-pointer"
+          onClick={() => setEditing(editing === i ? null : i)}
+        >
+          <span className={`text-sm flex-1 truncate ${overridden ? 'font-semibold' : ''}`}>
+            {item.productName}
+          </span>
+          {editing === i ? (
+            <Input
+              autoFocus
+              type="number"
+              inputMode="decimal"
+              className="w-20 h-9 text-right font-mono"
+              defaultValue={qty || ''}
+              onClick={(e) => e.stopPropagation()}
+              onBlur={(e) => {
+                setOverride(i, parseFloat(e.target.value) || 0);
+                setEditing(null);
+              }}
+              onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+            />
+          ) : (
+            <span className="font-mono font-bold text-sm">{qty || '—'}</span>
+          )}
+          <span className="font-mono text-xs text-gray-500 w-16 text-right">
+            {lbs > 0 ? `${lbs.toFixed(1)} lbs` : '—'}
+          </span>
+        </div>
+      ))}
+      <div className="text-right text-sm font-bold pt-1">
+        Shot subtotal: <span className="font-mono">{subtotal.toFixed(1)} lbs</span>
+      </div>
+    </div>
   );
 }
