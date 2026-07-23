@@ -82,6 +82,16 @@ function DesignPlanInner({
     };
   }, [flush]);
 
+  // Re-sync local editor state when the record changes underneath us (another
+  // tab, devtools, sync later) — but never while local edits are pending;
+  // otherwise a stale local copy can resurrect old pins over newer data.
+  useEffect(() => {
+    if (dirty.current.shot || dirty.current.site) return;
+    setDiagram(parseDiagram(shot.designPlan.shotDiagramData));
+    setSiteDiagram(parseSiteDiagram(shot.designPlan.siteSketchData));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shot.updatedAt]);
+
   const handleChange = (next: ShotDiagram) => {
     setDiagram(next);
     dirty.current.shot = next;

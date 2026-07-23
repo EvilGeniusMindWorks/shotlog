@@ -402,14 +402,17 @@ export function SiteDiagramEditor({ value, onChange, jobAddress, onUseClosest, o
         </div>
       )}
 
-      {/* Map — `isolate` traps Leaflet's internal z-indexes (up to 1000) so
-          controls/pins never bleed over the app's sticky header */}
+      {/* Map. The className MUST stay constant: Leaflet adds its own classes
+          (leaflet-container etc.) to this div, and any React className change
+          rewrites the attribute wholesale — wiping Leaflet's classes and
+          collapsing the tile panes (map goes blank). Cursor changes go through
+          inline style, which React manages independently of className.
+          `isolate` traps Leaflet's internal z-indexes (up to 1000) so
+          controls/pins never bleed over the app's sticky header. */}
       <div
         ref={containerRef}
-        className={cn(
-          'h-80 rounded-lg border border-gray-300 z-0 isolate',
-          mode !== 'pan' && 'cursor-crosshair',
-        )}
+        className="h-80 rounded-lg border border-gray-300 z-0 isolate"
+        style={{ cursor: mode !== 'pan' ? 'crosshair' : undefined }}
       />
 
       {/* Closest structure → compliance auto-fill */}
