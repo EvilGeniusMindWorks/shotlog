@@ -16,10 +16,15 @@ const TILE_LAYERS = {
   street: {
     url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     attribution: '© OpenStreetMap contributors',
+    // OSM serves tiles at every zoom we allow
+    maxNativeZoom: 19,
   },
   satellite: {
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     attribution: '© Esri',
+    // Esri imagery has no tiles above ~z17 in rural areas — request z17 and
+    // let Leaflet upscale, instead of rendering blank gray
+    maxNativeZoom: 17,
   },
 };
 
@@ -43,9 +48,92 @@ interface Props {
   onChange: (d: SiteDiagram) => void;
   jobAddress?: string;
   onUseClosest?: (distanceFeet: number, label: string) => void;
+  /** Called with a rendered PNG of the map + annotations after edits settle */
+  onSnapshot?: (blob: Blob) => void;
 }
 
-export function SiteDiagramEditor({ value, onChange, jobAddress, onUseClosest }: Props) {
+/**
+ * Composite the currently-visible tiles + annotations into a PNG. Tiles are
+ * loaded with crossOrigin=anonymous so the canvas stays untainted; if a tile
+ * host ever blocks CORS, toBlob throws and we skip the snapshot gracefully.
+ */
+async function captureSnapshot(
+  map: L.Map,
+  container: HTMLElement,
+  value: SiteDiagram,
+): Promise<Blob | null> {
+  try {
+    const size = map.getSize();
+    const canvas = document.createElement('canvas');
+    canvas.width = size.x;
+    canvas.height = size.y;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.fillStyle = '#e5e3df';
+    ctx.fillRect(0, 0, size.x, size.y);
+
+    // Tiles: draw each at its on-screen position
+    const cRect = container.getBoundingClientRect();
+    for (const img of container.querySelectorAll<HTMLImageElement>('img.leaflet-tile')) {
+      if (!img.complete || img.naturalWidth === 0) continue;
+      const r = img.getBoundingClientRect();
+      ctx.drawImage(img, r.left - cRect.left, r.top - cRect.top, r.width, r.height);
+    }
+
+    const toPt = (lat: number, lng: number) => map.latLngToContainerPoint([lat, lng]);
+
+    // Distance lines
+    if (value.blastPin) {
+      const b = toPt(value.blastPin.lat, value.blastPin.lng);
+      ctx.strokeStyle = '#1a365d';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      for (const s of value.structures) {
+        const p = toPt(s.lat, s.lng);
+        ctx.beginPath();
+        ctx.moveTo(b.x, b.y);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+      // Blast pin
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, 13, 0, Math.PI * 2);
+      ctx.fillStyle = '#dd6b20';
+      ctx.fill();
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+    // Structure pins + labels
+    for (const s of value.structures) {
+      const p = toPt(s.lat, s.lng);
+      ctx.fillStyle = '#1a365d';
+      ctx.fillRect(p.x - 10, p.y - 10, 20, 20);
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(p.x - 10, p.y - 10, 20, 20);
+      const label = value.blastPin
+        ? `${s.label} — ${Math.round(distanceFt(value.blastPin, s))} ft`
+        : s.label;
+      ctx.font = 'bold 11px Arial';
+      const w = ctx.measureText(label).width;
+      ctx.fillStyle = 'white';
+      ctx.fillRect(p.x - w / 2 - 3, p.y + 12, w + 6, 15);
+      ctx.fillStyle = '#1a365d';
+      ctx.fillText(label, p.x - w / 2, p.y + 23);
+    }
+
+    // JPEG: satellite imagery compresses ~8× better than PNG at this quality
+    return await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.85),
+    );
+  } catch {
+    return null; // tainted canvas or transient failure — skip this snapshot
+  }
+}
+
+export function SiteDiagramEditor({ value, onChange, jobAddress, onUseClosest, onSnapshot }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const tileRef = useRef<L.TileLayer | null>(null);
@@ -66,10 +154,28 @@ export function SiteDiagramEditor({ value, onChange, jobAddress, onUseClosest }:
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
+  const onSnapshotRef = useRef(onSnapshot);
+  onSnapshotRef.current = onSnapshot;
+  const snapshotTimer = useRef<number | undefined>(undefined);
+
+  const scheduleSnapshot = () => {
+    if (!onSnapshotRef.current) return;
+    window.clearTimeout(snapshotTimer.current);
+    // Wait for tiles to settle after the edit before compositing
+    snapshotTimer.current = window.setTimeout(async () => {
+      const map = mapRef.current;
+      const container = containerRef.current;
+      if (!map || !container) return;
+      const blob = await captureSnapshot(map, container, liveRef.current);
+      if (blob) onSnapshotRef.current?.(blob);
+    }, 1500);
+  };
+
   const mutate = (updater: (v: SiteDiagram) => SiteDiagram) => {
     const next = updater(liveRef.current);
     liveRef.current = next; // later events in the same tick see the new state
     onChangeRef.current(next);
+    scheduleSnapshot();
   };
   const mutateRef = useRef(mutate);
   mutateRef.current = mutate;
@@ -141,7 +247,12 @@ export function SiteDiagramEditor({ value, onChange, jobAddress, onUseClosest }:
     if (!map) return;
     tileRef.current?.remove();
     const spec = TILE_LAYERS[value.baseLayer];
-    tileRef.current = L.tileLayer(spec.url, { attribution: spec.attribution, maxZoom: 19 }).addTo(map);
+    tileRef.current = L.tileLayer(spec.url, {
+      attribution: spec.attribution,
+      maxZoom: 19,
+      maxNativeZoom: spec.maxNativeZoom,
+      crossOrigin: 'anonymous', // required for canvas snapshot capture
+    }).addTo(map);
   }, [value.baseLayer]);
 
   // Redraw pins + distance lines whenever annotations change
@@ -198,7 +309,7 @@ export function SiteDiagramEditor({ value, onChange, jobAddress, onUseClosest }:
     return () => container.removeEventListener('click', onClick);
   }, []);
 
-  const flyTo = (lat: number, lng: number, zoom = 18) => {
+  const flyTo = (lat: number, lng: number, zoom = 17) => {
     mapRef.current?.setView([lat, lng], zoom);
   };
 

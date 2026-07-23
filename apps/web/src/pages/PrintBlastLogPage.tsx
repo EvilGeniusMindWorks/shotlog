@@ -521,12 +521,35 @@ export function PrintBlastLogPage() {
 }
 
 /**
- * Schematic site sketch for print — pins projected relative to the blast
- * location (equirectangular, scaled to fit), matching the hand-drawn style of
- * the paper form. Deliberately not map tiles: printing stays offline-safe.
+ * Site sketch for print. Prefers the captured map snapshot (real imagery with
+ * pins, stored offline as a Blob); falls back to a projected schematic, then
+ * to a blank box for hand-drawing.
  */
 function PrintSiteDiagram({ shot }: { shot: Shot }) {
   const site = parseSiteDiagram(shot.designPlan.siteSketchData);
+  const snapshot = shot.designPlan.siteSketchImage;
+  const [snapUrl, setSnapUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!snapshot) {
+      setSnapUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(snapshot);
+    setSnapUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [snapshot]);
+
+  if (snapUrl) {
+    return (
+      <div className="site-diagram" style={{ border: 'none' }}>
+        <img
+          src={snapUrl}
+          alt="Site map"
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+      </div>
+    );
+  }
   if (!site.blastPin || site.structures.length === 0) {
     return <div className="site-diagram"></div>; // blank box for hand-drawing
   }

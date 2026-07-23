@@ -110,6 +110,17 @@ function DesignPlanInner({
     });
   };
 
+  // Rendered map image for dashboard thumbnails and printed reports
+  const saveSnapshot = (blob: Blob) => {
+    void db.shots.get(shot.id).then((current) => {
+      if (!current) return;
+      return db.shots.update(shot.id, {
+        designPlan: { ...current.designPlan, siteSketchImage: blob },
+        updatedAt: nowISO(),
+      });
+    });
+  };
+
   // Live compliance strip from the shot's design inputs
   const dp = shot.designPlan;
   const sd =
@@ -190,6 +201,7 @@ function DesignPlanInner({
                 job ? [job.address, job.city, job.state].filter(Boolean).join(', ') : undefined
               }
               onUseClosest={useClosestForCompliance}
+              onSnapshot={saveSnapshot}
             />
           </CardContent>
         </Card>
