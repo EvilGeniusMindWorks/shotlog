@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, ClipboardList, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, FileText, ClipboardList, ChevronDown, ChevronUp, Printer } from 'lucide-react';
 import { useBlastDay } from '@/hooks/useBlastDay';
 import { db } from '@/db';
 import { nowISO, formatDate, dayOfWeek } from '@/lib/utils';
@@ -87,6 +87,14 @@ export function BlastDayPage() {
               {formatDate(blastDay.date)} ({dayOfWeek(blastDay.date)}) — {job?.customer}
             </p>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Print Blasting Log"
+            onClick={() => navigate(`/blast-day/${blastDay.id}/print`)}
+          >
+            <Printer className="h-5 w-5" />
+          </Button>
           <Badge variant={blastDay.status as 'draft' | 'submitted' | 'approved'}>
             {blastDay.status}
           </Badge>

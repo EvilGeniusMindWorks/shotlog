@@ -5,6 +5,7 @@ import { BlastDayPage } from '@/pages/BlastDayPage';
 import { JobsPage } from '@/pages/JobsPage';
 import { JobDetailPage } from '@/pages/JobDetailPage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { PrintBlastLogPage } from '@/pages/PrintBlastLogPage';
 
 export function App() {
   return (
@@ -17,6 +18,7 @@ export function App() {
           <Route path="/settings" element={<SettingsPage />} />
         </Route>
         <Route path="/blast-day/:id" element={<BlastDayPage />} />
+        <Route path="/blast-day/:id/print" element={<PrintBlastLogPage />} />
       </Routes>
     </BrowserRouter>
   );
