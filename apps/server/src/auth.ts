@@ -132,7 +132,7 @@ const changePasswordSchema = z.object({
   newPassword: z.string().min(8),
 });
 
-authRouter.post('/change-password', requireAuth, async (req: AuthedRequest, res) => {
+authRouter.post('/change-password', requireAuth, async (req: AuthedRequest, res: Response) => {
   const parsed = changePasswordSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: 'newPassword must be at least 8 characters' });

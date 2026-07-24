@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Response } from 'express';
 import { z } from 'zod';
 import { prisma } from './db.js';
 import { requireAuth, type AuthedRequest } from './auth.js';
@@ -10,7 +10,7 @@ syncRouter.use(requireAuth);
  * Pull: everything changed since the client's last sync.
  * `since` is the client's LWW clock (ISO); omitted = full pull.
  */
-syncRouter.get('/changes', async (req: AuthedRequest, res) => {
+syncRouter.get('/changes', async (req: AuthedRequest, res: Response) => {
   const since = typeof req.query.since === 'string' ? new Date(req.query.since) : null;
   const records = await prisma.syncRecord.findMany({
     where: {
@@ -51,7 +51,7 @@ const pushSchema = z.object({
  * client updatedAt is >= the stored one; otherwise it's reported stale so
  * the client can pull the newer copy.
  */
-syncRouter.post('/push', async (req: AuthedRequest, res) => {
+syncRouter.post('/push', async (req: AuthedRequest, res: Response) => {
   const parsed = pushSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: 'invalid push payload', details: parsed.error.issues.slice(0, 3) });
