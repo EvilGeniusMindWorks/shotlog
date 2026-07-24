@@ -30,3 +30,11 @@ export type { ComplianceStatus, StructureType } from './calculations.js';
 
 export { distributeByHoles } from './distribution.js';
 export type { ShotHoleCount, DistributionResult } from './distribution.js';
+
+export {
+  DELAY_WINDOW_MS,
+  computeFiringTimes,
+  delayWindowSizes,
+  maxHolesPerWindow,
+} from './timing.js';
+export type { TimingPlan, TimingWire } from './timing.js';

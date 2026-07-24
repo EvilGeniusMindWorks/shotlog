@@ -10,7 +10,7 @@ import {
   powderFactor,
   usbmRI8507Limit,
 } from '@shotlog/shared';
-import { DELAY_COLORS, parseDiagram } from '@/lib/shotDiagram';
+import { DELAY_COLORS, computeFiringTimes, parseDiagram } from '@/lib/shotDiagram';
 import { ColumnVisual } from '@/components/design/TypicalColumnBuilder';
 import type { SeismoReading, Shot } from '@/db/schema';
 import { savePagesAsPdf } from '@/lib/pdf';
@@ -331,7 +331,8 @@ function SignoffSignature({ blob }: { blob: Blob | null }) {
 
 function ReportDelayGrid({ shot }: { shot: Shot }) {
   const d = parseDiagram(shot.designPlan.shotDiagramData);
-  if (Object.keys(d.delays).length === 0) return null;
+  const times = computeFiringTimes(d);
+  if (times.size === 0 && Object.keys(d.delays).length === 0) return null;
   const spacing = 16;
   const r = 6;
   const pad = 8;
@@ -340,15 +341,28 @@ function ReportDelayGrid({ shot }: { shot: Shot }) {
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="report-grid">
       {Array.from({ length: d.rows * d.cols }, (_, idx) => {
-        const ms = d.delays[idx];
+        const t = times.get(idx);
+        const legacyMs = d.start === undefined ? d.delays[idx] : undefined;
+        const cx = pad + (idx % d.cols) * spacing + spacing / 2;
+        const cy = pad + Math.floor(idx / d.cols) * spacing + spacing / 2;
+        const fill =
+          d.start?.hole === idx
+            ? '#dd6b20'
+            : t !== undefined
+              ? '#1a365d'
+              : legacyMs !== undefined
+                ? DELAY_COLORS[legacyMs] ?? '#1a365d'
+                : '#e5e7eb';
+        const label = t ?? legacyMs;
         return (
-          <circle
-            key={idx}
-            cx={pad + (idx % d.cols) * spacing + spacing / 2}
-            cy={pad + Math.floor(idx / d.cols) * spacing + spacing / 2}
-            r={r}
-            fill={ms !== undefined ? DELAY_COLORS[ms] ?? '#1a365d' : '#e5e7eb'}
-          />
+          <g key={idx}>
+            <circle cx={cx} cy={cy} r={r} fill={fill} />
+            {label !== undefined && (
+              <text x={cx} y={cy + 2} textAnchor="middle" fontSize={label >= 1000 ? 4 : 5} fontWeight={700} fill="white">
+                {label}
+              </text>
+            )}
+          </g>
         );
       })}
     </svg>

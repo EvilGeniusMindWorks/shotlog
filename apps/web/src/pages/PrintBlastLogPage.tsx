@@ -8,7 +8,7 @@ import { ColumnVisual } from '@/components/design/TypicalColumnBuilder';
 import { distributeByHoles, powderFactor } from '@shotlog/shared';
 import { validateForPrint } from '@/lib/validation';
 import { savePagesAsPdf } from '@/lib/pdf';
-import { DELAY_COLORS, parseDiagram } from '@/lib/shotDiagram';
+import { DELAY_COLORS, computeFiringTimes, parseDiagram } from '@/lib/shotDiagram';
 import { distanceFt, parseSiteDiagram } from '@/lib/siteDiagram';
 import type { Shot } from '@/db/schema';
 import './print-blast-log.css';
@@ -685,13 +685,17 @@ function PrintSiteDiagram({ shot }: { shot: Shot }) {
   );
 }
 
-/** The painted hole grid + wires, sized for the paper form's diagram box */
+/** The timed hole grid + wires, sized for the paper form's diagram box */
 function PrintShotDiagram({ shot }: { shot: Shot }) {
   const diagram = parseDiagram(shot.designPlan.shotDiagramData);
-  const hasContent = Object.keys(diagram.delays).length > 0 || diagram.wires.length > 0;
+  const hasContent =
+    diagram.start !== undefined ||
+    Object.keys(diagram.delays).length > 0 ||
+    diagram.wires.length > 0;
   if (!hasContent) return <div className="site-diagram"></div>; // blank box for hand-drawing
 
-  const { rows, cols, delays, wires } = diagram;
+  const { rows, cols, delays, wires, start, interHoleMs } = diagram;
+  const times = computeFiringTimes(diagram);
   const spacing = 20;
   const radius = 7.5;
   const pad = 12;
@@ -700,6 +704,7 @@ function PrintShotDiagram({ shot }: { shot: Shot }) {
   const cx = (idx: number) => pad + (idx % cols) * spacing + spacing / 2;
   const cy = (idx: number) => pad + Math.floor(idx / cols) * spacing + spacing / 2;
   const usedDelays = [...new Set(Object.values(delays))].sort((a, b) => a - b);
+  const leadWires = wires.filter((w) => w.leadMs !== undefined);
 
   return (
     <div style={{ textAlign: 'center', padding: 2 }}>
@@ -708,63 +713,93 @@ function PrintShotDiagram({ shot }: { shot: Shot }) {
           <marker id="print-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
             <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a365d" />
           </marker>
+          <marker id="print-lead-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#38a169" />
+          </marker>
         </defs>
         {wires.map((w, i) => {
           const x1 = cx(w.from), y1 = cy(w.from), x2 = cx(w.to), y2 = cy(w.to);
           const dx = x2 - x1, dy = y2 - y1;
           const len = Math.hypot(dx, dy) || 1;
           const trim = radius + 2;
+          const isLead = w.leadMs !== undefined;
           return (
-            <line
-              key={i}
-              x1={x1 + (dx / len) * trim}
-              y1={y1 + (dy / len) * trim}
-              x2={x2 - (dx / len) * trim}
-              y2={y2 - (dy / len) * trim}
-              stroke="#1a365d"
-              strokeWidth={1.5}
-              markerEnd="url(#print-arrow)"
-            />
+            <g key={i}>
+              <line
+                x1={x1 + (dx / len) * trim}
+                y1={y1 + (dy / len) * trim}
+                x2={x2 - (dx / len) * trim}
+                y2={y2 - (dy / len) * trim}
+                stroke={isLead ? '#38a169' : '#1a365d'}
+                strokeWidth={1.5}
+                strokeDasharray={isLead ? '3,2' : undefined}
+                markerEnd={isLead ? 'url(#print-lead-arrow)' : 'url(#print-arrow)'}
+              />
+              {isLead && (
+                <text x={(x1 + x2) / 2} y={(y1 + y2) / 2 - 3} textAnchor="middle" fontSize={5.5} fontWeight={700} fill="#38a169">
+                  {w.leadMs}ms
+                </text>
+              )}
+            </g>
           );
         })}
         {Array.from({ length: rows * cols }, (_, idx) => {
-          const ms = delays[idx];
+          const t = times.get(idx);
+          const legacyMs = start === undefined ? delays[idx] : undefined;
+          const label = t ?? legacyMs;
+          const fill =
+            start?.hole === idx
+              ? '#dd6b20'
+              : t !== undefined
+                ? '#1a365d'
+                : legacyMs !== undefined
+                  ? DELAY_COLORS[legacyMs] ?? '#1a365d'
+                  : 'white';
           return (
             <g key={idx}>
               <circle
                 cx={cx(idx)}
                 cy={cy(idx)}
                 r={radius}
-                fill={ms !== undefined ? DELAY_COLORS[ms] ?? '#1a365d' : 'white'}
-                stroke={ms !== undefined ? DELAY_COLORS[ms] ?? '#1a365d' : '#999'}
+                fill={fill}
+                stroke={label !== undefined ? fill : '#999'}
                 strokeWidth={0.8}
               />
-              {ms !== undefined && (
-                <text x={cx(idx)} y={cy(idx) + 2.5} textAnchor="middle" fontSize={6.5} fontWeight={700} fill="white">
-                  {ms}
+              {label !== undefined && (
+                <text x={cx(idx)} y={cy(idx) + 2.5} textAnchor="middle" fontSize={label >= 1000 ? 5 : 6.5} fontWeight={700} fill="white">
+                  {label}
                 </text>
               )}
             </g>
           );
         })}
       </svg>
-      {usedDelays.length > 0 && (
-        <div style={{ fontSize: 7, display: 'flex', gap: 8, justifyContent: 'center', marginTop: 2 }}>
-          {usedDelays.map((ms) => (
-            <span key={ms} style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-              <span
-                style={{
-                  width: 9,
-                  height: 9,
-                  borderRadius: '50%',
-                  background: DELAY_COLORS[ms] ?? '#1a365d',
-                  display: 'inline-block',
-                }}
-              />
-              {ms}ms
-            </span>
-          ))}
+      {start !== undefined ? (
+        <div style={{ fontSize: 7, marginTop: 2 }}>
+          First hole {start.leadMs}ms · +{interHoleMs}ms/hole
+          {leadWires.length > 0 &&
+            ` · leads: ${leadWires.map((w) => `${w.leadMs}ms`).join(', ')}`}
+          {' '}· all times in ms
         </div>
+      ) : (
+        usedDelays.length > 0 && (
+          <div style={{ fontSize: 7, display: 'flex', gap: 8, justifyContent: 'center', marginTop: 2 }}>
+            {usedDelays.map((ms) => (
+              <span key={ms} style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                <span
+                  style={{
+                    width: 9,
+                    height: 9,
+                    borderRadius: '50%',
+                    background: DELAY_COLORS[ms] ?? '#1a365d',
+                    display: 'inline-block',
+                  }}
+                />
+                {ms}ms
+              </span>
+            ))}
+          </div>
+        )
       )}
     </div>
   );

@@ -1,27 +1,31 @@
 import { useRef, useState } from 'react';
-import { Cable, Copy, Eraser, Minus, PaintBucket, Plus, Undo2 } from 'lucide-react';
+import { Cable, Copy, Minus, Plus, Trash2, Undo2, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   DELAY_COLORS,
   DELAY_SERIES,
   areAdjacent,
+  computeFiringTimes,
+  delayWindowSizes,
   hasWire,
   type ShotDiagram,
   type Wire,
 } from '@/lib/shotDiagram';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
-// Undo stack entries mirror the wireframe's behavior (Spec §5.3)
 type UndoAction =
-  | { type: 'paint'; idx: number; prev: number | undefined }
+  | { type: 'setStart'; prev: ShotDiagram['start']; prevDelays: Record<number, number> }
   | { type: 'wire'; wire: Wire }
   | { type: 'unwire'; wire: Wire }
-  | { type: 'clearWires'; prevWires: Wire[] }
-  | { type: 'fillAll'; prevDelays: Record<number, number> };
+  | { type: 'clearAll'; prev: ShotDiagram };
 
 const HOLE_SPACING = 44; // px between hole centers — glove-sized tap targets
 const HOLE_RADIUS = 15;
 const PAD = 26;
+
+const START_COLOR = '#dd6b20';
+const LEAD_COLOR = '#38a169';
 
 interface Props {
   diagram: ShotDiagram;
@@ -30,14 +34,29 @@ interface Props {
   onClone?: (targetShotId: string) => void;
 }
 
+/**
+ * Sequential-timing shot designer: pick the first hole and its lead delay,
+ * then wire hole-to-hole — each wire adds the inter-hole increment. A "Lead"
+ * wire carries its own delay instead (branching to another row). Every hole
+ * shows its cumulative firing time; edits re-time everything downstream.
+ */
 export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone }: Props) {
-  const [activeDelay, setActiveDelay] = useState<number | 'eraser'>(DELAY_SERIES[0]);
-  const [wireMode, setWireMode] = useState(false);
+  const [activeLead, setActiveLead] = useState<number>(DELAY_SERIES[1]); // 17ms
+  const [customLead, setCustomLead] = useState('');
+  const [leadMode, setLeadMode] = useState(false);
   const [wireSource, setWireSource] = useState<number | null>(null);
   const undoStack = useRef<UndoAction[]>([]);
 
-  const { rows, cols, delays, wires } = diagram;
+  const { rows, cols, delays, wires, start, interHoleMs } = diagram;
   const holeCount = rows * cols;
+  const times = computeFiringTimes(diagram);
+  const windows = delayWindowSizes(times);
+  const maxWindow = Math.max(0, ...windows);
+  const lastFire = Math.max(0, ...times.values());
+  const legacyPainted = !start && Object.keys(delays).length > 0;
+
+  /** The lead delay currently selected (custom entry wins when present) */
+  const leadValue = customLead !== '' ? Math.max(0, parseInt(customLead, 10) || 0) : activeLead;
 
   const commit = (next: ShotDiagram, action: UndoAction) => {
     undoStack.current.push(action);
@@ -45,115 +64,106 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone }: 
   };
 
   const tapHole = (idx: number) => {
-    if (wireMode) {
-      if (wireSource === null) {
-        setWireSource(idx);
-        return;
-      }
-      if (wireSource === idx) {
-        setWireSource(null);
-        return;
-      }
-      if (!areAdjacent(wireSource, idx, cols)) {
-        setWireSource(idx); // treat as picking a new source
-        return;
-      }
-      const wire = { from: wireSource, to: idx };
-      if (hasWire(wires, wire.from, wire.to)) {
-        // toggle off
-        const next = {
-          ...diagram,
-          wires: wires.filter(
-            (w) =>
-              !(
-                (w.from === wire.from && w.to === wire.to) ||
-                (w.from === wire.to && w.to === wire.from)
-              ),
-          ),
-        };
-        commit(next, { type: 'unwire', wire });
-      } else {
-        commit({ ...diagram, wires: [...wires, wire] }, { type: 'wire', wire });
-      }
-      setWireSource(null);
+    // No start yet: first tap sets the initiation hole with the chosen lead.
+    // Legacy painted delays are cleared — the timing tree replaces them.
+    if (!start) {
+      commit(
+        { ...diagram, start: { hole: idx, leadMs: leadValue }, delays: {} },
+        { type: 'setStart', prev: undefined, prevDelays: delays },
+      );
+      setWireSource(idx);
       return;
     }
 
-    // Paint mode
-    const prev = delays[idx];
-    const nextDelays = { ...delays };
-    if (activeDelay === 'eraser') {
-      if (prev === undefined) return;
-      delete nextDelays[idx];
-    } else {
-      if (prev === activeDelay) return;
-      nextDelays[idx] = activeDelay;
+    if (wireSource === null) {
+      setWireSource(idx);
+      return;
     }
-    commit({ ...diagram, delays: nextDelays }, { type: 'paint', idx, prev });
+    if (wireSource === idx) {
+      setWireSource(null);
+      return;
+    }
+    // Plain wires need adjacency; lead wires can jump anywhere on the grid
+    if (!leadMode && !areAdjacent(wireSource, idx, cols)) {
+      setWireSource(idx); // treat as picking a new source
+      return;
+    }
+    if (hasWire(wires, wireSource, idx)) {
+      const next = {
+        ...diagram,
+        wires: wires.filter(
+          (w) =>
+            !(
+              (w.from === wireSource && w.to === idx) ||
+              (w.from === idx && w.to === wireSource)
+            ),
+        ),
+      };
+      const removed = wires.find(
+        (w) =>
+          (w.from === wireSource && w.to === idx) || (w.from === idx && w.to === wireSource),
+      )!;
+      commit(next, { type: 'unwire', wire: removed });
+      setWireSource(null);
+      return;
+    }
+    const wire: Wire = leadMode
+      ? { from: wireSource, to: idx, leadMs: leadValue }
+      : { from: wireSource, to: idx };
+    commit({ ...diagram, wires: [...wires, wire] }, { type: 'wire', wire });
+    // Chain: the destination becomes the next source so a row wires tap-tap-tap
+    setWireSource(idx);
+    if (leadMode) setLeadMode(false);
   };
 
   const undo = () => {
     const action = undoStack.current.pop();
     if (!action) return;
     switch (action.type) {
-      case 'paint': {
-        const nextDelays = { ...delays };
-        if (action.prev === undefined) delete nextDelays[action.idx];
-        else nextDelays[action.idx] = action.prev;
-        onChange({ ...diagram, delays: nextDelays });
+      case 'setStart':
+        onChange({ ...diagram, start: action.prev, delays: action.prevDelays });
+        setWireSource(null);
         break;
-      }
       case 'wire':
         onChange({
           ...diagram,
-          wires: wires.filter(
-            (w) => !(w.from === action.wire.from && w.to === action.wire.to),
-          ),
+          wires: wires.filter((w) => !(w.from === action.wire.from && w.to === action.wire.to)),
         });
+        setWireSource(action.wire.from);
         break;
       case 'unwire':
         onChange({ ...diagram, wires: [...wires, action.wire] });
         break;
-      case 'clearWires':
-        onChange({ ...diagram, wires: action.prevWires });
-        break;
-      case 'fillAll':
-        onChange({ ...diagram, delays: action.prevDelays });
+      case 'clearAll':
+        onChange(action.prev);
         break;
     }
   };
 
-  const clearWires = () => {
-    if (wires.length === 0) return;
-    commit({ ...diagram, wires: [] }, { type: 'clearWires', prevWires: wires });
+  const clearAll = () => {
+    if (!start && wires.length === 0 && Object.keys(delays).length === 0) return;
+    commit(
+      { ...diagram, start: undefined, wires: [], delays: {} },
+      { type: 'clearAll', prev: diagram },
+    );
+    setWireSource(null);
   };
 
-  /** Paint every unpainted hole with the active delay */
-  const fillAll = () => {
-    if (activeDelay === 'eraser') return;
-    const nextDelays = { ...delays };
-    let changed = false;
-    for (let i = 0; i < holeCount; i++) {
-      if (nextDelays[i] === undefined) {
-        nextDelays[i] = activeDelay;
-        changed = true;
-      }
-    }
-    if (!changed) return;
-    commit({ ...diagram, delays: nextDelays }, { type: 'fillAll', prevDelays: delays });
+  const setIncrement = (value: number) => {
+    const ms = Math.max(1, Math.min(500, value));
+    if (ms === interHoleMs) return;
+    undoStack.current = []; // re-times everything; a stale undo stack would confuse
+    onChange({ ...diagram, interHoleMs: ms });
   };
 
   const resize = (field: 'rows' | 'cols', delta: number) => {
     const value = Math.max(1, Math.min(20, diagram[field] + delta));
     if (value === diagram[field]) return;
-    // Drop delays/wires that fall outside the new grid
     const nextCols = field === 'cols' ? value : cols;
     const nextRows = field === 'rows' ? value : rows;
     const inBounds = (idx: number) =>
       Math.floor(idx / cols) < nextRows && idx % cols < nextCols;
-    // Re-index holes when column count changes
-    const remap = (idx: number) =>
-      Math.floor(idx / cols) * nextCols + (idx % cols);
+    const remap = (idx: number) => Math.floor(idx / cols) * nextCols + (idx % cols);
     const nextDelays: Record<number, number> = {};
     for (const [k, ms] of Object.entries(delays)) {
       const idx = Number(k);
@@ -161,9 +171,18 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone }: 
     }
     const nextWires = wires
       .filter((w) => inBounds(w.from) && inBounds(w.to))
-      .map((w) => ({ from: remap(w.from), to: remap(w.to) }));
+      .map((w) => ({ ...w, from: remap(w.from), to: remap(w.to) }));
+    const nextStart = start && inBounds(start.hole) ? { ...start, hole: remap(start.hole) } : undefined;
     undoStack.current = []; // resize invalidates the undo history
-    onChange({ ...diagram, rows: nextRows, cols: nextCols, delays: nextDelays, wires: nextWires });
+    setWireSource(null);
+    onChange({
+      ...diagram,
+      rows: nextRows,
+      cols: nextCols,
+      delays: nextDelays,
+      wires: nextWires,
+      start: nextStart,
+    });
   };
 
   const cx = (idx: number) => PAD + (idx % cols) * HOLE_SPACING + HOLE_SPACING / 2;
@@ -171,65 +190,98 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone }: 
   const width = PAD * 2 + cols * HOLE_SPACING;
   const height = PAD * 2 + rows * HOLE_SPACING;
 
+  const pickingLead = !start || leadMode;
+
   return (
     <div className="space-y-2">
-      {/* TIMING toolbar (wireframe style) */}
+      {/* Lead / increment toolbar */}
       <div
         className={cn(
-          'flex flex-wrap items-center gap-2 rounded-lg p-2 border transition-colors',
-          wireMode ? 'bg-navy-50 border-navy' : 'bg-white border-gray-200',
+          'rounded-lg p-2 border space-y-2 transition-colors',
+          pickingLead ? 'bg-navy-50 border-navy' : 'bg-white border-gray-200',
         )}
       >
-        {!wireMode ? (
-          <>
-            <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase pl-1">
-              Timing:
-            </span>
-            {DELAY_SERIES.map((ms) => (
-              <button
-                key={ms}
-                className={cn(
-                  'min-h-[44px] min-w-[44px] rounded-full border-2 text-sm font-bold transition-transform',
-                  activeDelay === ms ? 'scale-110 ring-2 ring-offset-1 ring-navy text-white' : 'text-white opacity-70',
-                )}
-                style={{ backgroundColor: DELAY_COLORS[ms], borderColor: DELAY_COLORS[ms] }}
-                onClick={() => setActiveDelay(ms)}
-                title={`${ms}ms delay`}
-              >
-                {ms}
-              </button>
-            ))}
-            <button
-              className={cn(
-                'min-h-[44px] min-w-[44px] rounded-full border-2 border-gray-400 flex items-center justify-center transition-transform',
-                activeDelay === 'eraser' ? 'scale-110 ring-2 ring-offset-1 ring-navy bg-gray-200' : 'bg-white',
-              )}
-              onClick={() => setActiveDelay('eraser')}
-              title="Eraser"
-            >
-              <Eraser className="h-5 w-5 text-gray-600" />
-            </button>
-          </>
-        ) : (
-          <span className="text-sm font-medium text-navy px-2">
-            {wireSource === null ? 'Tap source hole, then destination' : 'Now tap an adjacent destination hole'}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase pl-1">
+            {pickingLead ? 'Lead:' : 'Timing:'}
           </span>
-        )}
-
-        <div className="flex-1" />
-
-        <Button
-          variant={wireMode ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => {
-            setWireMode(!wireMode);
-            setWireSource(null);
-          }}
-          title="Wire / tie-in mode"
-        >
-          <Cable className="h-4 w-4 mr-1" /> Wire
-        </Button>
+          {DELAY_SERIES.map((ms) => (
+            <button
+              key={ms}
+              className={cn(
+                'min-h-[44px] min-w-[44px] rounded-full border-2 text-sm font-bold transition-transform text-white',
+                activeLead === ms && customLead === ''
+                  ? 'scale-110 ring-2 ring-offset-1 ring-navy'
+                  : 'opacity-70',
+              )}
+              style={{ backgroundColor: DELAY_COLORS[ms], borderColor: DELAY_COLORS[ms] }}
+              onClick={() => {
+                setActiveLead(ms);
+                setCustomLead('');
+              }}
+              title={`${ms}ms lead`}
+            >
+              {ms}
+            </button>
+          ))}
+          <Input
+            type="number"
+            inputMode="numeric"
+            className="h-11 w-20 font-mono"
+            placeholder="custom"
+            value={customLead}
+            onChange={(e) => setCustomLead(e.target.value)}
+            title="Custom lead ms"
+          />
+          <div className="flex-1" />
+          {start && (
+            <Button
+              variant={leadMode ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setLeadMode(!leadMode)}
+              title="Next wire is a lead with the selected delay (branch to another row)"
+            >
+              <Zap className="h-4 w-4 mr-1" /> Lead Wire
+            </Button>
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-navy px-1">
+          {!start ? (
+            <span className="font-medium">
+              Pick the lead timing, then tap the first hole to fire
+            </span>
+          ) : leadMode ? (
+            <span className="font-medium">
+              Lead wire ({leadValue}ms): tap the hole it runs from, then any hole it fires
+            </span>
+          ) : (
+            <span className="font-medium">
+              {wireSource === null
+                ? `Tap a timed hole, then its neighbors — each wire adds ${interHoleMs}ms`
+                : 'Tap the next hole in the sequence'}
+            </span>
+          )}
+          <span className="flex items-center gap-1 ml-auto text-gray-600">
+            +
+            <Input
+              type="number"
+              inputMode="numeric"
+              className="h-8 w-16 font-mono text-center"
+              value={interHoleMs}
+              onChange={(e) => setIncrement(parseInt(e.target.value, 10) || 1)}
+              title="Inter-hole increment (ms)"
+            />
+            ms/hole
+          </span>
+        </div>
       </div>
+
+      {legacyPainted && (
+        <p className="text-xs text-safety-orange bg-orange-50 border border-orange-200 rounded-lg px-3 py-2">
+          This diagram uses the old painted delays. Tap a hole to start sequential
+          timing — the painted colors will be replaced.
+        </p>
+      )}
 
       {/* Grid */}
       <div className="overflow-auto border border-gray-200 rounded-lg bg-white">
@@ -238,6 +290,9 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone }: 
             <marker id="wire-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
               <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a365d" />
             </marker>
+            <marker id="lead-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill={LEAD_COLOR} />
+            </marker>
           </defs>
           {/* Wires under holes */}
           {wires.map((w, i) => {
@@ -245,54 +300,89 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone }: 
             const y1 = cy(w.from);
             const x2 = cx(w.to);
             const y2 = cy(w.to);
-            // Trim the line so the arrowhead lands at the hole edge
             const dx = x2 - x1;
             const dy = y2 - y1;
             const len = Math.hypot(dx, dy) || 1;
             const trim = HOLE_RADIUS + 3;
+            const isLead = w.leadMs !== undefined;
             return (
-              <line
-                key={i}
-                x1={x1 + (dx / len) * trim}
-                y1={y1 + (dy / len) * trim}
-                x2={x2 - (dx / len) * trim}
-                y2={y2 - (dy / len) * trim}
-                stroke="#1a365d"
-                strokeWidth={2.5}
-                markerEnd="url(#wire-arrow)"
-              />
+              <g key={i}>
+                <line
+                  x1={x1 + (dx / len) * trim}
+                  y1={y1 + (dy / len) * trim}
+                  x2={x2 - (dx / len) * trim}
+                  y2={y2 - (dy / len) * trim}
+                  stroke={isLead ? LEAD_COLOR : '#1a365d'}
+                  strokeWidth={2.5}
+                  strokeDasharray={isLead ? '6,4' : undefined}
+                  markerEnd={isLead ? 'url(#lead-arrow)' : 'url(#wire-arrow)'}
+                />
+                {isLead && (
+                  <text
+                    x={(x1 + x2) / 2}
+                    y={(y1 + y2) / 2 - 5}
+                    textAnchor="middle"
+                    fontSize={10}
+                    fontWeight={700}
+                    fill={LEAD_COLOR}
+                    pointerEvents="none"
+                  >
+                    {w.leadMs}ms
+                  </text>
+                )}
+              </g>
             );
           })}
           {/* Holes */}
           {Array.from({ length: holeCount }, (_, idx) => {
-            const ms = delays[idx];
+            const t = times.get(idx);
+            const legacyMs = legacyPainted ? delays[idx] : undefined;
+            const isStart = start?.hole === idx;
             const isSource = wireSource === idx;
             const isValidTarget =
-              wireMode && wireSource !== null && wireSource !== idx && areAdjacent(wireSource, idx, cols);
+              start !== undefined &&
+              wireSource !== null &&
+              wireSource !== idx &&
+              (leadMode || areAdjacent(wireSource, idx, cols));
+            const fill = isStart
+              ? START_COLOR
+              : t !== undefined
+                ? '#1a365d'
+                : legacyMs !== undefined
+                  ? DELAY_COLORS[legacyMs] ?? '#1a365d'
+                  : 'white';
+            const label = t ?? legacyMs;
             return (
               <g key={idx} onClick={() => tapHole(idx)} className="cursor-pointer">
-                {/* Invisible enlarged tap target */}
                 <circle cx={cx(idx)} cy={cy(idx)} r={HOLE_SPACING / 2} fill="transparent" />
                 <circle
                   cx={cx(idx)}
                   cy={cy(idx)}
                   r={HOLE_RADIUS}
-                  fill={ms !== undefined ? DELAY_COLORS[ms] ?? '#1a365d' : 'white'}
-                  stroke={isSource ? '#1a365d' : isValidTarget ? '#dd6b20' : ms !== undefined ? DELAY_COLORS[ms] ?? '#1a365d' : '#9ca3af'}
+                  fill={fill}
+                  stroke={
+                    isSource
+                      ? START_COLOR
+                      : isValidTarget
+                        ? '#dd6b20'
+                        : label !== undefined
+                          ? fill
+                          : '#9ca3af'
+                  }
                   strokeWidth={isSource ? 4 : isValidTarget ? 3 : 1.5}
-                  strokeDasharray={isValidTarget ? '4,3' : undefined}
+                  strokeDasharray={isValidTarget && !isSource ? '4,3' : undefined}
                 />
-                {ms !== undefined && (
+                {label !== undefined && (
                   <text
                     x={cx(idx)}
                     y={cy(idx) + 4}
                     textAnchor="middle"
-                    fontSize={11}
+                    fontSize={label >= 1000 ? 9 : 11}
                     fontWeight={700}
                     fill="white"
                     pointerEvents="none"
                   >
-                    {ms}
+                    {label}
                   </text>
                 )}
               </g>
@@ -301,16 +391,26 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone }: 
         </svg>
       </div>
 
-      {/* Action row (wireframe: Fill All / Undo / Clear Wires / Clone) */}
-      <div className="grid grid-cols-4 gap-2">
-        <Button variant="outline" size="sm" onClick={fillAll} disabled={activeDelay === 'eraser'}>
-          <PaintBucket className="h-4 w-4 mr-1" /> Fill All
-        </Button>
+      {/* Timing summary */}
+      {times.size > 0 && (
+        <p className="text-xs text-gray-500 px-1">
+          {times.size} hole{times.size === 1 ? '' : 's'} timed · first {start!.leadMs}ms · last{' '}
+          {lastFire}ms · max <b>{maxWindow}</b> hole{maxWindow === 1 ? '' : 's'} in any 8ms window
+        </p>
+      )}
+
+      {/* Action row */}
+      <div className="grid grid-cols-3 gap-2">
         <Button variant="outline" size="sm" onClick={undo}>
           <Undo2 className="h-4 w-4 mr-1" /> Undo
         </Button>
-        <Button variant="outline" size="sm" onClick={clearWires} disabled={wires.length === 0}>
-          Clear Wires
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={clearAll}
+          disabled={!start && wires.length === 0 && Object.keys(delays).length === 0}
+        >
+          <Trash2 className="h-4 w-4 mr-1" /> Clear
         </Button>
         {onClone && cloneTargets && cloneTargets.length > 0 ? (
           <Button variant="outline" size="sm" onClick={() => onClone(cloneTargets[0].id)} title={`Clone to ${cloneTargets[0].label}`}>
@@ -343,8 +443,9 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone }: 
             <Plus className="h-4 w-4" />
           </Button>
         </span>
-        <span className="ml-auto text-xs text-gray-400">
-          {Object.keys(delays).length} painted · {wires.length} wires
+        <span className="ml-auto text-xs text-gray-400 flex items-center gap-1">
+          <Cable className="h-3.5 w-3.5" />
+          {wires.length} wires
         </span>
       </div>
     </div>

@@ -4,9 +4,22 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { ArrowLeft, Check, Grid3x3, Layers3, Map as MapIcon, Ruler } from 'lucide-react';
 import { db } from '@/db';
 import { nowISO } from '@/lib/utils';
-import { parseDiagram, serializeDiagram, delayCounts, type ShotDiagram } from '@/lib/shotDiagram';
+import {
+  parseDiagram,
+  serializeDiagram,
+  delayCounts,
+  computeFiringTimes,
+  delayWindowSizes,
+  type ShotDiagram,
+} from '@/lib/shotDiagram';
 import { parseSiteDiagram, serializeSiteDiagram, type SiteDiagram } from '@/lib/siteDiagram';
-import { scaledDistance, predictedPPV, osmPPVLimit, usbmRI8507Limit } from '@shotlog/shared';
+import {
+  scaledDistance,
+  predictedPPV,
+  osmPPVLimit,
+  usbmRI8507Limit,
+  distributeByHoles,
+} from '@shotlog/shared';
 import type { Shot, Job, DesignPlan } from '@/db/schema';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -59,6 +72,10 @@ function DesignPlanInner({
   siblings: Shot[];
 }) {
   const navigate = useNavigate();
+  const explosiveUsage = useLiveQuery(
+    () => db.explosiveUsages.where('blastLogId').equals(shot.blastLogId).first(),
+    [shot.blastLogId],
+  );
   const [diagram, setDiagram] = useState<ShotDiagram>(() =>
     parseDiagram(shot.designPlan.shotDiagramData),
   );
@@ -188,8 +205,28 @@ function DesignPlanInner({
   const ppv = sd > 0 ? predictedPPV(dp.kFactor || (job?.kFactor ?? 180), sd) : 0;
   const osmLimit = dp.closestStructureDistance > 0 ? osmPPVLimit(dp.closestStructureDistance) : 0;
   const usbmLimit = usbmRI8507Limit(15);
-  const painted = Object.keys(diagram.delays).length;
-  const maxHolesPainted = Math.max(0, ...delayCounts(diagram).values());
+  // Timing tree (new model) with fallback to legacy painted delays
+  const times = computeFiringTimes(diagram);
+  const maxHolesTimed = Math.max(0, ...delayWindowSizes(times));
+  const maxHolesLegacy = Math.max(0, ...delayCounts(diagram).values());
+  const maxHoles = times.size > 0 ? maxHolesTimed : maxHolesLegacy;
+
+  // Per-hole pounds for this shot: allocated explosive lbs ÷ hole count.
+  // An estimate (assumes even loading) — the suggestion stays overridable.
+  const holeCounts = [shot, ...siblings].map((s) => ({ shotId: s.id, holes: s.totals.numHoles }));
+  let shotLbs = 0;
+  for (const p of explosiveUsage?.products ?? []) {
+    const dist = distributeByHoles(p.quantity, holeCounts, p.shotAllocations);
+    shotLbs += (dist.allocations[shot.id] ?? 0) * p.weightMultiplier;
+  }
+  const perHoleLbs = shot.totals.numHoles > 0 ? shotLbs / shot.totals.numHoles : 0;
+  const delaySuggestion =
+    times.size > 0
+      ? {
+          holes: maxHolesTimed,
+          lbs: perHoleLbs > 0 ? Math.round(maxHolesTimed * perHoleLbs * 10) / 10 : null,
+        }
+      : null;
 
   const cloneTargets = siblings.map((s) => ({ id: s.id, label: `Shot #${s.shotNumber}` }));
 
@@ -234,8 +271,11 @@ function DesignPlanInner({
           ) : (
             <Badge variant="draft">Enter structure distance + max lbs/delay for compliance</Badge>
           )}
-          {maxHolesPainted > 0 && (
-            <Badge variant="secondary">Max holes/delay: {maxHolesPainted}</Badge>
+          {maxHoles > 0 && (
+            <Badge variant="secondary">
+              Max holes/delay: {maxHoles}
+              {times.size > 0 && ' (8ms rule)'}
+            </Badge>
           )}
         </div>
       </div>
@@ -267,7 +307,11 @@ function DesignPlanInner({
         <Panel
           icon={<IconChip tint="navy"><Grid3x3 className="h-4 w-4" /></IconChip>}
           title="Shot Diagram"
-          subtitle={painted > 0 ? `${painted} holes painted · ${diagram.wires.length} wires` : 'Tap delay, then paint holes'}
+          subtitle={
+            times.size > 0
+              ? `${times.size} holes timed · ${diagram.wires.length} wires`
+              : 'Pick the lead, tap the first hole, wire the sequence'
+          }
         >
           <ShotDiagramEditor
             diagram={diagram}
@@ -287,7 +331,12 @@ function DesignPlanInner({
           }
           complete={sd > 0}
         >
-          <ComplianceInputs shot={shot} job={job} defaultK={job?.kFactor ?? 180} />
+          <ComplianceInputs
+            shot={shot}
+            job={job}
+            defaultK={job?.kFactor ?? 180}
+            delaySuggestion={delaySuggestion}
+          />
         </Panel>
 
         <Panel
@@ -339,17 +388,20 @@ function ComplianceInputs({
   shot,
   job,
   defaultK,
+  delaySuggestion,
 }: {
   shot: Shot;
   job: Job | undefined;
   defaultK: number;
+  delaySuggestion: { holes: number; lbs: number | null } | null;
 }) {
   const dp = shot.designPlan;
 
-  const update = (field: keyof DesignPlan, value: string | number) => {
+  const update = (fields: Partial<DesignPlan> | keyof DesignPlan, value?: string | number) => {
+    const patch = (typeof fields === 'string' ? { [fields]: value } : fields) as Partial<DesignPlan>;
     void db.shots.get(shot.id).then((current) => {
       if (!current) return;
-      const plan = { ...current.designPlan, [field]: value };
+      const plan = { ...current.designPlan, ...patch };
       if (plan.closestStructureDistance > 0 && plan.maxPoundsPerDelay > 0) {
         plan.scaledDistance = scaledDistance(plan.closestStructureDistance, plan.maxPoundsPerDelay);
         const k = plan.kFactor || defaultK;
@@ -413,6 +465,7 @@ function ComplianceInputs({
           <div key={field}>
             <Label className="text-[10px] uppercase tracking-wide text-gray-500">{label}</Label>
             <Input
+              key={dp[field]}
               type="number"
               inputMode="decimal"
               defaultValue={dp[field] || ''}
@@ -422,6 +475,37 @@ function ComplianceInputs({
           </div>
         ))}
       </div>
+
+      {/* From the timing diagram: 8ms-rule holes/delay, lbs from even-loading estimate */}
+      {delaySuggestion && (
+        <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm">
+          <span className="flex-1 text-gray-700">
+            From diagram: <b>{delaySuggestion.holes}</b> hole
+            {delaySuggestion.holes === 1 ? '' : 's'}/delay
+            {delaySuggestion.lbs !== null && (
+              <>
+                {' '}
+                · <b>{delaySuggestion.lbs}</b> lbs/delay
+                <span className="text-xs text-gray-500"> (total ÷ holes)</span>
+              </>
+            )}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              update({
+                maxHolesPerDelay: delaySuggestion.holes,
+                ...(delaySuggestion.lbs !== null
+                  ? { maxPoundsPerDelay: delaySuggestion.lbs }
+                  : {}),
+              })
+            }
+          >
+            Apply
+          </Button>
+        </div>
+      )}
 
       {/* Auto-calculated box */}
       <div>
