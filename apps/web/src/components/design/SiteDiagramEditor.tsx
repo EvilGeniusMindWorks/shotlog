@@ -174,6 +174,7 @@ export function SiteDiagramEditor({
   onSnapshotRef.current = onSnapshot;
   const snapshotTimer = useRef<number | undefined>(undefined);
 
+  const scheduleSnapshotRef = useRef<(() => void) | null>(null);
   const scheduleSnapshot = () => {
     if (!onSnapshotRef.current) return;
     window.clearTimeout(snapshotTimer.current);
@@ -187,6 +188,15 @@ export function SiteDiagramEditor({
     }, 1500);
   };
 
+  // Self-heal: refresh the stored snapshot whenever the designer opens with
+  // pins present — repairs any stale/corrupted snapshot just by visiting
+  useEffect(() => {
+    if (liveRef.current.blastPin || liveRef.current.structures.length > 0) {
+      scheduleSnapshotRef.current?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const mutate = (updater: (v: SiteDiagram) => SiteDiagram) => {
     const next = updater(liveRef.current);
     liveRef.current = next; // later events in the same tick see the new state
@@ -195,6 +205,7 @@ export function SiteDiagramEditor({
   };
   const mutateRef = useRef(mutate);
   mutateRef.current = mutate;
+  scheduleSnapshotRef.current = scheduleSnapshot;
 
   // Create the map once
   useEffect(() => {

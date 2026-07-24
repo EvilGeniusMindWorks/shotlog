@@ -1,9 +1,11 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ArrowLeft, Printer } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowLeft, FileDown, Printer } from 'lucide-react';
 import { db } from '@/db';
 import { useBlastDay } from '@/hooks/useBlastDay';
 import type { EquipmentEntry, ProductCategory, WorkForceEntry } from '@/db/schema';
+import { savePagesAsPdf } from '@/lib/pdf';
 import './print-blast-log.css';
 
 const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -31,6 +33,7 @@ function dash(v: string | number | null | undefined, suffix = ''): string {
 export function PrintDailyReportPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [savingPdf, setSavingPdf] = useState(false);
   const { blastDay, job, blastLog, dailyReport, shots, explosiveUsage } = useBlastDay(id);
 
   const workForce =
@@ -119,9 +122,24 @@ export function PrintDailyReportPage() {
         <button onClick={() => navigate(`/blast-day/${blastDay.id}`)}>
           <ArrowLeft size={16} /> Back
         </button>
-        <button className="primary" onClick={() => window.print()}>
-          <Printer size={16} /> Print / Save PDF
-        </button>
+        <span style={{ display: 'flex', gap: 8 }}>
+          <button
+            disabled={savingPdf}
+            onClick={async () => {
+              setSavingPdf(true);
+              try {
+                await savePagesAsPdf(`daily-report-${blastDay.date}.pdf`);
+              } finally {
+                setSavingPdf(false);
+              }
+            }}
+          >
+            <FileDown size={16} /> {savingPdf ? 'Generating…' : 'Save PDF'}
+          </button>
+          <button className="primary" onClick={() => window.print()}>
+            <Printer size={16} /> Print
+          </button>
+        </span>
       </div>
 
       {/* ==================== PAGE 1: DAILY REPORT ==================== */}

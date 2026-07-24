@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ArrowLeft, Printer, TriangleAlert } from 'lucide-react';
+import { ArrowLeft, FileDown, Printer, TriangleAlert } from 'lucide-react';
 import { db } from '@/db';
 import { useBlastDay } from '@/hooks/useBlastDay';
 import { ColumnVisual } from '@/components/design/TypicalColumnBuilder';
 import { distributeByHoles, powderFactor } from '@shotlog/shared';
 import { validateForPrint } from '@/lib/validation';
+import { savePagesAsPdf } from '@/lib/pdf';
 import { DELAY_COLORS, parseDiagram } from '@/lib/shotDiagram';
 import { distanceFt, parseSiteDiagram } from '@/lib/siteDiagram';
 import type { Shot } from '@/db/schema';
@@ -97,7 +98,7 @@ export function PrintBlastLogPage() {
   return (
     <div className="print-blast-log">
       {/* Screen-only toolbar — hidden when printing */}
-      <PrintToolbar blastDayId={blastDay.id} />
+      <PrintToolbar blastDayId={blastDay.id} filename={`blasting-log-${blastDay.date}.pdf`} />
       <PrintWarnings issues={validateForPrint(blastLog, shots, explosiveUsage)} />
       {/* ==================== PAGE 1: BLASTING LOG ==================== */}
       <div className="page">
@@ -568,8 +569,10 @@ function PrintSiteDiagram({ shot }: { shot: Shot }) {
   const site = parseSiteDiagram(shot.designPlan.siteSketchData);
   const snapshot = shot.designPlan.siteSketchImage;
   const [snapUrl, setSnapUrl] = useState<string | null>(null);
+  const [imgFailed, setImgFailed] = useState(false);
   useEffect(() => {
-    if (!snapshot) {
+    setImgFailed(false);
+    if (!snapshot || !(snapshot instanceof Blob) || snapshot.size === 0) {
       setSnapUrl(null);
       return;
     }
@@ -578,13 +581,14 @@ function PrintSiteDiagram({ shot }: { shot: Shot }) {
     return () => URL.revokeObjectURL(url);
   }, [snapshot]);
 
-  if (snapUrl) {
+  if (snapUrl && !imgFailed) {
     return (
       <div className="site-diagram" style={{ border: 'none' }}>
         <img
           src={snapUrl}
           alt="Site map"
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          onError={() => setImgFailed(true)}
         />
       </div>
     );
@@ -785,16 +789,32 @@ function PrintWarnings({ issues }: { issues: ReturnType<typeof validateForPrint>
   );
 }
 
-function PrintToolbar({ blastDayId }: { blastDayId: string }) {
+function PrintToolbar({ blastDayId, filename }: { blastDayId: string; filename: string }) {
   const navigate = useNavigate();
+  const [saving, setSaving] = useState(false);
   return (
     <div className="print-toolbar">
       <button onClick={() => navigate(`/blast-day/${blastDayId}`)}>
         <ArrowLeft size={16} /> Back
       </button>
-      <button className="primary" onClick={() => window.print()}>
-        <Printer size={16} /> Print / Save PDF
-      </button>
+      <span style={{ display: 'flex', gap: 8 }}>
+        <button
+          disabled={saving}
+          onClick={async () => {
+            setSaving(true);
+            try {
+              await savePagesAsPdf(filename);
+            } finally {
+              setSaving(false);
+            }
+          }}
+        >
+          <FileDown size={16} /> {saving ? 'Generating…' : 'Save PDF'}
+        </button>
+        <button className="primary" onClick={() => window.print()}>
+          <Printer size={16} /> Print
+        </button>
+      </span>
     </div>
   );
 }

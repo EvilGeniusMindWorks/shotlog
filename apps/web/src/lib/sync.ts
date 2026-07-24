@@ -91,9 +91,13 @@ async function blobToMarker(blob: Blob): Promise<BlobMarker> {
   return { __blob: base64, __type: blob.type };
 }
 
-function markerToBlob(marker: BlobMarker): Blob {
-  const bytes = Uint8Array.from(atob(marker.__blob), (c) => c.charCodeAt(0));
-  return new Blob([bytes], { type: marker.__type });
+function markerToBlob(marker: BlobMarker): Blob | null {
+  try {
+    const bytes = Uint8Array.from(atob(marker.__blob), (c) => c.charCodeAt(0));
+    return bytes.length > 0 ? new Blob([bytes], { type: marker.__type }) : null;
+  } catch {
+    return null; // corrupted base64 — treat as absent rather than storing junk
+  }
 }
 
 /** Deep-walk a record: Blob → marker (serialize) or marker → Blob (revive) */

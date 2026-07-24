@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ArrowLeft, Printer } from 'lucide-react';
+import { ArrowLeft, FileDown, Printer } from 'lucide-react';
 import { db } from '@/db';
 import { useBlastDay } from '@/hooks/useBlastDay';
 import {
@@ -13,6 +13,7 @@ import {
 import { DELAY_COLORS, parseDiagram } from '@/lib/shotDiagram';
 import { ColumnVisual } from '@/components/design/TypicalColumnBuilder';
 import type { SeismoReading, Shot } from '@/db/schema';
+import { savePagesAsPdf } from '@/lib/pdf';
 import './print-blast-log.css';
 import './blast-report.css';
 
@@ -33,6 +34,7 @@ export function BlastReportPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { blastDay, job, blastLog, shots, explosiveUsage } = useBlastDay(id);
+  const [savingPdf, setSavingPdf] = useState(false);
   const shotIdsKey = shots.map((s) => s.id).join(',');
   const typicalColumns =
     useLiveQuery(async () => {
@@ -71,9 +73,24 @@ export function BlastReportPage() {
         <button onClick={() => navigate(`/blast-day/${blastDay.id}`)}>
           <ArrowLeft size={16} /> Back
         </button>
-        <button className="primary" onClick={() => window.print()}>
-          <Printer size={16} /> Print / Save PDF
-        </button>
+        <span style={{ display: 'flex', gap: 8 }}>
+          <button
+            disabled={savingPdf}
+            onClick={async () => {
+              setSavingPdf(true);
+              try {
+                await savePagesAsPdf(`blast-report-${blastDay.date}.pdf`);
+              } finally {
+                setSavingPdf(false);
+              }
+            }}
+          >
+            <FileDown size={16} /> {savingPdf ? 'Generating…' : 'Save PDF'}
+          </button>
+          <button className="primary" onClick={() => window.print()}>
+            <Printer size={16} /> Print
+          </button>
+        </span>
       </div>
 
       {/* ═════════ PAGE 1 — COVER ═════════ */}
@@ -278,12 +295,19 @@ export function BlastReportPage() {
 
 function ReportSnapshot({ blob }: { blob: Blob }) {
   const [url, setUrl] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
+    setFailed(false);
+    if (!(blob instanceof Blob) || blob.size === 0) {
+      setUrl(null);
+      return;
+    }
     const u = URL.createObjectURL(blob);
     setUrl(u);
     return () => URL.revokeObjectURL(u);
   }, [blob]);
-  return url ? <img src={url} alt="Site map" className="report-map" /> : null;
+  if (!url || failed) return null; // no broken-image icon on the report
+  return <img src={url} alt="Site map" className="report-map" onError={() => setFailed(true)} />;
 }
 
 function SignoffSignature({ blob }: { blob: Blob | null }) {
