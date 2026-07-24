@@ -35,6 +35,8 @@ model User {
   /// Personal blasting licenses: [{state, licenseNumber, expirationDate}] —
   /// one per state; travels with the login session for offline auto-fill
   licenses      Json           @default("[]")
+  /// Signature on file: PNG data URL, offered at blast-log sign-off
+  signature     String?
   companyId     String
   company       Company        @relation(fields: [companyId], references: [id])
   createdAt     DateTime       @default(now())

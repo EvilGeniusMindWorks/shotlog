@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ChipSelect, ChipMultiSelect } from '@/components/ui/chip-select';
 import { SignatureField } from '@/components/ui/signature-field';
 import { getSessionUser } from '@/lib/sync';
+import { dataUrlToBlob } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { ShotForm } from './ShotForm';
 import { ExplosiveUsageForm } from './ExplosiveUsageForm';
@@ -355,7 +356,19 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
           </div>
           <div>
             <Label className="text-xs">Blaster Signature</Label>
-            <div className="mt-1">
+            <div className="mt-1 space-y-2">
+              {!draft.signatureImage && getSessionUser()?.signature && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const blob = dataUrlToBlob(getSessionUser()!.signature!);
+                    if (blob) setField('signatureImage', blob);
+                  }}
+                >
+                  <PenLine className="h-4 w-4 mr-1" /> Use Saved Signature
+                </Button>
+              )}
               <SignatureField
                 value={draft.signatureImage}
                 onChange={(blob) => setField('signatureImage', blob)}

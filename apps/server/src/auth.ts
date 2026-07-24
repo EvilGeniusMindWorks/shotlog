@@ -126,6 +126,7 @@ authRouter.post('/login', async (req, res) => {
       role: user.role,
       company: user.company.name,
       licenses: user.licenses,
+      signature: user.signature,
     },
   });
 });
@@ -215,6 +216,7 @@ authRouter.get('/me', requireAuth, async (req: AuthedRequest, res: Response) => 
       role: user.role,
       company: user.company.name,
       licenses: user.licenses,
+      signature: user.signature,
     },
   });
 });
@@ -241,4 +243,22 @@ authRouter.put('/me/licenses', requireAuth, async (req: AuthedRequest, res: Resp
   }
   await prisma.user.update({ where: { id: req.userId! }, data: { licenses: parsed.data } });
   res.json({ ok: true, licenses: parsed.data });
+});
+
+// Signature on file: PNG/JPEG data URL, or null to clear. ~300KB cap keeps
+// a hand-drawn PNG comfortably while rejecting arbitrary uploads.
+const signatureSchema = z
+  .string()
+  .regex(/^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/)
+  .max(300_000)
+  .nullable();
+
+authRouter.put('/me/signature', requireAuth, async (req: AuthedRequest, res: Response) => {
+  const parsed = signatureSchema.safeParse((req.body as { signature?: unknown })?.signature);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'signature must be a PNG/JPEG data URL under 300KB, or null' });
+    return;
+  }
+  await prisma.user.update({ where: { id: req.userId! }, data: { signature: parsed.data } });
+  res.json({ ok: true, signature: parsed.data });
 });

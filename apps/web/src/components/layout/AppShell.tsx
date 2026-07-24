@@ -112,7 +112,16 @@ export function AppShell() {
             {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             {theme === 'dark' ? 'Light mode' : 'Dark mode'}
           </button>
-          <div className="flex items-center gap-3 px-3 py-2">
+          <NavLink
+            to="/profile"
+            className={({ isActive }) =>
+              cn(
+                'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors',
+                isActive ? 'bg-white/10' : 'hover:bg-white/5',
+              )
+            }
+            title="My Profile"
+          >
             <span className="h-8 w-8 rounded-full bg-white/15 flex items-center justify-center text-xs font-bold shrink-0">
               {initials}
             </span>
@@ -122,7 +131,7 @@ export function AppShell() {
               </span>
               <span className="block text-[11px] text-navy-200 truncate">{displaySub}</span>
             </span>
-          </div>
+          </NavLink>
         </div>
       </aside>
 
@@ -150,6 +159,13 @@ export function AppShell() {
               {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </button>
             <Badge variant={online ? 'synced' : 'local'}>{online ? 'Online' : 'Offline'}</Badge>
+            <button
+              className="h-9 w-9 rounded-full bg-white/15 flex items-center justify-center text-xs font-bold ml-1"
+              title="My Profile"
+              onClick={() => navigate('/profile')}
+            >
+              {initials}
+            </button>
           </div>
         </header>
 

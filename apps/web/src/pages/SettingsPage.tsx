@@ -1,17 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Plus, Trash2, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { db } from '@/db';
 import { generateId, nowISO } from '@/lib/utils';
-import { useDraftRecord } from '@/hooks/useDraftRecord';
-import type { BlasterProfile, CrewMember, Equipment } from '@/db/schema';
+import type { CrewMember, Equipment } from '@/db/schema';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ChipSelect } from '@/components/ui/chip-select';
 import { SyncCard } from '@/components/forms/SyncCard';
-import { MyLicensesCard } from '@/components/forms/MyLicensesCard';
 import { TeamCard } from '@/components/forms/TeamCard';
 
 const EQUIPMENT_CATEGORIES = [
@@ -20,83 +18,15 @@ const EQUIPMENT_CATEGORIES = [
   { value: 'mats_seismo', label: 'Mats / Seismo' },
 ];
 
-/** Days before license expiration to start warning (Spec §10.1) */
-const EXPIRY_WARNING_DAYS = 90;
-
-function daysUntil(isoDate: string): number {
-  return Math.ceil((new Date(isoDate).getTime() - Date.now()) / 86_400_000);
-}
-
 export function SettingsPage() {
-  // Single-user MVP: ensure exactly one current-user profile exists
-  const profile = useLiveQuery(() => db.blasterProfiles.filter((b) => b.isCurrentUser).first());
-  useEffect(() => {
-    (async () => {
-      const existing = await db.blasterProfiles.filter((b) => b.isCurrentUser).first();
-      if (!existing) {
-        const now = nowISO();
-        await db.blasterProfiles.add({
-          id: generateId(),
-          name: '',
-          company: 'Baystate Blasting, Inc.',
-          dealerNumber: '',
-          licenses: [],
-          defaultSignature: null,
-          isCurrentUser: true,
-          phone: '',
-          email: '',
-          isActive: true,
-          createdAt: now,
-          updatedAt: now,
-          syncStatus: 'local',
-        });
-      }
-    })();
-  }, []);
-
   return (
     <div className="p-4 max-w-2xl mx-auto space-y-4">
       <h2 className="text-xl font-bold text-gray-900">Settings</h2>
       <SyncCard />
       <TeamCard />
-      {profile && <ProfileCard profile={profile} />}
-      <MyLicensesCard />
       <CrewCard />
       <EquipmentCard />
     </div>
-  );
-}
-
-function ProfileCard({ profile }: { profile: BlasterProfile }) {
-  const { draft, setField } = useDraftRecord(db.blasterProfiles, profile);
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Blaster Profile</CardTitle>
-      </CardHeader>
-      <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <Label className="text-xs">Name</Label>
-          <Input value={draft.name} onChange={(e) => setField('name', e.target.value)} placeholder="Mark Swihart" />
-        </div>
-        <div>
-          <Label className="text-xs">Company</Label>
-          <Input value={draft.company} onChange={(e) => setField('company', e.target.value)} />
-        </div>
-        <div>
-          <Label className="text-xs">Dealer #</Label>
-          <Input value={draft.dealerNumber} onChange={(e) => setField('dealerNumber', e.target.value)} />
-        </div>
-        <div>
-          <Label className="text-xs">Phone</Label>
-          <Input type="tel" value={draft.phone} onChange={(e) => setField('phone', e.target.value)} />
-        </div>
-        <div className="sm:col-span-2">
-          <Label className="text-xs">Email</Label>
-          <Input type="email" value={draft.email} onChange={(e) => setField('email', e.target.value)} />
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 

@@ -50,6 +50,8 @@ export interface SessionUser {
   role: string;
   company: string;
   licenses?: UserLicense[];
+  /** Signature on file — PNG data URL */
+  signature?: string | null;
 }
 
 export function getSessionUser(): SessionUser | null {
@@ -199,6 +201,56 @@ export async function updateMyLicenses(licenses: UserLicense[]): Promise<Session
   return user;
 }
 
+/** Save (or clear) the signed-in user's signature on file. Needs a connection. */
+export async function updateMySignature(signature: string | null): Promise<SessionUser> {
+  const res = await authedFetch('/auth/me/signature', {
+    method: 'PUT',
+    body: JSON.stringify({ signature }),
+  });
+  const body = (await res.json().catch(() => null)) as { error?: string } | null;
+  if (!res.ok) throw new Error(body?.error ?? 'failed to save signature');
+  const user = { ...getSessionUser()!, signature };
+  localStorage.setItem(LS_KEYS.userInfo, JSON.stringify(user));
+  return user;
+}
+
+/** Change the signed-in user's password. Other sessions are signed out. */
+export async function changeMyPassword(currentPassword: string, newPassword: string): Promise<void> {
+  const res = await authedFetch('/auth/change-password', {
+    method: 'POST',
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+  const body = (await res.json().catch(() => null)) as { error?: string } | null;
+  if (!res.ok) throw new Error(body?.error ?? 'failed to change password');
+}
+
+// Single-flight token refresh: refresh tokens rotate server-side, so two
+// concurrent 401s must NOT both hit /auth/refresh — the loser would send an
+// already-rotated token, get rejected, and log the user out.
+let refreshInFlight: Promise<void> | null = null;
+
+async function refreshTokens(serverUrl: string): Promise<void> {
+  refreshInFlight ??= (async () => {
+    const refreshToken = localStorage.getItem(LS_KEYS.refreshToken);
+    if (!refreshToken) throw new Error('not logged in');
+    const refresh = await fetch(`${serverUrl}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+    if (!refresh.ok) {
+      await logout();
+      throw new Error('session expired — log in again');
+    }
+    const tokens = (await refresh.json()) as { accessToken: string; refreshToken: string };
+    localStorage.setItem(LS_KEYS.accessToken, tokens.accessToken);
+    localStorage.setItem(LS_KEYS.refreshToken, tokens.refreshToken);
+  })().finally(() => {
+    refreshInFlight = null;
+  });
+  return refreshInFlight;
+}
+
 /** Fetch with bearer token; on 401 tries one refresh-and-retry */
 export async function authedFetch(path: string, init?: RequestInit): Promise<Response> {
   const { serverUrl } = getSyncConfig();
@@ -214,20 +266,7 @@ export async function authedFetch(path: string, init?: RequestInit): Promise<Res
     });
   let res = await attempt();
   if (res.status === 401) {
-    const refreshToken = localStorage.getItem(LS_KEYS.refreshToken);
-    if (!refreshToken) throw new Error('not logged in');
-    const refresh = await fetch(`${serverUrl}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
-    });
-    if (!refresh.ok) {
-      await logout();
-      throw new Error('session expired — log in again');
-    }
-    const tokens = (await refresh.json()) as { accessToken: string; refreshToken: string };
-    localStorage.setItem(LS_KEYS.accessToken, tokens.accessToken);
-    localStorage.setItem(LS_KEYS.refreshToken, tokens.refreshToken);
+    await refreshTokens(serverUrl);
     res = await attempt();
   }
   return res;
