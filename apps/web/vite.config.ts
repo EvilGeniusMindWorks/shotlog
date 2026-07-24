@@ -31,7 +31,10 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // gz/wasm.js cover the self-hosted OCR assets (public/ocr) so
+        // printout scanning works fully offline
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,gz}'],
+        maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/api\.weather\.gov\/.*/i,

@@ -1,10 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ArrowLeft, Camera, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Camera, Loader2, Plus, ScanText, Trash2 } from 'lucide-react';
 import { db, deleteWithTombstone } from '@/db';
 import { generateId, nowISO } from '@/lib/utils';
-import { checkCompliance, type ComplianceStatus } from '@shotlog/shared';
+import {
+  checkCompliance,
+  dominantFrequency,
+  type ComplianceStatus,
+  type InstantelReading,
+} from '@shotlog/shared';
+import { scanSeismoPrintout } from '@/lib/seismoScan';
 import type { SeismoReading } from '@/db/schema';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -201,6 +207,13 @@ function AddReadingForm({
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [scan, setScan] = useState<
+    | { state: 'idle' }
+    | { state: 'scanning'; attempt: number }
+    | { state: 'done'; fields: number }
+    | { state: 'failed' }
+  >({ state: 'idle' });
+  const [extracted, setExtracted] = useState<InstantelReading | null>(null);
 
   useEffect(() => {
     if (!photo) {
@@ -210,6 +223,46 @@ function AddReadingForm({
     const url = URL.createObjectURL(photo);
     setPhotoUrl(url);
     return () => URL.revokeObjectURL(url);
+  }, [photo]);
+
+  // Auto-scan every captured printout; fill only fields the blaster hasn't
+  // typed into, and keep the full extraction for save (accel, displacement…)
+  useEffect(() => {
+    if (!photo) return;
+    let cancelled = false;
+    setScan({ state: 'scanning', attempt: 1 });
+    scanSeismoPrintout(photo, (p) => {
+      if (!cancelled) setScan({ state: 'scanning', attempt: p.attempt });
+    })
+      .then((result) => {
+        if (cancelled) return;
+        if (!result) {
+          setScan({ state: 'failed' });
+          return;
+        }
+        setExtracted(result);
+        const freq = dominantFrequency(result);
+        setForm((f) => ({
+          ...f,
+          ppvTran: f.ppvTran || (result.ppvTran !== undefined ? String(result.ppvTran) : f.ppvTran),
+          ppvVert: f.ppvVert || (result.ppvVert !== undefined ? String(result.ppvVert) : f.ppvVert),
+          ppvLong: f.ppvLong || (result.ppvLong !== undefined ? String(result.ppvLong) : f.ppvLong),
+          frequency: f.frequency || (freq !== undefined ? String(freq) : f.frequency),
+          airOverpressure:
+            f.airOverpressure ||
+            (result.peakOverpressure !== undefined ? String(result.peakOverpressure) : f.airOverpressure),
+          seismographId: f.seismographId || result.serialNumber || f.seismographId,
+          operator: f.operator || result.operator || f.operator,
+          location: result.location || f.location,
+        }));
+        setScan({ state: 'done', fields: result.score });
+      })
+      .catch(() => {
+        if (!cancelled) setScan({ state: 'failed' });
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [photo]);
 
   const num = (v: string) => parseFloat(v) || 0;
@@ -236,18 +289,18 @@ function AddReadingForm({
       ppvTran: num(form.ppvTran),
       ppvVert: num(form.ppvVert),
       ppvLong: num(form.ppvLong),
-      peakVectorSum: 0,
+      peakVectorSum: extracted?.peakVectorSum ?? 0,
       frequency: freq,
       airOverpressure: num(form.airOverpressure),
-      maxAccelTran: 0,
-      maxAccelVert: 0,
-      maxAccelLong: 0,
-      maxDisplacementTran: 0,
-      maxDisplacementVert: 0,
-      maxDisplacementLong: 0,
+      maxAccelTran: extracted?.maxAccelTran ?? 0,
+      maxAccelVert: extracted?.maxAccelVert ?? 0,
+      maxAccelLong: extracted?.maxAccelLong ?? 0,
+      maxDisplacementTran: extracted?.maxDisplacementTran ?? 0,
+      maxDisplacementVert: extracted?.maxDisplacementVert ?? 0,
+      maxDisplacementLong: extracted?.maxDisplacementLong ?? 0,
       operator: form.operator,
       location: form.location,
-      triggerTimestamp: now,
+      triggerTimestamp: extracted?.triggerTimestamp ?? now,
       sensorCheckPassed: true,
       calibrationDate: '',
       complianceStatus: compliance?.overall ?? 'compliant',
@@ -294,6 +347,26 @@ function AddReadingForm({
           >
             <Camera className="h-5 w-5" /> Capture Seismograph Printout
           </button>
+        )}
+
+        {scan.state === 'scanning' && (
+          <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-gray-700">
+            <Loader2 className="h-4 w-4 animate-spin text-navy" />
+            Reading printout… {scan.attempt > 1 && `(trying rotation ${scan.attempt}/4)`}
+          </div>
+        )}
+        {scan.state === 'done' && (
+          <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-gray-700">
+            <ScanText className="h-4 w-4 text-compliant" />
+            Read {scan.fields} values from the printout — <b>verify against the paper tape</b>
+          </div>
+        )}
+        {scan.state === 'failed' && (
+          <div className="flex items-center gap-2 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-sm text-gray-700">
+            <ScanText className="h-4 w-4 text-safety-orange" />
+            Couldn't read the printout — enter the values manually (better light and a flat
+            tape help)
+          </div>
         )}
 
         <div className="grid grid-cols-3 gap-2">

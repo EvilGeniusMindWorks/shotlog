@@ -38,3 +38,6 @@ export {
   maxHolesPerWindow,
 } from './timing.js';
 export type { TimingPlan, TimingWire } from './timing.js';
+
+export { parseInstantelPrintout, dominantFrequency } from './instantel.js';
+export type { InstantelReading } from './instantel.js';
