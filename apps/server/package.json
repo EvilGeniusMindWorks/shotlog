@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
-    "@shotlog/shared": "*",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "express": "^5.2.1",
