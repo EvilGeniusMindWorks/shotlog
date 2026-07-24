@@ -304,6 +304,15 @@ export interface Equipment extends BaseRecord {
 // PRODUCT CATALOG (Addendum 1 §A2)
 // ══════════════════════════════════════════════════════
 
+/** Deletion marker — synced so removals propagate instead of resurrecting */
+export interface Tombstone {
+  id: string; // `${tableName}:${recordId}`
+  tableName: string;
+  recordId: string;
+  deletedAt: string; // ISO
+  syncStatus: 'local' | 'pending' | 'synced';
+}
+
 export type ProductCategory =
   | 'bulk'
   | 'anfo'

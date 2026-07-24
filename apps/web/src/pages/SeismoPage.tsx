@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ArrowLeft, Camera, Plus, Trash2 } from 'lucide-react';
-import { db } from '@/db';
+import { db, deleteWithTombstone } from '@/db';
 import { generateId, nowISO } from '@/lib/utils';
 import { checkCompliance, type ComplianceStatus } from '@shotlog/shared';
 import type { SeismoReading } from '@/db/schema';
@@ -154,7 +154,7 @@ function ReadingCard({ reading }: { reading: SeismoReading }) {
             size="icon"
             onClick={() => {
               if (confirm(`Delete graph ${reading.graphNumber}?`)) {
-                void db.seismoReadings.delete(reading.id);
+                void deleteWithTombstone('seismoReadings', reading.id);
               }
             }}
           >

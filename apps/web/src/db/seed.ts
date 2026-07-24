@@ -1,4 +1,3 @@
-import { v4 as uuidv4 } from 'uuid';
 import { db } from './database';
 import type { ProductCatalogItem, ProductCategory } from './schema';
 
@@ -84,8 +83,12 @@ export async function seedProductCatalog(): Promise<void> {
   if (count > 0) return; // already seeded
 
   const now = new Date().toISOString();
+  // Deterministic ids: every device seeds the SAME records, so sync
+  // converges by overwrite instead of duplicating the catalog
+  const slug = (s: string) =>
+    s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80);
   const items: ProductCatalogItem[] = PRODUCT_CATALOG_SEED.map((p, index) => ({
-    id: uuidv4(),
+    id: `seed-${slug(`${p.manufacturer}-${p.productName}`)}`,
     manufacturer: p.manufacturer,
     productName: p.productName,
     fullDescription: `${p.manufacturer} - ${p.productName}`,

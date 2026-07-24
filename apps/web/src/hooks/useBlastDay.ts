@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '@/db';
+import { db, deleteWithTombstone } from '@/db';
 import type {
   BlastDay,
   BlastLog,
@@ -355,7 +355,7 @@ export async function addShot(blastLogId: string, kFactor: number = 180): Promis
 }
 
 export async function deleteShot(shotId: string, blastLogId: string): Promise<void> {
-  await db.shots.delete(shotId);
+  await deleteWithTombstone('shots', shotId);
   // Renumber remaining shots
   const remaining = await db.shots.where('blastLogId').equals(blastLogId).sortBy('shotNumber');
   for (let i = 0; i < remaining.length; i++) {

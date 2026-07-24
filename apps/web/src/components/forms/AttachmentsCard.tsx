@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { FileText, Plus, X } from 'lucide-react';
-import { db } from '@/db';
+import { db, deleteWithTombstone } from '@/db';
 import { generateId, nowISO } from '@/lib/utils';
 import type { Attachment } from '@/db/schema';
 import { SectionCard } from '@/components/ui/section-card';
@@ -102,7 +102,7 @@ function AttachmentTile({ attachment }: { attachment: Attachment }) {
         className="absolute -top-1.5 -right-1.5 h-6 w-6 rounded-full bg-gray-700 text-white items-center justify-center hidden group-hover:flex shadow"
         title="Remove"
         onClick={() => {
-          if (confirm(`Remove ${attachment.fileName}?`)) void db.attachments.delete(attachment.id);
+          if (confirm(`Remove ${attachment.fileName}?`)) void deleteWithTombstone('attachments', attachment.id);
         }}
       >
         <X className="h-3.5 w-3.5" />

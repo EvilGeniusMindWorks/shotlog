@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ArrowDown, ArrowUp, Pencil, Plus, Trash2, X } from 'lucide-react';
-import { db } from '@/db';
+import { db, deleteWithTombstone } from '@/db';
 import { generateId, nowISO, cn } from '@/lib/utils';
 import type { ColumnLayer, TypicalColumn } from '@/db/schema';
 import { Button } from '@/components/ui/button';
@@ -65,7 +65,7 @@ export function TypicalColumnBuilder({ shotId }: { shotId: string }) {
   const deleteColumn = async () => {
     if (!active) return;
     if (!confirm(`Delete ${active.name}?`)) return;
-    await db.typicalColumns.delete(active.id);
+    await deleteWithTombstone('typicalColumns', active.id);
     setActiveId(null);
   };
 

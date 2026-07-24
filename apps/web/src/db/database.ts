@@ -1,5 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie';
 import type {
+  Tombstone,
   Job,
   BlasterProfile,
   BlastDay,
@@ -58,6 +59,7 @@ class ShotLogDB extends Dexie {
   equipment!: EntityTable<Equipment, 'id'>;
   productCatalog!: EntityTable<ProductCatalogItem, 'id'>;
   attachments!: EntityTable<Attachment, 'id'>;
+  tombstones!: EntityTable<Tombstone, 'id'>;
 
   constructor() {
     super('ShotLogDB');
@@ -81,7 +83,31 @@ class ShotLogDB extends Dexie {
       productCatalog: 'id, manufacturer, productName, category, isActive, syncStatus',
       attachments: 'id, parentId, parentType, syncStatus',
     });
+
+    // v2: tombstones — deletions must survive sync or the server copy
+    // resurrects deleted records on the next pull
+    this.version(2).stores({
+      tombstones: 'id, syncStatus',
+    });
   }
+}
+
+/**
+ * Delete a record AND leave a tombstone so the deletion syncs.
+ * Use this instead of table.delete() for any synced table.
+ */
+export async function deleteWithTombstone(tableName: string, recordId: string): Promise<void> {
+  const now = new Date().toISOString();
+  await db.transaction('rw', [db.table(tableName), db.tombstones], async () => {
+    await db.table(tableName).delete(recordId);
+    await db.tombstones.put({
+      id: `${tableName}:${recordId}`,
+      tableName,
+      recordId,
+      deletedAt: now,
+      syncStatus: 'local',
+    });
+  });
 }
 
 export const db = new ShotLogDB();

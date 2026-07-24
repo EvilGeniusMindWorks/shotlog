@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ChipSelect } from '@/components/ui/chip-select';
+import { SyncCard } from '@/components/forms/SyncCard';
 
 const EQUIPMENT_CATEGORIES = [
   { value: 'vehicle', label: 'Vehicle' },
@@ -54,6 +55,7 @@ export function SettingsPage() {
   return (
     <div className="p-4 max-w-2xl mx-auto space-y-4">
       <h2 className="text-xl font-bold text-gray-900">Settings</h2>
+      <SyncCard />
       {profile && <ProfileCard profile={profile} />}
       {profile && <LicensesCard profile={profile} />}
       <CrewCard />

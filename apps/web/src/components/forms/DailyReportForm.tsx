@@ -1,6 +1,6 @@
 import { Plus, Trash2 } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '@/db';
+import { db, deleteWithTombstone } from '@/db';
 import { generateId, nowISO } from '@/lib/utils';
 import type { BlastDay, BlastLog, DailyReport, Shot, WorkForceEntry, EquipmentEntry, MaterialEntry, SubcontractorEntry } from '@/db/schema';
 import { Button } from '@/components/ui/button';
@@ -176,7 +176,7 @@ function WorkForceSection({
   };
 
   const removeEntry = (id: string) => {
-    db.workForceEntries.delete(id);
+    void deleteWithTombstone('workForceEntries', id);
   };
 
   return (
@@ -294,7 +294,7 @@ function EquipmentSection({
   };
 
   const removeEntry = (id: string) => {
-    db.equipmentEntries.delete(id);
+    void deleteWithTombstone('equipmentEntries', id);
   };
 
   // Group by category

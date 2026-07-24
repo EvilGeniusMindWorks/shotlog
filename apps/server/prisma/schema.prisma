@@ -1,0 +1,55 @@
+// ShotLog sync server — Postgres via Prisma.
+//
+// Design note: synced records are stored as JSONB documents keyed by
+// (userId, tableName, recordId) rather than mirroring the client's 17
+// tables relationally. For v1, sync = durable backup with last-write-wins;
+// a document store survives client schema evolution without server
+// migrations. Relational projections can be added when reporting or
+// multi-user querying needs them.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  passwordHash  String
+  name          String
+  createdAt     DateTime       @default(now())
+  refreshTokens RefreshToken[]
+  records       SyncRecord[]
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model SyncRecord {
+  userId    String
+  tableName String
+  recordId  String
+  /// Client-side updatedAt — the LWW clock
+  updatedAt DateTime
+  deletedAt DateTime?
+  payload   Json
+  /// Server receive time (audit)
+  syncedAt  DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, tableName, recordId])
+  @@index([userId, updatedAt])
+}
