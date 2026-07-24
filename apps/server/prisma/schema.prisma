@@ -32,6 +32,9 @@ model User {
   /// admin | blaster | driller | mechanic | office
   role          String         @default("blaster")
   isActive      Boolean        @default(true)
+  /// Personal blasting licenses: [{state, licenseNumber, expirationDate}] —
+  /// one per state; travels with the login session for offline auto-fill
+  licenses      Json           @default("[]")
   companyId     String
   company       Company        @relation(fields: [companyId], references: [id])
   createdAt     DateTime       @default(now())

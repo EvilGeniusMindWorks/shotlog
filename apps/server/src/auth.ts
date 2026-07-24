@@ -125,6 +125,7 @@ authRouter.post('/login', async (req, res) => {
       name: user.name,
       role: user.role,
       company: user.company.name,
+      licenses: user.licenses,
     },
   });
 });
@@ -193,4 +194,51 @@ authRouter.post('/change-password', requireAuth, async (req: AuthedRequest, res:
     data: { revokedAt: new Date() },
   });
   res.json({ ok: true });
+});
+
+// ── Self-service: current user + personal licenses ─────────────────────────
+
+authRouter.get('/me', requireAuth, async (req: AuthedRequest, res: Response) => {
+  const user = await prisma.user.findUnique({
+    where: { id: req.userId! },
+    include: { company: true },
+  });
+  if (!user || !user.isActive) {
+    res.status(401).json({ error: 'invalid session' });
+    return;
+  }
+  res.json({
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      company: user.company.name,
+      licenses: user.licenses,
+    },
+  });
+});
+
+const licenseSchema = z
+  .array(
+    z.object({
+      state: z.string().length(2).toUpperCase(),
+      licenseNumber: z.string().min(1).max(64),
+      expirationDate: z.string().max(10).optional().default(''),
+    }),
+  )
+  .max(60)
+  .refine(
+    (arr) => new Set(arr.map((l) => l.state)).size === arr.length,
+    'one license per state',
+  );
+
+authRouter.put('/me/licenses', requireAuth, async (req: AuthedRequest, res: Response) => {
+  const parsed = licenseSchema.safeParse((req.body as { licenses?: unknown })?.licenses);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'invalid licenses — one per 2-letter state' });
+    return;
+  }
+  await prisma.user.update({ where: { id: req.userId! }, data: { licenses: parsed.data } });
+  res.json({ ok: true, licenses: parsed.data });
 });

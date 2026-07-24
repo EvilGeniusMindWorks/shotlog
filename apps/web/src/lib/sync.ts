@@ -37,12 +37,19 @@ const LS_KEYS = {
 /** Production sync server — pre-filled on the login screen */
 export const DEFAULT_SERVER_URL = 'https://shotlogserver-production.up.railway.app';
 
+export interface UserLicense {
+  state: string;
+  licenseNumber: string;
+  expirationDate: string;
+}
+
 export interface SessionUser {
   id: string;
   email: string;
   name: string;
   role: string;
   company: string;
+  licenses?: UserLicense[];
 }
 
 export function getSessionUser(): SessionUser | null {
@@ -162,6 +169,34 @@ export async function logout(): Promise<void> {
   localStorage.removeItem(LS_KEYS.refreshToken);
   localStorage.removeItem(LS_KEYS.userEmail);
   localStorage.removeItem(LS_KEYS.userInfo);
+}
+
+/** Refresh the cached session user (name, role, licenses) from the server */
+export async function refreshSessionUser(): Promise<SessionUser | null> {
+  try {
+    const res = await authedFetch('/auth/me');
+    if (!res.ok) return getSessionUser();
+    const body = (await res.json()) as { user: SessionUser };
+    localStorage.setItem(LS_KEYS.userInfo, JSON.stringify(body.user));
+    return body.user;
+  } catch {
+    return getSessionUser(); // offline — cached copy is authoritative
+  }
+}
+
+/** Replace the signed-in user's licenses (one per state). Needs a connection. */
+export async function updateMyLicenses(licenses: UserLicense[]): Promise<SessionUser> {
+  const res = await authedFetch('/auth/me/licenses', {
+    method: 'PUT',
+    body: JSON.stringify({ licenses }),
+  });
+  const body = (await res.json().catch(() => null)) as
+    | { ok?: boolean; licenses?: UserLicense[]; error?: string }
+    | null;
+  if (!res.ok) throw new Error(body?.error ?? 'failed to save licenses');
+  const user = { ...getSessionUser()!, licenses: body?.licenses ?? licenses };
+  localStorage.setItem(LS_KEYS.userInfo, JSON.stringify(user));
+  return user;
 }
 
 /** Fetch with bearer token; on 401 tries one refresh-and-retry */

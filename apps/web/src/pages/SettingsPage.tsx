@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ChipSelect } from '@/components/ui/chip-select';
 import { SyncCard } from '@/components/forms/SyncCard';
+import { MyLicensesCard } from '@/components/forms/MyLicensesCard';
 import { TeamCard } from '@/components/forms/TeamCard';
 
 const EQUIPMENT_CATEGORIES = [
@@ -59,7 +60,7 @@ export function SettingsPage() {
       <SyncCard />
       <TeamCard />
       {profile && <ProfileCard profile={profile} />}
-      {profile && <LicensesCard profile={profile} />}
+      <MyLicensesCard />
       <CrewCard />
       <EquipmentCard />
     </div>
@@ -94,107 +95,6 @@ function ProfileCard({ profile }: { profile: BlasterProfile }) {
           <Label className="text-xs">Email</Label>
           <Input type="email" value={draft.email} onChange={(e) => setField('email', e.target.value)} />
         </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function LicensesCard({ profile }: { profile: BlasterProfile }) {
-  const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ state: '', licenseNumber: '', expirationDate: '' });
-
-  const updateLicenses = (licenses: BlasterProfile['licenses']) => {
-    db.blasterProfiles.update(profile.id, { licenses, updatedAt: nowISO() });
-  };
-
-  const addLicense = () => {
-    if (!form.state || !form.licenseNumber) return;
-    updateLicenses([...profile.licenses, { ...form, isActive: true }]);
-    setForm({ state: '', licenseNumber: '', expirationDate: '' });
-    setAdding(false);
-  };
-
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-base">Blasting Licenses</CardTitle>
-        <Button size="sm" onClick={() => setAdding(true)}>
-          <Plus className="h-4 w-4 mr-1" /> Add License
-        </Button>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        {profile.licenses.length === 0 && !adding && (
-          <p className="text-sm text-gray-400 text-center py-2">
-            No licenses yet. The license matching a job's state auto-fills sign-off.
-          </p>
-        )}
-        {profile.licenses.map((lic, idx) => {
-          const days = lic.expirationDate ? daysUntil(lic.expirationDate) : null;
-          const expiring = days !== null && days <= EXPIRY_WARNING_DAYS;
-          return (
-            <div
-              key={`${lic.state}-${lic.licenseNumber}`}
-              className="flex items-center gap-3 border border-gray-200 rounded-lg p-3"
-            >
-              <span className="font-mono font-bold text-navy w-10">{lic.state}</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">{lic.licenseNumber}</p>
-                {lic.expirationDate && (
-                  <p className={`text-xs ${expiring ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
-                    {expiring && <AlertTriangle className="inline h-3 w-3 mr-1" />}
-                    Expires {lic.expirationDate}
-                    {expiring && days !== null && ` (${days} days)`}
-                  </p>
-                )}
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => updateLicenses(profile.licenses.filter((_, i) => i !== idx))}
-              >
-                <Trash2 className="h-4 w-4 text-gray-400" />
-              </Button>
-            </div>
-          );
-        })}
-        {adding && (
-          <div className="border border-navy rounded-lg p-3 space-y-2">
-            <div className="grid grid-cols-3 gap-2">
-              <div>
-                <Label className="text-xs">State</Label>
-                <Input
-                  value={form.state}
-                  onChange={(e) => setForm({ ...form, state: e.target.value.toUpperCase().slice(0, 2) })}
-                  placeholder="MA"
-                  maxLength={2}
-                />
-              </div>
-              <div>
-                <Label className="text-xs">License #</Label>
-                <Input
-                  value={form.licenseNumber}
-                  onChange={(e) => setForm({ ...form, licenseNumber: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label className="text-xs">Expires</Label>
-                <Input
-                  type="date"
-                  value={form.expirationDate}
-                  onChange={(e) => setForm({ ...form, expirationDate: e.target.value })}
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setAdding(false)}>
-                Cancel
-              </Button>
-              <Button size="sm" disabled={!form.state || !form.licenseNumber} onClick={addLicense}>
-                Add
-              </Button>
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

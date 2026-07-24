@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ChipSelect, ChipMultiSelect } from '@/components/ui/chip-select';
 import { SignatureField } from '@/components/ui/signature-field';
+import { getSessionUser } from '@/lib/sync';
 import { Badge } from '@/components/ui/badge';
 import { ShotForm } from './ShotForm';
 import { ExplosiveUsageForm } from './ExplosiveUsageForm';
@@ -274,6 +275,43 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
         defaultOpen={!signoffComplete}
       >
         <div className="space-y-3">
+          {/* Pick from the signed-in blaster's licenses (one per state) */}
+          {(() => {
+            const session = getSessionUser();
+            const licenses = session?.licenses ?? [];
+            if (licenses.length === 0) return null;
+            return (
+              <div>
+                <Label className="text-xs">
+                  Your Licenses
+                  <span className="text-gray-400 font-normal"> — tap to apply</span>
+                </Label>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {licenses.map((lic) => {
+                    const selected =
+                      draft.licenseNumber === lic.licenseNumber && draft.licenseState === lic.state;
+                    return (
+                      <button
+                        key={lic.state}
+                        className={`min-h-[40px] px-3 rounded-full border text-sm font-medium ${
+                          selected
+                            ? 'bg-navy text-white border-navy'
+                            : 'bg-white text-gray-700 border-gray-300'
+                        }`}
+                        onClick={() => {
+                          setField('blasterName', session!.name);
+                          setField('licenseNumber', lic.licenseNumber);
+                          setField('licenseState', lic.state);
+                        }}
+                      >
+                        {lic.state} · {lic.licenseNumber}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <Label className="text-xs">Blaster Name</Label>

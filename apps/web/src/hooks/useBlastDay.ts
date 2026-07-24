@@ -11,6 +11,7 @@ import type {
   EquipmentEntry,
 } from '@/db/schema';
 import { generateId, nowISO, todayISO } from '@/lib/utils';
+import { getSessionUser } from '@/lib/sync';
 
 export function useBlastDays() {
   const blastDays = useLiveQuery(() =>
@@ -286,9 +287,22 @@ export async function createBlastDay(
     },
   );
 
-  // Auto-fill blaster profile (filter, not where — boolean fields aren't indexable)
+  // Auto-fill blaster + license from the signed-in user's account:
+  // name always; license by matching the job's state (one per state)
+  const session = getSessionUser();
+  if (session && job) {
+    const license = (session.licenses ?? []).find((l) => l.state === job.state);
+    await db.blastLogs.update(blastLogId, {
+      blasterName: session.name,
+      ...(license
+        ? { licenseNumber: license.licenseNumber, licenseState: license.state }
+        : {}),
+      updatedAt: nowISO(),
+    });
+  }
+  // Legacy fallback: local blaster profile (pre-account data)
   const blaster = await db.blasterProfiles.filter((b) => b.isCurrentUser).first();
-  if (blaster && job) {
+  if (!session && blaster && job) {
     const license = blaster.licenses.find((l) => l.state === job.state && l.isActive);
     if (license) {
       await db.blastLogs.update(blastLogId, {
