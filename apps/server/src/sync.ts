@@ -14,7 +14,7 @@ syncRouter.get('/changes', async (req: AuthedRequest, res: Response) => {
   const since = typeof req.query.since === 'string' ? new Date(req.query.since) : null;
   const records = await prisma.syncRecord.findMany({
     where: {
-      userId: req.userId!,
+      companyId: req.companyId!,
       ...(since && !Number.isNaN(since.getTime()) ? { updatedAt: { gt: since } } : {}),
     },
     orderBy: { updatedAt: 'asc' },
@@ -57,7 +57,7 @@ syncRouter.post('/push', async (req: AuthedRequest, res: Response) => {
     res.status(400).json({ error: 'invalid push payload', details: parsed.error.issues.slice(0, 3) });
     return;
   }
-  const userId = req.userId!;
+  const companyId = req.companyId!;
   const accepted: { tableName: string; recordId: string }[] = [];
   const stale: { tableName: string; recordId: string; serverUpdatedAt: string }[] = [];
 
@@ -65,8 +65,8 @@ syncRouter.post('/push', async (req: AuthedRequest, res: Response) => {
     const incomingAt = new Date(record.updatedAt);
     const existing = await prisma.syncRecord.findUnique({
       where: {
-        userId_tableName_recordId: {
-          userId,
+        companyId_tableName_recordId: {
+          companyId,
           tableName: record.tableName,
           recordId: record.recordId,
         },
@@ -82,14 +82,14 @@ syncRouter.post('/push', async (req: AuthedRequest, res: Response) => {
     }
     await prisma.syncRecord.upsert({
       where: {
-        userId_tableName_recordId: {
-          userId,
+        companyId_tableName_recordId: {
+          companyId,
           tableName: record.tableName,
           recordId: record.recordId,
         },
       },
       create: {
-        userId,
+        companyId,
         tableName: record.tableName,
         recordId: record.recordId,
         updatedAt: incomingAt,

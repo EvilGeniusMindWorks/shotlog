@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useTheme } from '@/hooks/useTheme';
+import { getSessionUser } from '@/lib/sync';
 import { Tour } from './Tour';
 
 const navItems = [
@@ -55,9 +56,14 @@ export function AppShell() {
   const [touring, setTouring] = useState(false);
   const navigate = useNavigate();
   const profile = useLiveQuery(() => db.blasterProfiles.filter((b) => b.isCurrentUser).first());
+  const session = getSessionUser();
+  const displayName = session?.name || profile?.name || '';
+  const displaySub = session
+    ? `${session.role.charAt(0).toUpperCase()}${session.role.slice(1)} · ${session.company}`
+    : profile?.company || '';
 
   const initials =
-    profile?.name
+    displayName
       ?.split(' ')
       .map((p) => p[0])
       .slice(0, 2)
@@ -112,11 +118,9 @@ export function AppShell() {
             </span>
             <span className="min-w-0">
               <span className="block text-sm font-semibold truncate">
-                {profile?.name || 'Set up profile'}
+                {displayName || 'Set up profile'}
               </span>
-              <span className="block text-[11px] text-navy-200 truncate">
-                {profile?.company || ''}
-              </span>
+              <span className="block text-[11px] text-navy-200 truncate">{displaySub}</span>
             </span>
           </div>
         </div>

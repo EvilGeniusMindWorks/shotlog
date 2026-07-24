@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
+import { AuthGate } from '@/components/layout/AuthGate';
 import { Dashboard } from '@/pages/Dashboard';
 import { BlastDayPage } from '@/pages/BlastDayPage';
 import { JobsPage } from '@/pages/JobsPage';
@@ -14,6 +15,7 @@ import { BlastReportPage } from '@/pages/BlastReportPage';
 
 export function App() {
   return (
+    <AuthGate>
     <BrowserRouter>
       <Routes>
         <Route element={<AppShell />}>
@@ -31,5 +33,6 @@ export function App() {
         <Route path="/blast-day/:id/report" element={<BlastReportPage />} />
       </Routes>
     </BrowserRouter>
+    </AuthGate>
   );
 }

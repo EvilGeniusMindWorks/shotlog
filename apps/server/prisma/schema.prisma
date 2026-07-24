@@ -16,14 +16,28 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Company {
+  id        String       @id @default(uuid())
+  name      String
+  createdAt DateTime     @default(now())
+  users     User[]
+  records   SyncRecord[]
+}
+
 model User {
   id            String         @id @default(uuid())
   email         String         @unique
   passwordHash  String
   name          String
+  /// admin | blaster | driller | mechanic | office
+  role          String         @default("blaster")
+  isActive      Boolean        @default(true)
+  companyId     String
+  company       Company        @relation(fields: [companyId], references: [id])
   createdAt     DateTime       @default(now())
   refreshTokens RefreshToken[]
-  records       SyncRecord[]
+
+  @@index([companyId])
 }
 
 model RefreshToken {
@@ -39,7 +53,8 @@ model RefreshToken {
 }
 
 model SyncRecord {
-  userId    String
+  /// Company-scoped: every user in the company shares the same records
+  companyId String
   tableName String
   recordId  String
   /// Client-side updatedAt — the LWW clock
@@ -48,8 +63,8 @@ model SyncRecord {
   payload   Json
   /// Server receive time (audit)
   syncedAt  DateTime  @default(now())
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  @@id([userId, tableName, recordId])
-  @@index([userId, updatedAt])
+  @@id([companyId, tableName, recordId])
+  @@index([companyId, updatedAt])
 }

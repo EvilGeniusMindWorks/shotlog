@@ -30,8 +30,29 @@ const LS_KEYS = {
   accessToken: 'shotlog-access-token',
   refreshToken: 'shotlog-refresh-token',
   userEmail: 'shotlog-user-email',
+  userInfo: 'shotlog-user-info',
   lastPulledAt: 'shotlog-last-pulled-at',
 };
+
+/** Production sync server — pre-filled on the login screen */
+export const DEFAULT_SERVER_URL = 'https://shotlogserver-production.up.railway.app';
+
+export interface SessionUser {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  company: string;
+}
+
+export function getSessionUser(): SessionUser | null {
+  try {
+    const raw = localStorage.getItem(LS_KEYS.userInfo);
+    return raw ? (JSON.parse(raw) as SessionUser) : null;
+  } catch {
+    return null;
+  }
+}
 
 export interface SyncResult {
   pushed: number;
@@ -111,11 +132,16 @@ export async function login(serverUrl: string, email: string, password: string):
     const body = (await res.json().catch(() => null)) as { error?: string } | null;
     throw new Error(body?.error ?? `login failed (${res.status})`);
   }
-  const data = (await res.json()) as { accessToken: string; refreshToken: string };
+  const data = (await res.json()) as {
+    accessToken: string;
+    refreshToken: string;
+    user: SessionUser;
+  };
   localStorage.setItem(LS_KEYS.serverUrl, url);
   localStorage.setItem(LS_KEYS.userEmail, email);
   localStorage.setItem(LS_KEYS.accessToken, data.accessToken);
   localStorage.setItem(LS_KEYS.refreshToken, data.refreshToken);
+  localStorage.setItem(LS_KEYS.userInfo, JSON.stringify(data.user));
 }
 
 export async function logout(): Promise<void> {
@@ -131,10 +157,11 @@ export async function logout(): Promise<void> {
   localStorage.removeItem(LS_KEYS.accessToken);
   localStorage.removeItem(LS_KEYS.refreshToken);
   localStorage.removeItem(LS_KEYS.userEmail);
+  localStorage.removeItem(LS_KEYS.userInfo);
 }
 
 /** Fetch with bearer token; on 401 tries one refresh-and-retry */
-async function authedFetch(path: string, init?: RequestInit): Promise<Response> {
+export async function authedFetch(path: string, init?: RequestInit): Promise<Response> {
   const { serverUrl } = getSyncConfig();
   if (!serverUrl) throw new Error('sync not configured');
   const attempt = () =>

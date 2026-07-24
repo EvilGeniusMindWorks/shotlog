@@ -15,10 +15,20 @@ const REFRESH_TTL_DAYS = 30;
 
 export interface AuthedRequest extends Request {
   userId?: string;
+  companyId?: string;
+  role?: string;
 }
 
-function signAccess(userId: string): string {
-  return jwt.sign({ sub: userId }, JWT_SECRET, { expiresIn: ACCESS_TTL });
+interface AccessClaims {
+  sub: string;
+  cid: string;
+  role: string;
+}
+
+function signAccess(user: { id: string; companyId: string; role: string }): string {
+  return jwt.sign({ sub: user.id, cid: user.companyId, role: user.role }, JWT_SECRET, {
+    expiresIn: ACCESS_TTL,
+  });
 }
 
 function hashToken(token: string): string {
@@ -48,10 +58,19 @@ export async function ensureAdminUser(): Promise<void> {
   }
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) return;
+  const companyName = process.env.COMPANY_NAME ?? 'Baystate Blasting, Inc.';
+  let company = await prisma.company.findFirst({ where: { name: companyName } });
+  company ??= await prisma.company.create({ data: { name: companyName } });
   await prisma.user.create({
-    data: { email, name, passwordHash: await bcrypt.hash(password, 12) },
+    data: {
+      email,
+      name,
+      role: 'admin',
+      companyId: company.id,
+      passwordHash: await bcrypt.hash(password, 12),
+    },
   });
-  console.log(`Bootstrap user created: ${email}`);
+  console.log(`Bootstrap admin created: ${email} (${companyName})`);
 }
 
 export function requireAuth(req: AuthedRequest, res: Response, next: NextFunction): void {
@@ -62,12 +81,22 @@ export function requireAuth(req: AuthedRequest, res: Response, next: NextFunctio
     return;
   }
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as { sub: string };
+    const payload = jwt.verify(token, JWT_SECRET) as AccessClaims;
     req.userId = payload.sub;
+    req.companyId = payload.cid;
+    req.role = payload.role;
     next();
   } catch {
     res.status(401).json({ error: 'invalid token' });
   }
+}
+
+export function requireAdmin(req: AuthedRequest, res: Response, next: NextFunction): void {
+  if (req.role !== 'admin') {
+    res.status(403).json({ error: 'admin only' });
+    return;
+  }
+  next();
 }
 
 export const authRouter = Router();
@@ -81,16 +110,22 @@ authRouter.post('/login', async (req, res) => {
     return;
   }
   const { email, password } = parsed.data;
-  const user = await prisma.user.findUnique({ where: { email } });
-  // Constant-shape response for bad email vs bad password
-  if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+  const user = await prisma.user.findUnique({ where: { email }, include: { company: true } });
+  // Constant-shape response for bad email / bad password / deactivated
+  if (!user || !user.isActive || !(await bcrypt.compare(password, user.passwordHash))) {
     res.status(401).json({ error: 'invalid credentials' });
     return;
   }
   res.json({
-    accessToken: signAccess(user.id),
+    accessToken: signAccess(user),
     refreshToken: await issueRefreshToken(user.id),
-    user: { id: user.id, email: user.email, name: user.name },
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      company: user.company.name,
+    },
   });
 });
 
@@ -108,11 +143,16 @@ authRouter.post('/refresh', async (req, res) => {
     res.status(401).json({ error: 'invalid refresh token' });
     return;
   }
+  const user = await prisma.user.findUnique({ where: { id: stored.userId } });
+  if (!user || !user.isActive) {
+    res.status(401).json({ error: 'invalid refresh token' });
+    return;
+  }
   // Rotate: revoke the old token, issue a new pair
   await prisma.refreshToken.update({ where: { tokenHash }, data: { revokedAt: new Date() } });
   res.json({
-    accessToken: signAccess(stored.userId),
-    refreshToken: await issueRefreshToken(stored.userId),
+    accessToken: signAccess(user),
+    refreshToken: await issueRefreshToken(user.id),
   });
 });
 
