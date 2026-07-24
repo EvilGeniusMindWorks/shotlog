@@ -20,9 +20,16 @@ deploys `apps/server` + Postgres. ~10 minutes, all in the Railway dashboard.
    | `ADMIN_NAME` | display name |
 
 4. **Deploy** (happens automatically on variable save / next push to `main`).
-5. **Get the URL**: service → *Settings → Networking → Generate Domain* →
-   something like `https://shotlog-sync-production.up.railway.app`.
+5. **Get the URL**: service → *Settings → Networking → Generate Domain*.
+   The dialog asks for a target port: check *Deploy Logs* for
+   `ShotLog sync server listening on :XXXX` and enter that number —
+   Railway injects `PORT` (observed: 8080), and the server obeys it.
+   A 502 "Application failed to respond" means the domain's target port
+   doesn't match; it's editable in Networking without a redeploy.
 6. **Verify**: `curl https://<domain>/health` → `{"ok":true,...}`.
+
+> Note: Railway's monorepo import may also create a `@shotlog/web`
+> service — delete it; the web app doesn't deploy on Railway.
 
 ## Connect the app
 
