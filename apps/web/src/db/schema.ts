@@ -40,6 +40,31 @@ export interface Job extends BaseRecord {
   localRegName?: string;
   localPPVLimit?: number;
   isActive: boolean;
+  /** Jobsite contact sheet — office-maintained, field-critical OFFLINE */
+  contacts?: JobContact[];
+  /** Freeform notes (fire-detail billing, scheduling rules, directions) */
+  contactNotes?: string;
+  owner?: string;
+  generalContractor?: string;
+}
+
+export type JobContactRole =
+  | 'onsite'
+  | 'fire_chief'
+  | 'detail_dispatch'
+  | 'police'
+  | 'fire'
+  | 'hospital'
+  | 'urgent_care'
+  | 'custom';
+
+export interface JobContact {
+  id: string;
+  role: JobContactRole;
+  label: string;
+  name: string;
+  phone: string;
+  notes?: string;
 }
 
 // ══════════════════════════════════════════════════════
@@ -511,6 +536,8 @@ export interface CompanySettings extends BaseRecord {
   city: string;
   state: string;
   phone: string;
+  /** Office routing (who to call for scope changes / equipment / incidents) */
+  officeContacts?: { id: string; label: string; name: string; phone: string }[];
 }
 
 /** Explosive manufacturer — first-class, admin-managed (id: mfr-<slug>) */

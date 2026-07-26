@@ -4,6 +4,7 @@ import { useLiveQuery, db } from '@/db';
 import { formatDate } from '@/lib/utils';
 import { useDraftRecord } from '@/hooks/useDraftRecord';
 import { getSessionUser } from '@/lib/session';
+import { JobContactsCard } from '@/components/forms/JobContactsCard';
 import { powderFactor } from '@shotlog/shared';
 import type { Job } from '@/db/schema';
 import { Button } from '@/components/ui/button';
@@ -77,6 +78,7 @@ export function JobDetailPage() {
           <StatBox label="Avg PF" value={avgPF > 0 ? avgPF.toFixed(2) : '—'} />
         </div>
 
+        <JobContactsCard job={job} readOnly={getSessionUser()?.role !== 'admin'} />
         <JobConfigCard job={job} />
 
         {/* Blast day history */}

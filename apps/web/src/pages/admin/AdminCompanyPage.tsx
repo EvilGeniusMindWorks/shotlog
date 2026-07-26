@@ -43,6 +43,62 @@ interface InviteLite {
   usedAt: string | null;
 }
 
+/** Office routing (Tony/Bob/Evette style): who the field calls for what */
+function OfficeContactsSection({
+  settings,
+  online,
+}: {
+  settings: { officeContacts?: { id: string; label: string; name: string; phone: string }[] } | undefined;
+  online: boolean;
+}) {
+  const contacts = settings?.officeContacts ?? [];
+  const [form, setForm] = useState({ label: '', name: '', phone: '' });
+  const save = async (next: typeof contacts) => {
+    await db.companySettings.update('companySettings-singleton', {
+      officeContacts: next,
+      updatedAt: nowISO(),
+    });
+  };
+  return (
+    <section className="rounded-xl border border-gray-200 bg-white p-4 space-y-3">
+      <p className="font-medium text-sm">Office routing</p>
+      <p className="text-xs text-gray-400">
+        Shown to every crew under the job's Contacts button — "change in scope → Tony" style.
+      </p>
+      <div className="space-y-1">
+        {contacts.map((c) => (
+          <div key={c.id} className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-gray-400 uppercase tracking-wide">{c.label}</p>
+              <p className="text-sm font-medium">{c.name}</p>
+            </div>
+            <span className="font-mono text-sm text-navy">{c.phone}</span>
+            <Button variant="ghost" size="icon" disabled={!online}
+              onClick={() => void save(contacts.filter((x) => x.id !== c.id))}>
+              ✕
+            </Button>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-end gap-2 flex-wrap">
+        <div className="w-44"><Label className="text-xs">Reason (e.g. Equipment issues)</Label>
+          <Input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} /></div>
+        <div className="w-32"><Label className="text-xs">Name</Label>
+          <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
+        <div className="w-40"><Label className="text-xs">Phone</Label>
+          <Input inputMode="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+        <Button size="sm" disabled={!online || !form.label.trim() || !form.phone.trim()}
+          onClick={() => {
+            void save([...contacts, { id: generateId(), ...form }]);
+            setForm({ label: '', name: '', phone: '' });
+          }}>
+          Add
+        </Button>
+      </div>
+    </section>
+  );
+}
+
 /** Paste "Last, First" or "First Last" lines; optional email after a comma/tab */
 function BulkRosterAdd({ crew }: { crew: { name: string }[] }) {
   const [open, setOpen] = useState(false);
@@ -348,6 +404,8 @@ export function AdminCompanyPage() {
         </Button>
         {message && <p className="text-sm text-gray-500">{message}</p>}
       </section>
+
+      <OfficeContactsSection settings={settings} online={online} />
 
       <section className="rounded-xl border border-gray-200 bg-white p-4 space-y-3">
         <p className="font-medium text-sm flex items-center gap-2">
