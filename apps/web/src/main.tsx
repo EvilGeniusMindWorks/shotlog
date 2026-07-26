@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import { App } from './App';
 import './index.css';
-import { seedProductCatalog } from './db/seed';
 
 // Explicit SW registration with an hourly update check. Without this, a
 // long-lived installed PWA only checks for new versions on the browser's
@@ -32,8 +31,8 @@ if (navigator.storage?.persist) {
   });
 }
 
-// Seed product catalog on first launch
-seedProductCatalog();
+// (Product catalog seeding happens SERVER-side per company — devices
+// receive it via sync on first hydrate.)
 
 // Dev-only: expose the data layer + real creation flows for the
 // multi-device test harness (synthetic hand-rolled records miss nested

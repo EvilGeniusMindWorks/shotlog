@@ -42,6 +42,9 @@ export type { TimingPlan, TimingWire } from './timing.js';
 export { parseInstantelPrintout, dominantFrequency } from './instantel.js';
 export type { InstantelReading } from './instantel.js';
 
+export { PRODUCT_CATALOG_SEED, buildProductCatalogSeed } from './productCatalogSeed.js';
+export type { SeedProduct, SeedCatalogDoc } from './productCatalogSeed.js';
+
 export {
   ROLES,
   TABLE_PERMISSIONS,

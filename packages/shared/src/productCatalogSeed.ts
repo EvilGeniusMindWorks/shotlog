@@ -1,7 +1,22 @@
-import { db } from './index';
-import type { ProductCatalogItem, ProductCategory } from './schema';
+// Product catalog seed — 59 products across 4 manufacturers, weight
+// multipliers from the spec addendum. Seeded SERVER-SIDE per company on
+// bootstrap (see apps/server); devices receive the catalog via sync and
+// admins manage it from /admin/catalog afterwards.
+//
+// Deterministic ids (seed-<slug>) so re-running the seed upserts the same
+// records instead of duplicating them.
 
-interface SeedProduct {
+export type ProductCategory =
+  | 'bulk'
+  | 'anfo'
+  | 'anfo_wr'
+  | 'gel_dynamite'
+  | 'emulsion'
+  | 'booster'
+  | 'booster_electronic'
+  | 'cartridge';
+
+export interface SeedProduct {
   manufacturer: string;
   productName: string;
   category: ProductCategory;
@@ -9,7 +24,7 @@ interface SeedProduct {
   unitType: string;
 }
 
-const PRODUCT_CATALOG_SEED: SeedProduct[] = [
+export const PRODUCT_CATALOG_SEED: SeedProduct[] = [
   // ═══ AUSTIN POWDER ═══
   { manufacturer: 'Austin Powder', productName: '60% Ex Gel - 1.25 x 8 BNAT (Dynamite) (88)', category: 'gel_dynamite', weightMultiplier: 0.5, unitType: 'stick' },
   { manufacturer: 'Austin Powder', productName: '60% Ex Gel - 1.5x16 (Dynamite) (30)', category: 'gel_dynamite', weightMultiplier: 1.4, unitType: 'stick' },
@@ -78,16 +93,29 @@ const PRODUCT_CATALOG_SEED: SeedProduct[] = [
   { manufacturer: 'Maxam', productName: 'Riohit 250 - 3" x 11lbs (11lbs)', category: 'cartridge', weightMultiplier: 11, unitType: 'stick' },
 ];
 
-export async function seedProductCatalog(): Promise<void> {
-  const count = await db.productCatalog.count();
-  if (count > 0) return; // already seeded
+const slug = (s: string) =>
+  s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80);
 
-  const now = new Date().toISOString();
-  // Deterministic ids: every device seeds the SAME records, so sync
-  // converges by overwrite instead of duplicating the catalog
-  const slug = (s: string) =>
-    s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80);
-  const items: ProductCatalogItem[] = PRODUCT_CATALOG_SEED.map((p, index) => ({
+export interface SeedCatalogDoc {
+  id: string;
+  manufacturer: string;
+  productName: string;
+  fullDescription: string;
+  category: ProductCategory;
+  weightMultiplier: number;
+  unitType: string;
+  sizeDescription: string;
+  unitsPerCase: null;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+  syncStatus: 'synced';
+}
+
+/** Full catalog documents in the shape the app's records payload uses. */
+export function buildProductCatalogSeed(now: string): SeedCatalogDoc[] {
+  return PRODUCT_CATALOG_SEED.map((p, index) => ({
     id: `seed-${slug(`${p.manufacturer}-${p.productName}`)}`,
     manufacturer: p.manufacturer,
     productName: p.productName,
@@ -101,8 +129,6 @@ export async function seedProductCatalog(): Promise<void> {
     sortOrder: index,
     createdAt: now,
     updatedAt: now,
-    syncStatus: 'local',
+    syncStatus: 'synced',
   }));
-
-  await db.productCatalog.bulkAdd(items);
 }
