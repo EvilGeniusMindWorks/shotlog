@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { cn, formatDate } from '@/lib/utils';
 import { NewBlastDayDialog } from '@/components/forms/NewBlastDayDialog';
+import { AdminHome, DrillerHome, DrillingReviewCard, MechanicHome, TodayCard } from '@/components/dashboard/RoleCards';
+import { getSessionUser } from '@/lib/session';
 
 interface DaySummary {
   day: BlastDay;
@@ -37,8 +39,8 @@ function useDaySummaries(): DaySummary[] | undefined {
       if (log) {
         const dayShots = await db.shots.where('blastLogId').equals(log.id).toArray();
         shots = dayShots.length;
-        holes = dayShots.reduce((s, sh) => s + sh.totals.numHoles, 0);
-        yards = dayShots.reduce((s, sh) => s + sh.totals.totalYardsShot, 0);
+        holes = dayShots.reduce((s, sh) => s + (sh.totals?.numHoles ?? 0), 0);
+        yards = dayShots.reduce((s, sh) => s + (sh.totals?.totalYardsShot ?? 0), 0);
         snapshot = dayShots.find((sh) => sh.designPlan.siteSketchImage)?.designPlan
           .siteSketchImage ?? null;
         const usage = await db.explosiveUsages.where('blastLogId').equals(log.id).first();
@@ -100,6 +102,17 @@ function useKpis() {
 type SortKey = 'date' | 'job' | 'status' | 'shots' | 'holes' | 'totalLbs' | 'pf';
 
 export function Dashboard() {
+  // Role-switched home (approved mockup): drillers, mechanics, and
+  // admin/office each get their own front page; blasters/supervisors get
+  // the field dashboard below with today + drilling-review cards on top.
+  const role = getSessionUser()?.role;
+  if (role === 'driller') return <DrillerHome />;
+  if (role === 'mechanic') return <MechanicHome />;
+  if (role === 'admin' || role === 'office') return <AdminHome />;
+  return <BlasterDashboard />;
+}
+
+function BlasterDashboard() {
   const navigate = useNavigate();
   const summaries = useDaySummaries();
   const kpis = useKpis();
@@ -152,14 +165,18 @@ export function Dashboard() {
         <Kpi label="Active Jobs" value={kpis ? String(kpis.activeJobs) : '—'} />
         <Kpi label="Shots / Month" value={kpis ? String(kpis.shotsThisMonth) : '—'} />
         <Kpi label="YTD Total (lbs)" value={kpis ? kpis.ytdLbs.toLocaleString() : '—'} />
+        {/* role cards inserted below the stats — see next sibling */}
         <Kpi
           label="Compliance"
           value={kpis?.compliancePct !== null && kpis ? `${kpis.compliancePct}%` : '—'}
         />
       </div>
 
+      <TodayCard />
+      <DrillingReviewCard />
+
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-xl font-bold text-gray-900">Blast Days</h2>
+        <h2 className="text-xl font-bold text-gray-900">Work Days</h2>
         <Button
           variant="outline"
           size="sm"
