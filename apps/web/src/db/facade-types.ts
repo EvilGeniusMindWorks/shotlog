@@ -4,8 +4,10 @@
 // creeping in fails the build instead of silently breaking the facade.
 import type {
   CompanySettings,
+  DrillChecklist,
   DrillLog,
   DrillLogHole,
+  RepairTicket,
   Manufacturer,
   Tombstone,
   Job,
@@ -77,6 +79,8 @@ export interface ShotLogDataAccess {
   manufacturers: FacadeTable<Manufacturer>;
   drillLogs: FacadeTable<DrillLog>;
   drillLogHoles: FacadeTable<DrillLogHole>;
+  drillChecklists: FacadeTable<DrillChecklist>;
+  repairTickets: FacadeTable<RepairTicket>;
   tombstones: FacadeTable<Tombstone>;
 
   table(name: string): FacadeTable<Record<string, unknown> & { id: string }>;

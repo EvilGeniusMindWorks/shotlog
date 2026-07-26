@@ -44,9 +44,11 @@ export const TABLE_PERMISSIONS: Record<string, TableRule> = {
   jobs: uniform(ADMIN_ONLY),
   companySettings: uniform(ADMIN_ONLY),
 
-  // Registries
+  // Registries. Equipment PATCH is open to field roles on purpose: hour
+  // meters and in/out-of-service status come from the people running the
+  // machines (asset identity is guarded by PUT/DELETE staying registry-level).
   crewMembers: uniform(REGISTRY),
-  equipment: uniform(EQUIPMENT_REGISTRY),
+  equipment: { PUT: EQUIPMENT_REGISTRY, PATCH: EQUIPMENT_ENTRIES, DELETE: EQUIPMENT_REGISTRY },
 
   // Work days are the root of EVERY field day (drill-only, crushing,
   // hauling included) — drillers create and edit them too. The blasting
@@ -62,6 +64,12 @@ export const TABLE_PERMISSIONS: Record<string, TableRule> = {
   // Drill logs — the Driller→Blaster handoff (N signed logs per shot)
   drillLogs: { PUT: REPORT_FAMILY, PATCH: REPORT_FAMILY, DELETE: REGISTRY },
   drillLogHoles: uniform(REPORT_FAMILY),
+
+  // Rig checklists + the shop's repair queue: field roles file, mechanics
+  // resolve — everyone in the loop can write (defect visibility is the fix
+  // for broken drills getting dispatched)
+  drillChecklists: uniform(EQUIPMENT_ENTRIES),
+  repairTickets: { PUT: EQUIPMENT_ENTRIES, PATCH: EQUIPMENT_ENTRIES, DELETE: REGISTRY },
 
   // Daily-report family (operations records) — drillers work here too
   dailyReports: uniform(REPORT_FAMILY),

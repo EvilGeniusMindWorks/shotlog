@@ -455,6 +455,54 @@ export interface DrillLogHole extends BaseRecord {
   comment: string;
 }
 
+// ══════════════════════════════════════════════════════
+// ROCK DRILL CHECKLIST + REPAIR TICKETS (shop queue)
+// ══════════════════════════════════════════════════════
+
+export const DRILL_DAILY_CHECKS = [
+  'Engine Oil', 'Compressor Oil', 'Hydraulic Oil', 'Anti-Freeze', 'Fuel',
+  'Oil Leaks', 'Hoses (while drilling)', 'Hoses on Rollers', 'Grease Machine',
+  'Blow Out Coolers', 'Gauges', 'Horn', 'Lubricator', 'Backup Alarm',
+  'Emergency Stop',
+] as const;
+
+export const DRILL_WEEKLY_CHECKS = [
+  'Blow Out Engine Air Filters', 'Blow Out Compressor Air Filters',
+  'Blow Out Dust Collector Air Filters', 'Fire Extinguishers', 'Grease Rollers',
+] as const;
+
+/** ok = checked good · na = not applicable · skip = not done */
+export type CheckState = 'ok' | 'na' | 'skip';
+
+export interface DrillChecklist extends BaseRecord {
+  equipmentId: string;
+  jobId?: string;
+  date: string; // ISO date
+  startingHours: number | null;
+  daily: Record<string, CheckState>;
+  weeklyDone: boolean;
+  weekly: Record<string, CheckState>;
+  repairsNote: string;
+  /** Driller's call: rig unusable — flips the asset to in_shop */
+  outOfService: boolean;
+  drillerUserId: string;
+  drillerName: string;
+  signatureImage: Blob | null;
+}
+
+export interface RepairTicket extends BaseRecord {
+  equipmentId: string;
+  sourceType: 'drill_checklist' | 'manual';
+  sourceId?: string;
+  description: string;
+  outOfService: boolean;
+  status: 'open' | 'resolved';
+  openedByName: string;
+  resolvedByName?: string;
+  resolvedAt?: string;
+  resolutionNote?: string;
+}
+
 /** Single doc per company (id: companySettings-singleton), admin-managed */
 export interface CompanySettings extends BaseRecord {
   companyName: string;

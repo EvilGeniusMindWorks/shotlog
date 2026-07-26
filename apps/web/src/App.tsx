@@ -22,6 +22,7 @@ import { AdminEquipmentPage } from '@/pages/admin/AdminEquipmentPage';
 import { EnrollPage } from '@/pages/EnrollPage';
 import { DrillLogPage } from '@/pages/DrillLogPage';
 import { PrintDrillLogPage } from '@/pages/PrintDrillLogPage';
+import { DrillChecklistPage } from '@/pages/DrillChecklistPage';
 import { Navigate } from 'react-router-dom';
 import { getSessionUser } from '@/lib/session';
 
@@ -60,6 +61,7 @@ export function App() {
           <Route path="/blast-day/:id/design/:shotId" element={<DesignPlanPage />} />
           <Route path="/blast-day/:id/seismo/:shotId" element={<SeismoPage />} />
           <Route path="/blast-day/:id/drill-log/:logId" element={<DrillLogPage />} />
+          <Route path="/drill-checklist/:equipmentId" element={<DrillChecklistPage />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminIndexRedirect />} />
             <Route path="users" element={<AdminUsersPage />} />

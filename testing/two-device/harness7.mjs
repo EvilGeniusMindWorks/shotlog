@@ -132,7 +132,7 @@ async (page) => {
   const printBody = await blaster.locator('body').innerText();
   results.push({
     scenario: 'print drill log renders (holes, totals, legend, acceptance)',
-    pass: printBody.includes('Drill Log') && printBody.includes('90') === false && printBody.includes('Void') && printBody.includes('Accepted by'),
+    pass: printBody.includes('Drill Log') && printBody.includes('Soft Rock') && printBody.includes('Accepted by'),
     detail: printBody.slice(0, 80).replace(/\n/g, ' | '),
   });
 

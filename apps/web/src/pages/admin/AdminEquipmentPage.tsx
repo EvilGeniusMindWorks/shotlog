@@ -2,10 +2,12 @@
 // category, with a bulk-paste importer for "CODE  Description" lists.
 // Writable by admin/supervisor/mechanic (the matrix enforces server-side).
 import { useMemo, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
-import { AlertTriangle, Pencil, Plus, Upload } from 'lucide-react';
+import { useNavigate, useOutletContext } from 'react-router-dom';
+import { AlertTriangle, ClipboardCheck, Pencil, Plus, Upload, Wrench } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
-import { generateId, nowISO } from '@/lib/utils';
+import { resolveTicket, useOpenTickets } from '@/hooks/useMaintenance';
+import type { RepairTicket } from '@/db/schema';
+import { generateId, nowISO, formatDate } from '@/lib/utils';
 import type { Equipment, EquipmentCategory, EquipmentStatus } from '@/db/schema';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -80,9 +82,71 @@ function DueChip({ label, date }: { label: string; date?: string }) {
   );
 }
 
+function RepairQueue({ equipment }: { equipment: { id: string; assetNumber: string; description: string }[] }) {
+  const tickets = useOpenTickets();
+  const [resolvingId, setResolvingId] = useState<string | null>(null);
+  const [note, setNote] = useState('');
+  if (tickets.length === 0) return null;
+  const assetOf = (id: string) => equipment.find((e) => e.id === id);
+  const resolve = async (ticket: RepairTicket) => {
+    await resolveTicket(ticket, note);
+    setResolvingId(null);
+    setNote('');
+  };
+  return (
+    <section className="rounded-xl border-2 border-orange-200 bg-white">
+      <h3 className="text-xs font-semibold text-safety-orange uppercase tracking-wider px-3 pt-3 flex items-center gap-1.5">
+        <Wrench className="h-3.5 w-3.5" /> Repair queue ({tickets.length})
+      </h3>
+      <div className="divide-y divide-gray-100">
+        {tickets.map((t) => {
+          const asset = assetOf(t.equipmentId);
+          return (
+            <div key={t.id} className="p-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-mono text-sm text-navy shrink-0">{asset?.assetNumber ?? '?'}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium">“{t.description}”</p>
+                  <p className="text-xs text-gray-400">
+                    {t.openedByName} · {formatDate(t.createdAt.slice(0, 10))} ·{' '}
+                    {t.sourceType === 'drill_checklist' ? 'daily checklist' : 'manual'}
+                  </p>
+                </div>
+                {t.outOfService && <Badge variant="violation">out of service</Badge>}
+                <Button size="sm" variant={resolvingId === t.id ? 'ghost' : 'outline'}
+                  onClick={() => setResolvingId(resolvingId === t.id ? null : t.id)}>
+                  {resolvingId === t.id ? 'Cancel' : 'Resolve'}
+                </Button>
+              </div>
+              {resolvingId === t.id && (
+                <div className="mt-2 flex items-end gap-2">
+                  <div className="flex-1">
+                    <Label className="text-xs">What was done</Label>
+                    <Input value={note} onChange={(e) => setNote(e.target.value)}
+                      placeholder="e.g. replaced hydraulic hose, compressor clutch rebuilt" />
+                  </div>
+                  <Button size="sm" disabled={!note.trim()} onClick={() => void resolve(t)}>
+                    Mark resolved
+                  </Button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 export function AdminEquipmentPage() {
   const { online } = useOutletContext<{ online: boolean }>();
+  const navigate = useNavigate();
   const equipment = useLiveQuery(() => db.equipment.toArray()) ?? [];
+  const openTickets = useOpenTickets();
+  const ticketedAssets = useMemo(
+    () => new Set(openTickets.map((t) => t.equipmentId)),
+    [openTickets],
+  );
   const [showRetired, setShowRetired] = useState(false);
   const [adding, setAdding] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -114,6 +178,8 @@ export function AdminEquipmentPage() {
           <Plus className="h-4 w-4 mr-1" /> Add Asset
         </Button>
       </div>
+
+      <RepairQueue equipment={equipment} />
 
       {importing && <BulkImport existing={equipment} onDone={() => setImporting(false)} />}
       {adding && (
@@ -161,6 +227,13 @@ export function AdminEquipmentPage() {
                   )}
                   <DueChip label="DOT" date={item.dotInspectionDue} />
                   <DueChip label="calibration" date={item.calibrationDue} />
+                  {ticketedAssets.has(item.id) && <Badge variant="warning">repair open</Badge>}
+                  {(item.category === 'rock_drill' || item.category === 'equip_drill') && (
+                    <Button variant="ghost" size="icon" title="Daily checklist"
+                      onClick={() => navigate(`/drill-checklist/${item.id}`)}>
+                      <ClipboardCheck className="h-4 w-4 text-gray-400" />
+                    </Button>
+                  )}
                   <Button variant="ghost" size="icon" title="Edit"
                     onClick={() => setEditingId(editingId === item.id ? null : item.id)}>
                     <Pencil className="h-4 w-4 text-gray-400" />

@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { SignatureField } from '@/components/ui/signature-field';
+import { useTodayChecklist } from '@/hooks/useMaintenance';
 
 const CONDITIONS: { code: HoleConditionCode; label: string }[] = [
   { code: 'W', label: 'Water' },
@@ -52,6 +53,8 @@ export function DrillLogPage() {
         .filter((e) => e.isActive && (e.category === 'rock_drill' || e.category === 'equip_drill'))
         .toArray(),
     ) ?? [];
+
+  const todayChecklist = useTodayChecklist(log?.drillRigEquipmentId);
 
   // Quick-entry state
   const [holeNumber, setHoleNumber] = useState('');
@@ -157,6 +160,15 @@ export function DrillLogPage() {
           <p className="text-sm text-green-800 border border-green-200 bg-green-50 rounded-lg px-3 py-2">
             Accepted by {log.acceptedBy || 'blaster'} — this pattern feeds the shot's loading.
           </p>
+        )}
+
+        {log.drillRigEquipmentId && !todayChecklist && editable && (
+          <button
+            className="w-full text-left text-sm text-safety-orange border border-orange-200 bg-orange-50 rounded-lg px-3 py-2"
+            onClick={() => navigate(`/drill-checklist/${log.drillRigEquipmentId}?job=${log.jobId}`)}
+          >
+            ⚠ Rig checklist not filed today — tap to file it now.
+          </button>
         )}
 
         {/* Header card — pattern info prefilled from design */}

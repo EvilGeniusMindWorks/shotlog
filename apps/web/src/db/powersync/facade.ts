@@ -19,8 +19,10 @@ import type {
 } from '../facade-types';
 import type {
   CompanySettings,
+  DrillChecklist,
   DrillLog,
   DrillLogHole,
+  RepairTicket,
   Manufacturer,
   Tombstone,
   Job,
@@ -66,6 +68,8 @@ const RECORD_TABLES = [
   'manufacturers',
   'drillLogs',
   'drillLogHoles',
+  'drillChecklists',
+  'repairTickets',
   'tombstones',
 ] as const;
 
@@ -211,7 +215,19 @@ class PsTable<T extends { id: string }> implements FacadeTable<T> {
         merged[key] = value;
       }
     }
-    await this.put(merged as T);
+    // A real SQL UPDATE (not INSERT OR REPLACE) so PowerSync records this
+    // as a PATCH op — the permission matrix distinguishes editing (PATCH)
+    // from creating (PUT), e.g. field roles may report equipment readings
+    // but not add assets.
+    const payload = JSON.stringify(await serializeValue(merged));
+    await this.ctx
+      .sql()
+      .execute('UPDATE records SET payload = ?, updated_at = ? WHERE table_name = ? AND id = ?', [
+        payload,
+        new Date().toISOString(),
+        this.name,
+        id,
+      ]);
     return 1;
   }
 
@@ -288,6 +304,8 @@ export class PowerSyncFacade implements ShotLogDataAccess {
   manufacturers!: FacadeTable<Manufacturer>;
   drillLogs!: FacadeTable<DrillLog>;
   drillLogHoles!: FacadeTable<DrillLogHole>;
+  drillChecklists!: FacadeTable<DrillChecklist>;
+  repairTickets!: FacadeTable<RepairTicket>;
   tombstones!: FacadeTable<Tombstone>;
 
   private currentTx: SqlRunner | null = null;

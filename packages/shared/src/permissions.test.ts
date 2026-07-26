@@ -54,6 +54,13 @@ describe('table permissions', () => {
     expect(canPerformOp('crewMembers', 'PUT', 'mechanic')).toBe(false);
   });
 
+  it('field roles report equipment readings (PATCH) but cannot add/remove assets', () => {
+    expect(canPerformOp('equipment', 'PATCH', 'driller')).toBe(true);
+    expect(canPerformOp('equipment', 'PATCH', 'blaster')).toBe(true);
+    expect(canPerformOp('equipment', 'PUT', 'driller')).toBe(false);
+    expect(canPerformOp('equipment', 'DELETE', 'driller')).toBe(false);
+  });
+
   it('unknown tables are denied for every role', () => {
     for (const role of ROLES) {
       expect(canPerformOp('records', 'PUT', role)).toBe(false);
