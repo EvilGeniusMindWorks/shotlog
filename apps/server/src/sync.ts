@@ -35,6 +35,27 @@ syncRouter.get('/changes', async (req: AuthedRequest, res: Response) => {
   });
 });
 
+/**
+ * Diagnostics: what the server currently holds for this company, per table.
+ * Lets any device verify from the field whether a record actually arrived.
+ */
+syncRouter.get('/stats', async (req: AuthedRequest, res: Response) => {
+  const rows = await prisma.syncRecord.groupBy({
+    by: ['tableName'],
+    where: { companyId: req.companyId!, deletedAt: null },
+    _count: { recordId: true },
+    _max: { syncedAt: true },
+  });
+  res.json({
+    tables: rows.map((r) => ({
+      tableName: r.tableName,
+      count: r._count.recordId,
+      lastReceived: r._max.syncedAt?.toISOString() ?? null,
+    })),
+    serverTime: new Date().toISOString(),
+  });
+});
+
 const pushSchema = z.object({
   records: z
     .array(

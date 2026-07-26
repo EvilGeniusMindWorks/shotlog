@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Cloud, Download, LogOut, RefreshCw } from 'lucide-react';
+import { db } from '@/db';
 import {
   exportAllData,
+  fetchServerStats,
+  getLastSyncError,
   getSyncConfig,
   login,
   logout,
   pendingCount,
   syncNow,
+  type ServerStats,
   type SyncResult,
 } from '@/lib/sync';
 import { IconChip, SectionCard } from '@/components/ui/section-card';
@@ -120,6 +124,14 @@ export function SyncCard() {
             Syncs automatically — after edits, when connectivity returns, and every few
             minutes while online. Sync Now forces an immediate pass.
           </p>
+          {getLastSyncError() && (
+            <p className="text-sm text-safety-orange border border-orange-200 bg-orange-50 rounded-lg px-3 py-2">
+              Last sync problem: {getLastSyncError()} — your data is safe on this device;
+              sync keeps retrying and other records still go through.
+            </p>
+          )}
+          <DeviceVsServer />
+          <p className="text-[11px] text-gray-300 font-mono">Build {__BUILD_ID__}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -166,5 +178,82 @@ export function SyncCard() {
       )}
       {status && <p className="text-sm text-gray-500">{status}</p>}
     </SectionCard>
+  );
+}
+
+/**
+ * Field diagnostic: this device's record counts next to the server's, so
+ * "my phone is missing a shot" is answerable from either device — a gap on
+ * the server side means the OTHER device hasn't pushed; a gap on this side
+ * means this device hasn't pulled.
+ */
+function DeviceVsServer() {
+  const KEY_TABLES = ['blastDays', 'shots', 'seismoReadings', 'attachments'] as const;
+  const LABELS: Record<(typeof KEY_TABLES)[number], string> = {
+    blastDays: 'Blast Days',
+    shots: 'Shots',
+    seismoReadings: 'Seismo',
+    attachments: 'Attachments',
+  };
+  const [rows, setRows] = useState<
+    { label: string; device: number; server: number | null }[] | null
+  >(null);
+  const [error, setError] = useState(false);
+
+  const load = async () => {
+    setError(false);
+    const device = await Promise.all(KEY_TABLES.map((t) => db.table(t).count()));
+    let stats: ServerStats | null = null;
+    try {
+      stats = await fetchServerStats();
+    } catch {
+      setError(true);
+    }
+    setRows(
+      KEY_TABLES.map((t, i) => ({
+        label: LABELS[t],
+        device: device[i],
+        server: stats?.tables.find((x) => x.tableName === t)?.count ?? (stats ? 0 : null),
+      })),
+    );
+  };
+  useEffect(() => {
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (!rows) return null;
+  const mismatch = rows.some((r) => r.server !== null && r.device !== r.server);
+  return (
+    <div className="border border-gray-200 rounded-lg p-3">
+      <div className="flex items-center justify-between mb-1.5">
+        <p className="text-xs font-semibold text-gray-500">This device vs server</p>
+        <button className="text-xs text-navy underline" onClick={() => void load()}>
+          Refresh
+        </button>
+      </div>
+      <div className="grid grid-cols-4 gap-2 text-center">
+        {rows.map((r) => (
+          <div key={r.label}>
+            <p className="text-[10px] text-gray-400">{r.label}</p>
+            <p
+              className={`font-mono text-sm font-bold ${
+                r.server !== null && r.device !== r.server ? 'text-safety-orange' : 'text-gray-700'
+              }`}
+            >
+              {r.device} / {r.server ?? '?'}
+            </p>
+          </div>
+        ))}
+      </div>
+      {error && (
+        <p className="text-xs text-gray-400 mt-1.5">Server unreachable — counts show device only</p>
+      )}
+      {!error && mismatch && (
+        <p className="text-xs text-safety-orange mt-1.5">
+          Counts differ — tap Sync Now; if it persists, the other device hasn't synced yet
+        </p>
+      )}
+    </div>
   );
 }

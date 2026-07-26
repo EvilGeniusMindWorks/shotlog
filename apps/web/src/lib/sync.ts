@@ -32,7 +32,13 @@ const LS_KEYS = {
   userEmail: 'shotlog-user-email',
   userInfo: 'shotlog-user-info',
   lastPulledAt: 'shotlog-last-pulled-at',
+  lastSyncError: 'shotlog-last-sync-error',
 };
+
+/** The most recent sync failure message, if the last pass had one */
+export function getLastSyncError(): string | null {
+  return localStorage.getItem(LS_KEYS.lastSyncError);
+}
 
 /** Production sync server — pre-filled on the login screen */
 export const DEFAULT_SERVER_URL = 'https://shotlogserver-production.up.railway.app';
@@ -171,6 +177,20 @@ export async function logout(): Promise<void> {
   localStorage.removeItem(LS_KEYS.refreshToken);
   localStorage.removeItem(LS_KEYS.userEmail);
   localStorage.removeItem(LS_KEYS.userInfo);
+  // Logging back in should behave like a fresh device: full pull
+  localStorage.removeItem(LS_KEYS.lastPulledAt);
+}
+
+export interface ServerStats {
+  tables: { tableName: string; count: number; lastReceived: string | null }[];
+  serverTime: string;
+}
+
+/** What the server currently holds for this company — field diagnostics */
+export async function fetchServerStats(): Promise<ServerStats> {
+  const res = await authedFetch('/sync/stats');
+  if (!res.ok) throw new Error(`stats failed (${res.status})`);
+  return (await res.json()) as ServerStats;
 }
 
 /** Refresh the cached session user (name, role, licenses) from the server */
@@ -328,17 +348,49 @@ export async function syncNow(): Promise<SyncResult> {
       });
     }
 
-    for (let i = 0; i < outbox.length; i += 200) {
-      const batch = outbox.slice(i, i + 200);
-      const res = await authedFetch('/sync/push', {
-        method: 'POST',
-        body: JSON.stringify({ records: batch }),
-      });
-      if (!res.ok) throw new Error(`push failed (${res.status})`);
-      const body = (await res.json()) as {
+    // Batch by SERIALIZED SIZE, not count — records carry base64 images (map
+    // snapshots, printout photos) and a fixed count can build a huge request.
+    // One failing batch must not brick the pass: record the error, keep going,
+    // surface it at the end. A stuck batch otherwise blocks every later
+    // record from ever reaching the server.
+    const MAX_BATCH_BYTES = 4_000_000;
+    const batches: PushRecord[][] = [];
+    {
+      let current: PushRecord[] = [];
+      let size = 0;
+      for (const rec of outbox) {
+        const recSize = JSON.stringify(rec).length;
+        if (current.length > 0 && (size + recSize > MAX_BATCH_BYTES || current.length >= 200)) {
+          batches.push(current);
+          current = [];
+          size = 0;
+        }
+        current.push(rec);
+        size += recSize;
+      }
+      if (current.length > 0) batches.push(current);
+    }
+
+    let pushError: Error | null = null;
+    for (const batch of batches) {
+      let body: {
         accepted: { tableName: string; recordId: string }[];
         stale: { tableName: string; recordId: string }[];
       };
+      try {
+        const res = await authedFetch('/sync/push', {
+          method: 'POST',
+          body: JSON.stringify({ records: batch }),
+        });
+        if (!res.ok) {
+          const detail = (await res.json().catch(() => null)) as { error?: string } | null;
+          throw new Error(`push failed (${res.status}${detail?.error ? ` — ${detail.error}` : ''})`);
+        }
+        body = (await res.json()) as typeof body;
+      } catch (err) {
+        pushError ??= err instanceof Error ? err : new Error('push failed');
+        continue; // isolate: later batches still get their shot
+      }
       result.pushed += body.accepted.length;
       result.staleSkipped += body.stale.length;
       // Mark accepted rows synced (stale ones stay local; pull below resolves)
@@ -406,6 +458,15 @@ export async function syncNow(): Promise<SyncResult> {
       result.pulled += 1;
     }
     localStorage.setItem(LS_KEYS.lastPulledAt, body.serverTime);
+
+    // Push problems surface AFTER the pull so a bad batch can't block
+    // receiving data — but they must surface: silent push failure is how a
+    // device quietly stops backing up
+    if (pushError) {
+      localStorage.setItem(LS_KEYS.lastSyncError, pushError.message);
+      throw pushError;
+    }
+    localStorage.removeItem(LS_KEYS.lastSyncError);
 
     return result;
   } finally {
