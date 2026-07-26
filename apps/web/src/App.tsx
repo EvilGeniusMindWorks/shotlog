@@ -23,13 +23,15 @@ import { EnrollPage } from '@/pages/EnrollPage';
 import { DrillLogPage } from '@/pages/DrillLogPage';
 import { PrintDrillLogPage } from '@/pages/PrintDrillLogPage';
 import { DrillChecklistPage } from '@/pages/DrillChecklistPage';
+import { IncidentPage } from '@/pages/IncidentPage';
+import { AdminIncidentsPage } from '@/pages/admin/AdminIncidentsPage';
 import { Navigate } from 'react-router-dom';
 import { getSessionUser } from '@/lib/session';
 
 function AdminIndexRedirect() {
   const role = getSessionUser()?.role;
   const target =
-    role === 'supervisor' ? '/admin/approvals' : role === 'mechanic' ? '/admin/equipment' : '/admin/users';
+    role === 'supervisor' ? '/admin/approvals' : role === 'mechanic' ? '/admin/equipment' : role === 'office' ? '/admin/incidents' : '/admin/users';
   return <Navigate to={target} replace />;
 }
 
@@ -62,12 +64,14 @@ export function App() {
           <Route path="/blast-day/:id/seismo/:shotId" element={<SeismoPage />} />
           <Route path="/blast-day/:id/drill-log/:logId" element={<DrillLogPage />} />
           <Route path="/drill-checklist/:equipmentId" element={<DrillChecklistPage />} />
+          <Route path="/incident/:incidentId" element={<IncidentPage />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminIndexRedirect />} />
             <Route path="users" element={<AdminUsersPage />} />
             <Route path="approvals" element={<AdminApprovalsPage />} />
             <Route path="catalog" element={<AdminCatalogPage />} />
             <Route path="equipment" element={<AdminEquipmentPage />} />
+            <Route path="incidents" element={<AdminIncidentsPage />} />
             <Route path="company" element={<AdminCompanyPage />} />
           </Route>
         </Route>

@@ -528,6 +528,53 @@ export interface RepairTicket extends BaseRecord {
   resolutionNote?: string;
 }
 
+// ══════════════════════════════════════════════════════
+// INCIDENTS — blasting damage claims, utility strikes, asset accidents.
+// Filed in the field (offline-capable); office processes the claim.
+// ══════════════════════════════════════════════════════
+
+export type IncidentType = 'blasting' | 'utility' | 'asset';
+export type IncidentStatus = 'open' | 'office_review' | 'closed';
+
+export interface Incident extends BaseRecord {
+  type: IncidentType;
+  status: IncidentStatus;
+  jobId?: string;
+  date: string; // ISO date of incident
+  time: string;
+  description: string;
+  reportedByName: string;
+  // Blasting section
+  blastDayId?: string;
+  shotId?: string;
+  seismoReadingId?: string;
+  structureType?: string;
+  structureAddress?: string;
+  ownerName?: string;
+  ownerPhone?: string;
+  ownerAddress?: string;
+  preBlastSurvey?: 'completed' | 'refused' | 'none';
+  ppv?: number | null;
+  db?: number | null;
+  // Asset section
+  equipmentId?: string;
+  assetIncidentKind?: 'equipment_accident' | 'auto_accident' | 'theft' | 'vandalism' | 'other';
+  policeCalled?: boolean;
+  otherParty?: string;
+  // Utility section
+  utilityProvider?: string;
+  digsafeNumber?: string;
+  utilityMarked?: 'marked' | 'mismarked' | 'unmarked';
+  utilityKind?: 'underground_wire' | 'overhead_wire' | 'pipe' | 'other';
+  // Office claim section
+  claimReceivedAt?: string;
+  claimStatus?: 'pending' | 'accepted' | 'denied';
+  claimAmount?: number | null;
+  insuranceSubmittedAt?: string;
+  responseSentAt?: string;
+  officeNotes?: string;
+}
+
 /** Single doc per company (id: companySettings-singleton), admin-managed */
 export interface CompanySettings extends BaseRecord {
   companyName: string;

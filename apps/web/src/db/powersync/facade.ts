@@ -22,6 +22,7 @@ import type {
   DrillChecklist,
   DrillLog,
   DrillLogHole,
+  Incident,
   RepairTicket,
   Manufacturer,
   Tombstone,
@@ -70,6 +71,7 @@ const RECORD_TABLES = [
   'drillLogHoles',
   'drillChecklists',
   'repairTickets',
+  'incidents',
   'tombstones',
 ] as const;
 
@@ -306,6 +308,7 @@ export class PowerSyncFacade implements ShotLogDataAccess {
   drillLogHoles!: FacadeTable<DrillLogHole>;
   drillChecklists!: FacadeTable<DrillChecklist>;
   repairTickets!: FacadeTable<RepairTicket>;
+  incidents!: FacadeTable<Incident>;
   tombstones!: FacadeTable<Tombstone>;
 
   private currentTx: SqlRunner | null = null;

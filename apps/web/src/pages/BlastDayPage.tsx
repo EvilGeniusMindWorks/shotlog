@@ -17,6 +17,7 @@ import { ChipSelect } from '@/components/ui/chip-select';
 import { BlastLogForm } from '@/components/forms/BlastLogForm';
 import { DailyReportForm } from '@/components/forms/DailyReportForm';
 import { ContactList } from '@/components/forms/JobContactsCard';
+import { createIncident } from '@/pages/admin/AdminIncidentsPage';
 
 const WEATHER_OPTIONS = [
   { value: 'sunny', label: 'Sunny' },
@@ -322,6 +323,31 @@ export function BlastDayPage() {
               />
               <span className="text-sm font-medium">Fire Detail</span>
             </label>
+            <div>
+              <Button variant="outline" size="sm"
+                onClick={() => {
+                  void (async () => {
+                    const shot = shots[0];
+                    const reading = shot
+                      ? await db.seismoReadings.where('shotId').equals(shot.id).first()
+                      : undefined;
+                    const id = await createIncident('blasting', {
+                      jobId: blastDay.jobId,
+                      blastDayId: blastDay.id,
+                      shotId: shot?.id,
+                      seismoReadingId: reading?.id,
+                      ppv: reading
+                        ? Math.max(reading.ppvTran, reading.ppvVert, reading.ppvLong)
+                        : null,
+                      db: reading?.airOverpressure ?? null,
+                      date: blastDay.date,
+                    });
+                    navigate(`/incident/${id}`);
+                  })();
+                }}>
+                ⚠ Report incident
+              </Button>
+            </div>
           </div>
         )}
         </div>

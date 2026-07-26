@@ -78,6 +78,15 @@ export const TABLE_PERMISSIONS: Record<string, TableRule> = {
   materialEntries: uniform(REPORT_FAMILY),
   subcontractorEntries: uniform(REPORT_FAMILY),
 
+  // Incidents: any field role files them (blasting incidents in practice
+  // come from the blaster in charge); OFFICE processes claims — its first
+  // and only write grant
+  incidents: {
+    PUT: EQUIPMENT_ENTRIES,
+    PATCH: [...EQUIPMENT_ENTRIES, 'office'],
+    DELETE: REGISTRY,
+  },
+
   // Legacy local profile table — field-writable until deprecated
   blasterProfiles: uniform(BLAST_FAMILY),
 };

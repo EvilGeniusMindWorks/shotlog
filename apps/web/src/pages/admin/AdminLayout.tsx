@@ -13,10 +13,11 @@ const TABS: { to: string; label: string; roles: string[] }[] = [
   { to: '/admin/approvals', label: 'Approvals', roles: ['admin', 'supervisor'] },
   { to: '/admin/catalog', label: 'Catalog', roles: ['admin'] },
   { to: '/admin/equipment', label: 'Equipment', roles: ['admin', 'supervisor', 'mechanic'] },
+  { to: '/admin/incidents', label: 'Incidents', roles: ['admin', 'office'] },
   { to: '/admin/company', label: 'Company', roles: ['admin'] },
 ];
 
-export const ADMIN_ROLES = ['admin', 'supervisor', 'mechanic'];
+export const ADMIN_ROLES = ['admin', 'supervisor', 'mechanic', 'office'];
 
 export function AdminLayout() {
   const session = getSessionUser();
