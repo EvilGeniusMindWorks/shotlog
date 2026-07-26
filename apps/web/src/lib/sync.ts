@@ -383,6 +383,83 @@ export async function syncNow(): Promise<SyncResult> {
   }
 }
 
+// ── Auto-sync ──────────────────────────────────────────────────────────────
+// Local writes debounce into a push; connectivity returning, the app coming
+// back to the foreground, and a periodic tick each trigger a full pass. The
+// blaster should never have to think about Sync Now.
+
+const AUTO_SYNC_INTERVAL_MS = 5 * 60_000;
+const WRITE_DEBOUNCE_MS = 8_000;
+
+export type AutoSyncListener = (state: 'syncing' | 'synced' | 'offline' | 'error') => void;
+const autoSyncListeners = new Set<AutoSyncListener>();
+
+export function onAutoSync(listener: AutoSyncListener): () => void {
+  autoSyncListeners.add(listener);
+  return () => autoSyncListeners.delete(listener);
+}
+
+let autoSyncStarted = false;
+
+async function autoSyncPass(): Promise<void> {
+  if (syncing) return;
+  if (!getSyncConfig().loggedIn) return;
+  if (!navigator.onLine) {
+    autoSyncListeners.forEach((l) => l('offline'));
+    return;
+  }
+  autoSyncListeners.forEach((l) => l('syncing'));
+  try {
+    await syncNow();
+    autoSyncListeners.forEach((l) => l('synced'));
+  } catch {
+    // Transient (server unreachable, token refresh mid-flight) — the next
+    // trigger retries; local data is safe either way
+    autoSyncListeners.forEach((l) => l('error'));
+  }
+}
+
+export function startAutoSync(): void {
+  if (autoSyncStarted) return;
+  autoSyncStarted = true;
+
+  const kick = () => void autoSyncPass();
+  window.addEventListener('online', kick);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') kick();
+  });
+  window.setInterval(kick, AUTO_SYNC_INTERVAL_MS);
+
+  // Any local write (except those made by sync itself) schedules a push.
+  // The updating hook ALSO re-marks the record 'local': app code edits
+  // records without touching syncStatus, and a synced record that isn't
+  // re-marked would never push again.
+  let writeTimer: number | undefined;
+  const scheduleAfterWrite = () => {
+    window.clearTimeout(writeTimer);
+    writeTimer = window.setTimeout(kick, WRITE_DEBOUNCE_MS);
+  };
+  for (const table of db.tables) {
+    table.hook('creating', function (_pk, obj) {
+      if (syncing) return; // pull-applied writes keep their payload status
+      (obj as { syncStatus?: string }).syncStatus ??= 'local';
+      scheduleAfterWrite();
+    });
+    table.hook('updating', function (mods) {
+      if (syncing) return;
+      scheduleAfterWrite();
+      if (!('syncStatus' in (mods as Record<string, unknown>))) {
+        return { syncStatus: 'local' };
+      }
+    });
+    table.hook('deleting', function () {
+      if (!syncing) scheduleAfterWrite();
+    });
+  }
+
+  kick(); // catch up immediately on app start
+}
+
 /** Count of records (and tombstones) waiting to sync */
 export async function pendingCount(): Promise<number> {
   let count = 0;

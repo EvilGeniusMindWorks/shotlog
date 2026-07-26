@@ -116,6 +116,10 @@ export function SyncCard() {
               Last sync: {new Date(config.lastPulledAt).toLocaleString()}
             </p>
           )}
+          <p className="text-xs text-gray-400">
+            Syncs automatically — after edits, when connectivity returns, and every few
+            minutes while online. Sync Now forces an immediate pass.
+          </p>
         </div>
       ) : (
         <div className="space-y-3">
