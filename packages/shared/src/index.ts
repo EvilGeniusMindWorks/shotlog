@@ -41,3 +41,15 @@ export type { TimingPlan, TimingWire } from './timing.js';
 
 export { parseInstantelPrintout, dominantFrequency } from './instantel.js';
 export type { InstantelReading } from './instantel.js';
+
+export {
+  ROLES,
+  TABLE_PERMISSIONS,
+  BLAST_DAY_STATUS_TRANSITIONS,
+  PARENT_CHAIN,
+  APPROVAL_LOCKED_TABLES,
+  canPerformOp,
+  canTransitionStatus,
+  canEditApproved,
+} from './permissions.js';
+export type { Role, WriteOp, BlastDayStatus } from './permissions.js';

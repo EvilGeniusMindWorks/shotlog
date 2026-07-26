@@ -7,13 +7,21 @@ import { requireAuth, requireAdmin, type AuthedRequest } from './auth.js';
 export const usersRouter = Router();
 usersRouter.use(requireAuth, requireAdmin);
 
-const ROLES = ['admin', 'blaster', 'driller', 'mechanic', 'office'] as const;
+const ROLES = ['admin', 'supervisor', 'blaster', 'driller', 'mechanic', 'office'] as const;
 
-/** List the company's users */
+/** List the company's users (licenses included for expiry surfacing) */
 usersRouter.get('/', async (req: AuthedRequest, res: Response) => {
   const users = await prisma.user.findMany({
     where: { companyId: req.companyId! },
-    select: { id: true, email: true, name: true, role: true, isActive: true, createdAt: true },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true,
+      isActive: true,
+      createdAt: true,
+      licenses: true,
+    },
     orderBy: { createdAt: 'asc' },
   });
   res.json({ users });
@@ -50,6 +58,61 @@ usersRouter.post('/', async (req: AuthedRequest, res: Response) => {
     select: { id: true, email: true, name: true, role: true, isActive: true },
   });
   res.status(201).json({ user });
+});
+
+const patchSchema = z
+  .object({
+    name: z.string().min(1).optional(),
+    email: z.string().email().optional(),
+    role: z.enum(ROLES).optional(),
+  })
+  .refine((v) => v.name !== undefined || v.email !== undefined || v.role !== undefined, {
+    message: 'nothing to update',
+  });
+
+/** Edit a user's name, email, or role. Role changes revoke all sessions. */
+usersRouter.patch('/:id', async (req: AuthedRequest, res: Response) => {
+  const parsed = patchSchema.safeParse(req.body);
+  const rawId = req.params.id;
+  if (!parsed.success || typeof rawId !== 'string') {
+    res.status(400).json({ error: 'provide name, email, and/or role' });
+    return;
+  }
+  const user = await prisma.user.findFirst({ where: { id: rawId, companyId: req.companyId! } });
+  if (!user) {
+    res.status(404).json({ error: 'user not found' });
+    return;
+  }
+  const { name, email, role } = parsed.data;
+  if (role !== undefined && rawId === req.userId && role !== 'admin') {
+    res.status(400).json({ error: "you can't remove your own admin role" });
+    return;
+  }
+  if (email !== undefined && email !== user.email) {
+    const taken = await prisma.user.findUnique({ where: { email } });
+    if (taken) {
+      res.status(409).json({ error: 'a user with that email already exists' });
+      return;
+    }
+  }
+  const updated = await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      ...(name !== undefined ? { name } : {}),
+      ...(email !== undefined ? { email } : {}),
+      ...(role !== undefined ? { role } : {}),
+    },
+    select: { id: true, email: true, name: true, role: true, isActive: true },
+  });
+  if (role !== undefined && role !== user.role) {
+    // The role claim lives in the access token (≤1h). Revoking refresh
+    // tokens forces a fresh login — and fresh claims — within that window.
+    await prisma.refreshToken.updateMany({
+      where: { userId: user.id, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  }
+  res.json({ ok: true, user: updated });
 });
 
 const idSchema = z.object({ id: z.string().min(1) });

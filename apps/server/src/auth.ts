@@ -99,6 +99,17 @@ export function requireAdmin(req: AuthedRequest, res: Response, next: NextFuncti
   next();
 }
 
+/** Route guard for a specific set of roles, e.g. requireRole('admin', 'supervisor') */
+export function requireRole(...roles: string[]) {
+  return (req: AuthedRequest, res: Response, next: NextFunction): void => {
+    if (!roles.includes(req.role ?? '')) {
+      res.status(403).json({ error: 'insufficient role' });
+      return;
+    }
+    next();
+  };
+}
+
 export const authRouter = Router();
 
 const loginSchema = z.object({ email: z.string().email(), password: z.string().min(1) });

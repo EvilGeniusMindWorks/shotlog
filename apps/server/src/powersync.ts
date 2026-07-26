@@ -7,8 +7,24 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
+import {
+  canEditApproved,
+  canPerformOp,
+  canTransitionStatus,
+  APPROVAL_LOCKED_TABLES,
+  PARENT_CHAIN,
+  type Role,
+} from '@shotlog/shared';
+import type { Prisma } from '@prisma/client';
 import { prisma } from './db.js';
 import { requireAuth, type AuthedRequest } from './auth.js';
+import {
+  deleteRecord,
+  getRecord,
+  parsePayloadSafe,
+  upsertRecord,
+  type StoredRecord,
+} from './records.js';
 
 // Must match the HS256 JWKS entry in the PowerSync service config
 // (infra/powersync/service.yaml locally; the deployed service config in prod).
@@ -51,6 +67,53 @@ const uploadSchema = z.object({
     .max(5000),
 });
 
+/**
+ * Batch-scoped view of stored records: caches lookups AND reflects writes
+ * applied earlier in the same batch, so op N sees the state op N-1 created.
+ */
+class BatchRecords {
+  private cache = new Map<string, StoredRecord | null>();
+  constructor(
+    private tx: Prisma.TransactionClient,
+    private cid: string,
+  ) {}
+
+  async get(id: string): Promise<StoredRecord | null> {
+    if (!this.cache.has(id)) this.cache.set(id, await getRecord(this.tx, this.cid, id));
+    return this.cache.get(id) ?? null;
+  }
+
+  applied(id: string, tableName: string, payload: Record<string, unknown>): void {
+    this.cache.set(id, { tableName, payload });
+  }
+
+  deleted(id: string): void {
+    this.cache.set(id, null);
+  }
+}
+
+/** Follow the parent chain from a record up to its owning blastDay id. */
+async function resolveBlastDayId(
+  tableName: string,
+  ownPayload: Record<string, unknown>,
+  batch: BatchRecords,
+): Promise<string | null> {
+  let current = tableName;
+  let payload = ownPayload;
+  for (let hops = 0; hops < 5; hops++) {
+    const link = PARENT_CHAIN[current];
+    if (!link) return null;
+    const parentId = payload[link.parentIdField];
+    if (typeof parentId !== 'string' || !parentId) return null;
+    if (link.parentTable === 'blastDays') return parentId;
+    const parent = await batch.get(parentId);
+    if (!parent) return null;
+    current = link.parentTable;
+    payload = parent.payload;
+  }
+  return null;
+}
+
 powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => {
   const parsed = uploadSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -58,34 +121,85 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
     return;
   }
   const cid = req.companyId as string;
+  const role = (req.role ?? 'office') as Role;
   const now = new Date().toISOString();
+  const discardedIds: string[] = [];
 
   try {
     await prisma.$transaction(async (tx) => {
+      const batch = new BatchRecords(tx, cid);
+      const blastDayStatus = new Map<string, string>();
+      const statusOf = async (blastDayId: string): Promise<string> => {
+        let s = blastDayStatus.get(blastDayId);
+        if (s === undefined) {
+          const day = await batch.get(blastDayId);
+          s = (day?.payload.status as string | undefined) ?? 'draft';
+          blastDayStatus.set(blastDayId, s);
+        }
+        return s;
+      };
+      const discard = (op: { id: string; op: string }, tableName: string, reason: string) => {
+        discardedIds.push(op.id);
+        console.warn(
+          `[upload] discarded ${op.op} on ${tableName || '?'} (${op.id}) by ${req.userId} role=${role}: ${reason}`,
+        );
+      };
+
       for (const op of parsed.data.ops) {
+        // PATCH may omit table_name; DELETE carries no data at all — the
+        // stored row is the identity source for those.
+        const stored = await batch.get(op.id);
+        const tableName = op.data?.table_name ?? stored?.tableName ?? '';
+        const incoming = parsePayloadSafe(op.data?.payload);
+        // The record's effective payload after this op (PATCH replaces the
+        // whole payload column when present; COALESCE keeps stored otherwise)
+        const effective = op.data?.payload !== undefined ? incoming : (stored?.payload ?? {});
+
+        if (op.op === 'DELETE' && !stored) continue; // deleting nothing — no-op
+
+        // 1. table × op × role
+        if (!canPerformOp(tableName, op.op, role)) {
+          discard(op, tableName, 'role denied');
+          continue;
+        }
+
+        // 2. blastDay status transitions
+        if (tableName === 'blastDays' && op.op !== 'DELETE') {
+          const from = (stored?.payload.status as string | undefined) ?? 'draft';
+          const to = (effective.status as string | undefined) ?? from;
+          if (!canTransitionStatus(from, to, role)) {
+            discard(op, tableName, `forbidden transition ${from}->${to}`);
+            continue;
+          }
+          blastDayStatus.set(op.id, to);
+        }
+
+        // 3. approval lock on the blast-day family
+        if (APPROVAL_LOCKED_TABLES.has(tableName) && !canEditApproved(role)) {
+          const dayId = await resolveBlastDayId(tableName, effective, batch);
+          if (dayId && (await statusOf(dayId)) === 'approved') {
+            discard(op, tableName, 'blast day approved (locked)');
+            continue;
+          }
+        }
+
+        // 4. apply
         if (op.op === 'PUT' || op.op === 'PATCH') {
-          // PATCH carries ONLY changed columns — absent columns must keep
-          // their stored values (COALESCE), never be defaulted.
-          // Conflict target is the composite PK, so an identical id under
-          // another company is a separate row, never a collision.
-          await tx.$executeRaw`
-            INSERT INTO "records" ("id", "company_id", "table_name", "payload", "updated_at")
-            VALUES (${op.id}, ${cid}, ${op.data?.table_name ?? ''}, ${op.data?.payload ?? '{}'}, ${now})
-            ON CONFLICT ("company_id", "id") DO UPDATE SET
-              "table_name" = COALESCE(${op.data?.table_name ?? null}, "records"."table_name"),
-              "payload"    = COALESCE(${op.data?.payload ?? null}, "records"."payload"),
-              "updated_at" = ${now}`;
+          await upsertRecord(tx, cid, op.id, op.data?.table_name ?? null, op.data?.payload ?? null, now);
+          batch.applied(op.id, tableName, effective);
         } else {
-          await tx.$executeRaw`
-            DELETE FROM "records" WHERE "id" = ${op.id} AND "company_id" = ${cid}`;
+          await deleteRecord(tx, cid, op.id);
+          batch.deleted(op.id);
         }
       }
     });
   } catch (err) {
     console.error('powersync upload failed:', err);
-    // 500 keeps the client's CRUD queue intact; the SDK retries with backoff
+    // 500 keeps the client's CRUD queue intact; the SDK retries with backoff.
+    // Permission problems NEVER take this path — they are discarded above so
+    // one forbidden op can't wedge the device's queue forever.
     res.status(500).json({ error: 'upload failed' });
     return;
   }
-  res.json({ ok: true });
+  res.json({ ok: true, discarded: discardedIds.length, discardedIds });
 });
