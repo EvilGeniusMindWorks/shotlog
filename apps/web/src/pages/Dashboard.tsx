@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowDown, ArrowUp, LayoutGrid, Plus, Search, Table2 } from 'lucide-react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '@/db';
+import { useLiveQuery, db } from '@/db';
 import { createBlastDay } from '@/hooks/useBlastDay';
 import { powderFactor } from '@shotlog/shared';
 import type { BlastDay, Job } from '@/db/schema';

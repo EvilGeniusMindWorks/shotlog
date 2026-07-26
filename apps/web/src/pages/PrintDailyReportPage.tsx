@@ -1,8 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
 import { ArrowLeft, FileDown, Printer } from 'lucide-react';
-import { db } from '@/db';
+import { useLiveQuery, db } from '@/db';
 import { useBlastDay } from '@/hooks/useBlastDay';
 import type { EquipmentEntry, ProductCategory, WorkForceEntry } from '@/db/schema';
 import { savePagesAsPdf } from '@/lib/pdf';

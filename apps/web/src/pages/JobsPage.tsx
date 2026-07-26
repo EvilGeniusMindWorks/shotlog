@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '@/db';
+import { useLiveQuery, db } from '@/db';
 import { createJob } from '@/hooks/useBlastDay';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

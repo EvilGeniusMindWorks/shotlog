@@ -34,12 +34,19 @@ Postgres (Railway) ──logical replication──► PowerSync service ──we
 1. **Spike (this branch)** — local PowerSync service in Docker, `records`
    table, JWT auth (HS256), upload endpoint, two-origin browser proof:
    create/edit/delete converge across devices; offline queue drains.
-2. **Data layer port** — a thin facade with the Dexie-subset API the app
-   already uses (`table().get/put/update/delete/where.equals/filter/count`
-   + a `useLiveQuery` shim over `db.watch`), so the ~30 UI files keep
-   their current code. Blobs (signatures, map snapshots, photos) move to
-   an attachments pattern: payload stores a reference; bytes upload via
-   the existing authed API and cache locally.
+2. **Data layer port** — DONE (Jul 26). `apps/web/src/db/facade-types.ts`
+   defines the exact Dexie subset the UI uses; ALL app code now
+   type-checks against it (Dexie satisfies it via cast, so any new
+   Dexie-ism fails the build). `db/powersync/` implements the facade over
+   the `records` table (json_extract queries, blob↔base64 markers in the
+   SAME wire format as the old sync engine — server payloads migrate
+   as-is), plus a `useLiveQuery` shim over `onChangeWithCallback`.
+   Backend selected by `VITE_POWERSYNC=1` in `db/index.ts`; 17 UI files
+   changed only their `useLiveQuery` import line. 17 vitest tests run the
+   facade against node:sqlite (`npm test -w apps/web`). Browser-smoke
+   PASSED: dashboard + job create + live render + row in Postgres.
+   Deferred to phase 3: blobs still travel inside payloads (as before) —
+   the attachment-reference pattern needs the server endpoints anyway.
 3. **Server port** — `records` table replaces SyncRecord (same document
    shape: one row per record, JSON payload); `/powersync/token` (HS256,
    aud=powersync, cid claim) and `/powersync/upload` (applies queued ops

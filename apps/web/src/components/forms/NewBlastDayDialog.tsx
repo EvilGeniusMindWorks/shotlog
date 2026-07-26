@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '@/db';
+import { useLiveQuery, db } from '@/db';
 import { createJob, type CopyFromPrevious } from '@/hooks/useBlastDay';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { ArrowLeft, Camera, Loader2, Plus, ScanText, Trash2 } from 'lucide-react';
-import { db, deleteWithTombstone } from '@/db';
+import { useLiveQuery, db, deleteWithTombstone } from '@/db';
 import { generateId, nowISO } from '@/lib/utils';
 import {
   checkCompliance,

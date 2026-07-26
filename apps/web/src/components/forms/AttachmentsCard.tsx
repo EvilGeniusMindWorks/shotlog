@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { FileText, Plus, X } from 'lucide-react';
-import { db, deleteWithTombstone } from '@/db';
+import { useLiveQuery, db, deleteWithTombstone } from '@/db';
 import { generateId, nowISO } from '@/lib/utils';
 import type { Attachment } from '@/db/schema';
 import { SectionCard } from '@/components/ui/section-card';

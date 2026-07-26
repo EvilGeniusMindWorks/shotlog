@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Table, UpdateSpec } from 'dexie';
+import type { FacadeTable } from '@/db';
 import { nowISO } from '@/lib/utils';
 
 /**
@@ -17,8 +17,7 @@ import { nowISO } from '@/lib/utils';
  *   UI never flickers back to a stale value between write and live-query refresh.
  */
 export function useDraftRecord<T extends { id: string; updatedAt: string }>(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  table: Table<T, string, any>,
+  table: FacadeTable<T>,
   record: T,
   delayMs = 400,
 ) {
@@ -33,7 +32,7 @@ export function useDraftRecord<T extends { id: string; updatedAt: string }>(
     window.clearTimeout(timer.current);
     const patch = pendingRef.current;
     if (Object.keys(patch).length === 0) return;
-    void table.update(recordId, { ...patch, updatedAt: nowISO() } as UpdateSpec<T>);
+    void table.update(recordId, { ...patch, updatedAt: nowISO() } as Record<string, unknown>);
   };
   const flush = useCallback(() => flushRef.current(), []);
 

@@ -1,8 +1,7 @@
 import { useCallback, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { Activity, BarChart3, Flame, MapPin, Wrench } from 'lucide-react';
-import { db } from '@/db';
+import { useLiveQuery, db } from '@/db';
 import { nowISO } from '@/lib/utils';
 import { distributeByHoles, totalSqFt, avgDrillDepth, totalYardsShot } from '@shotlog/shared';
 import type { Shot, DrillParams, ShotTotals, ExplosiveUsage } from '@/db/schema';

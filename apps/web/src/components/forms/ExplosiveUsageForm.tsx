@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Flame, Pencil, Search, Target, Trash2, X, Zap } from 'lucide-react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '@/db';
+import { useLiveQuery, db } from '@/db';
 import { nowISO } from '@/lib/utils';
 import type {
   DetonatorLineItem,

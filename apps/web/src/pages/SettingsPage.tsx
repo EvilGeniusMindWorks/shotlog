@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { Plus, Trash2 } from 'lucide-react';
-import { db } from '@/db';
+import { useLiveQuery, db } from '@/db';
 import { generateId, nowISO } from '@/lib/utils';
 import type { CrewMember, Equipment } from '@/db/schema';
 import { Button } from '@/components/ui/button';

@@ -1,5 +1,4 @@
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db, deleteWithTombstone } from '@/db';
+import { useLiveQuery, db, deleteWithTombstone } from '@/db';
 import type {
   BlastDay,
   BlastLog,

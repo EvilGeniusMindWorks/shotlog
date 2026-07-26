@@ -1,7 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { ArrowLeft, MapPin } from 'lucide-react';
-import { db } from '@/db';
+import { useLiveQuery, db } from '@/db';
 import { formatDate } from '@/lib/utils';
 import { useDraftRecord } from '@/hooks/useDraftRecord';
 import { powderFactor } from '@shotlog/shared';

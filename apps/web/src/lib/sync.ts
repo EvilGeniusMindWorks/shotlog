@@ -2,7 +2,7 @@
 // The server stores records as JSON documents; Blobs (signatures, map
 // snapshots, printout photos) travel as base64 markers.
 
-import { db } from '@/db';
+import { db } from '@/db/database';
 
 /** Every synced table. Tombstones are pushed separately. */
 const SYNC_TABLES = [

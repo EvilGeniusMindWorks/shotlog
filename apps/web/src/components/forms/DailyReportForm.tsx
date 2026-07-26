@@ -1,6 +1,5 @@
 import { Plus, Trash2 } from 'lucide-react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db, deleteWithTombstone } from '@/db';
+import { useLiveQuery, db, deleteWithTombstone } from '@/db';
 import { generateId, nowISO } from '@/lib/utils';
 import type { BlastDay, BlastLog, DailyReport, Shot, WorkForceEntry, EquipmentEntry, MaterialEntry, SubcontractorEntry } from '@/db/schema';
 import { Button } from '@/components/ui/button';

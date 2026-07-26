@@ -1,4 +1,4 @@
-import { db } from './database';
+import { db } from './index';
 import type { ProductCatalogItem, ProductCategory } from './schema';
 
 interface SeedProduct {

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
 import {
   CircleHelp,
   LayoutDashboard,
@@ -11,7 +10,7 @@ import {
   Settings,
   Sun,
 } from 'lucide-react';
-import { db } from '@/db';
+import { useLiveQuery, db } from '@/db';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';

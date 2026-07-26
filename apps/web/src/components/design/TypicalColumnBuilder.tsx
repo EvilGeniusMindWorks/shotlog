@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { ArrowDown, ArrowUp, Pencil, Plus, Trash2, X } from 'lucide-react';
-import { db, deleteWithTombstone } from '@/db';
+import { useLiveQuery, db, deleteWithTombstone } from '@/db';
 import { generateId, nowISO, cn } from '@/lib/utils';
 import type { ColumnLayer, TypicalColumn } from '@/db/schema';
 import { Button } from '@/components/ui/button';
