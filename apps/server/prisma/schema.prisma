@@ -47,6 +47,25 @@ model User {
   @@index([companyId])
 }
 
+/// Crew enrollment invite: admin issues, crew member redeems once to
+/// create their own account. Token stored hashed; link carries the raw.
+model InviteToken {
+  id           String    @id @default(uuid())
+  tokenHash    String    @unique
+  companyId    String
+  /// Optional link to the synced crewMembers record this invite is for
+  crewMemberId String?
+  name         String
+  email        String?
+  role         String
+  createdById  String
+  expiresAt    DateTime
+  usedAt       DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([companyId])
+}
+
 model RefreshToken {
   id        String    @id @default(uuid())
   userId    String

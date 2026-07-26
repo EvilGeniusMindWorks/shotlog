@@ -19,6 +19,7 @@ import { AdminApprovalsPage } from '@/pages/admin/AdminApprovalsPage';
 import { AdminCatalogPage } from '@/pages/admin/AdminCatalogPage';
 import { AdminCompanyPage } from '@/pages/admin/AdminCompanyPage';
 import { AdminEquipmentPage } from '@/pages/admin/AdminEquipmentPage';
+import { EnrollPage } from '@/pages/EnrollPage';
 import { Navigate } from 'react-router-dom';
 import { getSessionUser } from '@/lib/session';
 
@@ -30,6 +31,18 @@ function AdminIndexRedirect() {
 }
 
 export function App() {
+  // Public enrollment route — the ONLY page outside the auth gate: a crew
+  // member with an invite link has no account yet by definition
+  if (window.location.pathname.startsWith('/enroll/')) {
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="/enroll/:token" element={<EnrollPage />} />
+          <Route path="*" element={<EnrollPage />} />
+        </Routes>
+      </BrowserRouter>
+    );
+  }
   return (
     <AuthGate>
     <BrowserRouter>
