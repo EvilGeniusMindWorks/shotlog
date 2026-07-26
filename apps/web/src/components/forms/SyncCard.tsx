@@ -285,11 +285,11 @@ function DeepCheckPanel() {
     }
   };
 
-  const runRepair = async () => {
+  const runRepair = async (mode: 'push-mine' | 'take-server') => {
     setBusy('repair');
     setMessage(null);
     try {
-      const r = await repairSync();
+      const r = await repairSync(mode);
       setMessage(`Repaired — pushed ${r.pushed}, pulled ${r.pulled}`);
     } catch (err) {
       setMessage(`Repair problem: ${err instanceof Error ? err.message : String(err)}`);
@@ -315,16 +315,9 @@ function DeepCheckPanel() {
     <div className="border border-gray-200 rounded-lg p-3 space-y-2">
       <div className="flex items-center justify-between">
         <p className="text-xs font-semibold text-gray-500">Deep Check</p>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" disabled={busy !== null} onClick={() => void runCheck()}>
-            {busy === 'check' ? 'Checking…' : 'Check'}
-          </Button>
-          {result && result.rows.length > 0 && (
-            <Button size="sm" disabled={busy !== null} onClick={() => void runRepair()}>
-              {busy === 'repair' ? 'Repairing…' : `Repair ${result.rows.length}`}
-            </Button>
-          )}
-        </div>
+        <Button variant="outline" size="sm" disabled={busy !== null} onClick={() => void runCheck()}>
+          {busy === 'check' ? 'Checking…' : 'Check'}
+        </Button>
       </div>
       {result && result.rows.length === 0 && (
         <p className="text-xs text-compliant">
@@ -345,6 +338,27 @@ function DeepCheckPanel() {
               {[...new Set(result.rows.filter((r) => r.state === s).map((r) => r.tableName))].join(', ')}
             </p>
           ))}
+          <div className="flex flex-wrap gap-2 pt-1.5">
+            <Button size="sm" disabled={busy !== null} onClick={() => void runRepair('push-mine')}>
+              {busy === 'repair' ? 'Repairing…' : "Repair — keep this device's"}
+            </Button>
+            {result.rows.some((r) => r.state === 'device-newer') && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={busy !== null}
+                onClick={() => void runRepair('take-server')}
+              >
+                Repair — use server's
+              </Button>
+            )}
+          </div>
+          {result.rows.some((r) => r.state === 'device-newer') && (
+            <p className="text-[11px] text-gray-400 pt-1">
+              "Newer" is by timestamp, which a fast device clock can fake. If the OTHER
+              device holds the version you want, choose "use server's" after repairing there.
+            </p>
+          )}
         </div>
       )}
       {message && <p className="text-xs text-gray-500">{message}</p>}

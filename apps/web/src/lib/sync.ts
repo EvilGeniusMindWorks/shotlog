@@ -665,10 +665,38 @@ export async function deepCheck(): Promise<DeepCheckResult> {
  * of anything the server has newer, then run a pass. Safe to run any time —
  * LWW and the unsynced-local guard protect newer work on either side.
  */
-export async function repairSync(): Promise<SyncResult> {
+export type RepairMode = 'push-mine' | 'take-server';
+
+/**
+ * mode 'push-mine': this device's differing records win (re-pushed).
+ * mode 'take-server': the server's copies win — device-newer records are
+ * force-replaced by the server version regardless of stamps. This is the
+ * escape hatch when a fast clock made STALE content look newer: stamps
+ * can't tell content-newness, so the blaster chooses the direction.
+ */
+export async function repairSync(mode: RepairMode = 'push-mine'): Promise<SyncResult> {
   const { rows } = await deepCheck();
+  const deviceNewer = rows.filter((r) => r.state === 'device-newer');
+
+  if (mode === 'take-server' && deviceNewer.length > 0) {
+    const res = await authedFetch('/sync/changes'); // payloads needed here
+    if (!res.ok) throw new Error(`fetch server copies failed (${res.status})`);
+    const body = (await res.json()) as {
+      records: { tableName: string; recordId: string; deletedAt: string | null; payload: unknown }[];
+    };
+    const wanted = new Set(deviceNewer.map((r) => `${r.tableName}:${r.recordId}`));
+    for (const remote of body.records) {
+      if (!wanted.has(`${remote.tableName}:${remote.recordId}`) || remote.deletedAt) continue;
+      const revived = reviveValue(remote.payload) as Record<string, unknown> | null;
+      if (!revived || typeof revived !== 'object') continue;
+      await engineWrite(() =>
+        db.table(remote.tableName).put({ ...revived, id: remote.recordId, syncStatus: 'synced' }),
+      );
+    }
+  }
+
   for (const r of rows) {
-    if (r.state === 'never-pushed' || r.state === 'device-newer') {
+    if (r.state === 'never-pushed' || (r.state === 'device-newer' && mode === 'push-mine')) {
       await db
         .table(r.tableName)
         .where('id')
