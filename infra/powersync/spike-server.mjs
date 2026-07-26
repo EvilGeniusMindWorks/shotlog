@@ -45,14 +45,16 @@ const server = http.createServer(async (req, res) => {
       await client.query('BEGIN');
       for (const op of ops) {
         if (op.op === 'PUT' || op.op === 'PATCH') {
+          // PATCH carries ONLY changed columns — absent columns must keep
+          // their stored values, never be defaulted
           await client.query(
             `INSERT INTO records (id, company_id, table_name, payload, updated_at)
-             VALUES ($1, 'spike-co', $2, $3, $4)
+             VALUES ($1, 'spike-co', COALESCE($2, ''), COALESCE($3, '{}'), $4)
              ON CONFLICT (id) DO UPDATE SET
-               table_name = EXCLUDED.table_name,
-               payload = COALESCE(EXCLUDED.payload, records.payload),
-               updated_at = EXCLUDED.updated_at`,
-            [op.id, op.data.table_name ?? '', op.data.payload ?? null, new Date().toISOString()],
+               table_name = COALESCE($2, records.table_name),
+               payload = COALESCE($3, records.payload),
+               updated_at = $4`,
+            [op.id, op.data.table_name ?? null, op.data.payload ?? null, new Date().toISOString()],
           );
         } else if (op.op === 'DELETE') {
           await client.query('DELETE FROM records WHERE id = $1', [op.id]);

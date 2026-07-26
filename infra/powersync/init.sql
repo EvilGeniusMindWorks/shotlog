@@ -12,3 +12,6 @@ CREATE INDEX records_company_idx ON records (company_id);
 
 -- PowerSync bucket storage lives in its own database
 CREATE DATABASE powersync_storage;
+
+-- Required by the PowerSync replicator
+CREATE PUBLICATION powersync FOR ALL TABLES;
