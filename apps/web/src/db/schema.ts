@@ -408,6 +408,53 @@ export type ProductCategory =
   | 'booster_electronic'
   | 'cartridge';
 
+// ══════════════════════════════════════════════════════
+// DRILL LOGS — the Driller→Blaster handoff. A shot's pattern may take
+// several drillers/days: EACH driller's contribution is its own signed
+// log; the shot aggregates them.
+// ══════════════════════════════════════════════════════
+
+export type HoleConditionCode = 'V' | 'SR' | 'O' | 'W';
+
+export interface HoleCondition {
+  fromFt: number;
+  toFt: number;
+  code: HoleConditionCode;
+}
+
+export interface DrillLog extends BaseRecord {
+  jobId: string;
+  blastDayId: string;
+  shotId: string;
+  /** Equipment id of the rig, when picked */
+  drillRigEquipmentId?: string;
+  status: 'open' | 'complete' | 'accepted';
+  // Header — prefilled from the shot's design plan
+  holeDiameter: number;
+  burden: number;
+  spacing: number;
+  faceHeight: number;
+  gps: string;
+  locationNote: string;
+  drillerUserId: string;
+  drillerName: string;
+  signatureImage: Blob | null;
+  completedAt?: string;
+  acceptedBy?: string;
+  acceptedAt?: string;
+}
+
+export interface DrillLogHole extends BaseRecord {
+  drillLogId: string;
+  date: string; // ISO date drilled
+  holeNumber: string; // free-form: "12" or station "A-3"
+  angle: number;
+  actualDepth: number;
+  subdrill: number;
+  conditions: HoleCondition[];
+  comment: string;
+}
+
 /** Single doc per company (id: companySettings-singleton), admin-managed */
 export interface CompanySettings extends BaseRecord {
   companyName: string;

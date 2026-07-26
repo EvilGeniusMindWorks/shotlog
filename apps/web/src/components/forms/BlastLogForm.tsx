@@ -18,6 +18,7 @@ import { dataUrlToBlob } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { ShotForm } from './ShotForm';
 import { ExplosiveUsageForm } from './ExplosiveUsageForm';
+import { DrillingSection, WetHoleLoadingWarning } from './DrillingSection';
 import { AttachmentsCard } from './AttachmentsCard';
 
 import {
@@ -232,6 +233,7 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
           </div>
           {expandedShots.has(shot.id) && (
             <CardContent className="pt-1">
+              <DrillingSection shot={shot} blastDayId={blastDay.id} jobId={blastDay.jobId} />
               <ShotForm
                 shot={shot}
                 allShots={shots}
@@ -260,6 +262,7 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
         Explosive Totals (All Shots)
       </p>
       {/* Explosive Usage */}
+      <WetHoleLoadingWarning shots={shots} explosiveUsage={explosiveUsage} />
       {explosiveUsage && (
         <ExplosiveUsageForm explosiveUsage={explosiveUsage} shots={shots} />
       )}

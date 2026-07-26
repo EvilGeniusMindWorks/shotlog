@@ -19,6 +19,8 @@ import type {
 } from '../facade-types';
 import type {
   CompanySettings,
+  DrillLog,
+  DrillLogHole,
   Manufacturer,
   Tombstone,
   Job,
@@ -62,6 +64,8 @@ const RECORD_TABLES = [
   'attachments',
   'companySettings',
   'manufacturers',
+  'drillLogs',
+  'drillLogHoles',
   'tombstones',
 ] as const;
 
@@ -282,6 +286,8 @@ export class PowerSyncFacade implements ShotLogDataAccess {
   attachments!: FacadeTable<Attachment>;
   companySettings!: FacadeTable<CompanySettings>;
   manufacturers!: FacadeTable<Manufacturer>;
+  drillLogs!: FacadeTable<DrillLog>;
+  drillLogHoles!: FacadeTable<DrillLogHole>;
   tombstones!: FacadeTable<Tombstone>;
 
   private currentTx: SqlRunner | null = null;

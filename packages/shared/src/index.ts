@@ -49,10 +49,13 @@ export {
   ROLES,
   TABLE_PERMISSIONS,
   BLAST_DAY_STATUS_TRANSITIONS,
+  DRILL_LOG_STATUS_TRANSITIONS,
   PARENT_CHAIN,
   APPROVAL_LOCKED_TABLES,
   canPerformOp,
   canTransitionStatus,
+  canTransitionDrillLog,
   canEditApproved,
+  canEditAcceptedDrillLog,
 } from './permissions.js';
-export type { Role, WriteOp, BlastDayStatus } from './permissions.js';
+export type { Role, WriteOp, BlastDayStatus, DrillLogStatus } from './permissions.js';

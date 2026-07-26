@@ -20,6 +20,8 @@ import { AdminCatalogPage } from '@/pages/admin/AdminCatalogPage';
 import { AdminCompanyPage } from '@/pages/admin/AdminCompanyPage';
 import { AdminEquipmentPage } from '@/pages/admin/AdminEquipmentPage';
 import { EnrollPage } from '@/pages/EnrollPage';
+import { DrillLogPage } from '@/pages/DrillLogPage';
+import { PrintDrillLogPage } from '@/pages/PrintDrillLogPage';
 import { Navigate } from 'react-router-dom';
 import { getSessionUser } from '@/lib/session';
 
@@ -57,6 +59,7 @@ export function App() {
           <Route path="/blast-day/:id" element={<BlastDayPage />} />
           <Route path="/blast-day/:id/design/:shotId" element={<DesignPlanPage />} />
           <Route path="/blast-day/:id/seismo/:shotId" element={<SeismoPage />} />
+          <Route path="/blast-day/:id/drill-log/:logId" element={<DrillLogPage />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminIndexRedirect />} />
             <Route path="users" element={<AdminUsersPage />} />
@@ -67,6 +70,7 @@ export function App() {
           </Route>
         </Route>
         <Route path="/blast-day/:id/print" element={<PrintBlastLogPage />} />
+        <Route path="/blast-day/:id/drill-log/:logId/print" element={<PrintDrillLogPage />} />
         <Route path="/blast-day/:id/print-daily" element={<PrintDailyReportPage />} />
         <Route path="/blast-day/:id/report" element={<BlastReportPage />} />
       </Routes>

@@ -59,6 +59,10 @@ export const TABLE_PERMISSIONS: Record<string, TableRule> = {
   typicalColumns: uniform(BLAST_FAMILY),
   attachments: uniform(BLAST_FAMILY),
 
+  // Drill logs — the Driller→Blaster handoff (N signed logs per shot)
+  drillLogs: { PUT: REPORT_FAMILY, PATCH: REPORT_FAMILY, DELETE: REGISTRY },
+  drillLogHoles: uniform(REPORT_FAMILY),
+
   // Daily-report family (operations records) — drillers work here too
   dailyReports: uniform(REPORT_FAMILY),
   workForceEntries: uniform(REPORT_FAMILY),
@@ -99,6 +103,35 @@ export function canTransitionStatus(from: string, to: string, role: Role): boole
   return (BLAST_DAY_STATUS_TRANSITIONS[from]?.[to] ?? []).includes(role);
 }
 
+// ── Drill log workflow ─────────────────────────────────────────────────────
+
+export type DrillLogStatus = 'open' | 'complete' | 'accepted';
+
+/** from → to → roles. Complete = driller signs off; accepted = blaster
+ *  takes the pattern for loading (locks hole rows against driller edits). */
+export const DRILL_LOG_STATUS_TRANSITIONS: Record<string, Record<string, readonly Role[]>> = {
+  open: {
+    complete: ['admin', 'supervisor', 'blaster', 'driller'],
+  },
+  complete: {
+    open: ['admin', 'supervisor', 'blaster', 'driller'], // reopen for fixes
+    accepted: ['admin', 'supervisor', 'blaster'],
+  },
+  accepted: {
+    complete: ['admin', 'supervisor', 'blaster'], // un-accept
+  },
+};
+
+export function canTransitionDrillLog(from: string, to: string, role: Role): boolean {
+  if (from === to) return true;
+  return (DRILL_LOG_STATUS_TRANSITIONS[from]?.[to] ?? []).includes(role);
+}
+
+/** Roles that may still edit holes under an ACCEPTED drill log */
+export function canEditAcceptedDrillLog(role: Role): boolean {
+  return role === 'admin' || role === 'supervisor' || role === 'blaster';
+}
+
 // ── Approval lock ──────────────────────────────────────────────────────────
 
 /**
@@ -113,6 +146,8 @@ export function canTransitionStatus(from: string, to: string, role: Role): boole
 export const PARENT_CHAIN: Record<string, { parentIdField: string; parentTable: string }> = {
   blastLogs: { parentIdField: 'blastDayId', parentTable: 'blastDays' },
   dailyReports: { parentIdField: 'blastDayId', parentTable: 'blastDays' },
+  drillLogs: { parentIdField: 'blastDayId', parentTable: 'blastDays' },
+  drillLogHoles: { parentIdField: 'drillLogId', parentTable: 'drillLogs' },
   shots: { parentIdField: 'blastLogId', parentTable: 'blastLogs' },
   explosiveUsages: { parentIdField: 'blastLogId', parentTable: 'blastLogs' },
   seismoReadings: { parentIdField: 'shotId', parentTable: 'shots' },

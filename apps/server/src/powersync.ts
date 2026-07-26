@@ -8,8 +8,10 @@ import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import {
+  canEditAcceptedDrillLog,
   canEditApproved,
   canPerformOp,
+  canTransitionDrillLog,
   canTransitionStatus,
   APPROVAL_LOCKED_TABLES,
   PARENT_CHAIN,
@@ -172,6 +174,31 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
             continue;
           }
           blastDayStatus.set(op.id, to);
+        }
+
+        // 2b. drill log status transitions (accept happens OFFLINE-capable
+        // via the sync path — blasters may have no signal at the bench)
+        if (tableName === 'drillLogs' && op.op !== 'DELETE') {
+          const from = (stored?.payload.status as string | undefined) ?? 'open';
+          const to = (effective.status as string | undefined) ?? from;
+          if (!canTransitionDrillLog(from, to, role)) {
+            discard(op, tableName, `forbidden drill-log transition ${from}->${to}`);
+            continue;
+          }
+        }
+
+        // 2c. hole rows freeze for drillers once their log is accepted
+        if (tableName === 'drillLogHoles' && !canEditAcceptedDrillLog(role)) {
+          const logId = (effective.drillLogId ?? stored?.payload.drillLogId) as
+            | string
+            | undefined;
+          if (logId) {
+            const log = await batch.get(logId);
+            if (((log?.payload.status as string | undefined) ?? 'open') === 'accepted') {
+              discard(op, tableName, 'drill log accepted (locked)');
+              continue;
+            }
+          }
         }
 
         // 3. approval lock on the blast-day family
