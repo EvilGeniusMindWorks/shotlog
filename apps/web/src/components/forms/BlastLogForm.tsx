@@ -306,6 +306,18 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
                         }}
                       >
                         {lic.state} · {lic.licenseNumber}
+                        {(() => {
+                          if (!lic.expirationDate) return null;
+                          const days = Math.ceil(
+                            (new Date(lic.expirationDate).getTime() - Date.now()) / 86_400_000,
+                          );
+                          if (days > 90) return null;
+                          return (
+                            <span className={selected ? 'ml-1 text-orange-200' : 'ml-1 text-safety-orange'}>
+                              {days < 0 ? '⚠ expired' : `⚠ ${days}d`}
+                            </span>
+                          );
+                        })()}
                       </button>
                     );
                   })}

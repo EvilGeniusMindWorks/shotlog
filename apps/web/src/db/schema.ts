@@ -325,6 +325,16 @@ export type ProductCategory =
   | 'booster_electronic'
   | 'cartridge';
 
+/** Single doc per company (id: companySettings-singleton), admin-managed */
+export interface CompanySettings extends BaseRecord {
+  companyName: string;
+  dealerNumber: string;
+  address: string;
+  city: string;
+  state: string;
+  phone: string;
+}
+
 export interface ProductCatalogItem extends BaseRecord {
   manufacturer: string;
   productName: string;

@@ -36,6 +36,42 @@ const productSchema = z.object({
   isActive: z.boolean().default(true),
 });
 
+const companySchema = z.object({
+  companyName: z.string().min(1),
+  dealerNumber: z.string().default(''),
+  address: z.string().default(''),
+  city: z.string().default(''),
+  state: z.string().max(2).default(''),
+  phone: z.string().default(''),
+});
+
+/** Company settings — single synced doc, admin-managed */
+adminRouter.put('/company', requireRole('admin'), async (req: AuthedRequest, res: Response) => {
+  const parsed = companySchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'company name required' });
+    return;
+  }
+  const cid = req.companyId as string;
+  const now = new Date().toISOString();
+  const id = 'companySettings-singleton';
+  try {
+    await prisma.$transaction(async (tx) => {
+      const stored = await getRecord(tx, cid, id);
+      const doc = {
+        ...(stored?.payload ?? { id, createdAt: now, syncStatus: 'synced' }),
+        ...parsed.data,
+        updatedAt: now,
+      };
+      await upsertRecord(tx, cid, id, 'companySettings', JSON.stringify(doc), now);
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('company settings failed:', err);
+    res.status(500).json({ error: 'save failed' });
+  }
+});
+
 /** Create a catalog product (admin) */
 adminRouter.post('/catalog', requireRole('admin'), async (req: AuthedRequest, res: Response) => {
   const parsed = productSchema.safeParse(req.body);

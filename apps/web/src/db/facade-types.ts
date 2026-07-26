@@ -3,6 +3,7 @@
 // UI code must type-check against this interface, so any new Dexie feature
 // creeping in fails the build instead of silently breaking the facade.
 import type {
+  CompanySettings,
   Tombstone,
   Job,
   BlasterProfile,
@@ -69,6 +70,7 @@ export interface ShotLogDataAccess {
   equipment: FacadeTable<Equipment>;
   productCatalog: FacadeTable<ProductCatalogItem>;
   attachments: FacadeTable<Attachment>;
+  companySettings: FacadeTable<CompanySettings>;
   tombstones: FacadeTable<Tombstone>;
 
   table(name: string): FacadeTable<Record<string, unknown> & { id: string }>;

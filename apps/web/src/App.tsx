@@ -17,6 +17,7 @@ import { AdminLayout } from '@/pages/admin/AdminLayout';
 import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
 import { AdminApprovalsPage } from '@/pages/admin/AdminApprovalsPage';
 import { AdminCatalogPage } from '@/pages/admin/AdminCatalogPage';
+import { AdminCompanyPage } from '@/pages/admin/AdminCompanyPage';
 import { Navigate } from 'react-router-dom';
 import { getSessionUser } from '@/lib/session';
 
@@ -45,6 +46,7 @@ export function App() {
             <Route path="users" element={<AdminUsersPage />} />
             <Route path="approvals" element={<AdminApprovalsPage />} />
             <Route path="catalog" element={<AdminCatalogPage />} />
+            <Route path="company" element={<AdminCompanyPage />} />
           </Route>
         </Route>
         <Route path="/blast-day/:id/print" element={<PrintBlastLogPage />} />
