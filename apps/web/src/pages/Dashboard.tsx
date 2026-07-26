@@ -316,7 +316,9 @@ function DayCard({ summary, onClick }: { summary: DaySummary; onClick: () => voi
   const { day, job, shots, holes, totalLbs, pf, snapshot } = summary;
   const [heroUrl, setHeroUrl] = useState<string | null>(null);
   useEffect(() => {
-    if (!snapshot) {
+    // Guard against sync-era artifacts: a snapshot that isn't a real,
+    // non-empty Blob renders as a broken-image icon — show the placeholder
+    if (!(snapshot instanceof Blob) || snapshot.size === 0) {
       setHeroUrl(null);
       return;
     }
@@ -338,7 +340,12 @@ function DayCard({ summary, onClick }: { summary: DaySummary; onClick: () => voi
       {/* Hero: real site-map snapshot when available */}
       <div className="relative h-32 bg-navy-50">
         {heroUrl ? (
-          <img src={heroUrl} alt="" className="w-full h-full object-cover" />
+          <img
+            src={heroUrl}
+            alt=""
+            className="w-full h-full object-cover"
+            onError={() => setHeroUrl(null)}
+          />
         ) : (
           <PlaceholderHero seed={day.id} />
         )}

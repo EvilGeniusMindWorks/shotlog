@@ -375,7 +375,7 @@ export async function syncNow(): Promise<SyncResult> {
     for (const batch of batches) {
       let body: {
         accepted: { tableName: string; recordId: string }[];
-        stale: { tableName: string; recordId: string }[];
+        stale: { tableName: string; recordId: string; serverUpdatedAt: string }[];
       };
       try {
         const res = await authedFetch('/sync/push', {
@@ -393,6 +393,21 @@ export async function syncNow(): Promise<SyncResult> {
       }
       result.pushed += body.accepted.length;
       result.staleSkipped += body.stale.length;
+      // Stale = the server copy carries a LATER stamp than this deliberate
+      // local edit — almost always another device's fast clock, not a real
+      // newer edit. The blaster's edit must win: re-stamp it just past the
+      // server's copy so the next pass pushes it successfully. (True
+      // concurrent edits resolve last-pusher-wins — same LWW semantics.)
+      for (const s of body.stale) {
+        const bumped = new Date(new Date(s.serverUpdatedAt).getTime() + 1).toISOString();
+        await db
+          .table(s.tableName)
+          .where('id')
+          .equals(s.recordId)
+          .modify((row: { updatedAt?: string; syncStatus?: string }) => {
+            if (row.syncStatus === 'local') row.updatedAt = bumped;
+          });
+      }
       // Mark accepted rows synced (stale ones stay local; pull below resolves)
       for (const a of body.accepted) {
         const record = batch.find((b) => b.tableName === a.tableName && b.recordId === a.recordId);
@@ -546,12 +561,21 @@ export function startAutoSync(): void {
       (obj as { syncStatus?: string }).syncStatus ??= 'local';
       scheduleAfterWrite();
     });
-    table.hook('updating', function (mods) {
+    table.hook('updating', function (mods, _pk, obj) {
       if (engineWriting) return;
       scheduleAfterWrite();
-      if (!('syncStatus' in (mods as Record<string, unknown>))) {
-        return { syncStatus: 'local' };
+      const m = mods as Record<string, unknown>;
+      const out: Record<string, unknown> = {};
+      if (!('syncStatus' in m)) out.syncStatus = 'local';
+      // Monotonic LWW clock: an edit must supersede the copy it was based
+      // on even when that copy was stamped by a device with a fast clock —
+      // otherwise the edit loses every sync and visibly reverts
+      const base = (obj as { updatedAt?: string }).updatedAt;
+      const provided = typeof m.updatedAt === 'string' ? m.updatedAt : undefined;
+      if (base && (provided === undefined || provided <= base)) {
+        out.updatedAt = new Date(new Date(base).getTime() + 1).toISOString();
       }
+      if (Object.keys(out).length > 0) return out;
     });
     table.hook('deleting', function () {
       if (!engineWriting) scheduleAfterWrite();
