@@ -450,9 +450,16 @@ export async function syncNow(): Promise<SyncResult> {
       if (!SYNC_TABLES.includes(remote.tableName as (typeof SYNC_TABLES)[number])) continue;
       const table = db.table(remote.tableName);
       const local = await table.get(remote.recordId);
-      // Anything local that is as new or newer wins — covers unsynced edits
-      // (push next round) AND the echo of our own push in the same pass
+      // Anything local that is as new or newer wins — covers the echo of our
+      // own push in the same pass
       if (!remote.deletedAt && local?.updatedAt && local.updatedAt >= remote.updatedAt) {
+        continue;
+      }
+      // A record with UNSYNCED local edits is never overwritten by pull,
+      // even when the remote stamp is later (fast-clock devices produce
+      // future stamps): the push/stale-recovery path arbitrates it, and the
+      // blaster's deliberate edit must not vanish mid-typing
+      if (!remote.deletedAt && local?.syncStatus === 'local') {
         continue;
       }
       if (remote.deletedAt) {
