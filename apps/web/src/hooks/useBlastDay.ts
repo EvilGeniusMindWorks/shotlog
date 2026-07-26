@@ -10,7 +10,7 @@ import type {
   EquipmentEntry,
 } from '@/db/schema';
 import { generateId, nowISO, todayISO } from '@/lib/utils';
-import { getSessionUser } from '@/lib/sync';
+import { getSessionUser } from '@/lib/session';
 
 export function useBlastDays() {
   const blastDays = useLiveQuery(() =>

@@ -35,6 +35,13 @@ if (navigator.storage?.persist) {
 // Seed product catalog on first launch
 seedProductCatalog();
 
+// Dev-only: expose the data layer for the multi-device test harness
+if (import.meta.env.DEV) {
+  void import('./db').then((m) => {
+    (window as unknown as Record<string, unknown>).shotlogDb = m.db;
+  });
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App />

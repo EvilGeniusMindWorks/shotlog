@@ -59,6 +59,25 @@ model RefreshToken {
   @@index([userId])
 }
 
+/// PowerSync system of record: one row per app record, JSON payload as
+/// text (blob markers included), replicated to devices by the PowerSync
+/// service. No FK to Company on purpose — it is a pure replication sink;
+/// scoping is enforced by the API (upload) and sync rules (download).
+model Record {
+  id        String
+  companyId String @map("company_id")
+  tableName String @map("table_name")
+  payload   String
+  /// Informational only — write ORDER is authoritative, never timestamps
+  updatedAt String @map("updated_at")
+
+  // Composite key: ids are only unique per company. Deterministic ids
+  // (e.g. the seed-* product catalog every device creates) COLLIDE across
+  // companies by design — a global id PK silently dropped those writes.
+  @@id([companyId, id])
+  @@map("records")
+}
+
 model SyncRecord {
   /// Company-scoped: every user in the company shares the same records
   companyId String

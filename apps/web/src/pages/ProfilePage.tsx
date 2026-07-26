@@ -7,7 +7,7 @@ import {
   refreshSessionUser,
   updateMySignature,
   type SessionUser,
-} from '@/lib/sync';
+} from '@/lib/session';
 import { blobToDataUrl, dataUrlToBlob } from '@/lib/utils';
 import { MyLicensesCard } from '@/components/forms/MyLicensesCard';
 import { SignatureField } from '@/components/ui/signature-field';

@@ -47,19 +47,32 @@ Postgres (Railway) ──logical replication──► PowerSync service ──we
    PASSED: dashboard + job create + live render + row in Postgres.
    Deferred to phase 3: blobs still travel inside payloads (as before) —
    the attachment-reference pattern needs the server endpoints anyway.
-3. **Server port** — `records` table replaces SyncRecord (same document
-   shape: one row per record, JSON payload); `/powersync/token` (HS256,
-   aud=powersync, cid claim) and `/powersync/upload` (applies queued ops
-   in order, company-scoped) join the existing Express app. One-time
-   migration script copies SyncRecord rows into `records`.
-4. **Infra** — PowerSync service container deployed on Railway alongside
-   the API; Railway Postgres needs `wal_level=logical` (ALTER SYSTEM +
-   restart). Fallback if Railway blocks logical replication: PowerSync
-   Cloud (free tier) pointed at the same Postgres.
-5. **Cutover** — two-device Playwright harness must pass: interleaved
-   edits, offline windows, skewed clocks (no-op by design), kill-mid-sync.
-   Then: deploy, devices do a one-time full hydrate on first launch,
-   Dexie data kept read-only for a release as a safety net, then removed.
+3. **Server port** — DONE (Jul 26). `Record` model (`records` table),
+   `/powersync/token` + `/powersync/upload` in Express (company-scoped,
+   ordered, COALESCE patches), `scripts/migrate-sync-records.ts` copies
+   SyncRecord docs verbatim (idempotent, never overwrites).
+   **Hard-won: PRIMARY KEY must be `(company_id, id)`** — deterministic
+   ids (the seed-* catalog every device creates) collide across
+   companies; with a global id PK those uploads were silently dropped
+   and the checkpoint then wiped the devices' optimistic rows. Caught by
+   the harness, fixed structurally.
+4. **Infra** — local stack proven (this repo's docker compose + API on
+   one Postgres). Railway runbook: `infra/powersync/DEPLOY.md`
+   (wal_level=logical + restart, PowerSync service container, fresh HS256
+   secret/kid, PowerSync Cloud as fallback). NOT yet deployed.
+5. **Cutover** — code side DONE (Jul 26): PowerSync is the default
+   backend (`VITE_POWERSYNC=0` is the emergency Dexie fallback); old
+   engine deleted (web sync.ts → session.ts/export.ts survive it,
+   SyncCard → AccountSyncCard, server /sync routes removed); the only
+   sync UI is the truthful saved/waiting indicator. Two-device harness
+   (`testing/two-device/`) passed 9/9: hydration, interleaved
+   different/same-record, offline window with truthful queue count,
+   kill-mid-sync queue survival, clock 3 days behind (edit still wins),
+   full-dataset identity across three devices. One unreproduced
+   pre-fix artifact: a duplicate UI job creation observed once BEFORE
+   the PK fix — watch for job dupes in early field use.
+   Remaining before devices switch: Railway deploy (step 4) + run the
+   data migration + one release with Dexie data kept as safety net.
 
 ## Risks
 

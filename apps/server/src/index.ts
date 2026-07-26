@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { authRouter, ensureAdminUser } from './auth.js';
-import { syncRouter } from './sync.js';
+import { powersyncRouter } from './powersync.js';
 import { usersRouter } from './users.js';
 
 const app = express();
@@ -14,7 +14,7 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/auth', authRouter);
-app.use('/sync', syncRouter);
+app.use('/powersync', powersyncRouter);
 app.use('/users', usersRouter);
 
 const port = Number(process.env.PORT ?? 4000);

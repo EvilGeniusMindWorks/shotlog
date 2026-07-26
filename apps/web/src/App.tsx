@@ -13,13 +13,8 @@ import { SeismoPage } from '@/pages/SeismoPage';
 import { PrintBlastLogPage } from '@/pages/PrintBlastLogPage';
 import { PrintDailyReportPage } from '@/pages/PrintDailyReportPage';
 import { BlastReportPage } from '@/pages/BlastReportPage';
-import { PowerSyncSpike } from '@/spike/PowerSyncSpike';
 
 export function App() {
-  // Architecture spike route — no auth, no app shell, no service worker deps
-  if (window.location.pathname === '/spike') {
-    return <PowerSyncSpike />;
-  }
   return (
     <AuthGate>
     <BrowserRouter>

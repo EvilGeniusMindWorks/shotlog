@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   CircleHelp,
@@ -15,22 +15,9 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useTheme } from '@/hooks/useTheme';
-import { getSessionUser, getSyncConfig, onAutoSync, startAutoSync } from '@/lib/sync';
+import { getSessionUser } from '@/lib/session';
+import { useSyncStatus } from '@/db/powersync/useSyncStatus';
 import { Tour } from './Tour';
-
-type SyncState = 'syncing' | 'synced' | 'offline' | 'error';
-
-/** Start auto-sync once and expose its live state for the header/sidebar */
-function useAutoSync(): SyncState {
-  const [state, setState] = useState<SyncState>(
-    navigator.onLine ? 'synced' : 'offline',
-  );
-  useEffect(() => {
-    startAutoSync();
-    return onAutoSync(setState);
-  }, []);
-  return state;
-}
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -66,7 +53,7 @@ function Wordmark({ compact }: { compact?: boolean }) {
 
 export function AppShell() {
   const online = useOnlineStatus();
-  const syncState = useAutoSync();
+  const sync = useSyncStatus();
   const { theme, toggle } = useTheme();
   const [touring, setTouring] = useState(false);
   const navigate = useNavigate();
@@ -121,24 +108,21 @@ export function AppShell() {
         </nav>
         <div className="px-2 pb-4 space-y-1 border-t border-white/10 pt-3 mx-2">
           <div className="flex items-center gap-2 px-3 py-1 text-[11px] text-navy-200">
-            {syncState === 'syncing' ? (
+            {sync.queued > 0 ? (
               <>
-                <RefreshCw className="h-3 w-3 animate-spin" /> Syncing…
+                <RefreshCw className={cn('h-3 w-3', sync.connected && 'animate-spin')} />
+                {sync.queued} change{sync.queued === 1 ? '' : 's'} waiting
               </>
-            ) : syncState === 'offline' || !online ? (
+            ) : !sync.connected || !online ? (
               <>
                 <span className="h-2 w-2 rounded-full bg-gray-400" /> Offline — saved on this
                 device
               </>
-            ) : syncState === 'error' ? (
-              <>
-                <span className="h-2 w-2 rounded-full bg-safety-orange" /> Sync retrying…
-              </>
             ) : (
               <>
-                <span className="h-2 w-2 rounded-full bg-green-400" /> Synced
-                {getSyncConfig().lastPulledAt &&
-                  ` ${new Date(getSyncConfig().lastPulledAt!).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
+                <span className="h-2 w-2 rounded-full bg-green-400" /> All changes saved
+                {sync.lastSyncedAt &&
+                  ` ${sync.lastSyncedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
               </>
             )}
           </div>
@@ -196,7 +180,7 @@ export function AppShell() {
               {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </button>
             <Badge variant={online ? 'synced' : 'local'}>
-              {syncState === 'syncing' ? 'Syncing…' : online ? 'Online' : 'Offline'}
+              {sync.queued > 0 ? `${sync.queued} waiting` : online ? 'Online' : 'Offline'}
             </Badge>
             <button
               className="h-9 w-9 rounded-full bg-white/15 flex items-center justify-center text-xs font-bold ml-1"

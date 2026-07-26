@@ -1,5 +1,6 @@
-# Local PowerSync spike: Postgres (logical replication) + PowerSync service.
-# Proves the replacement sync architecture end-to-end before any app changes.
+# Local PowerSync stack: Postgres (logical replication) + PowerSync service.
+# Run the Express API against the same Postgres (see testing/two-device/README.md).
+# Production equivalent: infra/powersync/DEPLOY.md.
 services:
   spike-pg:
     image: postgres:16-alpine

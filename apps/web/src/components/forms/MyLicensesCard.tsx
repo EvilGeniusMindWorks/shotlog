@@ -5,7 +5,7 @@ import {
   refreshSessionUser,
   updateMyLicenses,
   type UserLicense,
-} from '@/lib/sync';
+} from '@/lib/session';
 import { IconChip, SectionCard } from '@/components/ui/section-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

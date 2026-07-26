@@ -1,9 +1,9 @@
 // PowerSync client wiring: schema, backend connector, lazy singleton, and
 // the SqlAdapter wrapper the facade runs on.
 //
-// Endpoints default to the local spike stack (infra/powersync). Phase 3
-// replaces them with the real API (/powersync/token, /powersync/upload)
-// via VITE_POWERSYNC_* env vars — the shape here does not change.
+// Credentials and uploads go through the app's API (session-authed):
+//   GET  /powersync/token  -> { token, endpoint }
+//   POST /powersync/upload -> applies queued CRUD in order, company-scoped
 import {
   AbstractPowerSyncDatabase,
   PowerSyncDatabase,
@@ -12,11 +12,8 @@ import {
   column,
   type PowerSyncBackendConnector,
 } from '@powersync/web';
+import { authedFetch, getSession } from '@/lib/session';
 import type { SqlAdapter } from './adapter';
-
-const ENDPOINT = import.meta.env.VITE_POWERSYNC_URL ?? 'http://localhost:8095';
-const TOKEN_URL = import.meta.env.VITE_POWERSYNC_TOKEN_URL ?? 'http://localhost:4100/token';
-const UPLOAD_URL = import.meta.env.VITE_POWERSYNC_UPLOAD_URL ?? 'http://localhost:4100/upload';
 
 const schema = new Schema({
   records: new Table(
@@ -31,19 +28,34 @@ const schema = new Schema({
 
 class ShotLogConnector implements PowerSyncBackendConnector {
   async fetchCredentials() {
-    const { token } = await fetch(TOKEN_URL).then((r) => r.json());
-    return { endpoint: ENDPOINT, token };
+    // Dev override so the web app can run against the spike stack without
+    // an API server: VITE_POWERSYNC_TOKEN_URL + VITE_POWERSYNC_URL.
+    const devTokenUrl = import.meta.env.VITE_POWERSYNC_TOKEN_URL;
+    if (devTokenUrl) {
+      const { token } = await fetch(devTokenUrl).then((r) => r.json());
+      return { endpoint: import.meta.env.VITE_POWERSYNC_URL ?? 'http://localhost:8095', token };
+    }
+    const res = await authedFetch('/powersync/token');
+    if (!res.ok) throw new Error(`powersync token failed (${res.status})`);
+    const { token, endpoint } = (await res.json()) as { token: string; endpoint: string };
+    return { endpoint: import.meta.env.VITE_POWERSYNC_URL ?? endpoint, token };
   }
 
   async uploadData(database: AbstractPowerSyncDatabase) {
     const tx = await database.getNextCrudTransaction();
     if (!tx) return;
     const ops = tx.crud.map((op) => ({ op: op.op, id: op.id, data: op.opData ?? {} }));
-    const res = await fetch(UPLOAD_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ops }),
-    });
+    const devUploadUrl = import.meta.env.VITE_POWERSYNC_UPLOAD_URL;
+    const res = devUploadUrl
+      ? await fetch(devUploadUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ops }),
+        })
+      : await authedFetch('/powersync/upload', {
+          method: 'POST',
+          body: JSON.stringify({ ops }),
+        });
     // Throwing keeps the CRUD queue intact; PowerSync retries with backoff.
     if (!res.ok) throw new Error(`upload failed (${res.status})`);
     await tx.complete();
@@ -58,9 +70,28 @@ export function getPowerSync(): PowerSyncDatabase {
       schema,
       database: { dbFilename: 'shotlog.db' },
     });
-    void instance.connect(new ShotLogConnector());
+    // Connect only once a session (or dev override) exists — otherwise the
+    // SDK would loop on credential failures behind the login screen.
+    if (getSession().loggedIn || import.meta.env.VITE_POWERSYNC_TOKEN_URL) {
+      void instance.connect(new ShotLogConnector());
+    }
   }
   return instance;
+}
+
+/** Call after login: starts (or restarts) replication with fresh credentials. */
+export async function connectPowerSync(): Promise<void> {
+  await getPowerSync().connect(new ShotLogConnector());
+}
+
+/**
+ * Call on logout: stop replication and wipe the local replica so the next
+ * account starts clean. Any unsynced writes are lost — callers must warn
+ * when the queue is non-empty.
+ */
+export async function disconnectAndClearPowerSync(): Promise<void> {
+  if (!instance) return;
+  await instance.disconnectAndClear();
 }
 
 /** Wrap the PowerSync database in the facade's minimal SQL surface. */

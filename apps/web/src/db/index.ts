@@ -2,13 +2,13 @@
 //
 // Two interchangeable backends behind one Dexie-subset contract
 // (facade-types.ts):
-//   - Dexie/IndexedDB + the custom sync engine (current production path)
-//   - PowerSync-managed SQLite replica of Postgres (migration target)
+//   - PowerSync-managed SQLite replica of Postgres (the default)
+//   - Dexie/IndexedDB (legacy; kept one release as a read-only safety net —
+//     the old device data stays in IndexedDB untouched)
 //
-// Select with VITE_POWERSYNC=1. The custom sync engine (lib/sync.ts,
-// SyncCard) is Dexie-only and imports ./database directly; everything else
-// must import from here — including useLiveQuery, so live queries follow
-// the active backend.
+// VITE_POWERSYNC=0 falls back to Dexie in an emergency. Everything must
+// import from here — including useLiveQuery, so live queries follow the
+// active backend.
 import { useLiveQuery as dexieUseLiveQuery } from 'dexie-react-hooks';
 import type { ShotLogDataAccess, UseLiveQueryFn } from './facade-types';
 import { db as dexieDb, deleteWithTombstone as dexieDeleteWithTombstone } from './database';
@@ -16,7 +16,7 @@ import { PowerSyncFacade } from './powersync/facade';
 import { createPowerSyncAdapter } from './powersync/client';
 import { useLiveQuery as psUseLiveQuery } from './powersync/useLiveQuery';
 
-export const POWERSYNC_ENABLED = import.meta.env.VITE_POWERSYNC === '1';
+export const POWERSYNC_ENABLED = import.meta.env.VITE_POWERSYNC !== '0';
 
 let activeDb: ShotLogDataAccess;
 let activeDelete: (tableName: string, recordId: string) => Promise<void>;

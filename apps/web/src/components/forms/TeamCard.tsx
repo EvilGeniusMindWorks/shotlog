@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { KeyRound, Plus, UserX, UserCheck, Users } from 'lucide-react';
-import { authedFetch, getSessionUser } from '@/lib/sync';
+import { authedFetch, getSessionUser } from '@/lib/session';
 import { IconChip, SectionCard } from '@/components/ui/section-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

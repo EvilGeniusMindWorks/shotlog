@@ -2,13 +2,13 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Delete, LockKeyhole } from 'lucide-react';
 import {
   DEFAULT_SERVER_URL,
+  getSession,
   getSessionUser,
-  getSyncConfig,
   login,
   logout,
-  syncNow,
   updateMyPin,
-} from '@/lib/sync';
+} from '@/lib/session';
+import { connectPowerSync } from '@/db/powersync/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,7 +36,7 @@ const touchActivity = () => localStorage.setItem(LAST_ACTIVE_KEY, String(Date.no
 
 export function AuthGate({ children }: { children: ReactNode }) {
   const [state, setState] = useState<GateState>(() => {
-    if (!getSyncConfig().loggedIn) return 'login';
+    if (!getSession().loggedIn) return 'login';
     if (!localStorage.getItem(PIN_KEY)) return 'set-pin';
     // A refresh (or an auto-update reload) within the activity window must
     // NOT demand the PIN again — only real absence does
@@ -140,8 +140,8 @@ function Frame({ children }: { children: ReactNode }) {
 
 function LoginScreen({ onDone }: { onDone: () => void }) {
   const [form, setForm] = useState({
-    serverUrl: getSyncConfig().serverUrl || DEFAULT_SERVER_URL,
-    email: getSyncConfig().email,
+    serverUrl: getSession().serverUrl || DEFAULT_SERVER_URL,
+    email: getSession().email,
     password: '',
   });
   const [showServer, setShowServer] = useState(false);
@@ -153,8 +153,8 @@ function LoginScreen({ onDone }: { onDone: () => void }) {
     setError(null);
     try {
       await login(form.serverUrl, form.email, form.password);
-      // First sync in the background — don't block entry on it
-      void syncNow().catch(() => undefined);
+      // Start replication in the background — don't block entry on hydration
+      void connectPowerSync().catch(() => undefined);
       onDone();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'login failed');

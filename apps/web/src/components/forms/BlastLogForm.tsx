@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ChipSelect, ChipMultiSelect } from '@/components/ui/chip-select';
 import { SignatureField } from '@/components/ui/signature-field';
-import { getSessionUser } from '@/lib/sync';
+import { getSessionUser } from '@/lib/session';
 import { dataUrlToBlob } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { ShotForm } from './ShotForm';
