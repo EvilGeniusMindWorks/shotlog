@@ -295,11 +295,72 @@ export interface CrewMember extends BaseRecord {
   userId?: string;
 }
 
+/** Legacy buckets kept valid; new registry uses the specific categories */
+export type EquipmentCategory =
+  | 'vehicle'
+  | 'equip_drill'
+  | 'mats_seismo'
+  | 'pickup'
+  | 'service_truck'
+  | 'rock_drill'
+  | 'crusher'
+  | 'excavator'
+  | 'compressor'
+  | 'conveyor'
+  | 'tractor'
+  | 'trailer'
+  | 'fuel_trailer'
+  | 'blast_mats'
+  | 'seismograph'
+  | 'bore_tracking';
+
+export type EquipmentStatus = 'active' | 'in_shop' | 'retired';
+
+/**
+ * Daily-report equipment entries keep the paper form's three sections —
+ * map the specific registry categories down to those buckets.
+ */
+export function equipmentEntryBucket(
+  category: EquipmentCategory,
+): 'vehicle' | 'equip_drill' | 'mats_seismo' {
+  switch (category) {
+    case 'vehicle':
+    case 'pickup':
+    case 'service_truck':
+    case 'tractor':
+    case 'trailer':
+    case 'fuel_trailer':
+      return 'vehicle';
+    case 'mats_seismo':
+    case 'blast_mats':
+    case 'seismograph':
+    case 'bore_tracking':
+      return 'mats_seismo';
+    default:
+      return 'equip_drill';
+  }
+}
+
 export interface Equipment extends BaseRecord {
   assetNumber: string;
   description: string;
-  category: 'vehicle' | 'equip_drill' | 'mats_seismo';
+  category: EquipmentCategory;
   isActive: boolean;
+  make?: string;
+  model?: string;
+  year?: number | null;
+  serialNumber?: string;
+  plate?: string;
+  status?: EquipmentStatus;
+  hourMeter?: number | null;
+  odometer?: number | null;
+  /** ISO date — road-fleet DOT inspection due */
+  dotInspectionDue?: string;
+  /** ISO date — seismograph annual calibration due (keeps records defensible) */
+  calibrationDue?: string;
+  /** Login account of the usual operator, when linked */
+  assignedUserId?: string;
+  notes?: string;
 }
 
 // ══════════════════════════════════════════════════════

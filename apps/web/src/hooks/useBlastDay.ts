@@ -9,6 +9,7 @@ import type {
   WorkForceEntry,
   EquipmentEntry,
 } from '@/db/schema';
+import { equipmentEntryBucket } from '@/db/schema';
 import { generateId, nowISO, todayISO } from '@/lib/utils';
 import { getSessionUser } from '@/lib/session';
 
@@ -258,11 +259,15 @@ export async function createBlastDay(
       updatedAt: now,
       syncStatus: 'local' as const,
     }));
-    const machines = await db.equipment.filter((e) => e.isActive).toArray();
+    // Only assets in service ride onto the daily report; registry categories
+    // fold down to the paper form's three sections
+    const machines = await db.equipment
+      .filter((e) => e.isActive && (e.status ?? 'active') === 'active')
+      .toArray();
     equipRows = machines.map((m) => ({
       id: generateId(),
       dailyReportId,
-      category: m.category,
+      category: equipmentEntryBucket(m.category),
       assetNumber: m.assetNumber || m.description,
       hoursStart: 0,
       hoursEnd: 0,

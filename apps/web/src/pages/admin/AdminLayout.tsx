@@ -12,15 +12,18 @@ const TABS: { to: string; label: string; roles: string[] }[] = [
   { to: '/admin/users', label: 'Users', roles: ['admin'] },
   { to: '/admin/approvals', label: 'Approvals', roles: ['admin', 'supervisor'] },
   { to: '/admin/catalog', label: 'Catalog', roles: ['admin'] },
+  { to: '/admin/equipment', label: 'Equipment', roles: ['admin', 'supervisor', 'mechanic'] },
   { to: '/admin/company', label: 'Company', roles: ['admin'] },
 ];
+
+export const ADMIN_ROLES = ['admin', 'supervisor', 'mechanic'];
 
 export function AdminLayout() {
   const session = getSessionUser();
   const online = useOnlineStatus();
   const role = session?.role ?? '';
 
-  if (role !== 'admin' && role !== 'supervisor') {
+  if (!ADMIN_ROLES.includes(role)) {
     return <Navigate to="/" replace />;
   }
   const tabs = TABS.filter((t) => t.roles.includes(role));

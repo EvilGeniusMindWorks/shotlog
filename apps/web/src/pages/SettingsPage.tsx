@@ -160,9 +160,9 @@ function EquipmentCard() {
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-base">Equipment</CardTitle>
         {canEdit && (
-          <Button size="sm" onClick={() => setAdding(true)}>
-            <Plus className="h-4 w-4 mr-1" /> Add Equipment
-          </Button>
+          <Link to="/admin/equipment" className="text-sm text-safety-orange underline">
+            Manage in Admin › Equipment
+          </Link>
         )}
       </CardHeader>
       <CardContent className="space-y-3">

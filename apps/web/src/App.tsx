@@ -18,12 +18,15 @@ import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
 import { AdminApprovalsPage } from '@/pages/admin/AdminApprovalsPage';
 import { AdminCatalogPage } from '@/pages/admin/AdminCatalogPage';
 import { AdminCompanyPage } from '@/pages/admin/AdminCompanyPage';
+import { AdminEquipmentPage } from '@/pages/admin/AdminEquipmentPage';
 import { Navigate } from 'react-router-dom';
 import { getSessionUser } from '@/lib/session';
 
 function AdminIndexRedirect() {
   const role = getSessionUser()?.role;
-  return <Navigate to={role === 'supervisor' ? '/admin/approvals' : '/admin/users'} replace />;
+  const target =
+    role === 'supervisor' ? '/admin/approvals' : role === 'mechanic' ? '/admin/equipment' : '/admin/users';
+  return <Navigate to={target} replace />;
 }
 
 export function App() {
@@ -46,6 +49,7 @@ export function App() {
             <Route path="users" element={<AdminUsersPage />} />
             <Route path="approvals" element={<AdminApprovalsPage />} />
             <Route path="catalog" element={<AdminCatalogPage />} />
+            <Route path="equipment" element={<AdminEquipmentPage />} />
             <Route path="company" element={<AdminCompanyPage />} />
           </Route>
         </Route>

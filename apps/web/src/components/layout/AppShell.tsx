@@ -28,7 +28,7 @@ const baseNavItems = [
 ];
 
 function navItemsForRole(role: string | undefined) {
-  return role === 'admin' || role === 'supervisor'
+  return role === 'admin' || role === 'supervisor' || role === 'mechanic'
     ? [...baseNavItems, { to: '/admin', icon: ShieldCheck, label: 'Admin' }]
     : baseNavItems;
 }
