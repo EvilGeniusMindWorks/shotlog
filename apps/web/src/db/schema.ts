@@ -77,12 +77,34 @@ export interface BlastDayConditions {
   weatherNotes: string;
 }
 
+/** Office job-costing codes: DB / DO / DE / C / H on the paper forms */
+export type WorkType =
+  | 'drill_to_blast'
+  | 'drill_only'
+  | 'drill_to_excavate'
+  | 'blasting'
+  | 'crushing'
+  | 'hauling';
+
+/** Which work types carry a blasting log (and shots, explosives, seismo) */
+export function isBlastingWork(typeOfWork: WorkType): boolean {
+  return typeOfWork === 'blasting' || typeOfWork === 'drill_to_blast';
+}
+
+/**
+ * The per-job WORK DAY — the root of each day's records. Every work day
+ * has a daily report; blasting-type days additionally carry a blast log.
+ * (Named BlastDay for historical reasons; renaming the table would force
+ * a data migration for zero benefit.)
+ */
 export interface BlastDay extends BaseRecord {
   date: string; // ISO date
   jobId: string;
+  /** Optional quick label from the blaster, e.g. "North face lift 2" */
+  name?: string;
   status: 'draft' | 'submitted' | 'approved';
   conditions: BlastDayConditions;
-  typeOfWork: 'drill_only' | 'drill_to_blast' | 'blasting' | 'crushing';
+  typeOfWork: WorkType;
   fireDetail: boolean;
 }
 

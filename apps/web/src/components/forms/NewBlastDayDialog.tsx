@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useLiveQuery, db } from '@/db';
-import { createJob, type CopyFromPrevious } from '@/hooks/useBlastDay';
+import { createJob, type CopyFromPrevious, type CreateWorkDayOptions } from '@/hooks/useBlastDay';
+import type { WorkType } from '@/db/schema';
+import { isBlastingWork } from '@/db/schema';
+import { ChipSelect } from '@/components/ui/chip-select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,8 +14,22 @@ import { Plus, X } from 'lucide-react';
 
 interface Props {
   onClose: () => void;
-  onCreate: (jobId: string, date: string, copy?: CopyFromPrevious) => void;
+  onCreate: (
+    jobId: string,
+    date: string,
+    copy?: CopyFromPrevious,
+    opts?: CreateWorkDayOptions,
+  ) => void;
 }
+
+const WORK_TYPE_CHOICES = [
+  { value: 'drill_to_blast', label: 'Drill to Blast' },
+  { value: 'blasting', label: 'Blasting' },
+  { value: 'drill_only', label: 'Drill Only' },
+  { value: 'drill_to_excavate', label: 'Drill to Excavate' },
+  { value: 'crushing', label: 'Crushing' },
+  { value: 'hauling', label: 'Hauling' },
+];
 
 const COPY_SECTIONS = [
   { key: 'blastInfo', label: 'Blast Info' },
@@ -34,6 +51,8 @@ export function NewBlastDayDialog({ onClose, onCreate }: Props) {
   const jobs = useLiveQuery(() => db.jobs.filter((j) => j.isActive).toArray()) ?? [];
   const [selectedJobId, setSelectedJobId] = useState('');
   const [date, setDate] = useState(todayISO());
+  const [typeOfWork, setTypeOfWork] = useState<WorkType>('drill_to_blast');
+  const [dayName, setDayName] = useState('');
   const [showNewJob, setShowNewJob] = useState(false);
   const [newJob, setNewJob] = useState({
     name: '', customer: '', address: '', city: '', state: '', operation: 'construction' as const,
@@ -78,7 +97,7 @@ export function NewBlastDayDialog({ onClose, onCreate }: Props) {
             crewEquipment: copySections.crewEquipment,
           }
         : undefined;
-    onCreate(jobId, date, copy);
+    onCreate(jobId, date, copy, { typeOfWork, name: dayName });
   };
 
   const canCreate = showNewJob ? newJob.name && newJob.customer : selectedJobId;
@@ -87,7 +106,7 @@ export function NewBlastDayDialog({ onClose, onCreate }: Props) {
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
       <Card className="w-full sm:max-w-lg max-h-[90vh] overflow-auto rounded-t-xl sm:rounded-xl">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>New Blast Day</CardTitle>
+          <CardTitle>New Work Day</CardTitle>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>
@@ -96,6 +115,28 @@ export function NewBlastDayDialog({ onClose, onCreate }: Props) {
           <div>
             <Label>Date</Label>
             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          </div>
+
+          <div>
+            <Label>Type of work</Label>
+            <ChipSelect
+              value={typeOfWork}
+              onChange={(v) => setTypeOfWork(v as WorkType)}
+              options={WORK_TYPE_CHOICES}
+            />
+            {!isBlastingWork(typeOfWork) && (
+              <p className="text-xs text-gray-400 mt-1">
+                No blasting log for this type — just the daily report. You can add a
+                blasting log later if the day turns into a shot.
+              </p>
+            )}
+          </div>
+
+          <div>
+            <Label>
+              Name <span className="text-gray-400 font-normal">— optional, e.g. "North face lift 2"</span>
+            </Label>
+            <Input value={dayName} onChange={(e) => setDayName(e.target.value)} />
           </div>
 
           {!showNewJob ? (

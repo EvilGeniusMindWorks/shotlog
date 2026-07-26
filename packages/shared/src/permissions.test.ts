@@ -37,10 +37,12 @@ describe('table permissions', () => {
     expect(canPerformOp('blastDays', 'DELETE', 'blaster')).toBe(false);
   });
 
-  it('driller works in the daily-report family only', () => {
+  it('driller owns work days + daily reports but never blasting records', () => {
+    expect(canPerformOp('blastDays', 'PUT', 'driller')).toBe(true);
     expect(canPerformOp('dailyReports', 'PUT', 'driller')).toBe(true);
     expect(canPerformOp('workForceEntries', 'PATCH', 'driller')).toBe(true);
     expect(canPerformOp('equipmentEntries', 'PUT', 'driller')).toBe(true);
+    expect(canPerformOp('blastDays', 'DELETE', 'driller')).toBe(false);
     expect(canPerformOp('blastLogs', 'PUT', 'driller')).toBe(false);
     expect(canPerformOp('shots', 'PUT', 'driller')).toBe(false);
   });

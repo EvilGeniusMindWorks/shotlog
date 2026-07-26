@@ -48,8 +48,10 @@ export const TABLE_PERMISSIONS: Record<string, TableRule> = {
   crewMembers: uniform(REGISTRY),
   equipment: uniform(EQUIPMENT_REGISTRY),
 
-  // Blast-day family (technical records)
-  blastDays: { PUT: BLAST_FAMILY, PATCH: BLAST_FAMILY, DELETE: REGISTRY },
+  // Work days are the root of EVERY field day (drill-only, crushing,
+  // hauling included) — drillers create and edit them too. The blasting
+  // LOG and its children stay blaster-and-up.
+  blastDays: { PUT: REPORT_FAMILY, PATCH: REPORT_FAMILY, DELETE: REGISTRY },
   blastLogs: uniform(BLAST_FAMILY),
   shots: uniform(BLAST_FAMILY),
   seismoReadings: uniform(BLAST_FAMILY),
@@ -81,10 +83,10 @@ export type BlastDayStatus = 'draft' | 'submitted' | 'approved';
 /** from → to → roles allowed to make that transition */
 export const BLAST_DAY_STATUS_TRANSITIONS: Record<string, Record<string, readonly Role[]>> = {
   draft: {
-    submitted: ['admin', 'supervisor', 'blaster'],
+    submitted: ['admin', 'supervisor', 'blaster', 'driller'], // drillers submit drill-only days
   },
   submitted: {
-    draft: ['admin', 'supervisor', 'blaster'], // withdraw / send back
+    draft: ['admin', 'supervisor', 'blaster', 'driller'], // withdraw / send back
     approved: ['admin', 'supervisor'],
   },
   approved: {

@@ -8,8 +8,9 @@ import type {
   Job,
   WorkForceEntry,
   EquipmentEntry,
+  WorkType,
 } from '@/db/schema';
-import { equipmentEntryBucket } from '@/db/schema';
+import { equipmentEntryBucket, isBlastingWork } from '@/db/schema';
 import { generateId, nowISO, todayISO } from '@/lib/utils';
 import { getSessionUser } from '@/lib/session';
 
@@ -65,10 +66,16 @@ export interface CopyFromPrevious {
   crewEquipment: boolean; // daily report crew + equipment rows (times/hours cleared)
 }
 
+export interface CreateWorkDayOptions {
+  typeOfWork?: WorkType;
+  name?: string;
+}
+
 export async function createBlastDay(
   jobId: string,
   date?: string,
   copy?: CopyFromPrevious,
+  opts?: CreateWorkDayOptions,
 ): Promise<string> {
   const now = nowISO();
   const blastDayId = generateId();
@@ -76,6 +83,13 @@ export async function createBlastDay(
   const dailyReportId = generateId();
   const explosiveUsageId = generateId();
   const shotId = generateId();
+
+  // Copying blast content forces a blasting-type day
+  const typeOfWork: WorkType =
+    copy && (copy.blastInfo || copy.drillParams || copy.designPlan || copy.explosives)
+      ? (opts?.typeOfWork && isBlastingWork(opts.typeOfWork) ? opts.typeOfWork : 'drill_to_blast')
+      : (opts?.typeOfWork ?? 'drill_to_blast');
+  const withBlastLog = isBlastingWork(typeOfWork);
 
   const job = await db.jobs.get(jobId);
 
@@ -99,6 +113,7 @@ export async function createBlastDay(
     id: blastDayId,
     date: date ?? todayISO(),
     jobId,
+    ...(opts?.name?.trim() ? { name: opts.name.trim() } : {}),
     status: 'draft',
     conditions: {
       temperatureRange: 'mod',
@@ -107,7 +122,7 @@ export async function createBlastDay(
       groundConditions: 'normal',
       weatherNotes: '',
     },
-    typeOfWork: 'drill_to_blast',
+    typeOfWork,
     fireDetail: false,
     createdAt: now,
     updatedAt: now,
@@ -282,17 +297,25 @@ export async function createBlastDay(
     [db.blastDays, db.blastLogs, db.shots, db.explosiveUsages, db.dailyReports, db.workForceEntries, db.equipmentEntries],
     async () => {
       await db.blastDays.add(blastDay);
-      await db.blastLogs.add(blastLog);
-      await db.shots.bulkAdd(shots);
-      await db.explosiveUsages.add(explosiveUsage);
+      if (withBlastLog) {
+        await db.blastLogs.add(blastLog);
+        await db.shots.bulkAdd(shots);
+        await db.explosiveUsages.add(explosiveUsage);
+      }
       await db.dailyReports.add(dailyReport);
       if (crewRows.length) await db.workForceEntries.bulkAdd(crewRows);
       if (equipRows.length) await db.equipmentEntries.bulkAdd(equipRows);
     },
   );
 
-  // Auto-fill blaster + license from the signed-in user's account:
-  // name always; license by matching the job's state (one per state)
+  if (withBlastLog) await autofillBlasterSignoff(blastLogId, job);
+
+  return blastDayId;
+}
+
+/** Auto-fill blaster + license from the signed-in user's account (or the
+ *  legacy local profile): name always; license by matching the job's state */
+async function autofillBlasterSignoff(blastLogId: string, job: Job | undefined): Promise<void> {
   const session = getSessionUser();
   if (session && job) {
     const license = (session.licenses ?? []).find((l) => l.state === job.state);
@@ -303,10 +326,10 @@ export async function createBlastDay(
         : {}),
       updatedAt: nowISO(),
     });
+    return;
   }
-  // Legacy fallback: local blaster profile (pre-account data)
   const blaster = await db.blasterProfiles.filter((b) => b.isCurrentUser).first();
-  if (!session && blaster && job) {
+  if (blaster && job) {
     const license = blaster.licenses.find((l) => l.state === job.state && l.isActive);
     if (license) {
       await db.blastLogs.update(blastLogId, {
@@ -317,8 +340,76 @@ export async function createBlastDay(
       });
     }
   }
+}
 
-  return blastDayId;
+/**
+ * Upgrade a non-blasting work day: attach a blast log (+ first shot and
+ * explosives) when the day's work turns into a blast.
+ */
+export async function addBlastLogToDay(blastDayId: string): Promise<string> {
+  const day = await db.blastDays.get(blastDayId);
+  if (!day) throw new Error('work day not found');
+  const existing = await db.blastLogs.where('blastDayId').equals(blastDayId).first();
+  if (existing) return existing.id;
+  const job = await db.jobs.get(day.jobId);
+  const now = nowISO();
+  const blastLogId = generateId();
+
+  await db.transaction('rw', [db.blastDays, db.blastLogs, db.shots, db.explosiveUsages], async () => {
+    if (!isBlastingWork(day.typeOfWork)) {
+      await db.blastDays.update(blastDayId, { typeOfWork: 'drill_to_blast', updatedAt: now });
+    }
+    await db.blastLogs.add({
+      id: blastLogId,
+      blastDayId,
+      operation: job?.operation ?? 'construction',
+      typeOfRock: job?.typeOfRock ?? '',
+      typeOfTerrain: job?.typeOfTerrain ?? '',
+      hazards: job?.defaultHazards ?? '',
+      precautions: job?.defaultPrecautions ?? '',
+      onsiteDelivery: false,
+      blasterName: '',
+      licenseNumber: '',
+      licenseState: '',
+      signatureImage: null,
+      notes: '',
+      createdAt: now,
+      updatedAt: now,
+      syncStatus: 'local',
+    });
+    await db.shots.add({
+      id: generateId(),
+      blastLogId,
+      shotNumber: 1,
+      time: '',
+      drillParams: { waterDepth: 0, holeDiameter: 0, burden: 0, spacing: 0, stemming: 0, subDrill: 0 },
+      totals: { numHoles: 0, totalSqFt: 0, avgDrillDepth: 0, totalDrillFootage: 0, totalPayYards: 0, totalYardsShot: 0 },
+      designPlan: {
+        siteSketchData: null, siteSketchImage: null, shotDiagramData: null, shotDiagramImage: null,
+        columnDiagramImage: null, closestStructureLocation: '', closestStructureDistance: 0,
+        closestBoreholeDistance: 0, maxHolesPerDelay: 0, maxPoundsPerDelay: 0,
+        scaledDistance: 0, predictedPPV: 0, kFactor: job?.kFactor ?? 180,
+      },
+      createdAt: now,
+      updatedAt: now,
+      syncStatus: 'local',
+    });
+    await db.explosiveUsages.add({
+      id: generateId(),
+      blastLogId,
+      products: [],
+      totalPoundsShot: 0,
+      detonators: [],
+      leadLine: 0,
+      coverType: '',
+      createdAt: now,
+      updatedAt: now,
+      syncStatus: 'local',
+    });
+  });
+
+  await autofillBlasterSignoff(blastLogId, job);
+  return blastLogId;
 }
 
 export async function createJob(data: Partial<Job> & { name: string; customer: string }): Promise<string> {

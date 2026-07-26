@@ -291,8 +291,8 @@ export function Dashboard() {
       {showNewDialog && (
         <NewBlastDayDialog
           onClose={() => setShowNewDialog(false)}
-          onCreate={async (jobId, date, copy) => {
-            const id = await createBlastDay(jobId, date, copy);
+          onCreate={async (jobId, date, copy, opts) => {
+            const id = await createBlastDay(jobId, date, copy, opts);
             setShowNewDialog(false);
             navigate(`/blast-day/${id}`);
           }}
@@ -360,9 +360,11 @@ function DayCard({ summary, onClick }: { summary: DaySummary; onClick: () => voi
         </div>
       </div>
       <div className="p-3">
-        <p className="font-semibold truncate">{job?.name ?? 'Unknown Job'}</p>
+        <p className="font-semibold truncate">{day.name || job?.name || 'Unknown Job'}</p>
         <p className="text-xs text-gray-500 truncate mb-2">
-          {[job?.address, job?.city].filter(Boolean).join(', ') || job?.customer || ''}
+          {day.name
+            ? job?.name ?? ''
+            : [job?.address, job?.city].filter(Boolean).join(', ') || job?.customer || ''}
         </p>
         <div className="grid grid-cols-4 gap-1.5">
           <MiniMetric label="Shots" value={String(shots)} />

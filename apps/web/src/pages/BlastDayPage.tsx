@@ -2,7 +2,8 @@ import { useState, type ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, ClipboardList, ChevronDown, ChevronUp, FileBarChart, Lock, Printer } from 'lucide-react';
 import { canEditApproved, canTransitionStatus, type Role } from '@shotlog/shared';
-import { useBlastDay } from '@/hooks/useBlastDay';
+import { addBlastLogToDay, useBlastDay } from '@/hooks/useBlastDay';
+import { canPerformOp } from '@shotlog/shared';
 import { db } from '@/db';
 import { authedFetch, getSessionUser } from '@/lib/session';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
@@ -11,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { ChipSelect } from '@/components/ui/chip-select';
 import { BlastLogForm } from '@/components/forms/BlastLogForm';
 import { DailyReportForm } from '@/components/forms/DailyReportForm';
@@ -41,8 +43,10 @@ const GROUND_OPTIONS = [
 const WORK_TYPE_OPTIONS = [
   { value: 'drill_only', label: 'Drill Only' },
   { value: 'drill_to_blast', label: 'Drill to Blast' },
+  { value: 'drill_to_excavate', label: 'Drill to Excavate' },
   { value: 'blasting', label: 'Blasting' },
   { value: 'crushing', label: 'Crushing' },
+  { value: 'hauling', label: 'Hauling' },
 ];
 
 const WIND_OPTIONS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'].map((d) => ({
@@ -71,6 +75,8 @@ export function BlastDayPage() {
   const navigate = useNavigate();
   const { blastDay, job, blastLog, dailyReport, shots, explosiveUsage } = useBlastDay(id);
   const [activeTab, setActiveTab] = useState<Tab>('blast-log');
+  // Non-blasting days have no blast log — the daily report is the whole day
+  const tab: Tab = blastLog ? activeTab : 'daily-report';
   const [showConditions, setShowConditions] = useState(false);
   const [statusBusy, setStatusBusy] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
@@ -176,8 +182,11 @@ export function BlastDayPage() {
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="flex-1 min-w-0">
-            <h2 className="font-bold text-lg truncate leading-tight">{job?.name ?? 'Blast Day'}</h2>
+            <h2 className="font-bold text-lg truncate leading-tight">
+              {blastDay.name || job?.name || 'Work Day'}
+            </h2>
             <p className="text-xs text-navy-200 truncate">
+              {blastDay.name ? `${job?.name ?? ''} · ` : ''}
               {formatDate(blastDay.date)} ({dayOfWeek(blastDay.date)}) ·{' '}
               {[job?.address, job?.city, job?.state].filter(Boolean).join(', ') || job?.customer}
             </p>
@@ -186,19 +195,21 @@ export function BlastDayPage() {
             {blastDay.status}
           </Badge>
           {statusActions}
+          {blastLog && (
+            <button
+              className="h-10 w-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20"
+              title="Visual Blast Report"
+              onClick={() => navigate(`/blast-day/${blastDay.id}/report`)}
+            >
+              <FileBarChart className="h-5 w-5" />
+            </button>
+          )}
           <button
             className="h-10 w-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20"
-            title="Visual Blast Report"
-            onClick={() => navigate(`/blast-day/${blastDay.id}/report`)}
-          >
-            <FileBarChart className="h-5 w-5" />
-          </button>
-          <button
-            className="h-10 w-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20"
-            title={activeTab === 'blast-log' ? 'Print Blasting Log' : 'Print Daily Report'}
+            title={tab === 'blast-log' ? 'Print Blasting Log' : 'Print Daily Report'}
             onClick={() =>
               navigate(
-                activeTab === 'blast-log'
+                tab === 'blast-log'
                   ? `/blast-day/${blastDay.id}/print`
                   : `/blast-day/${blastDay.id}/print-daily`,
               )
@@ -282,6 +293,17 @@ export function BlastDayPage() {
                 options={WORK_TYPE_OPTIONS}
               />
             </div>
+            <div>
+              <Label className="text-xs">
+                Day Name <span className="text-gray-400 font-normal">— shows in lists & prints</span>
+              </Label>
+              <Input
+                className="mt-1"
+                placeholder="e.g. North face lift 2"
+                defaultValue={blastDay.name ?? ''}
+                onBlur={(e) => updateBlastDay('name', e.target.value.trim())}
+              />
+            </div>
             <label className="flex items-center gap-2 min-h-[44px] cursor-pointer">
               <input
                 type="checkbox"
@@ -296,30 +318,47 @@ export function BlastDayPage() {
         </div>
       </div>
 
-      {/* Segmented tab control (wireframe §4.3) */}
+      {/* Segmented tab control (wireframe §4.3) — blast log tab only when one exists */}
       <div className="px-4 pt-3">
         <div className="max-w-5xl mx-auto">
-          <div className="flex bg-gray-100 rounded-lg p-1">
-            {(
-              [
-                ['blast-log', 'Blast Log', FileText],
-                ['daily-report', 'Daily Report', ClipboardList],
-              ] as const
-            ).map(([key, label, Icon]) => (
-              <button
-                key={key}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-md transition-all min-h-[44px] ${
-                  activeTab === key
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-                onClick={() => setActiveTab(key)}
-              >
-                <Icon className="h-4 w-4" />
-                {label}
-              </button>
-            ))}
-          </div>
+          {blastLog ? (
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              {(
+                [
+                  ['blast-log', 'Blast Log', FileText],
+                  ['daily-report', 'Daily Report', ClipboardList],
+                ] as const
+              ).map(([key, label, Icon]) => (
+                <button
+                  key={key}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-md transition-all min-h-[44px] ${
+                    activeTab === key
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                  onClick={() => setActiveTab(key)}
+                >
+                  <Icon className="h-4 w-4" />
+                  {label}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2">
+              <span className="text-sm text-gray-500 flex-1">
+                {WORK_TYPE_OPTIONS.find((o) => o.value === blastDay.typeOfWork)?.label} day —
+                daily report only.
+              </span>
+              {!locked && canPerformOp('blastLogs', 'PUT', role) && (
+                <Button size="sm" variant="secondary"
+                  onClick={() => {
+                    void addBlastLogToDay(blastDay.id).then(() => setActiveTab('blast-log'));
+                  }}>
+                  <FileText className="h-4 w-4 mr-1" /> Add Blasting Log
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -346,7 +385,7 @@ export function BlastDayPage() {
         className={locked ? 'p-4 max-w-5xl mx-auto pointer-events-none select-none opacity-70' : 'p-4 max-w-5xl mx-auto'}
         aria-disabled={locked || undefined}
       >
-        {activeTab === 'blast-log' && blastLog && (
+        {tab === 'blast-log' && blastLog && (
           <BlastLogForm
             blastDay={blastDay}
             blastLog={blastLog}
@@ -355,7 +394,7 @@ export function BlastDayPage() {
             job={job}
           />
         )}
-        {activeTab === 'daily-report' && dailyReport && (
+        {tab === 'daily-report' && dailyReport && (
           <DailyReportForm
             blastDay={blastDay}
             dailyReport={dailyReport}
