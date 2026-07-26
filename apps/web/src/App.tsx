@@ -15,6 +15,7 @@ import { PrintDailyReportPage } from '@/pages/PrintDailyReportPage';
 import { BlastReportPage } from '@/pages/BlastReportPage';
 import { AdminLayout } from '@/pages/admin/AdminLayout';
 import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
+import { AdminApprovalsPage } from '@/pages/admin/AdminApprovalsPage';
 import { Navigate } from 'react-router-dom';
 import { getSessionUser } from '@/lib/session';
 
@@ -41,6 +42,7 @@ export function App() {
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminIndexRedirect />} />
             <Route path="users" element={<AdminUsersPage />} />
+            <Route path="approvals" element={<AdminApprovalsPage />} />
           </Route>
         </Route>
         <Route path="/blast-day/:id/print" element={<PrintBlastLogPage />} />

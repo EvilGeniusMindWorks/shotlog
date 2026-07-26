@@ -1,8 +1,11 @@
 import { useState, type ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, ClipboardList, ChevronDown, ChevronUp, FileBarChart, Printer } from 'lucide-react';
+import { ArrowLeft, FileText, ClipboardList, ChevronDown, ChevronUp, FileBarChart, Lock, Printer } from 'lucide-react';
+import { canEditApproved, canTransitionStatus, type Role } from '@shotlog/shared';
 import { useBlastDay } from '@/hooks/useBlastDay';
 import { db } from '@/db';
+import { authedFetch, getSessionUser } from '@/lib/session';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { nowISO, formatDate, dayOfWeek } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -69,6 +72,10 @@ export function BlastDayPage() {
   const { blastDay, job, blastLog, dailyReport, shots, explosiveUsage } = useBlastDay(id);
   const [activeTab, setActiveTab] = useState<Tab>('blast-log');
   const [showConditions, setShowConditions] = useState(false);
+  const [statusBusy, setStatusBusy] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
+  const online = useOnlineStatus();
+  const role = (getSessionUser()?.role ?? 'blaster') as Role;
 
   if (!blastDay) {
     return (
@@ -78,14 +85,84 @@ export function BlastDayPage() {
     );
   }
 
+  const status = blastDay.status;
+  const locked = status === 'approved' && !canEditApproved(role);
+
   const updateConditions = (field: string, value: string | boolean) => {
+    if (locked) return;
     const updated = { ...blastDay.conditions, [field]: value };
     db.blastDays.update(blastDay.id, { conditions: updated, updatedAt: nowISO() });
   };
 
   const updateBlastDay = (field: string, value: string | boolean) => {
+    if (locked) return;
     db.blastDays.update(blastDay.id, { [field]: value, updatedAt: nowISO() });
   };
+
+  // Submit/withdraw are FIELD actions — they go through the offline sync
+  // path so a blaster without signal can still submit. Approve/reopen are
+  // supervision actions — online-only REST with immediate errors.
+  const submitViaSync = (to: 'submitted' | 'draft') => {
+    void db.blastDays.update(blastDay.id, { status: to, updatedAt: nowISO() });
+  };
+  const transitionViaRest = async (to: 'approved' | 'submitted' | 'draft') => {
+    setStatusBusy(true);
+    setStatusError(null);
+    try {
+      const res = await authedFetch(`/admin/blast-days/${blastDay.id}/status`, {
+        method: 'POST',
+        body: JSON.stringify({ to }),
+      });
+      const body = (await res.json().catch(() => null)) as { error?: string } | null;
+      if (!res.ok) throw new Error(body?.error ?? 'status change failed');
+    } catch (err) {
+      setStatusError(err instanceof Error ? err.message : 'status change failed');
+    } finally {
+      setStatusBusy(false);
+    }
+  };
+
+  const statusActions: ReactNode[] = [];
+  if (status === 'draft' && canTransitionStatus('draft', 'submitted', role)) {
+    statusActions.push(
+      <Button key="submit" size="sm" variant="secondary" onClick={() => submitViaSync('submitted')}>
+        Submit for Review
+      </Button>,
+    );
+  }
+  if (status === 'submitted') {
+    if (canTransitionStatus('submitted', 'approved', role)) {
+      statusActions.push(
+        <Button key="approve" size="sm" className="bg-green-600 hover:bg-green-700 text-white"
+          disabled={!online || statusBusy}
+          title={online ? undefined : 'Approvals need a connection'}
+          onClick={() => void transitionViaRest('approved')}>
+          Approve
+        </Button>,
+      );
+      statusActions.push(
+        <Button key="sendback" size="sm" variant="secondary" disabled={!online || statusBusy}
+          onClick={() => void transitionViaRest('draft')}>
+          Send Back
+        </Button>,
+      );
+    } else if (canTransitionStatus('submitted', 'draft', role)) {
+      statusActions.push(
+        <Button key="withdraw" size="sm" variant="secondary" onClick={() => submitViaSync('draft')}>
+          Withdraw
+        </Button>,
+      );
+    }
+  }
+  if (status === 'approved' && canEditApproved(role)) {
+    statusActions.push(
+      <Button key="reopen" size="sm" variant="secondary" disabled={!online || statusBusy}
+        title={online ? undefined : 'Reopening needs a connection'}
+        onClick={() => void transitionViaRest('submitted')}>
+        Reopen
+      </Button>,
+    );
+  }
 
   return (
     <div>
@@ -108,6 +185,7 @@ export function BlastDayPage() {
           <Badge variant={blastDay.status as 'draft' | 'submitted' | 'approved'}>
             {blastDay.status}
           </Badge>
+          {statusActions}
           <button
             className="h-10 w-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20"
             title="Visual Blast Report"
@@ -245,8 +323,29 @@ export function BlastDayPage() {
         </div>
       </div>
 
-      {/* Tab content */}
-      <div className="p-4 max-w-5xl mx-auto">
+      {statusError && (
+        <div className="max-w-5xl mx-auto px-4 pt-3">
+          <p className="text-sm text-violation border border-red-200 bg-red-50 rounded-lg px-3 py-2">
+            {statusError}
+          </p>
+        </div>
+      )}
+
+      {locked && (
+        <div className="max-w-5xl mx-auto px-4 pt-3">
+          <p className="flex items-center gap-2 text-sm text-green-800 border border-green-200 bg-green-50 rounded-lg px-3 py-2">
+            <Lock className="h-4 w-4 shrink-0" />
+            This blast day is approved and locked. A supervisor can reopen it if something
+            needs to change.
+          </p>
+        </div>
+      )}
+
+      {/* Tab content — read-only once approved (server enforces this too) */}
+      <div
+        className={locked ? 'p-4 max-w-5xl mx-auto pointer-events-none select-none opacity-70' : 'p-4 max-w-5xl mx-auto'}
+        aria-disabled={locked || undefined}
+      >
         {activeTab === 'blast-log' && blastLog && (
           <BlastLogForm
             blastDay={blastDay}

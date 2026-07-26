@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { ChipSelect } from '@/components/ui/chip-select';
 import { AccountSyncCard } from '@/components/forms/AccountSyncCard';
 import { getSessionUser } from '@/lib/session';
+import { canPerformOp, type Role } from '@shotlog/shared';
 import { Link } from 'react-router-dom';
 
 const EQUIPMENT_CATEGORIES = [
@@ -42,6 +43,8 @@ function CrewCard() {
   const crew = useLiveQuery(() => db.crewMembers.filter((c) => c.isActive).toArray()) ?? [];
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
+  // Crew roster is registry data (admin/supervisor) — others see it read-only
+  const canEdit = canPerformOp('crewMembers', 'PUT', (getSessionUser()?.role ?? 'office') as Role);
 
   const addMember = async () => {
     if (!name.trim()) return;
@@ -64,9 +67,11 @@ function CrewCard() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-base">Crew Roster</CardTitle>
-        <Button size="sm" onClick={() => setAdding(true)}>
-          <Plus className="h-4 w-4 mr-1" /> Add Crew Member
-        </Button>
+        {canEdit && (
+          <Button size="sm" onClick={() => setAdding(true)}>
+            <Plus className="h-4 w-4 mr-1" /> Add Crew Member
+          </Button>
+        )}
       </CardHeader>
       <CardContent className="space-y-2">
         {crew.length === 0 && !adding && (
@@ -85,13 +90,15 @@ function CrewCard() {
                 .toUpperCase()}
             </div>
             <p className="flex-1 text-sm font-medium truncate">{member.name}</p>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => db.crewMembers.update(member.id, { isActive: false, updatedAt: nowISO() })}
-            >
-              <Trash2 className="h-4 w-4 text-gray-400" />
-            </Button>
+            {canEdit && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => db.crewMembers.update(member.id, { isActive: false, updatedAt: nowISO() })}
+              >
+                <Trash2 className="h-4 w-4 text-gray-400" />
+              </Button>
+            )}
           </div>
         ))}
         {adding && (
@@ -118,6 +125,7 @@ function CrewCard() {
 
 function EquipmentCard() {
   const equipment = useLiveQuery(() => db.equipment.filter((e) => e.isActive).toArray()) ?? [];
+  const canEdit = canPerformOp('equipment', 'PUT', (getSessionUser()?.role ?? 'office') as Role);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({
     assetNumber: '',
@@ -151,9 +159,11 @@ function EquipmentCard() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-base">Equipment</CardTitle>
-        <Button size="sm" onClick={() => setAdding(true)}>
-          <Plus className="h-4 w-4 mr-1" /> Add Equipment
-        </Button>
+        {canEdit && (
+          <Button size="sm" onClick={() => setAdding(true)}>
+            <Plus className="h-4 w-4 mr-1" /> Add Equipment
+          </Button>
+        )}
       </CardHeader>
       <CardContent className="space-y-3">
         {equipment.length === 0 && !adding && (
@@ -176,15 +186,17 @@ function EquipmentCard() {
                     >
                       <span className="font-mono text-sm text-navy shrink-0">{item.assetNumber}</span>
                       <p className="flex-1 text-sm truncate">{item.description}</p>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() =>
-                          db.equipment.update(item.id, { isActive: false, updatedAt: nowISO() })
-                        }
-                      >
-                        <Trash2 className="h-4 w-4 text-gray-400" />
-                      </Button>
+                      {canEdit && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            db.equipment.update(item.id, { isActive: false, updatedAt: nowISO() })
+                          }
+                        >
+                          <Trash2 className="h-4 w-4 text-gray-400" />
+                        </Button>
+                      )}
                     </div>
                   ))}
                 </div>

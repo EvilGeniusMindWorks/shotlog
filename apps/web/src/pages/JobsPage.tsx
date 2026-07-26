@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLiveQuery, db } from '@/db';
 import { createJob } from '@/hooks/useBlastDay';
+import { getSessionUser } from '@/lib/session';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,9 +37,11 @@ export function JobsPage() {
     <div className="p-4 max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold text-gray-900">Jobs</h2>
-        <Button onClick={() => setShowNew(!showNew)}>
-          <Plus className="h-4 w-4 mr-1" /> New Job
-        </Button>
+        {getSessionUser()?.role === 'admin' && (
+          <Button onClick={() => setShowNew(!showNew)}>
+            <Plus className="h-4 w-4 mr-1" /> New Job
+          </Button>
+        )}
       </div>
 
       {showNew && (

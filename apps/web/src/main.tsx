@@ -35,10 +35,19 @@ if (navigator.storage?.persist) {
 // Seed product catalog on first launch
 seedProductCatalog();
 
-// Dev-only: expose the data layer for the multi-device test harness
+// Dev-only: expose the data layer + real creation flows for the
+// multi-device test harness (synthetic hand-rolled records miss nested
+// shapes the UI relies on — the harness must create data the real way)
 if (import.meta.env.DEV) {
   void import('./db').then((m) => {
     (window as unknown as Record<string, unknown>).shotlogDb = m.db;
+  });
+  void import('./hooks/useBlastDay').then((m) => {
+    (window as unknown as Record<string, unknown>).shotlogFlows = {
+      createJob: m.createJob,
+      createBlastDay: m.createBlastDay,
+      addShot: m.addShot,
+    };
   });
 }
 

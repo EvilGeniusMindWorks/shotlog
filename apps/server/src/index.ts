@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { authRouter, ensureAdminUser } from './auth.js';
+import { adminRouter } from './admin.js';
 import { powersyncRouter } from './powersync.js';
 import { usersRouter } from './users.js';
 
@@ -14,6 +15,7 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/auth', authRouter);
+app.use('/admin', adminRouter);
 app.use('/powersync', powersyncRouter);
 app.use('/users', usersRouter);
 

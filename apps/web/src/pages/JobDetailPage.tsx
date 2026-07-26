@@ -3,6 +3,7 @@ import { ArrowLeft, MapPin } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { formatDate } from '@/lib/utils';
 import { useDraftRecord } from '@/hooks/useDraftRecord';
+import { getSessionUser } from '@/lib/session';
 import { powderFactor } from '@shotlog/shared';
 import type { Job } from '@/db/schema';
 import { Button } from '@/components/ui/button';
@@ -117,12 +118,27 @@ function StatBox({ label, value }: { label: string; value: string }) {
 
 function JobConfigCard({ job }: { job: Job }) {
   const { draft, setField } = useDraftRecord(db.jobs, job);
+  // Jobs are admin-managed (spec §A3) — everyone else sees them read-only
+  const readOnly = getSessionUser()?.role !== 'admin';
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Job Configuration</CardTitle>
+        <CardTitle className="text-base">
+          Job Configuration
+          {readOnly && (
+            <span className="ml-2 text-xs font-normal text-gray-400">
+              read-only — managed by your office admin
+            </span>
+          )}
+        </CardTitle>
       </CardHeader>
-      <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <CardContent
+        className={
+          readOnly
+            ? 'pointer-events-none select-none opacity-70 grid grid-cols-1 sm:grid-cols-2 gap-3'
+            : 'grid grid-cols-1 sm:grid-cols-2 gap-3'
+        }
+      >
         <div>
           <Label className="text-xs">Job Name</Label>
           <Input value={draft.name} onChange={(e) => setField('name', e.target.value)} />
