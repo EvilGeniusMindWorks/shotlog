@@ -291,10 +291,16 @@ function DeepCheckPanel() {
     try {
       const r = await repairSync();
       setMessage(`Repaired — pushed ${r.pushed}, pulled ${r.pulled}`);
-      setResult(await deepCheck());
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'repair failed');
+      setMessage(`Repair problem: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
+      // Always re-check — a partial repair still moves records, and the
+      // fresh comparison shows exactly where things stand now
+      try {
+        setResult(await deepCheck());
+      } catch {
+        /* check result stays as-is */
+      }
       setBusy(null);
     }
   };

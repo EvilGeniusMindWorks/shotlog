@@ -625,8 +625,11 @@ export interface DeepCheckResult {
  * applied.
  */
 export async function deepCheck(): Promise<DeepCheckResult> {
-  const res = await authedFetch('/sync/changes');
-  if (!res.ok) throw new Error(`deep check failed (${res.status})`);
+  // Manifest carries stamps only — no image payloads — so this stays fast
+  // even on datasets with many photos
+  let res = await authedFetch('/sync/manifest');
+  if (res.status === 404) res = await authedFetch('/sync/changes'); // older server
+  if (!res.ok) throw new Error(`check failed (${res.status})`);
   const body = (await res.json()) as {
     records: { tableName: string; recordId: string; updatedAt: string; deletedAt: string | null }[];
   };
@@ -674,6 +677,11 @@ export async function repairSync(): Promise<SyncResult> {
     }
   }
   localStorage.removeItem(LS_KEYS.lastPulledAt);
+  // An auto-sync pass may already be running (the re-marking above schedules
+  // one) — wait for the slot instead of failing with "already in progress"
+  for (let i = 0; i < 60 && syncing; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
   return syncNow();
 }
 

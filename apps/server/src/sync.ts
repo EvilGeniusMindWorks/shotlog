@@ -36,6 +36,26 @@ syncRouter.get('/changes', async (req: AuthedRequest, res: Response) => {
 });
 
 /**
+ * Diagnostics: every record's identity and stamps WITHOUT payloads — cheap
+ * to fetch even when records carry megabytes of images. Deep Check compares
+ * this against the device's copy.
+ */
+syncRouter.get('/manifest', async (req: AuthedRequest, res: Response) => {
+  const records = await prisma.syncRecord.findMany({
+    where: { companyId: req.companyId! },
+    select: { tableName: true, recordId: true, updatedAt: true, deletedAt: true },
+  });
+  res.json({
+    records: records.map((r) => ({
+      tableName: r.tableName,
+      recordId: r.recordId,
+      updatedAt: r.updatedAt.toISOString(),
+      deletedAt: r.deletedAt?.toISOString() ?? null,
+    })),
+  });
+});
+
+/**
  * Diagnostics: what the server currently holds for this company, per table.
  * Lets any device verify from the field whether a record actually arrived.
  */
