@@ -7,6 +7,7 @@ import {
   login,
   logout,
   syncNow,
+  updateMyPin,
 } from '@/lib/sync';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,33 +32,71 @@ type GateState = 'login' | 'set-pin' | 'locked' | 'open';
  * - Session + PIN → locked on launch and after 5 min hidden; PIN unlocks
  *   offline. Forgot PIN = logout → online login required.
  */
+const touchActivity = () => localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
+
 export function AuthGate({ children }: { children: ReactNode }) {
   const [state, setState] = useState<GateState>(() => {
     if (!getSyncConfig().loggedIn) return 'login';
     if (!localStorage.getItem(PIN_KEY)) return 'set-pin';
-    return 'locked';
+    // A refresh (or an auto-update reload) within the activity window must
+    // NOT demand the PIN again — only real absence does
+    const last = Number(localStorage.getItem(LAST_ACTIVE_KEY) ?? 0);
+    return Date.now() - last < LOCK_AFTER_MS ? 'open' : 'locked';
   });
 
-  // Relock when the app has been hidden longer than the threshold
+  // Track activity so reloads know how recently the app was in use, and
+  // relock when the app has been hidden longer than the threshold
   useEffect(() => {
     const onVisibility = () => {
       if (document.visibilityState === 'hidden') {
-        localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
+        touchActivity();
       } else if (document.visibilityState === 'visible' && state === 'open') {
         const last = Number(localStorage.getItem(LAST_ACTIVE_KEY) ?? 0);
         if (localStorage.getItem(PIN_KEY) && Date.now() - last > LOCK_AFTER_MS) {
           setState('locked');
+        } else {
+          touchActivity();
         }
       }
     };
     document.addEventListener('visibilitychange', onVisibility);
-    return () => document.removeEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', touchActivity);
+    const tick = window.setInterval(() => {
+      if (state === 'open' && document.visibilityState === 'visible') touchActivity();
+    }, 30_000);
+    if (state === 'open') touchActivity();
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', touchActivity);
+      window.clearInterval(tick);
+    };
   }, [state]);
 
   if (state === 'open') return <>{children}</>;
   if (state === 'login')
-    return <LoginScreen onDone={() => setState(localStorage.getItem(PIN_KEY) ? 'open' : 'set-pin')} />;
-  if (state === 'set-pin') return <SetPinScreen onDone={() => setState('open')} />;
+    return (
+      <LoginScreen
+        onDone={() => {
+          // The PIN follows the account: a fresh login seeds this device
+          // with the user's existing PIN instead of demanding a new one
+          const accountPin = getSessionUser()?.pinHash;
+          if (accountPin && !localStorage.getItem(PIN_KEY)) {
+            localStorage.setItem(PIN_KEY, accountPin);
+          }
+          touchActivity();
+          setState(localStorage.getItem(PIN_KEY) ? 'open' : 'set-pin');
+        }}
+      />
+    );
+  if (state === 'set-pin')
+    return (
+      <SetPinScreen
+        onDone={() => {
+          touchActivity();
+          setState('open');
+        }}
+      />
+    );
   return (
     <PinLockScreen
       onUnlock={() => setState('open')}
@@ -235,6 +274,8 @@ function SetPinScreen({ onDone }: { onDone: () => void }) {
       } else if (first === pin) {
         void hashPin(pin).then((h) => {
           localStorage.setItem(PIN_KEY, h);
+          // Save to the account too (best effort — offline keeps it local)
+          void updateMyPin(h).catch(() => undefined);
           onDone();
         });
       } else {

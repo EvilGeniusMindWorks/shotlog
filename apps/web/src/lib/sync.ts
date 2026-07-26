@@ -58,6 +58,8 @@ export interface SessionUser {
   licenses?: UserLicense[];
   /** Signature on file — PNG data URL */
   signature?: string | null;
+  /** Offline unlock PIN (salted SHA-256) — follows the account */
+  pinHash?: string | null;
 }
 
 export function getSessionUser(): SessionUser | null {
@@ -232,6 +234,17 @@ export async function updateMySignature(signature: string | null): Promise<Sessi
   const user = { ...getSessionUser()!, signature };
   localStorage.setItem(LS_KEYS.userInfo, JSON.stringify(user));
   return user;
+}
+
+/** Save the (client-hashed) unlock PIN to the account. Needs a connection. */
+export async function updateMyPin(pinHash: string): Promise<void> {
+  const res = await authedFetch('/auth/me/pin', {
+    method: 'PUT',
+    body: JSON.stringify({ pinHash }),
+  });
+  if (!res.ok) throw new Error('failed to save PIN');
+  const user = getSessionUser();
+  if (user) localStorage.setItem(LS_KEYS.userInfo, JSON.stringify({ ...user, pinHash }));
 }
 
 /** Change the signed-in user's password. Other sessions are signed out. */

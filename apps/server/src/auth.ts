@@ -127,6 +127,7 @@ authRouter.post('/login', async (req, res) => {
       company: user.company.name,
       licenses: user.licenses,
       signature: user.signature,
+      pinHash: user.pinHash,
     },
   });
 });
@@ -217,6 +218,7 @@ authRouter.get('/me', requireAuth, async (req: AuthedRequest, res: Response) => 
       company: user.company.name,
       licenses: user.licenses,
       signature: user.signature,
+      pinHash: user.pinHash,
     },
   });
 });
@@ -261,4 +263,17 @@ authRouter.put('/me/signature', requireAuth, async (req: AuthedRequest, res: Res
   }
   await prisma.user.update({ where: { id: req.userId! }, data: { signature: parsed.data } });
   res.json({ ok: true, signature: parsed.data });
+});
+
+// Offline unlock PIN (already hashed client-side) — follows the account
+const pinSchema = z.string().regex(/^[0-9a-f]{64}$/);
+
+authRouter.put('/me/pin', requireAuth, async (req: AuthedRequest, res: Response) => {
+  const parsed = pinSchema.safeParse((req.body as { pinHash?: unknown })?.pinHash);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'pinHash must be a sha-256 hex digest' });
+    return;
+  }
+  await prisma.user.update({ where: { id: req.userId! }, data: { pinHash: parsed.data } });
+  res.json({ ok: true });
 });
