@@ -592,6 +592,78 @@ export function startAutoSync(): void {
   kick(); // catch up immediately on app start
 }
 
+// ── Deep check & repair ────────────────────────────────────────────────────
+
+export interface DeepCheckRow {
+  tableName: string;
+  recordId: string;
+  state: 'never-pushed' | 'device-newer' | 'server-newer';
+}
+
+export interface DeepCheckResult {
+  rows: DeepCheckRow[];
+  checked: number;
+}
+
+/**
+ * Compare every local record's stamp against the server's copy. Surfaces the
+ * residue any past sync bug leaves behind: records the device believes are
+ * synced but the server never accepted, and server copies this device never
+ * applied.
+ */
+export async function deepCheck(): Promise<DeepCheckResult> {
+  const res = await authedFetch('/sync/changes');
+  if (!res.ok) throw new Error(`deep check failed (${res.status})`);
+  const body = (await res.json()) as {
+    records: { tableName: string; recordId: string; updatedAt: string; deletedAt: string | null }[];
+  };
+  const remote = new Map<string, { updatedAt: string; deleted: boolean }>();
+  for (const r of body.records) {
+    remote.set(`${r.tableName}:${r.recordId}`, {
+      updatedAt: r.updatedAt,
+      deleted: r.deletedAt !== null,
+    });
+  }
+  const rows: DeepCheckRow[] = [];
+  let checked = 0;
+  for (const tableName of SYNC_TABLES) {
+    const locals = await db.table(tableName).toArray();
+    for (const row of locals) {
+      checked++;
+      const r = remote.get(`${tableName}:${row.id}`);
+      if (!r || r.deleted) {
+        rows.push({ tableName, recordId: row.id, state: 'never-pushed' });
+      } else if (row.updatedAt > r.updatedAt) {
+        rows.push({ tableName, recordId: row.id, state: 'device-newer' });
+      } else if (row.updatedAt < r.updatedAt) {
+        rows.push({ tableName, recordId: row.id, state: 'server-newer' });
+      }
+    }
+  }
+  return { rows, checked };
+}
+
+/**
+ * Heal every inconsistency deepCheck finds: re-mark records the server is
+ * missing (or has older) for push, clear the pull marker for a full re-pull
+ * of anything the server has newer, then run a pass. Safe to run any time —
+ * LWW and the unsynced-local guard protect newer work on either side.
+ */
+export async function repairSync(): Promise<SyncResult> {
+  const { rows } = await deepCheck();
+  for (const r of rows) {
+    if (r.state === 'never-pushed' || r.state === 'device-newer') {
+      await db
+        .table(r.tableName)
+        .where('id')
+        .equals(r.recordId)
+        .modify({ syncStatus: 'local' });
+    }
+  }
+  localStorage.removeItem(LS_KEYS.lastPulledAt);
+  return syncNow();
+}
+
 /** Count of records (and tombstones) waiting to sync */
 export async function pendingCount(): Promise<number> {
   let count = 0;

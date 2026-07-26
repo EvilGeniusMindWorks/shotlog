@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Cloud, Download, LogOut, RefreshCw } from 'lucide-react';
 import { db } from '@/db';
 import {
+  deepCheck,
   exportAllData,
   fetchServerStats,
   getLastSyncError,
@@ -9,7 +10,9 @@ import {
   login,
   logout,
   pendingCount,
+  repairSync,
   syncNow,
+  type DeepCheckResult,
   type ServerStats,
   type SyncResult,
 } from '@/lib/sync';
@@ -131,6 +134,7 @@ export function SyncCard() {
             </p>
           )}
           <DeviceVsServer />
+          <DeepCheckPanel />
           <p className="text-[11px] text-gray-300 font-mono">Build {__BUILD_ID__}</p>
         </div>
       ) : (
@@ -254,6 +258,90 @@ function DeviceVsServer() {
           Counts differ — tap Sync Now; if it persists, the other device hasn't synced yet
         </p>
       )}
+    </div>
+  );
+}
+
+/**
+ * Deep Check compares every local record's stamp against the server and
+ * names what disagrees; Repair re-pushes what the server is missing and
+ * fully re-pulls what the server has newer. This is the recovery path for
+ * any residue past sync bugs left behind.
+ */
+function DeepCheckPanel() {
+  const [result, setResult] = useState<DeepCheckResult | null>(null);
+  const [busy, setBusy] = useState<'check' | 'repair' | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+
+  const runCheck = async () => {
+    setBusy('check');
+    setMessage(null);
+    try {
+      setResult(await deepCheck());
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'check failed');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const runRepair = async () => {
+    setBusy('repair');
+    setMessage(null);
+    try {
+      const r = await repairSync();
+      setMessage(`Repaired — pushed ${r.pushed}, pulled ${r.pulled}`);
+      setResult(await deepCheck());
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'repair failed');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const summary = result
+    ? (['never-pushed', 'device-newer', 'server-newer'] as const)
+        .map((s) => ({ s, n: result.rows.filter((r) => r.state === s).length }))
+        .filter((x) => x.n > 0)
+    : [];
+
+  return (
+    <div className="border border-gray-200 rounded-lg p-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold text-gray-500">Deep Check</p>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" disabled={busy !== null} onClick={() => void runCheck()}>
+            {busy === 'check' ? 'Checking…' : 'Check'}
+          </Button>
+          {result && result.rows.length > 0 && (
+            <Button size="sm" disabled={busy !== null} onClick={() => void runRepair()}>
+              {busy === 'repair' ? 'Repairing…' : `Repair ${result.rows.length}`}
+            </Button>
+          )}
+        </div>
+      </div>
+      {result && result.rows.length === 0 && (
+        <p className="text-xs text-compliant">
+          ✓ All {result.checked} records match the server exactly
+        </p>
+      )}
+      {result && result.rows.length > 0 && (
+        <div className="text-xs text-gray-600 space-y-0.5">
+          {summary.map(({ s, n }) => (
+            <p key={s}>
+              <b>{n}</b>{' '}
+              {s === 'never-pushed'
+                ? 'on this device but not on the server'
+                : s === 'device-newer'
+                  ? 'newer on this device than the server'
+                  : 'newer on the server than this device'}
+              {' — '}
+              {[...new Set(result.rows.filter((r) => r.state === s).map((r) => r.tableName))].join(', ')}
+            </p>
+          ))}
+        </div>
+      )}
+      {message && <p className="text-xs text-gray-500">{message}</p>}
     </div>
   );
 }
