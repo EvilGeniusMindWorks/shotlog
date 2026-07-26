@@ -291,6 +291,8 @@ export interface CrewMember extends BaseRecord {
   licenseNumber: string;
   licenseState: string;
   isActive: boolean;
+  /** Links this roster entry to a login account (User.id), when they have one */
+  userId?: string;
 }
 
 export interface Equipment extends BaseRecord {

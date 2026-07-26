@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ChipSelect } from '@/components/ui/chip-select';
 import { AccountSyncCard } from '@/components/forms/AccountSyncCard';
-import { TeamCard } from '@/components/forms/TeamCard';
+import { getSessionUser } from '@/lib/session';
+import { Link } from 'react-router-dom';
 
 const EQUIPMENT_CATEGORIES = [
   { value: 'vehicle', label: 'Vehicle' },
@@ -22,7 +23,15 @@ export function SettingsPage() {
     <div className="p-4 max-w-2xl mx-auto space-y-4">
       <h2 className="text-xl font-bold text-gray-900">Settings</h2>
       <AccountSyncCard />
-      <TeamCard />
+      {getSessionUser()?.role === 'admin' && (
+        <p className="text-sm text-gray-500 rounded-lg border border-gray-200 bg-white px-3 py-2">
+          Team members are managed in{' '}
+          <Link to="/admin/users" className="text-safety-orange underline">
+            Admin › Users
+          </Link>
+          .
+        </p>
+      )}
       <CrewCard />
       <EquipmentCard />
     </div>

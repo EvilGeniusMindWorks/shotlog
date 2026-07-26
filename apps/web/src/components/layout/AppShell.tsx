@@ -8,6 +8,7 @@ import {
   Moon,
   RefreshCw,
   Settings,
+  ShieldCheck,
   Sun,
 } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
@@ -19,12 +20,18 @@ import { getSessionUser } from '@/lib/session';
 import { useSyncStatus } from '@/db/powersync/useSyncStatus';
 import { Tour } from './Tour';
 
-const navItems = [
+const baseNavItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/jobs', icon: Briefcase, label: 'Jobs' },
   { to: '/reference', icon: BookOpen, label: 'Reference' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
+
+function navItemsForRole(role: string | undefined) {
+  return role === 'admin' || role === 'supervisor'
+    ? [...baseNavItems, { to: '/admin', icon: ShieldCheck, label: 'Admin' }]
+    : baseNavItems;
+}
 
 function Wordmark({ compact }: { compact?: boolean }) {
   return (
@@ -59,6 +66,7 @@ export function AppShell() {
   const navigate = useNavigate();
   const profile = useLiveQuery(() => db.blasterProfiles.filter((b) => b.isCurrentUser).first());
   const session = getSessionUser();
+  const navItems = navItemsForRole(session?.role);
   const displayName = session?.name || profile?.name || '';
   const displaySub = session
     ? `${session.role.charAt(0).toUpperCase()}${session.role.slice(1)} · ${session.company}`

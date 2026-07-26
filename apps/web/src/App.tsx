@@ -13,6 +13,15 @@ import { SeismoPage } from '@/pages/SeismoPage';
 import { PrintBlastLogPage } from '@/pages/PrintBlastLogPage';
 import { PrintDailyReportPage } from '@/pages/PrintDailyReportPage';
 import { BlastReportPage } from '@/pages/BlastReportPage';
+import { AdminLayout } from '@/pages/admin/AdminLayout';
+import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
+import { Navigate } from 'react-router-dom';
+import { getSessionUser } from '@/lib/session';
+
+function AdminIndexRedirect() {
+  const role = getSessionUser()?.role;
+  return <Navigate to={role === 'supervisor' ? '/admin/approvals' : '/admin/users'} replace />;
+}
 
 export function App() {
   return (
@@ -29,6 +38,10 @@ export function App() {
           <Route path="/blast-day/:id" element={<BlastDayPage />} />
           <Route path="/blast-day/:id/design/:shotId" element={<DesignPlanPage />} />
           <Route path="/blast-day/:id/seismo/:shotId" element={<SeismoPage />} />
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminIndexRedirect />} />
+            <Route path="users" element={<AdminUsersPage />} />
+          </Route>
         </Route>
         <Route path="/blast-day/:id/print" element={<PrintBlastLogPage />} />
         <Route path="/blast-day/:id/print-daily" element={<PrintDailyReportPage />} />
