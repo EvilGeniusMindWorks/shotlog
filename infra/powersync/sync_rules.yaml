@@ -1,0 +1,6 @@
+# Every user syncs exactly their company's records — one bucket per company.
+bucket_definitions:
+  company_records:
+    parameters: SELECT request.jwt() ->> 'cid' as company_id
+    data:
+      - SELECT id, table_name, payload, updated_at FROM records WHERE company_id = bucket.company_id

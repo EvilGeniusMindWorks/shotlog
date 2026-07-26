@@ -1,0 +1,35 @@
+# Local PowerSync spike: Postgres (logical replication) + PowerSync service.
+# Proves the replacement sync architecture end-to-end before any app changes.
+services:
+  spike-pg:
+    image: postgres:16-alpine
+    command: ["postgres", "-c", "wal_level=logical"]
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: spikepass
+      POSTGRES_DB: shotlog
+    ports:
+      - "5434:5432"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d shotlog"]
+      interval: 3s
+      timeout: 3s
+      retries: 15
+
+  powersync:
+    image: journeyapps/powersync-service:latest
+    depends_on:
+      spike-pg:
+        condition: service_healthy
+    command: ["start", "-r", "unified"]
+    environment:
+      POWERSYNC_CONFIG_PATH: /config/service.yaml
+      PS_SOURCE_URI: "postgresql://postgres:spikepass@spike-pg:5432/shotlog"
+      PS_STORAGE_URI: "postgresql://postgres:spikepass@spike-pg:5432/powersync_storage"
+    volumes:
+      - ./service.yaml:/config/service.yaml
+      - ./sync_rules.yaml:/config/sync_rules.yaml
+    ports:
+      - "8095:8080"

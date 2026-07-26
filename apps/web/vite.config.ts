@@ -3,6 +3,13 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  optimizeDeps: {
+    // Required by @powersync/web (wasm workers must not be pre-bundled)
+    exclude: ['@journeyapps/wa-sqlite', '@powersync/web'],
+  },
+  worker: {
+    format: 'es',
+  },
   define: {
     // Shown in Settings so any device can prove which build it runs
     __BUILD_ID__: JSON.stringify(

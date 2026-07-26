@@ -1,0 +1,25 @@
+replication:
+  connections:
+    - type: postgresql
+      uri: !env PS_SOURCE_URI
+      sslmode: disable
+
+storage:
+  type: postgresql
+  uri: !env PS_STORAGE_URI
+  sslmode: disable
+
+sync_rules:
+  path: /config/sync_rules.yaml
+
+client_auth:
+  audience: ["powersync"]
+  jwks:
+    keys:
+      # HS256 dev shared secret ("spike-shared-secret-for-local-dev-only" b64url)
+      - kty: oct
+        alg: "HS256"
+        kid: "shotlog-spike"
+        k: "c3Bpa2Utc2hhcmVkLXNlY3JldC1mb3ItbG9jYWwtZGV2LW9ubHk"
+
+port: 8080
