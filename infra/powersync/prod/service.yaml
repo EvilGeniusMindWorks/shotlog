@@ -1,0 +1,34 @@
+# Production PowerSync service config. All secrets come from Railway env
+# vars — nothing sensitive is committed.
+#
+# Required env vars on the Railway service:
+#   PS_SOURCE_URI   postgres URL of the shotlog database (Railway Postgres)
+#   PS_STORAGE_URI  postgres URL of the powersync_storage database
+#   PS_JWKS_K       base64url form of the HS256 secret (see DEPLOY.md)
+# sslmode disable assumes Railway PRIVATE networking URLs
+# (…railway.internal). If you point at the public proxy instead, change
+# both to sslmode: require.
+replication:
+  connections:
+    - type: postgresql
+      uri: !env PS_SOURCE_URI
+      sslmode: disable
+
+storage:
+  type: postgresql
+  uri: !env PS_STORAGE_URI
+  sslmode: disable
+
+sync_rules:
+  path: /config/sync_rules.yaml
+
+client_auth:
+  audience: ["powersync"]
+  jwks:
+    keys:
+      - kty: oct
+        alg: "HS256"
+        kid: "shotlog-prod-1"
+        k: !env PS_JWKS_K
+
+port: 8080
