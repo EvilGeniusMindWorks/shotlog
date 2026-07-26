@@ -4,6 +4,7 @@
 // creeping in fails the build instead of silently breaking the facade.
 import type {
   CompanySettings,
+  Manufacturer,
   Tombstone,
   Job,
   BlasterProfile,
@@ -71,6 +72,7 @@ export interface ShotLogDataAccess {
   productCatalog: FacadeTable<ProductCatalogItem>;
   attachments: FacadeTable<Attachment>;
   companySettings: FacadeTable<CompanySettings>;
+  manufacturers: FacadeTable<Manufacturer>;
   tombstones: FacadeTable<Tombstone>;
 
   table(name: string): FacadeTable<Record<string, unknown> & { id: string }>;

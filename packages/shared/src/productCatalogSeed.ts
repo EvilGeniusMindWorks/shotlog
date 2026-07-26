@@ -93,8 +93,9 @@ export const PRODUCT_CATALOG_SEED: SeedProduct[] = [
   { manufacturer: 'Maxam', productName: 'Riohit 250 - 3" x 11lbs (11lbs)', category: 'cartridge', weightMultiplier: 11, unitType: 'stick' },
 ];
 
-const slug = (s: string) =>
+export const slugify = (s: string) =>
   s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80);
+const slug = slugify;
 
 export interface SeedCatalogDoc {
   id: string;

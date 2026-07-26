@@ -5,7 +5,7 @@
 import { randomUUID } from 'node:crypto';
 import { Router, type Response } from 'express';
 import { z } from 'zod';
-import { canTransitionStatus, type Role } from '@shotlog/shared';
+import { canTransitionStatus, slugify, type Role } from '@shotlog/shared';
 import { prisma } from './db.js';
 import { requireAuth, requireRole, type AuthedRequest } from './auth.js';
 import { getRecord, upsertRecord } from './records.js';
@@ -35,6 +35,131 @@ const productSchema = z.object({
   sortOrder: z.number().int().default(999),
   isActive: z.boolean().default(true),
 });
+
+// ── Manufacturers ─────────────────────────────────────────────────────────
+
+/** Create a manufacturer (admin) */
+adminRouter.post('/manufacturers', requireRole('admin'), async (req: AuthedRequest, res: Response) => {
+  const parsed = z.object({ name: z.string().min(1) }).safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'name required' });
+    return;
+  }
+  const cid = req.companyId as string;
+  const name = parsed.data.name.trim();
+  const id = `mfr-${slugify(name)}`;
+  const now = new Date().toISOString();
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const stored = await getRecord(tx, cid, id);
+      if (stored) return { code: 409 as const };
+      const count = await tx.record.count({ where: { companyId: cid, tableName: 'manufacturers' } });
+      const doc = { id, name, isActive: true, sortOrder: count, createdAt: now, updatedAt: now, syncStatus: 'synced' };
+      await upsertRecord(tx, cid, id, 'manufacturers', JSON.stringify(doc), now);
+      return { code: 201 as const, manufacturer: doc };
+    });
+    if (result.code === 409) {
+      res.status(409).json({ error: 'that manufacturer already exists' });
+      return;
+    }
+    res.status(201).json({ ok: true, manufacturer: result.manufacturer });
+  } catch (err) {
+    console.error('manufacturer create failed:', err);
+    res.status(500).json({ error: 'create failed' });
+  }
+});
+
+/**
+ * Update a manufacturer: rename (cascades the display name onto every
+ * product in its line) and/or retire/reactivate.
+ */
+adminRouter.put('/manufacturers/:id', requireRole('admin'), async (req: AuthedRequest, res: Response) => {
+  const parsed = z
+    .object({ name: z.string().min(1).optional(), isActive: z.boolean().optional() })
+    .safeParse(req.body);
+  const id = req.params.id;
+  if (!parsed.success || typeof id !== 'string') {
+    res.status(400).json({ error: 'name and/or isActive required' });
+    return;
+  }
+  const cid = req.companyId as string;
+  const now = new Date().toISOString();
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const stored = await getRecord(tx, cid, id);
+      if (!stored || stored.tableName !== 'manufacturers') return { code: 404 as const };
+      const doc = { ...stored.payload, ...parsed.data, updatedAt: now };
+      await upsertRecord(tx, cid, id, 'manufacturers', JSON.stringify(doc), now);
+      let cascaded = 0;
+      if (parsed.data.name && parsed.data.name !== stored.payload.name) {
+        const products = await tx.record.findMany({
+          where: { companyId: cid, tableName: 'productCatalog' },
+        });
+        for (const row of products) {
+          const p = JSON.parse(row.payload) as Record<string, unknown>;
+          if (p.manufacturerId !== id) continue;
+          p.manufacturer = parsed.data.name;
+          p.fullDescription = `${parsed.data.name} - ${p.productName as string}`;
+          p.updatedAt = now;
+          await tx.record.update({
+            where: { companyId_id: { companyId: cid, id: row.id } },
+            data: { payload: JSON.stringify(p), updatedAt: now },
+          });
+          cascaded++;
+        }
+      }
+      return { code: 200 as const, manufacturer: doc, cascaded };
+    });
+    if (result.code === 404) {
+      res.status(404).json({ error: 'manufacturer not found' });
+      return;
+    }
+    res.json({ ok: true, manufacturer: result.manufacturer, productsRenamed: result.cascaded });
+  } catch (err) {
+    console.error('manufacturer update failed:', err);
+    res.status(500).json({ error: 'update failed' });
+  }
+});
+
+/** Bulk activate/deactivate every product in a manufacturer's line */
+adminRouter.post(
+  '/manufacturers/:id/set-products-active',
+  requireRole('admin'),
+  async (req: AuthedRequest, res: Response) => {
+    const parsed = z.object({ active: z.boolean() }).safeParse(req.body);
+    const id = req.params.id;
+    if (!parsed.success || typeof id !== 'string') {
+      res.status(400).json({ error: 'active required' });
+      return;
+    }
+    const cid = req.companyId as string;
+    const now = new Date().toISOString();
+    try {
+      const changed = await prisma.$transaction(async (tx) => {
+        const products = await tx.record.findMany({
+          where: { companyId: cid, tableName: 'productCatalog' },
+        });
+        let n = 0;
+        for (const row of products) {
+          const p = JSON.parse(row.payload) as Record<string, unknown>;
+          if (p.manufacturerId !== id || p.isActive === parsed.data.active) continue;
+          p.isActive = parsed.data.active;
+          p.updatedAt = now;
+          await tx.record.update({
+            where: { companyId_id: { companyId: cid, id: row.id } },
+            data: { payload: JSON.stringify(p), updatedAt: now },
+          });
+          n++;
+        }
+        return n;
+      });
+      res.json({ ok: true, changed });
+    } catch (err) {
+      console.error('bulk product toggle failed:', err);
+      res.status(500).json({ error: 'bulk update failed' });
+    }
+  },
+);
 
 const companySchema = z.object({
   companyName: z.string().min(1),
@@ -82,18 +207,43 @@ adminRouter.post('/catalog', requireRole('admin'), async (req: AuthedRequest, re
   const cid = req.companyId as string;
   const now = new Date().toISOString();
   const id = randomUUID();
+  const manufacturerId = `mfr-${slugify(parsed.data.manufacturer)}`;
   const doc = {
     id,
     ...parsed.data,
+    manufacturerId,
     fullDescription: `${parsed.data.manufacturer} - ${parsed.data.productName}`,
     createdAt: now,
     updatedAt: now,
     syncStatus: 'synced',
   };
   try {
-    await prisma.$transaction((tx) =>
-      upsertRecord(tx, cid, id, 'productCatalog', JSON.stringify(doc), now),
-    );
+    await prisma.$transaction(async (tx) => {
+      // A brand-new manufacturer name creates its entity on the fly
+      const mfr = await getRecord(tx, cid, manufacturerId);
+      if (!mfr) {
+        const count = await tx.record.count({
+          where: { companyId: cid, tableName: 'manufacturers' },
+        });
+        await upsertRecord(
+          tx,
+          cid,
+          manufacturerId,
+          'manufacturers',
+          JSON.stringify({
+            id: manufacturerId,
+            name: parsed.data.manufacturer,
+            isActive: true,
+            sortOrder: count,
+            createdAt: now,
+            updatedAt: now,
+            syncStatus: 'synced',
+          }),
+          now,
+        );
+      }
+      await upsertRecord(tx, cid, id, 'productCatalog', JSON.stringify(doc), now);
+    });
     res.status(201).json({ ok: true, product: doc });
   } catch (err) {
     console.error('catalog create failed:', err);
@@ -122,6 +272,7 @@ adminRouter.put('/catalog/:id', requireRole('admin'), async (req: AuthedRequest,
         unknown
       >;
       merged.fullDescription = `${merged.manufacturer as string} - ${merged.productName as string}`;
+      merged.manufacturerId = `mfr-${slugify(merged.manufacturer as string)}`;
       await upsertRecord(tx, cid, id, 'productCatalog', JSON.stringify(merged), now);
       return { code: 200 as const, product: merged };
     });

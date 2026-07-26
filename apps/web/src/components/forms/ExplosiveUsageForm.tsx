@@ -343,8 +343,16 @@ function ProductPickerDialog({
 }) {
   const [search, setSearch] = useState('');
   // NOTE: boolean fields can't be indexed in IndexedDB — use filter(), not where()
+  // Retired manufacturers hide their whole product line from the picker.
   const products =
-    useLiveQuery(() => db.productCatalog.filter((p) => p.isActive).toArray()) ?? [];
+    useLiveQuery(async () => {
+      const retired = new Set(
+        (await db.manufacturers.filter((m) => !m.isActive).toArray()).map((m) => m.id),
+      );
+      return db.productCatalog
+        .filter((p) => p.isActive && !(p.manufacturerId && retired.has(p.manufacturerId)))
+        .toArray();
+    }) ?? [];
 
   const filtered = useMemo(() => {
     let list = products.filter(

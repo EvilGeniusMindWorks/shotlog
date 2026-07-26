@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { buildProductCatalogSeed } from '@shotlog/shared';
+import { buildProductCatalogSeed, slugify } from '@shotlog/shared';
 import { prisma } from './db.js';
 import { authRouter, ensureAdminUser } from './auth.js';
 import { adminRouter } from './admin.js';
@@ -50,9 +50,85 @@ async function ensureCatalogSeed(): Promise<void> {
   }
 }
 
+/**
+ * Backfill manufacturer records from distinct catalog product names and
+ * stamp manufacturerId on products missing it. Idempotent, per company.
+ */
+async function ensureManufacturers(): Promise<void> {
+  const companies = await prisma.company.findMany({ select: { id: true } });
+  const now = new Date().toISOString();
+  for (const company of companies) {
+    const products = await prisma.record.findMany({
+      where: { companyId: company.id, tableName: 'productCatalog' },
+    });
+    const existing = new Set(
+      (
+        await prisma.record.findMany({
+          where: { companyId: company.id, tableName: 'manufacturers' },
+          select: { id: true },
+        })
+      ).map((r) => r.id),
+    );
+    const wanted = new Map<string, string>(); // id -> name
+    let stamped = 0;
+    for (const row of products) {
+      let payload: Record<string, unknown>;
+      try {
+        payload = JSON.parse(row.payload) as Record<string, unknown>;
+      } catch {
+        continue;
+      }
+      const name = (payload.manufacturer as string | undefined)?.trim();
+      if (!name) continue;
+      const mfrId = `mfr-${slugify(name)}`;
+      wanted.set(mfrId, name);
+      if (payload.manufacturerId !== mfrId) {
+        payload.manufacturerId = mfrId;
+        await prisma.record.update({
+          where: { companyId_id: { companyId: company.id, id: row.id } },
+          data: { payload: JSON.stringify(payload), updatedAt: now },
+        });
+        stamped++;
+      }
+    }
+    let created = 0;
+    let sortOrder = 0;
+    for (const [id, name] of [...wanted.entries()].sort((a, b) => a[1].localeCompare(b[1]))) {
+      if (existing.has(id)) {
+        sortOrder++;
+        continue;
+      }
+      await prisma.record.create({
+        data: {
+          id,
+          companyId: company.id,
+          tableName: 'manufacturers',
+          payload: JSON.stringify({
+            id,
+            name,
+            isActive: true,
+            sortOrder: sortOrder++,
+            createdAt: now,
+            updatedAt: now,
+            syncStatus: 'synced',
+          }),
+          updatedAt: now,
+        },
+      });
+      created++;
+    }
+    if (created || stamped) {
+      console.log(
+        `Manufacturers backfill for ${company.id}: ${created} created, ${stamped} products stamped`,
+      );
+    }
+  }
+}
+
 async function main() {
   await ensureAdminUser();
   await ensureCatalogSeed();
+  await ensureManufacturers();
   app.listen(port, () => {
     console.log(`ShotLog sync server listening on :${port}`);
   });

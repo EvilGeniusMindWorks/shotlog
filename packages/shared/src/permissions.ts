@@ -40,6 +40,7 @@ const uniform = (roles: readonly Role[]): TableRule => ({ PUT: roles, PATCH: rol
 export const TABLE_PERMISSIONS: Record<string, TableRule> = {
   // Admin-managed reference data
   productCatalog: uniform(ADMIN_ONLY),
+  manufacturers: uniform(ADMIN_ONLY),
   jobs: uniform(ADMIN_ONLY),
   companySettings: uniform(ADMIN_ONLY),
 

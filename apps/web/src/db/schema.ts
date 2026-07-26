@@ -396,7 +396,16 @@ export interface CompanySettings extends BaseRecord {
   phone: string;
 }
 
+/** Explosive manufacturer — first-class, admin-managed (id: mfr-<slug>) */
+export interface Manufacturer extends BaseRecord {
+  name: string;
+  isActive: boolean;
+  sortOrder: number;
+}
+
 export interface ProductCatalogItem extends BaseRecord {
+  /** Links to a Manufacturer record; legacy rows may only have the name */
+  manufacturerId?: string;
   manufacturer: string;
   productName: string;
   fullDescription: string;
