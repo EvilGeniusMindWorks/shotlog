@@ -17,13 +17,15 @@ const POWERSYNC_JWT_SECRET =
 const POWERSYNC_JWT_KID = process.env.POWERSYNC_JWT_KID ?? 'shotlog-spike';
 /** Public URL of the PowerSync service, handed to clients with the token */
 const POWERSYNC_URL = process.env.POWERSYNC_URL ?? 'http://localhost:8095';
+/** Token audience — PowerSync Cloud may expect the instance URL here */
+const POWERSYNC_JWT_AUD = process.env.POWERSYNC_JWT_AUD ?? 'powersync';
 
 export const powersyncRouter = Router();
 
 powersyncRouter.get('/token', requireAuth, (req: AuthedRequest, res) => {
   const token = jwt.sign({ sub: req.userId, cid: req.companyId }, POWERSYNC_JWT_SECRET, {
     algorithm: 'HS256',
-    audience: 'powersync',
+    audience: POWERSYNC_JWT_AUD,
     expiresIn: '1h',
     keyid: POWERSYNC_JWT_KID,
   });
