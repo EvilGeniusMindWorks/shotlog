@@ -7,17 +7,20 @@ export const syncRouter = Router();
 syncRouter.use(requireAuth);
 
 /**
- * Pull: everything changed since the client's last sync.
- * `since` is the client's LWW clock (ISO); omitted = full pull.
+ * Pull: everything RECEIVED by the server since the client's last pull.
+ * `since` compares against syncedAt (server receive time), NOT the record's
+ * client updatedAt — a record created offline days ago and pushed today must
+ * still reach devices that pulled yesterday. serverTime (returned below) is
+ * the client's next `since`, so both sides use the server's clock.
  */
 syncRouter.get('/changes', async (req: AuthedRequest, res: Response) => {
   const since = typeof req.query.since === 'string' ? new Date(req.query.since) : null;
   const records = await prisma.syncRecord.findMany({
     where: {
       companyId: req.companyId!,
-      ...(since && !Number.isNaN(since.getTime()) ? { updatedAt: { gt: since } } : {}),
+      ...(since && !Number.isNaN(since.getTime()) ? { syncedAt: { gt: since } } : {}),
     },
-    orderBy: { updatedAt: 'asc' },
+    orderBy: { syncedAt: 'asc' },
     take: 5000,
   });
   res.json({

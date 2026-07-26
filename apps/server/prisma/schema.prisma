@@ -72,4 +72,5 @@ model SyncRecord {
 
   @@id([companyId, tableName, recordId])
   @@index([companyId, updatedAt])
+  @@index([companyId, syncedAt])
 }

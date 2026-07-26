@@ -276,6 +276,21 @@ export async function authedFetch(path: string, init?: RequestInit): Promise<Res
 
 let syncing = false;
 
+// True ONLY while the sync engine itself writes to Dexie (applying pulled
+// records, marking pushed rows synced). The auto-sync hooks check this — NOT
+// `syncing` — so a user keystroke landing mid-pass still gets re-marked
+// 'local' and pushed next round instead of being clobbered by the pull.
+let engineWriting = false;
+
+async function engineWrite<T>(fn: () => Promise<T>): Promise<T> {
+  engineWriting = true;
+  try {
+    return await fn();
+  } finally {
+    engineWriting = false;
+  }
+}
+
 export async function syncNow(): Promise<SyncResult> {
   if (syncing) throw new Error('sync already in progress');
   syncing = true;
@@ -331,13 +346,21 @@ export async function syncNow(): Promise<SyncResult> {
         const record = batch.find((b) => b.tableName === a.tableName && b.recordId === a.recordId);
         if (!record) continue;
         if (record.deletedAt) {
-          await db.tombstones.update(`${a.tableName}:${a.recordId}`, { syncStatus: 'synced' });
+          await engineWrite(() =>
+            db.tombstones.update(`${a.tableName}:${a.recordId}`, { syncStatus: 'synced' }),
+          );
         } else {
-          await db
-            .table(a.tableName)
-            .where('id')
-            .equals(a.recordId)
-            .modify({ syncStatus: 'synced' });
+          // Only mark synced if the row hasn't been edited since we read it —
+          // a keystroke mid-push must stay 'local' and go out next round
+          await engineWrite(() =>
+            db
+              .table(a.tableName)
+              .where('id')
+              .equals(a.recordId)
+              .modify((row: { updatedAt?: string; syncStatus?: string }) => {
+                if (row.updatedAt === record.updatedAt) row.syncStatus = 'synced';
+              }),
+          );
         }
       }
     }
@@ -360,19 +383,26 @@ export async function syncNow(): Promise<SyncResult> {
       if (!SYNC_TABLES.includes(remote.tableName as (typeof SYNC_TABLES)[number])) continue;
       const table = db.table(remote.tableName);
       const local = await table.get(remote.recordId);
-      // Local unsynced edits that are newer win; they'll push next round
-      if (local?.syncStatus === 'local' && local.updatedAt && local.updatedAt > remote.updatedAt) {
+      // Anything local that is as new or newer wins — covers unsynced edits
+      // (push next round) AND the echo of our own push in the same pass
+      if (!remote.deletedAt && local?.updatedAt && local.updatedAt >= remote.updatedAt) {
         continue;
       }
       if (remote.deletedAt) {
-        if (local) await table.delete(remote.recordId);
+        // A local resurrection newer than the deletion wins
+        if (local?.syncStatus === 'local' && local.updatedAt && local.updatedAt > remote.updatedAt) {
+          continue;
+        }
+        if (local) await engineWrite(() => table.delete(remote.recordId));
         result.deleted += 1;
         continue;
       }
       const revived = reviveValue(remote.payload) as Record<string, unknown> | null;
       if (!revived || typeof revived !== 'object') continue; // malformed payload — skip
       // recordId is authoritative — payloads must never land without a key
-      await table.put({ ...revived, id: remote.recordId, syncStatus: 'synced' });
+      await engineWrite(() =>
+        table.put({ ...revived, id: remote.recordId, syncStatus: 'synced' }),
+      );
       result.pulled += 1;
     }
     localStorage.setItem(LS_KEYS.lastPulledAt, body.serverTime);
@@ -423,6 +453,16 @@ export function startAutoSync(): void {
   if (autoSyncStarted) return;
   autoSyncStarted = true;
 
+  // One-time re-baseline: the old pull filter could permanently miss records
+  // that reached the server after this device's marker had advanced. Clear
+  // the marker once so the next pass does a full pull; LWW keeps any newer
+  // local edits intact.
+  const PULL_RESET_KEY = 'shotlog-pull-reset-20260726';
+  if (!localStorage.getItem(PULL_RESET_KEY)) {
+    localStorage.removeItem(LS_KEYS.lastPulledAt);
+    localStorage.setItem(PULL_RESET_KEY, '1');
+  }
+
   const kick = () => void autoSyncPass();
   window.addEventListener('online', kick);
   document.addEventListener('visibilitychange', () => {
@@ -441,19 +481,19 @@ export function startAutoSync(): void {
   };
   for (const table of db.tables) {
     table.hook('creating', function (_pk, obj) {
-      if (syncing) return; // pull-applied writes keep their payload status
+      if (engineWriting) return; // pull-applied writes keep their payload status
       (obj as { syncStatus?: string }).syncStatus ??= 'local';
       scheduleAfterWrite();
     });
     table.hook('updating', function (mods) {
-      if (syncing) return;
+      if (engineWriting) return;
       scheduleAfterWrite();
       if (!('syncStatus' in (mods as Record<string, unknown>))) {
         return { syncStatus: 'local' };
       }
     });
     table.hook('deleting', function () {
-      if (!syncing) scheduleAfterWrite();
+      if (!engineWriting) scheduleAfterWrite();
     });
   }
 
