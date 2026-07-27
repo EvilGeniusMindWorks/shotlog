@@ -33,13 +33,44 @@ export interface SessionUser {
   pinHash?: string | null;
 }
 
-export function getSessionUser(): SessionUser | null {
+const VIEW_ROLE_KEY = 'shotlog-view-role';
+
+/** The signed-in user WITHOUT any view-as override (admin's true identity) */
+export function getRealSessionUser(): SessionUser | null {
   try {
     const raw = localStorage.getItem(LS_KEYS.userInfo);
     return raw ? (JSON.parse(raw) as SessionUser) : null;
   } catch {
     return null;
   }
+}
+
+/**
+ * The session user as the UI should see them. Admins can "view as" another
+ * role to test/use each role's experience — UI-only: the server still sees
+ * the real admin JWT, and admin permissions are a superset of every role,
+ * so everything done while viewing-as works for real.
+ */
+export function getSessionUser(): SessionUser | null {
+  const user = getRealSessionUser();
+  if (!user) return null;
+  if (user.role === 'admin') {
+    const viewAs = localStorage.getItem(VIEW_ROLE_KEY);
+    if (viewAs && viewAs !== 'admin') return { ...user, role: viewAs };
+  }
+  return user;
+}
+
+/** Current view-as override, or null (real admins only) */
+export function getViewRole(): string | null {
+  return getRealSessionUser()?.role === 'admin' ? localStorage.getItem(VIEW_ROLE_KEY) : null;
+}
+
+/** Set (or clear with null) the admin's view-as role. Reload to apply. */
+export function setViewRole(role: string | null): void {
+  if (role && role !== 'admin') localStorage.setItem(VIEW_ROLE_KEY, role);
+  else localStorage.removeItem(VIEW_ROLE_KEY);
+  window.location.assign('/');
 }
 
 export function getSession() {
@@ -87,6 +118,7 @@ export async function logout(): Promise<void> {
   localStorage.removeItem(LS_KEYS.refreshToken);
   localStorage.removeItem(LS_KEYS.userEmail);
   localStorage.removeItem(LS_KEYS.userInfo);
+  localStorage.removeItem(VIEW_ROLE_KEY);
 }
 
 /** Refresh the cached session user (name, role, licenses) from the server */
@@ -112,7 +144,8 @@ export async function updateMyLicenses(licenses: UserLicense[]): Promise<Session
     | { ok?: boolean; licenses?: UserLicense[]; error?: string }
     | null;
   if (!res.ok) throw new Error(body?.error ?? 'failed to save licenses');
-  const user = { ...getSessionUser()!, licenses: body?.licenses ?? licenses };
+  // Spread the REAL user — never persist a view-as role into the cached identity
+  const user = { ...getRealSessionUser()!, licenses: body?.licenses ?? licenses };
   localStorage.setItem(LS_KEYS.userInfo, JSON.stringify(user));
   return user;
 }
@@ -125,7 +158,7 @@ export async function updateMySignature(signature: string | null): Promise<Sessi
   });
   const body = (await res.json().catch(() => null)) as { error?: string } | null;
   if (!res.ok) throw new Error(body?.error ?? 'failed to save signature');
-  const user = { ...getSessionUser()!, signature };
+  const user = { ...getRealSessionUser()!, signature };
   localStorage.setItem(LS_KEYS.userInfo, JSON.stringify(user));
   return user;
 }
@@ -137,7 +170,7 @@ export async function updateMyPin(pinHash: string): Promise<void> {
     body: JSON.stringify({ pinHash }),
   });
   if (!res.ok) throw new Error('failed to save PIN');
-  const user = getSessionUser();
+  const user = getRealSessionUser();
   if (user) localStorage.setItem(LS_KEYS.userInfo, JSON.stringify({ ...user, pinHash }));
 }
 

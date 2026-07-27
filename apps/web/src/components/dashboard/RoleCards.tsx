@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, ClipboardCheck, Wrench } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { useOpenTickets, useTodayChecklist } from '@/hooks/useMaintenance';
-import { getSessionUser } from '@/lib/session';
+import { getSessionUser, getRealSessionUser, setViewRole } from '@/lib/session';
 import { formatDate, todayISO } from '@/lib/utils';
 import { isBlastingWork } from '@/db/schema';
 import { Badge } from '@/components/ui/badge';
@@ -395,7 +395,14 @@ export function AdminHome() {
 
   return (
     <div className="p-4 max-w-4xl mx-auto space-y-3">
-      <h2 className="text-xl font-bold text-gray-900">Company</h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-xl font-bold text-gray-900">Company</h2>
+        {getRealSessionUser()?.role === 'admin' && (
+          <Button size="sm" onClick={() => setViewRole('blaster')}>
+            Work in the field ›
+          </Button>
+        )}
+      </div>
 
       <div className="rounded-xl border-l-4 border border-gray-200 border-l-safety-orange bg-white p-3">
         <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Job costing</p>
