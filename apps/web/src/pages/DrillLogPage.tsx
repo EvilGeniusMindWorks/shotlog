@@ -8,6 +8,8 @@ import { ArrowLeft, Check, Droplets, Printer, Trash2 } from 'lucide-react';
 import { canEditAcceptedDrillLog, canTransitionDrillLog, type Role } from '@shotlog/shared';
 import { useLiveQuery, db } from '@/db';
 import { addHole, drilledHoleNumbers, getShotPlan, nextHoleNumber, useShotDrilling } from '@/hooks/useDrillLogs';
+import { parseDiagram } from '@/lib/shotDiagram';
+import { DrillPlanDiagram } from '@/components/design/DrillPlanDiagram';
 import { getSessionUser } from '@/lib/session';
 import { nowISO, formatDate } from '@/lib/utils';
 import type { HoleConditionCode } from '@/db/schema';
@@ -74,6 +76,7 @@ export function DrillLogPage() {
   const [showDetail, setShowDetail] = useState(false);
   const [angle, setAngle] = useState('0');
   const [subdrill, setSubdrill] = useState('');
+  const [showMap, setShowMap] = useState(true);
 
   useEffect(() => {
     if (!log || holeNumber) return;
@@ -387,6 +390,32 @@ export function DrillLogPage() {
                 ? `Add hole ${holeNumber} — ${targetDepth} ft to plan`
                 : `Add hole ${holeNumber}`}
             </Button>
+          </div>
+        )}
+
+        {/* The blaster's pattern map — read-only reference; tap targets a hole */}
+        {plan && shot && (
+          <div className="rounded-xl border border-gray-200 bg-white p-3">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+                Pattern plan
+              </p>
+              <button
+                className="text-xs text-gray-400 underline"
+                onClick={() => setShowMap(!showMap)}
+              >
+                {showMap ? 'Hide' : 'Show'}
+              </button>
+            </div>
+            {showMap && (
+              <DrillPlanDiagram
+                diagram={parseDiagram(shot.designPlan.shotDiagramData)}
+                fallbackDepth={shot.totals.avgDrillDepth || 0}
+                drilled={drilled}
+                selected={holeNumber.trim()}
+                onTapHole={editable ? (n) => setHoleNumber(String(n)) : undefined}
+              />
+            )}
           </div>
         )}
 

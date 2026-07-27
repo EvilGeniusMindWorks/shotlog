@@ -50,9 +50,11 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
   const [customLead, setCustomLead] = useState('');
   const [leadMode, setLeadMode] = useState(false);
   const [wireSource, setWireSource] = useState<number | null>(null);
-  // Drill-plan mode: tap holes to set planned depth/angle exceptions
+  // Drill-plan mode: PAINT model — type the exception once (depth/angle),
+  // then tap holes to apply it; empty inputs turn taps into an eraser
   const [mode, setMode] = useState<'timing' | 'plan'>('timing');
-  const [planHole, setPlanHole] = useState<number | null>(null);
+  const [paintDepth, setPaintDepth] = useState('');
+  const [paintAngle, setPaintAngle] = useState('');
   const undoStack = useRef<UndoAction[]>([]);
 
   const { rows, cols, delays, wires, start, interHoleMs } = diagram;
@@ -74,25 +76,40 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
   const effAngle = (idx: number) => plan.overrides[idx]?.angle ?? 0;
   const setPlan = (next: DrillPlan) => onChange({ ...diagram, plan: next });
 
-  const setOverride = (idx: number, patch: DrillPlanOverride) => {
-    const merged: DrillPlanOverride = { ...plan.overrides[idx], ...patch };
-    if (merged.depth === undefined) delete merged.depth;
-    if (merged.angle === undefined || merged.angle === 0) delete merged.angle;
+  /** The exception currently loaded on the brush, or null (= eraser) */
+  const brush = (): DrillPlanOverride | null => {
+    const d = parseFloat(paintDepth);
+    const a = parseFloat(paintAngle);
+    const o: DrillPlanOverride = {};
+    if (!Number.isNaN(d) && d > 0) o.depth = d;
+    if (!Number.isNaN(a) && a !== 0) o.angle = a;
+    return o.depth === undefined && o.angle === undefined ? null : o;
+  };
+
+  const sameOverride = (a: DrillPlanOverride | undefined, b: DrillPlanOverride | null) =>
+    !!a && !!b && a.depth === b.depth && a.angle === b.angle;
+
+  /** Paint (or erase) one hole; tapping a hole already painted with the
+   *  current brush clears it back to the default */
+  const paintHole = (idx: number) => {
+    const b = brush();
     const overrides = { ...plan.overrides };
-    if (merged.depth === undefined && merged.angle === undefined) delete overrides[idx];
-    else overrides[idx] = merged;
+    if (b === null || sameOverride(plan.overrides[idx], b)) delete overrides[idx];
+    else overrides[idx] = { ...b };
     setPlan({ ...plan, overrides });
   };
 
-  /** Copy the selected hole's exception (or lack of one) across its row */
-  const applyToRow = (idx: number) => {
-    const row = Math.floor(idx / cols);
-    const src = plan.overrides[idx];
+  /** Paint (or erase) a whole row with the current brush */
+  const paintRow = (row: number) => {
+    const b = brush();
     const overrides = { ...plan.overrides };
+    const allSame = Array.from({ length: cols }, (_, c) => row * cols + c).every((i) =>
+      b === null ? overrides[i] === undefined : sameOverride(overrides[i], b),
+    );
     for (let c = 0; c < cols; c++) {
       const i = row * cols + c;
-      if (src) overrides[i] = { ...src };
-      else delete overrides[i];
+      if (b === null || allSame) delete overrides[i];
+      else overrides[i] = { ...b };
     }
     setPlan({ ...plan, overrides });
   };
@@ -104,7 +121,7 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
 
   const tapHole = (idx: number) => {
     if (planMode) {
-      setPlanHole(planHole === idx ? null : idx);
+      paintHole(idx);
       return;
     }
     // No start yet: first tap sets the initiation hole with the chosen lead.
@@ -227,7 +244,6 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
     }
     undoStack.current = []; // resize invalidates the undo history
     setWireSource(null);
-    setPlanHole(null);
     onChange({
       ...diagram,
       rows: nextRows,
@@ -253,10 +269,7 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
         <Button
           variant={mode === 'timing' ? 'default' : 'outline'}
           size="sm"
-          onClick={() => {
-            setMode('timing');
-            setPlanHole(null);
-          }}
+          onClick={() => setMode('timing')}
         >
           <Timer className="h-4 w-4 mr-1" /> Timing
         </Button>
@@ -273,30 +286,62 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
         </Button>
       </div>
 
-      {/* Drill-plan toolbar */}
+      {/* Drill-plan toolbar — paint model: load the brush, tap holes */}
       {planMode && (
-        <div className="rounded-lg p-2 border bg-orange-50 border-orange-200 space-y-1">
-          <div className="flex items-center gap-2">
-            <Label className="text-xs whitespace-nowrap">Depth for every hole (ft)</Label>
-            <Input
-              type="number"
-              inputMode="decimal"
-              className="h-9 w-24 font-mono"
-              placeholder={designDepth ? String(designDepth) : '—'}
-              value={plan.defaultDepth ?? ''}
-              onChange={(e) => {
-                const v = parseFloat(e.target.value);
-                setPlan({ ...plan, defaultDepth: Number.isNaN(v) ? undefined : v });
-              }}
-            />
-            <span className="text-xs text-gray-500">
+        <div className="rounded-lg p-2 border bg-orange-50 border-orange-200 space-y-2">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <span className="flex items-center gap-2">
+              <Label className="text-xs whitespace-nowrap">All holes (ft)</Label>
+              <Input
+                type="number"
+                inputMode="decimal"
+                className="h-10 w-20 font-mono"
+                placeholder={designDepth ? String(designDepth) : '—'}
+                value={plan.defaultDepth ?? ''}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value);
+                  setPlan({ ...plan, defaultDepth: Number.isNaN(v) ? undefined : v });
+                }}
+              />
+            </span>
+            <span className="flex items-center gap-2 pl-3 border-l border-orange-200">
+              <Label className="text-xs whitespace-nowrap font-semibold text-safety-orange">
+                Brush
+              </Label>
+              <Input
+                type="number"
+                inputMode="decimal"
+                className="h-10 w-20 font-mono"
+                placeholder="depth"
+                value={paintDepth}
+                onChange={(e) => setPaintDepth(e.target.value)}
+              />
+              <Input
+                type="number"
+                inputMode="decimal"
+                className="h-10 w-16 font-mono"
+                placeholder="angle°"
+                value={paintAngle}
+                onChange={(e) => setPaintAngle(e.target.value)}
+              />
+              {(paintDepth !== '' || paintAngle !== '') && (
+                <Button variant="ghost" size="sm" onClick={() => { setPaintDepth(''); setPaintAngle(''); }}>
+                  Clear
+                </Button>
+              )}
+            </span>
+            <span className="text-xs text-gray-500 ml-auto">
               {Object.keys(plan.overrides).length} exception
               {Object.keys(plan.overrides).length === 1 ? '' : 's'}
             </span>
           </div>
           <p className="text-xs text-gray-600">
-            Tap a hole to set its depth or angle — everything else inherits the default.
-            Drillers see this plan and log actuals against it.
+            {brush()
+              ? `Tap holes (or a row handle) to paint ${[
+                  brush()?.depth !== undefined ? `${brush()!.depth} ft` : '',
+                  brush()?.angle !== undefined ? `${brush()!.angle}°` : '',
+                ].filter(Boolean).join(' · ')} — tap a painted hole again to clear it.`
+              : 'Type a brush depth/angle above, then tap holes to paint the exceptions. With an empty brush, tapping erases.'}
           </p>
         </div>
       )}
@@ -442,12 +487,38 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
               </g>
             );
           })}
+          {/* Row-paint handles (plan mode): one tap paints the whole row */}
+          {planMode &&
+            Array.from({ length: rows }, (_, r) => (
+              <g key={`row-${r}`} onClick={() => paintRow(r)} className="cursor-pointer">
+                <rect
+                  x={2}
+                  y={PAD + r * HOLE_SPACING + HOLE_SPACING / 2 - 11}
+                  width={20}
+                  height={22}
+                  rx={5}
+                  fill="#fff7ed"
+                  stroke="#fdba74"
+                />
+                <text
+                  x={12}
+                  y={PAD + r * HOLE_SPACING + HOLE_SPACING / 2 + 4}
+                  textAnchor="middle"
+                  fontSize={10}
+                  fontWeight={700}
+                  fill="#c2410c"
+                  pointerEvents="none"
+                >
+                  R{r + 1}
+                </text>
+              </g>
+            ))}
           {/* Holes */}
           {Array.from({ length: holeCount }, (_, idx) => {
             if (planMode) {
               // Drill-plan view: label = planned depth; exceptions orange
               const hasOverride = plan.overrides[idx] !== undefined;
-              const selected = planHole === idx;
+              const matchesBrush = sameOverride(plan.overrides[idx], brush());
               const depth = effDepth(idx);
               const angled = effAngle(idx) !== 0;
               return (
@@ -458,8 +529,8 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
                     cy={cy(idx)}
                     r={HOLE_RADIUS}
                     fill={hasOverride ? '#dd6b20' : '#eef2f7'}
-                    stroke={selected ? '#1a365d' : hasOverride ? '#dd6b20' : '#c4ccd6'}
-                    strokeWidth={selected ? 4 : 1.5}
+                    stroke={matchesBrush ? '#1a365d' : hasOverride ? '#dd6b20' : '#c4ccd6'}
+                    strokeWidth={matchesBrush ? 3 : 1.5}
                   />
                   <text
                     x={cx(idx)}
@@ -543,66 +614,6 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
           })}
         </svg>
       </div>
-
-      {/* Selected-hole plan editor */}
-      {planMode && planHole !== null && (
-        <div className="rounded-lg border-2 border-navy bg-white p-3 space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="font-bold text-sm">
-              Hole {planHole + 1}
-              <span className="font-normal text-gray-400">
-                {' '}
-                — row {Math.floor(planHole / cols) + 1}
-              </span>
-            </p>
-            <Button variant="ghost" size="sm" onClick={() => setPlanHole(null)}>
-              Done
-            </Button>
-          </div>
-          <div className="flex gap-2">
-            <div className="w-28">
-              <Label className="text-xs">Depth (ft)</Label>
-              <Input
-                type="number"
-                inputMode="decimal"
-                placeholder={planDefault ? String(planDefault) : '—'}
-                value={plan.overrides[planHole]?.depth ?? ''}
-                onChange={(e) => {
-                  const v = parseFloat(e.target.value);
-                  setOverride(planHole, { depth: Number.isNaN(v) ? undefined : v });
-                }}
-              />
-            </div>
-            <div className="w-28">
-              <Label className="text-xs">Angle (°)</Label>
-              <Input
-                type="number"
-                inputMode="decimal"
-                placeholder="0"
-                value={plan.overrides[planHole]?.angle ?? ''}
-                onChange={(e) => {
-                  const v = parseFloat(e.target.value);
-                  setOverride(planHole, { angle: Number.isNaN(v) ? undefined : v });
-                }}
-              />
-            </div>
-            <div className="flex-1 flex items-end gap-2">
-              <Button variant="outline" size="sm" onClick={() => applyToRow(planHole)}>
-                Apply to row
-              </Button>
-              {plan.overrides[planHole] && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setOverride(planHole, { depth: undefined, angle: undefined })}
-                >
-                  Reset
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Timing summary */}
       {!planMode && times.size > 0 && (
