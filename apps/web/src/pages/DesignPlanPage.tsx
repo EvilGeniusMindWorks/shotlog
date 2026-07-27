@@ -317,6 +317,7 @@ function DesignPlanInner({
             onChange={handleChange}
             cloneTargets={cloneTargets}
             onClone={cloneDiagramTo}
+            designDepth={shot.totals.avgDrillDepth || undefined}
           />
         </Panel>
 

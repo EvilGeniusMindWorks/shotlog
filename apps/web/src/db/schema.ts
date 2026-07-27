@@ -478,6 +478,10 @@ export interface DrillLogHole extends BaseRecord {
   subdrill: number;
   conditions: HoleCondition[];
   comment: string;
+  // Snapshot of the blaster's plan at entry time (plan-vs-actual review
+  // stays truthful even if the plan is edited later)
+  plannedDepth?: number;
+  plannedAngle?: number;
 }
 
 // ══════════════════════════════════════════════════════

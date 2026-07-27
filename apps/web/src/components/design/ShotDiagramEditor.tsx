@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Cable, Copy, Minus, Plus, Trash2, Undo2, Zap } from 'lucide-react';
+import { Cable, Copy, Drill, Minus, Plus, Timer, Trash2, Undo2, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   DELAY_COLORS,
@@ -8,11 +8,14 @@ import {
   computeFiringTimes,
   delayWindowSizes,
   hasWire,
+  type DrillPlan,
+  type DrillPlanOverride,
   type ShotDiagram,
   type Wire,
 } from '@/lib/shotDiagram';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 type UndoAction =
   | { type: 'setStart'; prev: ShotDiagram['start']; prevDelays: Record<number, number> }
@@ -32,6 +35,8 @@ interface Props {
   onChange: (diagram: ShotDiagram) => void;
   cloneTargets?: { id: string; label: string }[];
   onClone?: (targetShotId: string) => void;
+  /** Pattern design depth (ft) — the drill plan's inherited default */
+  designDepth?: number;
 }
 
 /**
@@ -40,11 +45,14 @@ interface Props {
  * wire carries its own delay instead (branching to another row). Every hole
  * shows its cumulative firing time; edits re-time everything downstream.
  */
-export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone }: Props) {
+export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, designDepth }: Props) {
   const [activeLead, setActiveLead] = useState<number>(DELAY_SERIES[1]); // 17ms
   const [customLead, setCustomLead] = useState('');
   const [leadMode, setLeadMode] = useState(false);
   const [wireSource, setWireSource] = useState<number | null>(null);
+  // Drill-plan mode: tap holes to set planned depth/angle exceptions
+  const [mode, setMode] = useState<'timing' | 'plan'>('timing');
+  const [planHole, setPlanHole] = useState<number | null>(null);
   const undoStack = useRef<UndoAction[]>([]);
 
   const { rows, cols, delays, wires, start, interHoleMs } = diagram;
@@ -58,12 +66,47 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone }: 
   /** The lead delay currently selected (custom entry wins when present) */
   const leadValue = customLead !== '' ? Math.max(0, parseInt(customLead, 10) || 0) : activeLead;
 
+  // ── Drill plan (per-hole depth/angle) ────────────────────────────────
+  const plan: DrillPlan = diagram.plan ?? { overrides: {} };
+  const planDefault = plan.defaultDepth ?? designDepth ?? 0;
+  const planMode = mode === 'plan';
+  const effDepth = (idx: number) => plan.overrides[idx]?.depth ?? planDefault;
+  const effAngle = (idx: number) => plan.overrides[idx]?.angle ?? 0;
+  const setPlan = (next: DrillPlan) => onChange({ ...diagram, plan: next });
+
+  const setOverride = (idx: number, patch: DrillPlanOverride) => {
+    const merged: DrillPlanOverride = { ...plan.overrides[idx], ...patch };
+    if (merged.depth === undefined) delete merged.depth;
+    if (merged.angle === undefined || merged.angle === 0) delete merged.angle;
+    const overrides = { ...plan.overrides };
+    if (merged.depth === undefined && merged.angle === undefined) delete overrides[idx];
+    else overrides[idx] = merged;
+    setPlan({ ...plan, overrides });
+  };
+
+  /** Copy the selected hole's exception (or lack of one) across its row */
+  const applyToRow = (idx: number) => {
+    const row = Math.floor(idx / cols);
+    const src = plan.overrides[idx];
+    const overrides = { ...plan.overrides };
+    for (let c = 0; c < cols; c++) {
+      const i = row * cols + c;
+      if (src) overrides[i] = { ...src };
+      else delete overrides[i];
+    }
+    setPlan({ ...plan, overrides });
+  };
+
   const commit = (next: ShotDiagram, action: UndoAction) => {
     undoStack.current.push(action);
     onChange(next);
   };
 
   const tapHole = (idx: number) => {
+    if (planMode) {
+      setPlanHole(planHole === idx ? null : idx);
+      return;
+    }
     // No start yet: first tap sets the initiation hole with the chosen lead.
     // Legacy painted delays are cleared — the timing tree replaces them.
     if (!start) {
@@ -173,8 +216,18 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone }: 
       .filter((w) => inBounds(w.from) && inBounds(w.to))
       .map((w) => ({ ...w, from: remap(w.from), to: remap(w.to) }));
     const nextStart = start && inBounds(start.hole) ? { ...start, hole: remap(start.hole) } : undefined;
+    let nextPlan = diagram.plan;
+    if (nextPlan) {
+      const overrides: Record<number, DrillPlanOverride> = {};
+      for (const [k, v] of Object.entries(nextPlan.overrides)) {
+        const idx = Number(k);
+        if (inBounds(idx)) overrides[remap(idx)] = v;
+      }
+      nextPlan = { ...nextPlan, overrides };
+    }
     undoStack.current = []; // resize invalidates the undo history
     setWireSource(null);
+    setPlanHole(null);
     onChange({
       ...diagram,
       rows: nextRows,
@@ -182,6 +235,7 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone }: 
       delays: nextDelays,
       wires: nextWires,
       start: nextStart,
+      plan: nextPlan,
     });
   };
 
@@ -194,7 +248,61 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone }: 
 
   return (
     <div className="space-y-2">
+      {/* Mode toggle: timing (delays/wires) vs drill plan (depths/angles) */}
+      <div className="flex gap-2">
+        <Button
+          variant={mode === 'timing' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => {
+            setMode('timing');
+            setPlanHole(null);
+          }}
+        >
+          <Timer className="h-4 w-4 mr-1" /> Timing
+        </Button>
+        <Button
+          variant={planMode ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => {
+            setMode('plan');
+            setWireSource(null);
+            setLeadMode(false);
+          }}
+        >
+          <Drill className="h-4 w-4 mr-1" /> Drill plan
+        </Button>
+      </div>
+
+      {/* Drill-plan toolbar */}
+      {planMode && (
+        <div className="rounded-lg p-2 border bg-orange-50 border-orange-200 space-y-1">
+          <div className="flex items-center gap-2">
+            <Label className="text-xs whitespace-nowrap">Depth for every hole (ft)</Label>
+            <Input
+              type="number"
+              inputMode="decimal"
+              className="h-9 w-24 font-mono"
+              placeholder={designDepth ? String(designDepth) : '—'}
+              value={plan.defaultDepth ?? ''}
+              onChange={(e) => {
+                const v = parseFloat(e.target.value);
+                setPlan({ ...plan, defaultDepth: Number.isNaN(v) ? undefined : v });
+              }}
+            />
+            <span className="text-xs text-gray-500">
+              {Object.keys(plan.overrides).length} exception
+              {Object.keys(plan.overrides).length === 1 ? '' : 's'}
+            </span>
+          </div>
+          <p className="text-xs text-gray-600">
+            Tap a hole to set its depth or angle — everything else inherits the default.
+            Drillers see this plan and log actuals against it.
+          </p>
+        </div>
+      )}
+
       {/* Lead / increment toolbar */}
+      {!planMode && (
       <div
         className={cn(
           'rounded-lg p-2 border space-y-2 transition-colors',
@@ -275,8 +383,9 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone }: 
           </span>
         </div>
       </div>
+      )}
 
-      {legacyPainted && (
+      {legacyPainted && !planMode && (
         <p className="text-xs text-safety-orange bg-orange-50 border border-orange-200 rounded-lg px-3 py-2">
           This diagram uses the old painted delays. Tap a hole to start sequential
           timing — the painted colors will be replaced.
@@ -294,8 +403,8 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone }: 
               <path d="M 0 0 L 10 5 L 0 10 z" fill={LEAD_COLOR} />
             </marker>
           </defs>
-          {/* Wires under holes */}
-          {wires.map((w, i) => {
+          {/* Wires under holes (timing mode only) */}
+          {!planMode && wires.map((w, i) => {
             const x1 = cx(w.from);
             const y1 = cy(w.from);
             const x2 = cx(w.to);
@@ -335,6 +444,50 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone }: 
           })}
           {/* Holes */}
           {Array.from({ length: holeCount }, (_, idx) => {
+            if (planMode) {
+              // Drill-plan view: label = planned depth; exceptions orange
+              const hasOverride = plan.overrides[idx] !== undefined;
+              const selected = planHole === idx;
+              const depth = effDepth(idx);
+              const angled = effAngle(idx) !== 0;
+              return (
+                <g key={idx} onClick={() => tapHole(idx)} className="cursor-pointer">
+                  <circle cx={cx(idx)} cy={cy(idx)} r={HOLE_SPACING / 2} fill="transparent" />
+                  <circle
+                    cx={cx(idx)}
+                    cy={cy(idx)}
+                    r={HOLE_RADIUS}
+                    fill={hasOverride ? '#dd6b20' : '#eef2f7'}
+                    stroke={selected ? '#1a365d' : hasOverride ? '#dd6b20' : '#c4ccd6'}
+                    strokeWidth={selected ? 4 : 1.5}
+                  />
+                  <text
+                    x={cx(idx)}
+                    y={cy(idx) + 4}
+                    textAnchor="middle"
+                    fontSize={depth >= 100 ? 9 : 11}
+                    fontWeight={700}
+                    fill={hasOverride ? 'white' : '#334155'}
+                    pointerEvents="none"
+                  >
+                    {depth ? +depth.toFixed(1) : '—'}
+                  </text>
+                  {angled && (
+                    <text
+                      x={cx(idx) + HOLE_RADIUS - 2}
+                      y={cy(idx) - HOLE_RADIUS + 4}
+                      textAnchor="middle"
+                      fontSize={10}
+                      fontWeight={700}
+                      fill="#1a365d"
+                      pointerEvents="none"
+                    >
+                      ∠
+                    </text>
+                  )}
+                </g>
+              );
+            }
             const t = times.get(idx);
             const legacyMs = legacyPainted ? delays[idx] : undefined;
             const isStart = start?.hole === idx;
@@ -391,15 +544,76 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone }: 
         </svg>
       </div>
 
+      {/* Selected-hole plan editor */}
+      {planMode && planHole !== null && (
+        <div className="rounded-lg border-2 border-navy bg-white p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="font-bold text-sm">
+              Hole {planHole + 1}
+              <span className="font-normal text-gray-400">
+                {' '}
+                — row {Math.floor(planHole / cols) + 1}
+              </span>
+            </p>
+            <Button variant="ghost" size="sm" onClick={() => setPlanHole(null)}>
+              Done
+            </Button>
+          </div>
+          <div className="flex gap-2">
+            <div className="w-28">
+              <Label className="text-xs">Depth (ft)</Label>
+              <Input
+                type="number"
+                inputMode="decimal"
+                placeholder={planDefault ? String(planDefault) : '—'}
+                value={plan.overrides[planHole]?.depth ?? ''}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value);
+                  setOverride(planHole, { depth: Number.isNaN(v) ? undefined : v });
+                }}
+              />
+            </div>
+            <div className="w-28">
+              <Label className="text-xs">Angle (°)</Label>
+              <Input
+                type="number"
+                inputMode="decimal"
+                placeholder="0"
+                value={plan.overrides[planHole]?.angle ?? ''}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value);
+                  setOverride(planHole, { angle: Number.isNaN(v) ? undefined : v });
+                }}
+              />
+            </div>
+            <div className="flex-1 flex items-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => applyToRow(planHole)}>
+                Apply to row
+              </Button>
+              {plan.overrides[planHole] && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setOverride(planHole, { depth: undefined, angle: undefined })}
+                >
+                  Reset
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Timing summary */}
-      {times.size > 0 && (
+      {!planMode && times.size > 0 && (
         <p className="text-xs text-gray-500 px-1">
           {times.size} hole{times.size === 1 ? '' : 's'} timed · first {start!.leadMs}ms · last{' '}
           {lastFire}ms · max <b>{maxWindow}</b> hole{maxWindow === 1 ? '' : 's'} in any 8ms window
         </p>
       )}
 
-      {/* Action row */}
+      {/* Action row (timing tools) */}
+      {!planMode && (
       <div className="grid grid-cols-3 gap-2">
         <Button variant="outline" size="sm" onClick={undo}>
           <Undo2 className="h-4 w-4 mr-1" /> Undo
@@ -420,6 +634,7 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone }: 
           <span />
         )}
       </div>
+      )}
 
       {/* Grid size controls */}
       <div className="flex items-center gap-4 text-sm text-gray-600">

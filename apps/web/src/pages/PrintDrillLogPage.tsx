@@ -45,6 +45,11 @@ export function PrintDrillLogPage() {
   if (!log) return <div className="p-4">Loading…</div>;
   const footage = holes.reduce((s, h) => s + h.actualDepth, 0);
   const subTotal = holes.reduce((s, h) => s + h.subdrill, 0);
+  // Plan column appears only when rows carry the blaster's plan snapshot
+  const hasPlan = holes.some((h) => h.plannedDepth !== undefined);
+  const offPlan = (h: (typeof holes)[number]) =>
+    h.plannedDepth !== undefined &&
+    (Math.abs(h.actualDepth - h.plannedDepth) >= 1 || (h.angle || 0) !== (h.plannedAngle ?? 0));
 
   return (
     <div className="print-blast-log">
@@ -88,7 +93,9 @@ export function PrintDrillLogPage() {
         <table className="mb4">
           <thead>
             <tr>
-              <th>Date</th><th>Hole #</th><th>Angle</th><th>Depth (ft)</th>
+              <th>Date</th><th>Hole #</th><th>Angle</th>
+              {hasPlan && <th>Plan (ft)</th>}
+              <th>Depth (ft)</th>
               <th>Subdrill</th><th>Conditions</th><th>Comments</th>
             </tr>
           </thead>
@@ -97,7 +104,16 @@ export function PrintDrillLogPage() {
               <tr key={h.id}>
                 <td>{formatDate(h.date)}</td>
                 <td>{h.holeNumber}</td>
-                <td>{h.angle || ''}</td>
+                <td>
+                  {h.angle || ''}
+                  {hasPlan && (h.plannedAngle ?? 0) !== (h.angle || 0) ? ` (plan ${h.plannedAngle ?? 0})` : ''}
+                </td>
+                {hasPlan && (
+                  <td>
+                    {h.plannedDepth ?? ''}
+                    {offPlan(h) ? ' ⚠' : ''}
+                  </td>
+                )}
                 <td>{h.actualDepth}</td>
                 <td>{h.subdrill || ''}</td>
                 <td>{[...new Set(h.conditions.map((c) => c.code))].join(', ')}</td>
@@ -105,7 +121,7 @@ export function PrintDrillLogPage() {
               </tr>
             ))}
             <tr>
-              <td colSpan={3}><b>Totals</b></td>
+              <td colSpan={hasPlan ? 4 : 3}><b>Totals</b></td>
               <td><b>{footage.toFixed(0)}</b></td>
               <td><b>{subTotal.toFixed(0)}</b></td>
               <td colSpan={2}><b>{holes.length} holes</b></td>

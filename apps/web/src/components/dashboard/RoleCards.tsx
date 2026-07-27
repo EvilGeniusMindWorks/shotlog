@@ -3,9 +3,11 @@
 // Driller: checklist nudge + my open drill logs + my work days
 // Mechanic: repair queue + due dates
 // Admin/Office: job costing + compliance monitor + attention + week pulse
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, ClipboardCheck, Wrench } from 'lucide-react';
+import { AlertTriangle, ClipboardCheck, Wrench, X } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
+import { createDrillLog, getShotPlan } from '@/hooks/useDrillLogs';
 import { useOpenTickets, useTodayChecklist } from '@/hooks/useMaintenance';
 import { getSessionUser, getRealSessionUser, setViewRole } from '@/lib/session';
 import { formatDate, todayISO } from '@/lib/utils';
@@ -129,9 +131,58 @@ export function DrillingReviewCard() {
 
 // ── Driller home ───────────────────────────────────────────────────────────
 
+const LAST_RIG_KEY = 'shotlog-last-rig';
+
+/** Pick-your-rig modal → checklist. Remembers the choice for the nudge. */
+function RigPickerModal({ onClose }: { onClose: () => void }) {
+  const navigate = useNavigate();
+  const rigs =
+    useLiveQuery(() =>
+      db.equipment
+        .filter((e) => e.isActive && (e.category === 'rock_drill' || e.category === 'equip_drill'))
+        .toArray(),
+    ) ?? [];
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+      <div className="w-full sm:max-w-sm bg-white rounded-t-xl sm:rounded-xl p-4 max-h-[80vh] overflow-auto">
+        <div className="flex items-center justify-between mb-2">
+          <p className="font-bold">Which rig?</p>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
+        <div className="space-y-1">
+          {rigs.map((r) => (
+            <button
+              key={r.id}
+              className="w-full flex items-center gap-3 px-3 py-3 text-left rounded-lg border border-gray-200 hover:bg-gray-50"
+              onClick={() => {
+                localStorage.setItem(LAST_RIG_KEY, r.id);
+                navigate(`/drill-checklist/${r.id}`);
+              }}
+            >
+              <ClipboardCheck className="h-5 w-5 text-navy shrink-0" />
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold">{r.assetNumber}</span>
+                <span className="block text-xs text-gray-400 truncate">{r.description}</span>
+              </span>
+            </button>
+          ))}
+          {rigs.length === 0 && (
+            <p className="text-sm text-gray-400 py-2">
+              No drills in the equipment registry yet — ask the office to add your rig.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function DrillerHome() {
   const navigate = useNavigate();
   const me = getSessionUser();
+  const [showRigPicker, setShowRigPicker] = useState(false);
   const myLogs = useLiveQuery(async () => {
     const logs = await db.drillLogs
       .filter((l) => l.status === 'open' && (!me?.id || l.drillerUserId === me.id || !l.drillerUserId))
@@ -146,13 +197,16 @@ export function DrillerHome() {
         jobName: job?.name ?? '—',
         shotNumber: shot?.shotNumber,
         holes: holes.length,
-        designed: shot?.totals.numHoles ?? 0,
+        designed: getShotPlan(shot)?.length ?? shot?.totals.numHoles ?? 0,
       });
     }
     return out;
   });
-  // The rig from my most recent log drives the checklist nudge
-  const lastRigId = myLogs?.find((r) => r.log.drillRigEquipmentId)?.log.drillRigEquipmentId;
+  // The rig from my most recent log (or my last picker choice) drives the nudge
+  const lastRigId =
+    myLogs?.find((r) => r.log.drillRigEquipmentId)?.log.drillRigEquipmentId ??
+    localStorage.getItem(LAST_RIG_KEY) ??
+    undefined;
   const rig = useLiveQuery(() => (lastRigId ? db.equipment.get(lastRigId) : undefined), [lastRigId]);
   const todayChecklist = useTodayChecklist(lastRigId);
   const tickets = useOpenTickets().filter((t) => t.equipmentId === lastRigId);
@@ -167,11 +221,46 @@ export function DrillerHome() {
     return withJobs;
   });
 
+  // Shots with designed holes still to drill where I have no open log —
+  // the driller-initiated path (blaster still accepts at the end)
+  const readyToDrill = useLiveQuery(async () => {
+    const days = (await db.blastDays.filter((d) => d.status !== 'approved').toArray())
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 15);
+    const out = [];
+    for (const day of days) {
+      const blastLog = await db.blastLogs.where('blastDayId').equals(day.id).first();
+      if (!blastLog) continue;
+      const shots = await db.shots.where('blastLogId').equals(blastLog.id).toArray();
+      const jobName = (await db.jobs.get(day.jobId))?.name;
+      for (const shot of shots) {
+        const target = getShotPlan(shot)?.length ?? shot.totals?.numHoles ?? 0;
+        if (!target) continue;
+        const shotLogs = await db.drillLogs.where('shotId').equals(shot.id).toArray();
+        let drilled = 0;
+        let mineOpen = false;
+        for (const dl of shotLogs) {
+          drilled += await db.drillLogHoles.where('drillLogId').equals(dl.id).count();
+          if (dl.status === 'open' && (!me?.id || dl.drillerUserId === me.id || !dl.drillerUserId))
+            mineOpen = true; // already in "My open drill logs"
+        }
+        if (drilled >= target || mineOpen) continue;
+        out.push({ day, jobName, shot, target, drilled, joining: shotLogs.length > 0 });
+      }
+    }
+    return out;
+  });
+
   return (
     <div className="p-4 max-w-2xl mx-auto space-y-3">
-      <h2 className="text-xl font-bold text-gray-900">My Drilling</h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-xl font-bold text-gray-900">My Drilling</h2>
+        <Button variant="outline" size="sm" onClick={() => setShowRigPicker(true)}>
+          <ClipboardCheck className="h-4 w-4 mr-1" /> Rig checklist
+        </Button>
+      </div>
 
-      {lastRigId && !todayChecklist && (
+      {lastRigId && rig && !todayChecklist && (
         <button
           className="w-full flex items-center gap-2 text-left text-sm font-medium text-safety-orange border border-orange-200 bg-orange-50 rounded-xl px-3 py-3"
           onClick={() => navigate(`/drill-checklist/${lastRigId}`)}>
@@ -209,10 +298,41 @@ export function DrillerHome() {
         ))}
         {(myLogs ?? []).length === 0 && (
           <p className="text-sm text-gray-400 py-1">
-            Nothing open — the blaster requests drilling from a shot's design.
+            Nothing open — start one from “Ready to drill” below, or the blaster
+            can request drilling from a shot's design.
           </p>
         )}
       </div>
+
+      {(readyToDrill ?? []).length > 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white p-3">
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
+            Ready to drill
+          </p>
+          {(readyToDrill ?? []).map(({ day, jobName, shot, target, drilled, joining }) => (
+            <button
+              key={shot.id}
+              className="w-full flex items-center gap-2 py-2 text-left hover:bg-gray-50 rounded-lg"
+              onClick={async () => {
+                const logId = await createDrillLog(shot, day.id, day.jobId);
+                navigate(`/blast-day/${day.id}/drill-log/${logId}`);
+              }}
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold truncate">
+                  Shot {shot.shotNumber} · {day.name || jobName || formatDate(day.date)}
+                </p>
+                <p className="text-xs text-gray-400">
+                  {drilled} of {target} holes drilled · {formatDate(day.date)}
+                </p>
+              </div>
+              <span className="text-sm text-safety-orange font-semibold shrink-0">
+                {joining ? 'Join' : 'Start'} ›
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {tickets.length > 0 && (
         <div className="rounded-xl border border-orange-200 bg-orange-50 p-3">
@@ -238,11 +358,17 @@ export function DrillerHome() {
             <Badge variant={day.status as 'draft' | 'submitted' | 'approved'}>{day.status}</Badge>
           </button>
         ))}
-        {(myDays ?? []).length === 0 && <p className="text-sm text-gray-400 py-1">No drill-only days yet.</p>}
-        <Button variant="outline" size="sm" className="mt-2" onClick={() => navigate('/')}>
+        {(myDays ?? []).length === 0 && (
+          <p className="text-sm text-gray-400 py-1">
+            No drill-only days yet — tap + to start one.
+          </p>
+        )}
+        <Button variant="outline" size="sm" className="mt-2" onClick={() => navigate('/days')}>
           All work days
         </Button>
       </div>
+
+      {showRigPicker && <RigPickerModal onClose={() => setShowRigPicker(false)} />}
     </div>
   );
 }

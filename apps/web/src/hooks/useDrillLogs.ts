@@ -4,7 +4,28 @@
 import { useLiveQuery, db } from '@/db';
 import { getSessionUser } from '@/lib/session';
 import { generateId, nowISO, todayISO } from '@/lib/utils';
+import { classifyDeviation, materializeDrillPlan, parseDiagram, type PlanHole } from '@/lib/shotDiagram';
 import type { DrillLog, DrillLogHole, HoleConditionCode, Shot } from '@/db/schema';
+
+/** The blaster's materialized per-hole plan for a shot, or null when none */
+export function getShotPlan(shot: Shot | undefined | null): PlanHole[] | null {
+  if (!shot) return null;
+  const diagram = parseDiagram(shot.designPlan.shotDiagramData);
+  const holes = materializeDrillPlan(diagram, shot.totals.avgDrillDepth || 0);
+  return holes.length > 0 ? holes : null;
+}
+
+/** Hole numbers drilled in ANY of the shot's logs — the claim-as-you-drill
+ *  ledger: once a number appears anywhere it's off every driller's list */
+export async function drilledHoleNumbers(shotId: string): Promise<Set<string>> {
+  const logs = await db.drillLogs.where('shotId').equals(shotId).toArray();
+  const drilled = new Set<string>();
+  for (const log of logs) {
+    const holes = await db.drillLogHoles.where('drillLogId').equals(log.id).toArray();
+    for (const h of holes) drilled.add(h.holeNumber.trim());
+  }
+  return drilled;
+}
 
 /** Create an open drill log for a shot, prefilled from its design plan. */
 export async function createDrillLog(shot: Shot, blastDayId: string, jobId: string): Promise<string> {
@@ -50,7 +71,16 @@ export async function nextHoleNumber(shotId: string): Promise<number> {
 
 export async function addHole(
   log: DrillLog,
-  values: { holeNumber: string; actualDepth: number; angle: number; subdrill: number; conditions: HoleConditionCode[]; comment: string },
+  values: {
+    holeNumber: string;
+    actualDepth: number;
+    angle: number;
+    subdrill: number;
+    conditions: HoleConditionCode[];
+    comment: string;
+    plannedDepth?: number;
+    plannedAngle?: number;
+  },
 ): Promise<string> {
   const now = nowISO();
   const id = generateId();
@@ -66,6 +96,8 @@ export async function addHole(
     // from/to bands can be edited later if it ever matters
     conditions: values.conditions.map((code) => ({ fromFt: 0, toFt: values.actualDepth, code })),
     comment: values.comment,
+    plannedDepth: values.plannedDepth,
+    plannedAngle: values.plannedAngle,
     createdAt: now,
     updatedAt: now,
     syncStatus: 'local',
@@ -74,21 +106,41 @@ export async function addHole(
   return id;
 }
 
+export interface FlaggedHole {
+  holeNumber: string;
+  plannedDepth: number;
+  actualDepth: number;
+  depthDelta: number;
+  angleChanged: boolean;
+}
+
 export interface ShotDrilling {
-  logs: (DrillLog & { holeCount: number; footage: number; wetHoles: number })[];
+  logs: (DrillLog & { holeCount: number; footage: number; wetHoles: number; deviations: number })[];
   totalHoles: number;
   totalFootage: number;
   wetHoles: number;
   voidHoles: number;
   duplicateNumbers: string[];
+  /** Plan hole count, or null when the shot has no per-hole plan */
+  planned: number | null;
+  /** Plan hole numbers nobody has drilled yet */
+  undrilled: string[];
+  /** Drilled hole numbers that aren't in the plan */
+  extras: string[];
+  /** Holes drilled off-plan (≥1 ft depth or angle change) */
+  flagged: FlaggedHole[];
 }
 
 /** Aggregate drilling across all of a shot's logs (live). */
 export function useShotDrilling(shotId: string | undefined): ShotDrilling | undefined {
   return useLiveQuery(async () => {
     if (!shotId) return undefined;
+    const shot = await db.shots.get(shotId);
+    const plan = getShotPlan(shot);
     const logs = await db.drillLogs.where('shotId').equals(shotId).toArray();
     const seen = new Map<string, number>();
+    const flagged: FlaggedHole[] = [];
+    const extras: string[] = [];
     let totalHoles = 0;
     let totalFootage = 0;
     let wetHoles = 0;
@@ -98,18 +150,37 @@ export function useShotDrilling(shotId: string | undefined): ShotDrilling | unde
       const holes = await db.drillLogHoles.where('drillLogId').equals(log.id).toArray();
       let footage = 0;
       let wet = 0;
+      let deviations = 0;
       for (const h of holes) {
         footage += h.actualDepth;
-        seen.set(h.holeNumber, (seen.get(h.holeNumber) ?? 0) + 1);
+        seen.set(h.holeNumber.trim(), (seen.get(h.holeNumber.trim()) ?? 0) + 1);
         if (h.conditions.some((c) => c.code === 'W')) {
           wet++;
           wetHoles++;
         }
         if (h.conditions.some((c) => c.code === 'V')) voidHoles++;
+        if (h.plannedDepth !== undefined) {
+          const dev = classifyDeviation(
+            { depth: h.plannedDepth, angle: h.plannedAngle ?? 0 },
+            { depth: h.actualDepth, angle: h.angle },
+          );
+          if (dev?.flagged) {
+            deviations++;
+            flagged.push({
+              holeNumber: h.holeNumber,
+              plannedDepth: h.plannedDepth,
+              actualDepth: h.actualDepth,
+              depthDelta: dev.depthDelta,
+              angleChanged: dev.angleChanged,
+            });
+          }
+        }
+        if (plan && !plan.some((p) => String(p.n) === h.holeNumber.trim()))
+          extras.push(h.holeNumber);
       }
       totalHoles += holes.length;
       totalFootage += footage;
-      enriched.push({ ...log, holeCount: holes.length, footage, wetHoles: wet });
+      enriched.push({ ...log, holeCount: holes.length, footage, wetHoles: wet, deviations });
     }
     return {
       logs: enriched,
@@ -118,6 +189,10 @@ export function useShotDrilling(shotId: string | undefined): ShotDrilling | unde
       wetHoles,
       voidHoles,
       duplicateNumbers: [...seen.entries()].filter(([, n]) => n > 1).map(([k]) => k),
+      planned: plan ? plan.length : null,
+      undrilled: plan ? plan.filter((p) => !seen.has(String(p.n))).map((p) => String(p.n)) : [],
+      extras,
+      flagged,
     };
   }, [shotId]);
 }

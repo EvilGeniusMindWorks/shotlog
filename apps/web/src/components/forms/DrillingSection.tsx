@@ -99,8 +99,12 @@ export function DrillingSection({
             <span className="font-normal text-gray-500">
               {' '}
               — {drilling.totalHoles} holes
-              {shot.totals.numHoles ? ` of ${shot.totals.numHoles} designed` : ''} ·{' '}
-              {drilling.totalFootage.toFixed(0)} ft
+              {drilling.planned
+                ? ` of ${drilling.planned} planned`
+                : shot.totals.numHoles
+                  ? ` of ${shot.totals.numHoles} designed`
+                  : ''}{' '}
+              · {drilling.totalFootage.toFixed(0)} ft
             </span>
           )}
         </p>
@@ -123,6 +127,29 @@ export function DrillingSection({
           {drilling.duplicateNumbers.join(', ')} appear in more than one log.
         </p>
       )}
+      {drilling && drilling.planned !== null && drilling.totalHoles > 0 && (
+        <>
+          {drilling.undrilled.length > 0 && (
+            <p className="text-xs text-safety-orange">
+              ⚠ {drilling.undrilled.length} plan hole{drilling.undrilled.length === 1 ? '' : 's'} not
+              drilled{drilling.undrilled.length <= 12 && `: ${drilling.undrilled.join(', ')}`}
+            </p>
+          )}
+          {drilling.flagged.length > 0 && (
+            <p className="text-xs text-safety-orange">
+              ⚠ {drilling.flagged.length} hole{drilling.flagged.length === 1 ? '' : 's'} off plan (
+              {drilling.flagged
+                .slice(0, 6)
+                .map((f) => `#${f.holeNumber} ${f.depthDelta > 0 ? '+' : ''}${f.depthDelta.toFixed(1)} ft`)
+                .join(', ')}
+              {drilling.flagged.length > 6 ? ', …' : ''})
+            </p>
+          )}
+          {drilling.undrilled.length === 0 && drilling.flagged.length === 0 && (
+            <p className="text-xs text-green-700">✓ Pattern drilled to plan.</p>
+          )}
+        </>
+      )}
       {drilling?.logs.map((log) => (
         <button
           key={log.id}
@@ -132,6 +159,9 @@ export function DrillingSection({
           <span className="flex-1 min-w-0 truncate">
             {log.drillerName || 'unassigned'} · {log.holeCount} holes · {log.footage.toFixed(0)} ft
             {log.wetHoles > 0 && <span className="text-blue-600"> · {log.wetHoles} wet</span>}
+            {log.deviations > 0 && (
+              <span className="text-safety-orange"> · {log.deviations} off-plan</span>
+            )}
           </span>
           <Badge variant={STATUS_BADGE[log.status]}>{log.status}</Badge>
         </button>

@@ -12,6 +12,7 @@ import { cn, formatDate } from '@/lib/utils';
 import { NewBlastDayDialog } from '@/components/forms/NewBlastDayDialog';
 import { AdminHome, DrillerHome, DrillingReviewCard, MechanicHome, TodayCard } from '@/components/dashboard/RoleCards';
 import { getSessionUser } from '@/lib/session';
+import type { WorkType } from '@/db/schema';
 
 interface DaySummary {
   day: BlastDay;
@@ -106,22 +107,97 @@ export function Dashboard() {
   // admin/office each get their own front page; blasters/supervisors get
   // the field dashboard below with today + drilling-review cards on top.
   const role = getSessionUser()?.role;
-  if (role === 'driller') return <DrillerHome />;
+  if (role === 'driller')
+    return (
+      <>
+        <DrillerHome />
+        <NewWorkDayFab defaultTypeOfWork="drill_only" />
+      </>
+    );
   if (role === 'mechanic') return <MechanicHome />;
   if (role === 'admin' || role === 'office') return <AdminHome />;
   return <BlasterDashboard />;
 }
 
+/** The + button and its dialog — shared by every home that can create work days */
+function NewWorkDayFab({ defaultTypeOfWork }: { defaultTypeOfWork?: WorkType }) {
+  const navigate = useNavigate();
+  const [showNewDialog, setShowNewDialog] = useState(false);
+  return (
+    <>
+      <button
+        data-tour="fab"
+        className="fixed bottom-24 right-4 sm:bottom-8 sm:right-8 h-14 w-14 rounded-full bg-safety-orange text-white shadow-lg flex items-center justify-center active:scale-95 transition-transform z-20"
+        title="New Work Day"
+        onClick={() => setShowNewDialog(true)}
+      >
+        <Plus className="h-7 w-7" />
+      </button>
+      {showNewDialog && (
+        <NewBlastDayDialog
+          defaultTypeOfWork={defaultTypeOfWork}
+          onClose={() => setShowNewDialog(false)}
+          onCreate={async (jobId, date, copy, opts) => {
+            const id = await createBlastDay(jobId, date, copy, opts);
+            setShowNewDialog(false);
+            navigate(`/blast-day/${id}`);
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+/** Full work-day list as its own page (route /days) — every role can browse */
+export function WorkDaysPage() {
+  const role = getSessionUser()?.role;
+  return (
+    <div className="p-4 max-w-3xl mx-auto pb-24">
+      <WorkDayList />
+      {role !== 'office' && (
+        <NewWorkDayFab defaultTypeOfWork={role === 'driller' ? 'drill_only' : undefined} />
+      )}
+    </div>
+  );
+}
+
 function BlasterDashboard() {
+  const kpis = useKpis();
+
+  return (
+    <div className="p-4 max-w-3xl mx-auto pb-24">
+      {/* KPI stats bar */}
+      <div data-tour="kpis" className="grid grid-cols-4 gap-2 mb-4">
+        <Kpi label="Active Jobs" value={kpis ? String(kpis.activeJobs) : '—'} />
+        <Kpi label="Shots / Month" value={kpis ? String(kpis.shotsThisMonth) : '—'} />
+        <Kpi label="YTD Total (lbs)" value={kpis ? kpis.ytdLbs.toLocaleString() : '—'} />
+        {/* role cards inserted below the stats — see next sibling */}
+        <Kpi
+          label="Compliance"
+          value={kpis?.compliancePct !== null && kpis ? `${kpis.compliancePct}%` : '—'}
+        />
+      </div>
+
+      <TodayCard />
+      <DrillingReviewCard />
+
+      <WorkDayList />
+
+      <NewWorkDayFab />
+    </div>
+  );
+}
+
+/** Searchable, sortable work-day list (cards/table) — used by the blaster
+ *  dashboard inline and by the /days page for every other role */
+export function WorkDayList() {
   const navigate = useNavigate();
   const summaries = useDaySummaries();
-  const kpis = useKpis();
   const [search, setSearch] = useState('');
   const [view, setView] = useState<'cards' | 'table'>('cards');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortAsc, setSortAsc] = useState(false);
-  const [showNewDialog, setShowNewDialog] = useState(false);
 
   const filtered = useMemo(() => {
     let list = summaries ?? [];
@@ -159,22 +235,7 @@ function BlasterDashboard() {
   };
 
   return (
-    <div className="p-4 max-w-3xl mx-auto pb-24">
-      {/* KPI stats bar */}
-      <div data-tour="kpis" className="grid grid-cols-4 gap-2 mb-4">
-        <Kpi label="Active Jobs" value={kpis ? String(kpis.activeJobs) : '—'} />
-        <Kpi label="Shots / Month" value={kpis ? String(kpis.shotsThisMonth) : '—'} />
-        <Kpi label="YTD Total (lbs)" value={kpis ? kpis.ytdLbs.toLocaleString() : '—'} />
-        {/* role cards inserted below the stats — see next sibling */}
-        <Kpi
-          label="Compliance"
-          value={kpis?.compliancePct !== null && kpis ? `${kpis.compliancePct}%` : '—'}
-        />
-      </div>
-
-      <TodayCard />
-      <DrillingReviewCard />
-
+    <div>
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-xl font-bold text-gray-900">Work Days</h2>
         <Button
@@ -293,27 +354,6 @@ function BlasterDashboard() {
             </tbody>
           </table>
         </div>
-      )}
-
-      {/* FAB */}
-      <button
-        data-tour="fab"
-        className="fixed bottom-24 right-4 sm:bottom-8 sm:right-8 h-14 w-14 rounded-full bg-safety-orange text-white shadow-lg flex items-center justify-center active:scale-95 transition-transform z-20"
-        title="New Blast Day"
-        onClick={() => setShowNewDialog(true)}
-      >
-        <Plus className="h-7 w-7" />
-      </button>
-
-      {showNewDialog && (
-        <NewBlastDayDialog
-          onClose={() => setShowNewDialog(false)}
-          onCreate={async (jobId, date, copy, opts) => {
-            const id = await createBlastDay(jobId, date, copy, opts);
-            setShowNewDialog(false);
-            navigate(`/blast-day/${id}`);
-          }}
-        />
       )}
     </div>
   );

@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import { AuthGate } from '@/components/layout/AuthGate';
-import { Dashboard } from '@/pages/Dashboard';
+import { Dashboard, WorkDaysPage } from '@/pages/Dashboard';
 import { BlastDayPage } from '@/pages/BlastDayPage';
 import { JobsPage } from '@/pages/JobsPage';
 import { JobDetailPage } from '@/pages/JobDetailPage';
@@ -54,6 +54,7 @@ export function App() {
       <Routes>
         <Route element={<AppShell />}>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/days" element={<WorkDaysPage />} />
           <Route path="/jobs" element={<JobsPage />} />
           <Route path="/jobs/:id" element={<JobDetailPage />} />
           <Route path="/reference" element={<ReferencePage />} />

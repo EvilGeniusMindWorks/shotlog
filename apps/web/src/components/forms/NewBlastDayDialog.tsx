@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { canPerformOp, type Role } from '@shotlog/shared';
 import { useLiveQuery, db } from '@/db';
+import { getSessionUser } from '@/lib/session';
 import { createJob, type CopyFromPrevious, type CreateWorkDayOptions } from '@/hooks/useBlastDay';
 import type { WorkType } from '@/db/schema';
 import { isBlastingWork } from '@/db/schema';
@@ -20,6 +22,8 @@ interface Props {
     copy?: CopyFromPrevious,
     opts?: CreateWorkDayOptions,
   ) => void;
+  /** Initial type-of-work chip (drillers default to drill_only) */
+  defaultTypeOfWork?: WorkType;
 }
 
 const WORK_TYPE_CHOICES = [
@@ -46,12 +50,15 @@ const OPERATION_OPTIONS = [
   { value: 'open', label: 'Open' },
 ];
 
-export function NewBlastDayDialog({ onClose, onCreate }: Props) {
+export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork }: Props) {
   // NOTE: boolean fields can't be indexed in IndexedDB — use filter(), not where()
   const jobs = useLiveQuery(() => db.jobs.filter((j) => j.isActive).toArray()) ?? [];
+  // Jobs are admin-managed reference data — for field roles the server would
+  // silently discard the write, so don't offer the inline create at all
+  const canCreateJob = canPerformOp('jobs', 'PUT', (getSessionUser()?.role ?? 'blaster') as Role);
   const [selectedJobId, setSelectedJobId] = useState('');
   const [date, setDate] = useState(todayISO());
-  const [typeOfWork, setTypeOfWork] = useState<WorkType>('drill_to_blast');
+  const [typeOfWork, setTypeOfWork] = useState<WorkType>(defaultTypeOfWork ?? 'drill_to_blast');
   const [dayName, setDayName] = useState('');
   const [showNewJob, setShowNewJob] = useState(false);
   const [newJob, setNewJob] = useState({
@@ -148,14 +155,21 @@ export function NewBlastDayDialog({ onClose, onCreate }: Props) {
                 placeholder="Select a job..."
                 options={jobs.map((j) => ({ value: j.id, label: `${j.name} — ${j.customer}` }))}
               />
-              <Button
-                variant="ghost"
-                size="sm"
-                className="mt-2 text-navy"
-                onClick={() => setShowNewJob(true)}
-              >
-                <Plus className="h-4 w-4 mr-1" /> Create New Job
-              </Button>
+              {canCreateJob && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-2 text-navy"
+                  onClick={() => setShowNewJob(true)}
+                >
+                  <Plus className="h-4 w-4 mr-1" /> Create New Job
+                </Button>
+              )}
+              {!canCreateJob && jobs.length === 0 && (
+                <p className="text-xs text-gray-400 mt-2">
+                  No active jobs yet — the office sets up jobs in Admin.
+                </p>
+              )}
 
               {previousDays.length > 0 && (
                 <div className="mt-3 border border-gray-200 rounded-lg p-3 space-y-2">
@@ -244,7 +258,7 @@ export function NewBlastDayDialog({ onClose, onCreate }: Props) {
         <CardFooter className="flex justify-end gap-2 pb-6">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button variant="safety" disabled={!canCreate} onClick={handleCreate}>
-            Create Blast Day
+            Create Work Day
           </Button>
         </CardFooter>
       </Card>

@@ -17,6 +17,19 @@ export { computeFiringTimes, delayWindowSizes, maxHolesPerWindow, DELAY_WINDOW_M
 
 export type Wire = TimingWire;
 
+export interface DrillPlanOverride {
+  depth?: number;
+  angle?: number;
+}
+
+/** Per-hole drilling plan authored by the blaster in the shot designer.
+ *  Holes inherit `defaultDepth`; only exceptions live in `overrides`
+ *  (keyed by hole index — hole NUMBER is index + 1, row-major). */
+export interface DrillPlan {
+  defaultDepth?: number;
+  overrides: Record<number, DrillPlanOverride>;
+}
+
 export interface ShotDiagram {
   rows: number;
   cols: number;
@@ -27,6 +40,8 @@ export interface ShotDiagram {
   start?: { hole: number; leadMs: number };
   /** Delay added by each plain hole-to-hole wire (ms) */
   interHoleMs: number;
+  /** Per-hole drilling plan (depths/angles) — the Blaster→Driller handoff */
+  plan?: DrillPlan;
 }
 
 /** Standard MS delay series offered for leads (wireframe's set) */
@@ -59,10 +74,47 @@ export function parseDiagram(json: string | null): ShotDiagram {
       wires: parsed.wires ?? [],
       start: parsed.start,
       interHoleMs: parsed.interHoleMs ?? DEFAULT_INTER_HOLE_MS,
+      plan: parsed.plan,
     };
   } catch {
     return emptyDiagram();
   }
+}
+
+/** A hole of the materialized drill plan (n = hole index + 1, row-major) */
+export interface PlanHole {
+  n: number;
+  depth: number;
+  angle: number;
+}
+
+/** Does the diagram carry any drill-plan intent at all? */
+export function hasDrillPlan(d: ShotDiagram): boolean {
+  return (
+    d.plan !== undefined &&
+    (d.plan.defaultDepth !== undefined || Object.keys(d.plan.overrides).length > 0)
+  );
+}
+
+/**
+ * Expand the sparse plan to one entry per grid hole. Depth resolution:
+ * override → plan default → fallback (the shot's design depth). Returns []
+ * when the diagram has no plan — callers fall back to unplanned behavior.
+ */
+export function materializeDrillPlan(d: ShotDiagram, fallbackDepth: number): PlanHole[] {
+  if (!hasDrillPlan(d)) return [];
+  const plan = d.plan!;
+  const count = d.rows * d.cols;
+  const holes: PlanHole[] = [];
+  for (let idx = 0; idx < count; idx++) {
+    const o = plan.overrides[idx];
+    holes.push({
+      n: idx + 1,
+      depth: o?.depth ?? plan.defaultDepth ?? fallbackDepth,
+      angle: o?.angle ?? 0,
+    });
+  }
+  return holes;
 }
 
 export function serializeDiagram(d: ShotDiagram): string {
@@ -83,6 +135,32 @@ export function hasWire(wires: Wire[], from: number, to: number): boolean {
   return wires.some(
     (w) => (w.from === from && w.to === to) || (w.from === to && w.to === from),
   );
+}
+
+/** Depth difference (ft) at/beyond which a drilled hole is flagged */
+export const DEPTH_FLAG_FT = 1;
+
+export interface HoleDeviation {
+  depthDelta: number; // actual − planned (ft)
+  angleChanged: boolean;
+  flagged: boolean;
+}
+
+/** Plan-vs-actual for one drilled hole; null when the hole had no plan.
+ *  Flagged = short/deep by ≥ DEPTH_FLAG_FT or drilled at a different angle
+ *  (short holes leave toe; both matter to the blaster at loading). */
+export function classifyDeviation(
+  planned: { depth: number; angle: number } | undefined,
+  actual: { depth: number; angle: number },
+): HoleDeviation | null {
+  if (!planned) return null;
+  const depthDelta = actual.depth - planned.depth;
+  const angleChanged = (actual.angle || 0) !== (planned.angle || 0);
+  return {
+    depthDelta,
+    angleChanged,
+    flagged: Math.abs(depthDelta) >= DEPTH_FLAG_FT || angleChanged,
+  };
 }
 
 /** LEGACY: count holes painted with each delay (pre-timing diagrams) */
