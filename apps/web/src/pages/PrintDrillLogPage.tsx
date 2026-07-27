@@ -3,8 +3,10 @@
 // Office-bound like the blast log.
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { FileDown, Printer } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { formatDate } from '@/lib/utils';
+import { savePagesAsPdf } from '@/lib/pdf';
 
 const CONDITION_LEGEND = 'V = Void · SR = Soft Rock · O = Overburden · W = Water';
 
@@ -32,6 +34,7 @@ export function PrintDrillLogPage() {
   const company = useLiveQuery(() => db.companySettings.get('companySettings-singleton'));
 
   const [sigUrl, setSigUrl] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   useEffect(() => {
     if (!log?.signatureImage) {
       setSigUrl(null);
@@ -54,8 +57,27 @@ export function PrintDrillLogPage() {
   return (
     <div className="print-blast-log">
       <div className="no-print flex gap-2 p-3 bg-gray-100">
-        <button className="px-3 py-1.5 rounded bg-navy text-white text-sm" onClick={() => window.print()}>
-          Print / Save PDF
+        <button
+          className="px-3 py-1.5 rounded bg-navy text-white text-sm inline-flex items-center gap-1.5 disabled:opacity-60"
+          disabled={saving}
+          onClick={async () => {
+            setSaving(true);
+            try {
+              await savePagesAsPdf(
+                `drill-log-${day?.date ?? ''}-shot${shot?.shotNumber ?? ''}-${(log.drillerName || 'driller').replace(/\s+/g, '-').toLowerCase()}.pdf`,
+              );
+            } finally {
+              setSaving(false);
+            }
+          }}
+        >
+          <FileDown size={16} /> {saving ? 'Generating…' : 'Save PDF'}
+        </button>
+        <button
+          className="px-3 py-1.5 rounded bg-navy text-white text-sm inline-flex items-center gap-1.5"
+          onClick={() => window.print()}
+        >
+          <Printer size={16} /> Print
         </button>
         <button className="px-3 py-1.5 rounded border text-sm" onClick={() => navigate(-1)}>
           Back

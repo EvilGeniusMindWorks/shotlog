@@ -18,6 +18,22 @@ import { dataUrlToBlob } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { ShotForm } from './ShotForm';
 import { ExplosiveUsageForm } from './ExplosiveUsageForm';
+import { useLiveQuery } from '@/db';
+import { getShotPlan } from '@/hooks/useDrillLogs';
+
+/** Dispatch nudge on the collapsed shot header: plan authored, nobody sent */
+function PlanNotSentChip({ shot }: { shot: Shot }) {
+  const unsent = useLiveQuery(async () => {
+    if (!getShotPlan(shot)) return false;
+    return (await db.drillLogs.where('shotId').equals(shot.id).count()) === 0;
+  }, [shot.id, shot.designPlan.shotDiagramData]);
+  if (!unsent) return null;
+  return (
+    <span className="text-[11px] font-medium text-safety-orange bg-orange-50 border border-orange-200 rounded-full px-2 py-0.5 shrink-0">
+      ⚠ plan not sent
+    </span>
+  );
+}
 import { DrillingSection, WetHoleLoadingWarning } from './DrillingSection';
 import { AttachmentsCard } from './AttachmentsCard';
 
@@ -211,6 +227,7 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
               {shot.totals.numHoles > 0 && shotLbs > 0 && ' · '}
               {shotLbs > 0 && `${shotLbs.toFixed(1)} lbs`}
             </span>
+            <PlanNotSentChip shot={shot} />
             <span className="flex-1" />
             {shots.length > 1 && (
               <Button

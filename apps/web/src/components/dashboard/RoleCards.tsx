@@ -37,11 +37,22 @@ export function TodayCard() {
         ? await db.workForceEntries.where('dailyReportId').equals(report.id).toArray()
         : [];
       const reportStarted = crew.some((c) => c.timeIn || c.timeOut) || Boolean(report?.notes);
+      // Dispatch alert: a shot has a drill plan but no drill log was sent/started
+      let unsentPlans = 0;
+      if (log) {
+        const shots = await db.shots.where('blastLogId').equals(log.id).toArray();
+        for (const shot of shots) {
+          if (!getShotPlan(shot)) continue;
+          const logCount = await db.drillLogs.where('shotId').equals(shot.id).count();
+          if (logCount === 0) unsentPlans++;
+        }
+      }
       out.push({
         day,
         jobName: job?.name,
         needsSignature: Boolean(log) && !log?.signatureImage,
         reportEmpty: !reportStarted,
+        unsentPlans,
       });
     }
     return out;
@@ -58,7 +69,7 @@ export function TodayCard() {
           <p className="text-sm text-gray-500 flex-1">No work day started yet.</p>
         </div>
       )}
-      {data.map(({ day, jobName, needsSignature, reportEmpty }) => (
+      {data.map(({ day, jobName, needsSignature, reportEmpty, unsentPlans }) => (
         <button key={day.id}
           className="w-full flex items-center gap-2 flex-wrap py-1.5 text-left hover:bg-gray-50 rounded-lg"
           onClick={() => navigate(`/blast-day/${day.id}`)}>
@@ -76,6 +87,11 @@ export function TodayCard() {
           {reportEmpty && (
             <span className="text-[11px] font-medium text-safety-orange bg-orange-50 border border-orange-200 rounded-full px-2 py-0.5">
               ⚠ daily report empty
+            </span>
+          )}
+          {unsentPlans > 0 && (
+            <span className="text-[11px] font-medium text-safety-orange bg-orange-50 border border-orange-200 rounded-full px-2 py-0.5">
+              ⚠ drill plan not sent
             </span>
           )}
         </button>
@@ -120,6 +136,9 @@ export function DrillingReviewCard() {
             <p className="text-xs text-gray-400 truncate">
               {jobName} · {holes} holes{wet > 0 ? ` · ${wet} wet` : ''}
             </p>
+            {log.completionNote && (
+              <p className="text-xs text-navy truncate">“{log.completionNote}”</p>
+            )}
           </div>
           <Badge variant="submitted">complete</Badge>
           <span className="text-sm text-safety-orange font-medium">Review</span>
@@ -190,11 +209,13 @@ export function DrillerHome() {
     const out = [];
     for (const log of logs) {
       const job = await db.jobs.get(log.jobId);
+      const day = await db.blastDays.get(log.blastDayId);
       const shot = await db.shots.get(log.shotId);
       const holes = await db.drillLogHoles.where('drillLogId').equals(log.id).toArray();
       out.push({
         log,
         jobName: job?.name ?? '—',
+        dayName: day?.name,
         shotNumber: shot?.shotNumber,
         holes: holes.length,
         designed: getShotPlan(shot)?.length ?? shot?.totals.numHoles ?? 0,
@@ -202,6 +223,9 @@ export function DrillerHome() {
     }
     return out;
   });
+  // Fresh dispatches: the blaster sent me this plan and I haven't started
+  const assignedNew = (myLogs ?? []).filter((x) => x.log.assignedBy && x.holes === 0);
+  const activeLogs = (myLogs ?? []).filter((x) => !(x.log.assignedBy && x.holes === 0));
   // The rig from my most recent log (or my last picker choice) drives the nudge
   const lastRigId =
     myLogs?.find((r) => r.log.drillRigEquipmentId)?.log.drillRigEquipmentId ??
@@ -220,6 +244,41 @@ export function DrillerHome() {
     }
     return withJobs;
   });
+
+  // Pride-of-work numbers: my footage/holes this week + month
+  const stats = useLiveQuery(async () => {
+    const logs = await db.drillLogs.filter((l) => !me?.id || l.drillerUserId === me.id).toArray();
+    const weekAgo = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10);
+    const monthPrefix = todayISO().slice(0, 7);
+    let weekFt = 0;
+    let weekHoles = 0;
+    let monthFt = 0;
+    for (const log of logs) {
+      const holes = await db.drillLogHoles.where('drillLogId').equals(log.id).toArray();
+      for (const h of holes) {
+        if (h.date >= weekAgo) {
+          weekFt += h.actualDepth;
+          weekHoles++;
+        }
+        if (h.date.startsWith(monthPrefix)) monthFt += h.actualDepth;
+      }
+    }
+    return { weekFt, weekHoles, monthFt };
+  }, [me?.id]);
+
+  // Recall: my most recent logs across every status
+  const recentLogs = useLiveQuery(async () => {
+    const logs = await db.drillLogs.filter((l) => !me?.id || l.drillerUserId === me.id).toArray();
+    const latest = logs.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 3);
+    const out = [];
+    for (const log of latest) {
+      const day = await db.blastDays.get(log.blastDayId);
+      const job = await db.jobs.get(log.jobId);
+      const count = await db.drillLogHoles.where('drillLogId').equals(log.id).count();
+      out.push({ log, label: day?.name || job?.name || '—', date: day?.date ?? '', holes: count });
+    }
+    return out;
+  }, [me?.id]);
 
   // Shots with designed holes still to drill where I have no open log —
   // the driller-initiated path (blaster still accepts at the end)
@@ -260,6 +319,12 @@ export function DrillerHome() {
         </Button>
       </div>
 
+      <div className="grid grid-cols-3 gap-2">
+        <MiniStat n={Math.round(stats?.weekFt ?? 0)} label="ft this week" />
+        <MiniStat n={stats?.weekHoles ?? 0} label="holes this week" />
+        <MiniStat n={Math.round(stats?.monthFt ?? 0)} label="ft this month" />
+      </div>
+
       {lastRigId && rig && !todayChecklist && (
         <button
           className="w-full flex items-center gap-2 text-left text-sm font-medium text-safety-orange border border-orange-200 bg-orange-50 rounded-xl px-3 py-3"
@@ -269,11 +334,36 @@ export function DrillerHome() {
         </button>
       )}
 
+      {assignedNew.length > 0 && (
+        <div className="rounded-xl border-2 border-navy bg-navy-50 p-3">
+          <p className="text-[11px] font-semibold text-navy uppercase tracking-wider mb-1">
+            📋 Assigned to you
+          </p>
+          {assignedNew.map(({ log, jobName, dayName, shotNumber, designed }) => (
+            <button
+              key={log.id}
+              className="w-full flex items-center gap-2 py-2 text-left hover:bg-white/60 rounded-lg"
+              onClick={() => navigate(`/blast-day/${log.blastDayId}/drill-log/${log.id}`)}
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold truncate">
+                  Shot {shotNumber ?? '?'} · {dayName || jobName}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {designed ? `${designed} holes planned · ` : ''}sent by {log.assignedBy}
+                </p>
+              </div>
+              <span className="text-sm text-navy font-semibold shrink-0">Open ›</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="rounded-xl border-l-4 border border-gray-200 border-l-safety-orange bg-white p-3">
         <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
           My open drill logs
         </p>
-        {(myLogs ?? []).map(({ log, jobName, shotNumber, holes, designed }) => (
+        {activeLogs.map(({ log, jobName, shotNumber, holes, designed }) => (
           <button key={log.id}
             className="w-full py-2 text-left hover:bg-gray-50 rounded-lg"
             onClick={() => navigate(`/blast-day/${log.blastDayId}/drill-log/${log.id}`)}>
@@ -282,8 +372,10 @@ export function DrillerHome() {
                 <p className="text-sm font-semibold truncate">Shot {shotNumber ?? '?'} · {jobName}</p>
                 <p className="text-xs text-gray-400">
                   {holes}{designed ? ` of ${designed}` : ''} holes
+                  {log.assignedBy ? ` · sent by ${log.assignedBy}` : ''}
                 </p>
               </div>
+              {log.reopenNote && <Badge variant="violation">sent back</Badge>}
               <span className="text-sm text-safety-orange font-semibold">
                 {holes > 0 ? 'Continue' : 'Start'}
               </span>
@@ -296,10 +388,10 @@ export function DrillerHome() {
             )}
           </button>
         ))}
-        {(myLogs ?? []).length === 0 && (
+        {activeLogs.length === 0 && (
           <p className="text-sm text-gray-400 py-1">
             Nothing open — start one from “Ready to drill” below, or the blaster
-            can request drilling from a shot's design.
+            can send you a plan.
           </p>
         )}
       </div>
@@ -339,6 +431,32 @@ export function DrillerHome() {
           <p className="text-sm font-medium text-safety-orange flex items-center gap-1.5">
             <Wrench className="h-4 w-4" /> {rig?.assetNumber}: “{tickets[0].description}” — with the shop
           </p>
+        </div>
+      )}
+
+      {(recentLogs ?? []).length > 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white p-3">
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
+            Recent logs
+          </p>
+          {(recentLogs ?? []).map(({ log, label, date, holes }) => (
+            <button
+              key={log.id}
+              className="w-full flex items-center gap-2 py-1.5 text-left hover:bg-gray-50 rounded-lg"
+              onClick={() => navigate(`/blast-day/${log.blastDayId}/drill-log/${log.id}`)}
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium truncate">{label}</p>
+                <p className="text-xs text-gray-400">
+                  {date ? `${formatDate(date)} · ` : ''}{holes} holes
+                </p>
+              </div>
+              <Badge variant={STATUS_BADGE[log.status]}>{log.status}</Badge>
+            </button>
+          ))}
+          <Button variant="outline" size="sm" className="mt-2" onClick={() => navigate('/drill-logs')}>
+            All my logs
+          </Button>
         </div>
       )}
 

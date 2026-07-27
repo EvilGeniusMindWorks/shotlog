@@ -233,7 +233,8 @@ enrollRouter.post('/:token', async (req: Request, res: Response) => {
             invite.companyId,
             invite.crewMemberId,
             'crewMembers',
-            JSON.stringify({ ...crew.payload, userId: created.id, updatedAt: now }),
+            // role rides along as the roster tag — the dispatch picker uses it
+            JSON.stringify({ ...crew.payload, userId: created.id, role: invite.role, updatedAt: now }),
             now,
           );
         }

@@ -165,7 +165,7 @@ function CrewRow({
   online,
   onInvited,
 }: {
-  member: { id: string; name: string; userId?: string };
+  member: { id: string; name: string; userId?: string; role?: string };
   users: CompanyUserLite[];
   invites: InviteLite[];
   online: boolean;
@@ -202,6 +202,8 @@ function CrewRow({
       if (!res.ok) throw new Error(body?.error ?? 'invite failed');
       setLink(body?.link ?? null);
       setEmailed(Boolean(body?.emailed));
+      // The invite's role becomes the roster tag too (dispatch picker uses it)
+      void db.crewMembers.update(member.id, { role, updatedAt: nowISO() });
       await onInvited();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'invite failed');
@@ -214,6 +216,17 @@ function CrewRow({
     <div className="py-2 space-y-2">
       <div className="flex items-center gap-2 flex-wrap">
         <p className="flex-1 text-sm font-medium truncate">{member.name}</p>
+        {/* Roster role tag — drives the blaster's "Send to drillers" picker */}
+        <Select
+          value={member.role ?? ''}
+          onChange={(e) =>
+            void db.crewMembers.update(member.id, {
+              role: e.target.value || undefined,
+              updatedAt: nowISO(),
+            })
+          }
+          options={[{ value: '', label: 'Role…' }, ...INVITE_ROLES]}
+        />
         {enrolled ? (
           <Badge variant="synced">enrolled</Badge>
         ) : pendingInvite ? (

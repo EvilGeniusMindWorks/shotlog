@@ -77,6 +77,9 @@ export function DrillLogPage() {
   const [angle, setAngle] = useState('0');
   const [subdrill, setSubdrill] = useState('');
   const [showMap, setShowMap] = useState(true);
+  // Handoff-note prompts: driller → blaster at complete, blaster → driller at reopen
+  const [notePrompt, setNotePrompt] = useState<'complete' | 'reopen' | null>(null);
+  const [noteText, setNoteText] = useState('');
 
   useEffect(() => {
     if (!log || holeNumber) return;
@@ -162,7 +165,7 @@ export function DrillLogPage() {
           <Badge variant={STATUS_BADGE[log.status]}>{log.status}</Badge>
           {log.status === 'open' && canTransitionDrillLog('open', 'complete', role) && (
             <Button size="sm" variant="secondary" disabled={holes.length === 0}
-              onClick={() => void update({ status: 'complete', completedAt: nowISO() })}>
+              onClick={() => { setNoteText(''); setNotePrompt('complete'); }}>
               Mark Complete
             </Button>
           )}
@@ -175,7 +178,8 @@ export function DrillLogPage() {
             </Button>
           )}
           {log.status === 'complete' && canTransitionDrillLog('complete', 'open', role) && (
-            <Button size="sm" variant="secondary" onClick={() => void update({ status: 'open' })}>
+            <Button size="sm" variant="secondary"
+              onClick={() => { setNoteText(''); setNotePrompt('reopen'); }}>
               Reopen
             </Button>
           )}
@@ -198,6 +202,17 @@ export function DrillLogPage() {
         {log.status === 'accepted' && (
           <p className="text-sm text-green-800 border border-green-200 bg-green-50 rounded-lg px-3 py-2">
             Accepted by {log.acceptedBy || 'blaster'} — this pattern feeds the shot's loading.
+          </p>
+        )}
+
+        {log.status === 'open' && log.reopenNote && (
+          <p className="text-sm text-safety-orange border border-orange-200 bg-orange-50 rounded-lg px-3 py-2">
+            ↩ Sent back by the blaster: “{log.reopenNote}”
+          </p>
+        )}
+        {log.status !== 'open' && log.completionNote && (
+          <p className="text-sm text-navy border border-gray-200 bg-navy-50 rounded-lg px-3 py-2">
+            Driller's note: “{log.completionNote}”
           </p>
         )}
 
@@ -455,6 +470,53 @@ export function DrillLogPage() {
             <p className="p-4 text-sm text-gray-400">No holes yet — log them as you drill.</p>
           )}
         </div>
+
+        {/* Handoff-note prompt (complete: driller → blaster; reopen: reverse) */}
+        {notePrompt && (
+          <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+            <div className="w-full sm:max-w-sm bg-white rounded-t-xl sm:rounded-xl p-4 space-y-3">
+              <p className="font-bold">
+                {notePrompt === 'complete' ? 'Mark complete' : 'Send back to the driller'}
+              </p>
+              <div>
+                <Label className="text-xs">
+                  {notePrompt === 'complete'
+                    ? 'Anything the blaster should know? (optional)'
+                    : 'What needs fixing? (optional)'}
+                </Label>
+                <Input
+                  value={noteText}
+                  placeholder={notePrompt === 'complete' ? 'e.g. row 3 ran wet, watch the toe' : 'e.g. hole 12 short — re-drill'}
+                  onChange={(e) => setNoteText(e.target.value)}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setNotePrompt(null)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    const note = noteText.trim() || undefined;
+                    if (notePrompt === 'complete') {
+                      // completing clears any sent-back reason from last round
+                      void update({
+                        status: 'complete',
+                        completedAt: nowISO(),
+                        completionNote: note,
+                        reopenNote: undefined,
+                      });
+                    } else {
+                      void update({ status: 'open', reopenNote: note });
+                    }
+                    setNotePrompt(null);
+                  }}
+                >
+                  {notePrompt === 'complete' ? 'Complete' : 'Send back'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Driller signature (part of marking complete) */}
         <div className="rounded-xl border border-gray-200 bg-white p-4">

@@ -27,8 +27,15 @@ export async function drilledHoleNumbers(shotId: string): Promise<Set<string>> {
   return drilled;
 }
 
-/** Create an open drill log for a shot, prefilled from its design plan. */
-export async function createDrillLog(shot: Shot, blastDayId: string, jobId: string): Promise<string> {
+/** Create an open drill log for a shot, prefilled from its design plan.
+ *  With `assignTo`, the log is DISPATCHED: it belongs to that driller
+ *  (shows on their home as "Assigned to you") instead of the creator. */
+export async function createDrillLog(
+  shot: Shot,
+  blastDayId: string,
+  jobId: string,
+  assignTo?: { userId: string; name: string },
+): Promise<string> {
   const session = getSessionUser();
   const now = nowISO();
   const id = generateId();
@@ -44,9 +51,10 @@ export async function createDrillLog(shot: Shot, blastDayId: string, jobId: stri
     faceHeight: shot.totals.avgDrillDepth || 0,
     gps: '',
     locationNote: '',
-    drillerUserId: session?.id ?? '',
-    drillerName: session?.name ?? '',
+    drillerUserId: assignTo?.userId ?? session?.id ?? '',
+    drillerName: assignTo?.name ?? session?.name ?? '',
     signatureImage: null,
+    ...(assignTo ? { assignedBy: session?.name ?? '', assignedAt: now } : {}),
     createdAt: now,
     updatedAt: now,
     syncStatus: 'local',

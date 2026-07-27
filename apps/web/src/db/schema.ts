@@ -340,6 +340,9 @@ export interface CrewMember extends BaseRecord {
   isActive: boolean;
   /** Links this roster entry to a login account (User.id), when they have one */
   userId?: string;
+  /** Roster role tag (driller/blaster/mechanic/…) — drives the dispatch
+   *  picker; stamped at invite/enrollment, editable in Admin › Company */
+  role?: string;
 }
 
 /** Legacy buckets kept valid; new registry uses the specific categories */
@@ -467,6 +470,12 @@ export interface DrillLog extends BaseRecord {
   completedAt?: string;
   acceptedBy?: string;
   acceptedAt?: string;
+  // Dispatch: set when the blaster sent this log to a driller (vs self-started)
+  assignedBy?: string;
+  assignedAt?: string;
+  // Handoff notes: driller → blaster at complete; blaster → driller at reopen
+  completionNote?: string;
+  reopenNote?: string;
 }
 
 export interface DrillLogHole extends BaseRecord {

@@ -21,6 +21,7 @@ import { AdminCompanyPage } from '@/pages/admin/AdminCompanyPage';
 import { AdminEquipmentPage } from '@/pages/admin/AdminEquipmentPage';
 import { EnrollPage } from '@/pages/EnrollPage';
 import { DrillLogPage } from '@/pages/DrillLogPage';
+import { MyDrillLogsPage } from '@/pages/MyDrillLogsPage';
 import { PrintDrillLogPage } from '@/pages/PrintDrillLogPage';
 import { DrillChecklistPage } from '@/pages/DrillChecklistPage';
 import { IncidentPage } from '@/pages/IncidentPage';
@@ -64,6 +65,7 @@ export function App() {
           <Route path="/blast-day/:id/design/:shotId" element={<DesignPlanPage />} />
           <Route path="/blast-day/:id/seismo/:shotId" element={<SeismoPage />} />
           <Route path="/blast-day/:id/drill-log/:logId" element={<DrillLogPage />} />
+          <Route path="/drill-logs" element={<MyDrillLogsPage />} />
           <Route path="/drill-checklist/:equipmentId" element={<DrillChecklistPage />} />
           <Route path="/incident/:incidentId" element={<IncidentPage />} />
           <Route path="/admin" element={<AdminLayout />}>

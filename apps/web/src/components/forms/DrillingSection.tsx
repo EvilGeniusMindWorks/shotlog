@@ -2,8 +2,9 @@
 // serving this pattern. Request drilling → drillers log holes → review/
 // accept each signed log. Aggregates across N logs (multiple drillers/
 // days per shot is normal).
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Drill, Plus } from 'lucide-react';
+import { Drill, Plus, Send, X } from 'lucide-react';
 import { canPerformOp, type Role } from '@shotlog/shared';
 import { createDrillLog, useShotDrilling } from '@/hooks/useDrillLogs';
 import { getSessionUser } from '@/lib/session';
@@ -70,6 +71,97 @@ export function WetHoleLoadingWarning({
 
 const STATUS_BADGE = { open: 'draft', complete: 'submitted', accepted: 'approved' } as const;
 
+/** Dispatch modal: pick who the drill plan goes to. Each pick becomes a
+ *  pre-assigned open log on that driller's home ("Assigned to you"). */
+function SendToDrillersModal({
+  shot,
+  blastDayId,
+  jobId,
+  alreadyAssigned,
+  onClose,
+}: {
+  shot: Shot;
+  blastDayId: string;
+  jobId: string;
+  alreadyAssigned: Set<string>;
+  onClose: () => void;
+}) {
+  const crew = useLiveQuery(() => db.crewMembers.filter((c) => c.isActive).toArray()) ?? [];
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [sending, setSending] = useState(false);
+  // Drillers first, then the rest of the enrolled crew, then not-enrolled
+  const sorted = [...crew].sort((a, b) => {
+    const rank = (c: (typeof crew)[number]) =>
+      !c.userId ? 2 : c.role === 'driller' ? 0 : 1;
+    return rank(a) - rank(b) || a.name.localeCompare(b.name);
+  });
+
+  const send = async () => {
+    setSending(true);
+    for (const c of crew) {
+      if (!c.userId || !picked.has(c.id)) continue;
+      await createDrillLog(shot, blastDayId, jobId, { userId: c.userId, name: c.name });
+    }
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+      <div className="w-full sm:max-w-sm bg-white rounded-t-xl sm:rounded-xl p-4 max-h-[80vh] overflow-auto">
+        <div className="flex items-center justify-between mb-1">
+          <p className="font-bold">Send drill plan to…</p>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
+        <p className="text-xs text-gray-400 mb-2">
+          Each person gets this shot in their queue with the plan attached.
+        </p>
+        <div className="space-y-1">
+          {sorted.map((c) => {
+            const assigned = c.userId ? alreadyAssigned.has(c.userId) : false;
+            const disabled = !c.userId || assigned;
+            return (
+              <label
+                key={c.id}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border ${
+                  disabled ? 'border-gray-100 opacity-50' : 'border-gray-200 cursor-pointer hover:bg-gray-50'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  className="h-5 w-5 rounded border-gray-300 text-navy"
+                  disabled={disabled}
+                  checked={assigned || picked.has(c.id)}
+                  onChange={(e) => {
+                    const next = new Set(picked);
+                    if (e.target.checked) next.add(c.id);
+                    else next.delete(c.id);
+                    setPicked(next);
+                  }}
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold truncate">{c.name}</span>
+                  <span className="block text-xs text-gray-400">
+                    {assigned ? 'already sent' : !c.userId ? 'not enrolled — no app account' : c.role || 'crew'}
+                  </span>
+                </span>
+              </label>
+            );
+          })}
+          {sorted.length === 0 && (
+            <p className="text-sm text-gray-400 py-2">No active crew on the roster yet.</p>
+          )}
+        </div>
+        <Button className="w-full mt-3" disabled={picked.size === 0 || sending} onClick={() => void send()}>
+          <Send className="h-4 w-4 mr-1" />
+          {sending ? 'Sending…' : `Send to ${picked.size || '…'}`}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function DrillingSection({
   shot,
   blastDayId,
@@ -83,6 +175,8 @@ export function DrillingSection({
   const role = (getSessionUser()?.role ?? 'blaster') as Role;
   const drilling = useShotDrilling(shot.id);
   const canRequest = canPerformOp('drillLogs', 'PUT', role);
+  const [showSend, setShowSend] = useState(false);
+  const assignedUserIds = new Set((drilling?.logs ?? []).map((l) => l.drillerUserId).filter(Boolean));
 
   const start = async () => {
     const logId = await createDrillLog(shot, blastDayId, jobId);
@@ -109,10 +203,21 @@ export function DrillingSection({
           )}
         </p>
         {canRequest && (
-          <Button size="sm" variant="outline" onClick={() => void start()}>
-            <Plus className="h-4 w-4 mr-1" />
-            {drilling?.logs.length ? 'New drill log' : 'Request drilling'}
-          </Button>
+          <>
+            <Button
+              size="sm"
+              variant={drilling?.logs.length ? 'outline' : 'default'}
+              onClick={() => setShowSend(true)}
+              title="Pick which drillers this plan goes to"
+            >
+              <Send className="h-4 w-4 mr-1" />
+              {drilling?.logs.length ? 'Send to more' : 'Send to drillers'}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => void start()} title="Start a drill log yourself">
+              <Plus className="h-4 w-4 mr-1" />
+              Log
+            </Button>
+          </>
         )}
       </div>
       {drilling && drilling.wetHoles > 0 && (
@@ -162,12 +267,27 @@ export function DrillingSection({
             {log.deviations > 0 && (
               <span className="text-safety-orange"> · {log.deviations} off-plan</span>
             )}
+            {log.assignedBy && <span className="text-gray-400"> · sent by {log.assignedBy}</span>}
           </span>
           <Badge variant={STATUS_BADGE[log.status]}>{log.status}</Badge>
         </button>
       ))}
       {(!drilling || drilling.logs.length === 0) && (
-        <p className="text-xs text-gray-400">No drill logs yet for this shot.</p>
+        <p className="text-xs text-gray-400">
+          {drilling?.planned
+            ? '⚠ Plan ready but not sent to a driller yet.'
+            : 'No drill logs yet for this shot.'}
+        </p>
+      )}
+
+      {showSend && (
+        <SendToDrillersModal
+          shot={shot}
+          blastDayId={blastDayId}
+          jobId={jobId}
+          alreadyAssigned={assignedUserIds as Set<string>}
+          onClose={() => setShowSend(false)}
+        />
       )}
     </div>
   );
