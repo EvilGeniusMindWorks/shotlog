@@ -95,7 +95,8 @@ export function BlastDayPage() {
   }
 
   const status = blastDay.status;
-  const locked = status === 'approved' && !canEditApproved(role);
+  // Filed with the office (submitted) OR approved → frozen for field roles
+  const locked = status !== 'draft' && !canEditApproved(role);
 
   const updateConditions = (field: string, value: string | boolean) => {
     if (locked) return;
@@ -134,8 +135,10 @@ export function BlastDayPage() {
   const statusActions: ReactNode[] = [];
   if (status === 'draft' && canTransitionStatus('draft', 'submitted', role)) {
     statusActions.push(
-      <Button key="submit" size="sm" variant="secondary" onClick={() => submitViaSync('submitted')}>
-        Submit for Review
+      // Files the point-in-time PDFs with the office, then marks submitted
+      <Button key="submit" size="sm" variant="secondary"
+        onClick={() => navigate(`/blast-day/${blastDay.id}/submit`)}>
+        Submit to Office
       </Button>,
     );
   }
@@ -156,9 +159,10 @@ export function BlastDayPage() {
         </Button>,
       );
     } else if (canTransitionStatus('submitted', 'draft', role)) {
+      // Supervisory unlock, offline-capable (send-back above needs REST)
       statusActions.push(
         <Button key="withdraw" size="sm" variant="secondary" onClick={() => submitViaSync('draft')}>
-          Withdraw
+          Unlock
         </Button>,
       );
     }
@@ -415,8 +419,9 @@ export function BlastDayPage() {
         <div className="max-w-5xl mx-auto px-4 pt-3">
           <p className="flex items-center gap-2 text-sm text-green-800 border border-green-200 bg-green-50 rounded-lg px-3 py-2">
             <Lock className="h-4 w-4 shrink-0" />
-            This blast day is approved and locked. A supervisor can reopen it if something
-            needs to change.
+            {status === 'approved'
+              ? 'This work day is approved and locked. A supervisor can reopen it if something needs to change.'
+              : 'Filed with the office and locked. Ask a supervisor to unlock it — resubmitting files a new version.'}
           </p>
         </div>
       )}

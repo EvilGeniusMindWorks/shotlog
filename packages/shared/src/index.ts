@@ -52,6 +52,7 @@ export {
   DRILL_LOG_STATUS_TRANSITIONS,
   PARENT_CHAIN,
   APPROVAL_LOCKED_TABLES,
+  LOCKED_DAY_STATUSES,
   canPerformOp,
   canTransitionStatus,
   canTransitionDrillLog,

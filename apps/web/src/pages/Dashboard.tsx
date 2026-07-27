@@ -236,8 +236,11 @@ export function WorkDayList() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-xl font-bold text-gray-900">Work Days</h2>
+      <div className="flex items-center justify-between mb-3 gap-2">
+        <h2 className="text-xl font-bold text-gray-900 flex-1">Work Days</h2>
+        <Button variant="outline" size="sm" onClick={() => navigate('/records')}>
+          My Records
+        </Button>
         <Button
           variant="outline"
           size="sm"

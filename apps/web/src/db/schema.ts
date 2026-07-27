@@ -633,3 +633,45 @@ export interface Attachment extends BaseRecord {
   mimeType: string;
   data: Blob;
 }
+
+// ══════════════════════════════════════════════════════
+// SUBMISSIONS — the office's permanent record book
+// ══════════════════════════════════════════════════════
+
+export type SubmissionType =
+  | 'blast_log'
+  | 'daily_report'
+  | 'drill_log'
+  | 'drill_checklist'
+  | 'incident';
+
+/** A frozen attachment copy filed alongside the PDF (archival size) */
+export interface SubmissionAsset {
+  id: string; // original attachment id
+  fileName: string;
+  mimeType: string;
+  data: Blob;
+}
+
+/**
+ * Point-in-time office copy of a filed document: the filled-out PDF plus
+ * frozen attachment copies, exactly as they were at submit time. WRITE-ONCE:
+ * the server discards any re-PUT of an existing submission id; corrections
+ * are new submissions with a bumped `version` (v1, v2, … all kept forever).
+ */
+export interface Submission extends BaseRecord {
+  type: SubmissionType;
+  /** Live record this snapshots (blastLog/dailyReport/drillLog/checklist/incident id) */
+  sourceId: string;
+  blastDayId?: string;
+  jobId?: string;
+  version: number;
+  title: string;
+  date: string; // the document's date (work day / checklist / incident date)
+  submittedBy: string;
+  submittedByUserId: string;
+  pdf: Blob;
+  assets: SubmissionAsset[];
+  /** Display facts for lists (holes, lbs, shots …) + skippedVideos refs */
+  meta?: Record<string, unknown>;
+}

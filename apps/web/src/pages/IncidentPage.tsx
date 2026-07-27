@@ -41,6 +41,7 @@ function IncidentForm({
   role: Role;
   onBack: () => void;
 }) {
+  const navigate = useNavigate();
   const { draft, setField } = useDraftRecord(db.incidents, incident);
   const job = useLiveQuery(() => (draft.jobId ? db.jobs.get(draft.jobId) : undefined), [draft.jobId]);
   const canClaim = role === 'office' || role === 'admin';
@@ -65,7 +66,7 @@ function IncidentForm({
           <Badge variant={STATUS_BADGE[draft.status]}>{draft.status.replace('_', ' ')}</Badge>
           {draft.status === 'open' && (
             <Button size="sm" variant="secondary"
-              onClick={() => void db.incidents.update(draft.id, { status: 'office_review', updatedAt: nowISO() })}>
+              onClick={() => navigate(`/incident/${draft.id}/submit`)}>
               Send to Office
             </Button>
           )}

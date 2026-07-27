@@ -171,10 +171,8 @@ export function DrillLogPage() {
           )}
           {log.status === 'complete' && canTransitionDrillLog('complete', 'accepted', role) && (
             <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white"
-              onClick={() =>
-                void update({ status: 'accepted', acceptedBy: me?.name ?? '', acceptedAt: nowISO() })
-              }>
-              <Check className="h-4 w-4 mr-1" /> Accept
+              onClick={() => navigate(`/blast-day/${blastDayId}/drill-log/${log.id}/submit`)}>
+              <Check className="h-4 w-4 mr-1" /> Accept &amp; File
             </Button>
           )}
           {log.status === 'complete' && canTransitionDrillLog('complete', 'open', role) && (

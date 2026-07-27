@@ -454,8 +454,8 @@ export function DrillerHome() {
               <Badge variant={STATUS_BADGE[log.status]}>{log.status}</Badge>
             </button>
           ))}
-          <Button variant="outline" size="sm" className="mt-2" onClick={() => navigate('/drill-logs')}>
-            All my logs
+          <Button variant="outline" size="sm" className="mt-2" onClick={() => navigate('/records')}>
+            All my records
           </Button>
         </div>
       )}

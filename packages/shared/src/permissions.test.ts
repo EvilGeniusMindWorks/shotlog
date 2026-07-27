@@ -62,6 +62,17 @@ describe('table permissions', () => {
     expect(canPerformOp('equipment', 'DELETE', 'driller')).toBe(false);
   });
 
+  it('submissions: every field role files, nobody edits, admin deletes', () => {
+    for (const role of ['blaster', 'driller', 'mechanic', 'supervisor', 'admin'] as const) {
+      expect(canPerformOp('submissions', 'PUT', role), role).toBe(true);
+    }
+    expect(canPerformOp('submissions', 'PUT', 'office')).toBe(false);
+    for (const role of ROLES) {
+      expect(canPerformOp('submissions', 'PATCH', role), role).toBe(role === 'admin');
+      expect(canPerformOp('submissions', 'DELETE', role), role).toBe(role === 'admin');
+    }
+  });
+
   it('unknown tables are denied for every role', () => {
     for (const role of ROLES) {
       expect(canPerformOp('records', 'PUT', role)).toBe(false);
@@ -72,9 +83,10 @@ describe('table permissions', () => {
 });
 
 describe('blast day status transitions', () => {
-  it('blaster can submit and withdraw but never approve', () => {
+  it('blaster can submit but not unlock, approve, or reopen', () => {
     expect(canTransitionStatus('draft', 'submitted', 'blaster')).toBe(true);
-    expect(canTransitionStatus('submitted', 'draft', 'blaster')).toBe(true);
+    // submitting files the office copy — unlocking is supervisory
+    expect(canTransitionStatus('submitted', 'draft', 'blaster')).toBe(false);
     expect(canTransitionStatus('submitted', 'approved', 'blaster')).toBe(false);
     expect(canTransitionStatus('approved', 'submitted', 'blaster')).toBe(false);
   });

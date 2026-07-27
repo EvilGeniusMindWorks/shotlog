@@ -87,6 +87,11 @@ export const TABLE_PERMISSIONS: Record<string, TableRule> = {
     DELETE: REGISTRY,
   },
 
+  // Point-in-time office copies (filed PDFs + frozen assets). Every field
+  // role files them; NOBODY edits — write-once (the server additionally
+  // discards re-PUTs of an existing submission id). Delete is admin-only.
+  submissions: { PUT: EQUIPMENT_ENTRIES, PATCH: ADMIN_ONLY, DELETE: ADMIN_ONLY },
+
   // Legacy local profile table — field-writable until deprecated
   blasterProfiles: uniform(BLAST_FAMILY),
 };
@@ -107,13 +112,19 @@ export const BLAST_DAY_STATUS_TRANSITIONS: Record<string, Record<string, readonl
     submitted: ['admin', 'supervisor', 'blaster', 'driller'], // drillers submit drill-only days
   },
   submitted: {
-    draft: ['admin', 'supervisor', 'blaster', 'driller'], // withdraw / send back
+    // Submitting FILES the office copy, so unlocking is supervisory —
+    // field roles fix-and-resubmit as a new version after an unlock
+    draft: ['admin', 'supervisor'],
     approved: ['admin', 'supervisor'],
   },
   approved: {
     submitted: ['admin', 'supervisor'], // reopen
   },
 };
+
+/** Blast-day statuses whose child records are frozen for field roles
+ *  (filed with the office and/or approved) */
+export const LOCKED_DAY_STATUSES: ReadonlySet<string> = new Set(['submitted', 'approved']);
 
 export function canTransitionStatus(from: string, to: string, role: Role): boolean {
   if (from === to) return true; // not a transition

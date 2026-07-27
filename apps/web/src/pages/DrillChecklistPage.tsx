@@ -69,6 +69,11 @@ export function DrillChecklistPage() {
   const submit = async () => {
     const result = await fileChecklist({ ...draft, equipmentId: equipmentId ?? '', jobId });
     setSaved(result);
+    // Auto-file the office copy: the archive route renders the paper form,
+    // stores the point-in-time PDF, and shows the outcome (incl. ticket)
+    navigate(`/drill-checklist-file/${draft.id}${result.ticketId ? '?ticket=1' : ''}`, {
+      replace: true,
+    });
   };
 
   return (

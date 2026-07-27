@@ -14,6 +14,7 @@ import {
   canTransitionDrillLog,
   canTransitionStatus,
   APPROVAL_LOCKED_TABLES,
+  LOCKED_DAY_STATUSES,
   PARENT_CHAIN,
   type Role,
 } from '@shotlog/shared';
@@ -165,12 +166,25 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
           continue;
         }
 
+        // 1b. submissions are write-once: a PUT on an existing id is a
+        // replay or a forgery — corrections come as NEW submissions (vN+1)
+        if (tableName === 'submissions' && stored && op.op !== 'DELETE') {
+          discard(op, tableName, 'submission is write-once');
+          continue;
+        }
+
         // 2. blastDay status transitions
         if (tableName === 'blastDays' && op.op !== 'DELETE') {
           const from = (stored?.payload.status as string | undefined) ?? 'draft';
           const to = (effective.status as string | undefined) ?? from;
           if (!canTransitionStatus(from, to, role)) {
             discard(op, tableName, `forbidden transition ${from}->${to}`);
+            continue;
+          }
+          // Same-status edits to a FILED day are frozen for field roles —
+          // the office copy and the live record must not silently diverge
+          if (from === to && LOCKED_DAY_STATUSES.has(from) && !canEditApproved(role)) {
+            discard(op, tableName, `day ${from} (locked)`);
             continue;
           }
           blastDayStatus.set(op.id, to);
@@ -201,12 +215,16 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
           }
         }
 
-        // 3. approval lock on the blast-day family
+        // 3. filed/approved lock on the blast-day family: children freeze
+        // for field roles once the day is submitted to the office
         if (APPROVAL_LOCKED_TABLES.has(tableName) && !canEditApproved(role)) {
           const dayId = await resolveBlastDayId(tableName, effective, batch);
-          if (dayId && (await statusOf(dayId)) === 'approved') {
-            discard(op, tableName, 'blast day approved (locked)');
-            continue;
+          if (dayId) {
+            const status = await statusOf(dayId);
+            if (LOCKED_DAY_STATUSES.has(status)) {
+              discard(op, tableName, `blast day ${status} (locked)`);
+              continue;
+            }
           }
         }
 
@@ -230,3 +248,5 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
   }
   res.json({ ok: true, discarded: discardedIds.length, discardedIds });
 });
+// NOTE: submissions immutability + LOCKED_DAY_STATUSES enforcement above
+// require @shotlog/shared >= the build that exports LOCKED_DAY_STATUSES.
