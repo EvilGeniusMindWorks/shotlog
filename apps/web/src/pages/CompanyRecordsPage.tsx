@@ -1,6 +1,11 @@
-// The office's record book: every filed submission (point-in-time PDFs +
-// frozen attachments), searchable and filterable. Copies are write-once —
-// what you open here is exactly what the field filed, forever.
+// Company-wide Records for admin/office/supervisor — first-class, top-level
+// (not buried in the admin console). Two lenses:
+//   Filed         — the immutable archive of point-in-time office copies
+//   All documents — every live document in the company, filed or not, with
+//                   a File-to-office backfill for accepted-but-unfiled logs
+import { getSessionUser } from '@/lib/session';
+import { buildDocRows } from '@/lib/docRows';
+import { DocList } from '@/components/records/DocList';
 import { useMemo, useState } from 'react';
 import { FileDown, FileText, Search } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
@@ -95,7 +100,7 @@ function SubmissionRow({ s, jobName, older }: { s: Submission; jobName?: string;
   );
 }
 
-export function AdminRecordsPage() {
+function FiledLens() {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [jobFilter, setJobFilter] = useState('');
   const [search, setSearch] = useState('');
@@ -134,12 +139,9 @@ export function AdminRecordsPage() {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="font-bold">Records</h3>
-        <p className="text-xs text-gray-400">
-          {submissions?.length ?? 0} filed cop{(submissions?.length ?? 0) === 1 ? 'y' : 'ies'} — write-once
-        </p>
-      </div>
+      <p className="text-xs text-gray-400 text-right">
+        {submissions?.length ?? 0} filed cop{(submissions?.length ?? 0) === 1 ? 'y' : 'ies'} — write-once
+      </p>
 
       <div className="flex gap-2 flex-wrap items-center">
         {(['all', 'blast_log', 'daily_report', 'drill_log', 'drill_checklist', 'incident'] as const).map(
@@ -195,6 +197,39 @@ export function AdminRecordsPage() {
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+
+export function CompanyRecordsPage() {
+  const me = getSessionUser();
+  const [lens, setLens] = useState<'filed' | 'all'>('filed');
+  const rows = useLiveQuery(
+    () => buildDocRows({ scope: 'company', role: me?.role ?? 'admin' }),
+    [me?.role],
+  );
+  return (
+    <div className="p-4 max-w-3xl mx-auto space-y-3">
+      <div className="flex items-center gap-3">
+        <h2 className="text-xl font-bold text-gray-900 flex-1">Records</h2>
+        <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+          {(['filed', 'all'] as const).map((l) => (
+            <button
+              key={l}
+              className={
+                lens === l
+                  ? 'px-3 py-1.5 text-sm font-medium bg-navy text-white'
+                  : 'px-3 py-1.5 text-sm font-medium bg-white text-gray-600'
+              }
+              onClick={() => setLens(l)}
+            >
+              {l === 'filed' ? 'Filed' : 'All documents'}
+            </button>
+          ))}
+        </div>
+      </div>
+      {lens === 'filed' ? <FiledLens /> : <DocList rows={rows} showFileAction />}
     </div>
   );
 }

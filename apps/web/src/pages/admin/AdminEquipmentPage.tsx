@@ -210,16 +210,22 @@ export function AdminEquipmentPage() {
             {group.items.map((item) => (
               <div key={item.id} className={(item.status ?? 'active') === 'retired' ? 'p-3 opacity-50' : 'p-3'}>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-mono text-sm text-navy shrink-0 w-16">{item.assetNumber}</span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{item.description}</p>
-                    <p className="text-xs text-gray-400 truncate">
-                      {[item.make, item.year, item.model].filter(Boolean).join(' ') || '—'}
-                      {item.serialNumber && ` · SN ${item.serialNumber}`}
-                      {item.plate && ` · ${item.plate}`}
-                      {typeof item.hourMeter === 'number' && ` · ${item.hourMeter} hrs`}
-                    </p>
-                  </div>
+                  {/* Name area → the asset's history page */}
+                  <button
+                    className="flex items-center gap-2 min-w-0 flex-1 text-left hover:bg-gray-50 rounded-lg -m-1 p-1"
+                    onClick={() => navigate(`/equipment/${item.id}`)}
+                  >
+                    <span className="font-mono text-sm text-navy shrink-0 w-16">{item.assetNumber}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">{item.description}</p>
+                      <p className="text-xs text-gray-400 truncate">
+                        {[item.make, item.year, item.model].filter(Boolean).join(' ') || '—'}
+                        {item.serialNumber && ` · SN ${item.serialNumber}`}
+                        {item.plate && ` · ${item.plate}`}
+                        {typeof item.hourMeter === 'number' && ` · ${item.hourMeter} hrs`}
+                      </p>
+                    </div>
+                  </button>
                   {(item.status ?? 'active') !== 'active' && (
                     <Badge variant={item.status === 'in_shop' ? 'warning' : 'local'}>
                       {item.status === 'in_shop' ? 'in shop' : 'retired'}

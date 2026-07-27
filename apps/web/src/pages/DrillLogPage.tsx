@@ -10,6 +10,7 @@ import { useLiveQuery, db } from '@/db';
 import { addHole, drilledHoleNumbers, getShotPlan, nextHoleNumber, useShotDrilling } from '@/hooks/useDrillLogs';
 import { parseDiagram } from '@/lib/shotDiagram';
 import { DrillPlanDiagram } from '@/components/design/DrillPlanDiagram';
+import { useSubmissions } from '@/lib/archive';
 import { getSessionUser } from '@/lib/session';
 import { nowISO, formatDate } from '@/lib/utils';
 import type { HoleConditionCode } from '@/db/schema';
@@ -62,6 +63,7 @@ export function DrillLogPage() {
   // drilled in ANY log (any driller) is off everyone's remaining list
   const plan = getShotPlan(shot);
   const drilling = useShotDrilling(log?.shotId);
+  const filedCopies = useSubmissions(log?.id);
   const drilled = useLiveQuery(
     async () => (log ? drilledHoleNumbers(log.shotId) : undefined),
     [log?.shotId],
@@ -181,6 +183,16 @@ export function DrillLogPage() {
               Reopen
             </Button>
           )}
+          {log.status === 'accepted' &&
+            filedCopies !== undefined &&
+            filedCopies.length === 0 &&
+            canTransitionDrillLog('complete', 'accepted', role) && (
+              // Backfill: accepted before the archive existed → no office copy
+              <Button size="sm" variant="secondary"
+                onClick={() => navigate(`/blast-day/${blastDayId}/drill-log/${log.id}/submit`)}>
+                File to office
+              </Button>
+            )}
           {log.status === 'accepted' && canTransitionDrillLog('accepted', 'complete', role) && (
             <Button size="sm" variant="secondary" onClick={() => void update({ status: 'complete' })}>
               Un-accept
@@ -284,7 +296,17 @@ export function DrillLogPage() {
             <Input type="number" value={log.faceHeight || ''} disabled={!editable}
               onChange={(e) => void update({ faceHeight: parseFloat(e.target.value) || 0 })} /></div>
           <div className="col-span-2">
-            <Label className="text-xs">Drill rig</Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">Drill rig</Label>
+              {log.drillRigEquipmentId && (
+                <button
+                  className="text-[11px] text-navy underline"
+                  onClick={() => navigate(`/equipment/${log.drillRigEquipmentId}`)}
+                >
+                  rig history
+                </button>
+              )}
+            </div>
             <Select value={log.drillRigEquipmentId ?? ''} disabled={!editable}
               onChange={(e) => void update({ drillRigEquipmentId: e.target.value || undefined })}
               options={[{ value: '', label: 'Pick rig…' },

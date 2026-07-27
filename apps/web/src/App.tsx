@@ -22,6 +22,8 @@ import { AdminEquipmentPage } from '@/pages/admin/AdminEquipmentPage';
 import { EnrollPage } from '@/pages/EnrollPage';
 import { DrillLogPage } from '@/pages/DrillLogPage';
 import { MyRecordsPage } from '@/pages/MyRecordsPage';
+import { CompanyRecordsPage } from '@/pages/CompanyRecordsPage';
+import { EquipmentPage } from '@/pages/EquipmentPage';
 import { SubmitDayPage } from '@/pages/SubmitDayPage';
 import { SubmitDrillLogPage } from '@/pages/SubmitDrillLogPage';
 import { PrintDrillChecklistPage, FileDrillChecklistPage } from '@/pages/PrintDrillChecklistPage';
@@ -30,15 +32,25 @@ import { PrintDrillLogPage } from '@/pages/PrintDrillLogPage';
 import { DrillChecklistPage } from '@/pages/DrillChecklistPage';
 import { IncidentPage } from '@/pages/IncidentPage';
 import { AdminIncidentsPage } from '@/pages/admin/AdminIncidentsPage';
-import { AdminRecordsPage } from '@/pages/admin/AdminRecordsPage';
 import { Navigate } from 'react-router-dom';
 import { getSessionUser } from '@/lib/session';
 
 function AdminIndexRedirect() {
   const role = getSessionUser()?.role;
   const target =
-    role === 'supervisor' ? '/admin/approvals' : role === 'mechanic' ? '/admin/equipment' : role === 'office' ? '/admin/records' : '/admin/users';
+    role === 'supervisor' ? '/admin/approvals' : role === 'mechanic' ? '/admin/equipment' : role === 'office' ? '/admin/incidents' : '/admin/users';
   return <Navigate to={target} replace />;
+}
+
+/** /records: company-wide record book for admin/office/supervisor, the
+ *  personal My Records page for field roles */
+function RecordsRouter() {
+  const role = getSessionUser()?.role;
+  return role === 'admin' || role === 'office' || role === 'supervisor' ? (
+    <CompanyRecordsPage />
+  ) : (
+    <MyRecordsPage />
+  );
 }
 
 export function App() {
@@ -70,8 +82,9 @@ export function App() {
           <Route path="/blast-day/:id/design/:shotId" element={<DesignPlanPage />} />
           <Route path="/blast-day/:id/seismo/:shotId" element={<SeismoPage />} />
           <Route path="/blast-day/:id/drill-log/:logId" element={<DrillLogPage />} />
-          <Route path="/records" element={<MyRecordsPage />} />
+          <Route path="/records" element={<RecordsRouter />} />
           <Route path="/drill-logs" element={<MyRecordsPage />} />
+          <Route path="/equipment/:id" element={<EquipmentPage />} />
           <Route path="/drill-checklist/:equipmentId" element={<DrillChecklistPage />} />
           <Route path="/incident/:incidentId" element={<IncidentPage />} />
           <Route path="/admin" element={<AdminLayout />}>
@@ -80,7 +93,6 @@ export function App() {
             <Route path="approvals" element={<AdminApprovalsPage />} />
             <Route path="catalog" element={<AdminCatalogPage />} />
             <Route path="equipment" element={<AdminEquipmentPage />} />
-            <Route path="records" element={<AdminRecordsPage />} />
             <Route path="incidents" element={<AdminIncidentsPage />} />
             <Route path="company" element={<AdminCompanyPage />} />
           </Route>

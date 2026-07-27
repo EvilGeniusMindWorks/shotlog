@@ -427,11 +427,14 @@ export function DrillerHome() {
       )}
 
       {tickets.length > 0 && (
-        <div className="rounded-xl border border-orange-200 bg-orange-50 p-3">
+        <button
+          className="w-full rounded-xl border border-orange-200 bg-orange-50 p-3 text-left"
+          onClick={() => lastRigId && navigate(`/equipment/${lastRigId}`)}
+        >
           <p className="text-sm font-medium text-safety-orange flex items-center gap-1.5">
-            <Wrench className="h-4 w-4" /> {rig?.assetNumber}: “{tickets[0].description}” — with the shop
+            <Wrench className="h-4 w-4" /> {rig?.assetNumber}: “{tickets[0].description}” — with the shop ›
           </p>
-        </div>
+        </button>
       )}
 
       {(recentLogs ?? []).length > 0 && (
@@ -502,11 +505,25 @@ export function MechanicHome() {
     const dates = [e.dotInspectionDue, e.calibrationDue].filter(Boolean) as string[];
     return dates.some((d) => (new Date(d).getTime() - Date.now()) / 86_400_000 <= 30);
   });
-  const inShop = equipment.filter((e) => e.status === 'in_shop');
+  // What came in from the field: newest checklists across the whole fleet
+  const checklists = useLiveQuery(async () =>
+    (await db.drillChecklists.toArray())
+      .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt))
+      .slice(0, 15),
+  );
+  // Fleet strip: the machinery the shop owns (skip road-fleet paperwork rows)
+  const fleet = equipment
+    .filter((e) => e.isActive)
+    .sort((a, b) => {
+      const rank = (x: (typeof equipment)[number]) =>
+        x.status === 'in_shop' ? 0 : x.status === 'retired' ? 2 : 1;
+      return rank(a) - rank(b) || a.assetNumber.localeCompare(b.assetNumber, undefined, { numeric: true });
+    });
 
   return (
     <div className="p-4 max-w-2xl mx-auto space-y-3">
-      <h2 className="text-xl font-bold text-gray-900">Shop</h2>
+      <h2 className="text-xl font-bold text-gray-900">My Shop</h2>
+
       <div className="rounded-xl border-l-4 border border-gray-200 border-l-safety-orange bg-white p-3">
         <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
           Repair queue · {tickets.length}
@@ -514,7 +531,7 @@ export function MechanicHome() {
         {tickets.map((t) => (
           <button key={t.id}
             className="w-full flex items-center gap-2 py-1.5 text-left hover:bg-gray-50 rounded-lg"
-            onClick={() => navigate('/admin/equipment')}>
+            onClick={() => navigate(`/equipment/${t.equipmentId}`)}>
             <span className="font-mono text-sm text-navy">{assetOf(t.equipmentId)?.assetNumber ?? '?'}</span>
             <p className="text-sm flex-1 min-w-0 truncate">“{t.description}”</p>
             {t.outOfService && <Badge variant="violation">out of service</Badge>}
@@ -522,26 +539,88 @@ export function MechanicHome() {
         ))}
         {tickets.length === 0 && <p className="text-sm text-gray-400 py-1">Queue's clear.</p>}
         <Button size="sm" className="mt-2" onClick={() => navigate('/admin/equipment')}>
-          Open equipment
+          Resolve in registry
         </Button>
       </div>
+
+      <div className="rounded-xl border border-gray-200 bg-white p-3">
+        <div className="flex items-center justify-between mb-1">
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+            Checklists from the field
+          </p>
+          <button className="text-xs text-navy underline" onClick={() => navigate('/records')}>
+            All checklists →
+          </button>
+        </div>
+        {(checklists ?? []).map((c) => {
+          const flagged = c.outOfService || c.repairsNote.trim().length > 0;
+          return (
+            <button
+              key={c.id}
+              className="w-full flex items-center gap-2 py-1.5 text-left hover:bg-gray-50 rounded-lg"
+              onClick={() => navigate(`/drill-checklist-print/${c.id}`)}
+            >
+              <span className={flagged ? 'text-safety-orange' : 'text-green-600'}>
+                {flagged ? '⚠' : '✓'}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium truncate">
+                  {assetOf(c.equipmentId)?.assetNumber ?? c.equipmentId} · {c.drillerName}
+                </p>
+                <p className={`text-xs truncate ${flagged ? 'text-safety-orange' : 'text-gray-400'}`}>
+                  {formatDate(c.date)}
+                  {c.outOfService
+                    ? ' · OUT OF SERVICE'
+                    : c.repairsNote
+                      ? ` · “${c.repairsNote.slice(0, 50)}”`
+                      : ' · all good'}
+                </p>
+              </div>
+              <span className="text-xs text-gray-400">view ›</span>
+            </button>
+          );
+        })}
+        {(checklists ?? []).length === 0 && (
+          <p className="text-sm text-gray-400 py-1">No checklists filed yet.</p>
+        )}
+      </div>
+
+      <div className="rounded-xl border border-gray-200 bg-white p-3">
+        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+          Fleet
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          {fleet.map((e) => (
+            <button
+              key={e.id}
+              className={`px-2 py-1 rounded-md border text-xs font-mono font-semibold ${
+                e.status === 'in_shop'
+                  ? 'bg-orange-50 border-orange-300 text-safety-orange'
+                  : e.status === 'retired'
+                    ? 'bg-gray-100 border-gray-200 text-gray-400'
+                    : 'bg-green-50 border-green-200 text-green-700'
+              }`}
+              title={`${e.description} — ${e.status ?? 'active'}`}
+              onClick={() => navigate(`/equipment/${e.id}`)}
+            >
+              {e.status === 'in_shop' ? '🔧 ' : ''}
+              {e.assetNumber}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {dueSoon.length > 0 && (
         <div className="rounded-xl border border-gray-200 bg-white p-3">
           <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Coming due</p>
           {dueSoon.map((e) => (
-            <p key={e.id} className="text-sm py-1 flex items-center gap-2">
+            <button key={e.id}
+              className="w-full text-left text-sm py-1 flex items-center gap-2 hover:bg-gray-50 rounded-lg"
+              onClick={() => navigate(`/equipment/${e.id}`)}>
               <AlertTriangle className="h-4 w-4 text-safety-orange" />
               {e.assetNumber} · {e.dotInspectionDue ? `DOT ${e.dotInspectionDue}` : ''}
               {e.calibrationDue ? ` calibration ${e.calibrationDue}` : ''}
-            </p>
-          ))}
-        </div>
-      )}
-      {inShop.length > 0 && (
-        <div className="rounded-xl border border-gray-200 bg-white p-3">
-          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">In shop</p>
-          {inShop.map((e) => (
-            <p key={e.id} className="text-sm py-1">{e.assetNumber} — {e.description}</p>
+            </button>
           ))}
         </div>
       )}
@@ -636,6 +715,13 @@ export function AdminHome() {
   const openIncidents = useLiveQuery(() =>
     db.incidents.filter((i) => i.status !== 'closed').count(),
   );
+  // The daily paperwork pulse: newest office copies filed from the field
+  const latestFilings = useLiveQuery(async () =>
+    (await db.submissions.toArray())
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .slice(0, 5)
+      .map((s) => ({ id: s.id, title: s.title, by: s.submittedBy, date: s.date, version: s.version, pdf: s.pdf })),
+  );
 
   return (
     <div className="p-4 max-w-4xl mx-auto space-y-3">
@@ -645,6 +731,36 @@ export function AdminHome() {
           <Button size="sm" onClick={() => setViewRole('blaster')}>
             Work in the field ›
           </Button>
+        )}
+      </div>
+
+      <div className="rounded-xl border border-gray-200 bg-white p-3">
+        <div className="flex items-center justify-between mb-1">
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+            Latest filings
+          </p>
+          <button className="text-xs text-navy underline" onClick={() => navigate('/records')}>
+            All records →
+          </button>
+        </div>
+        {(latestFilings ?? []).map((f) => (
+          <button
+            key={f.id}
+            className="w-full flex items-center gap-2 py-1.5 text-left hover:bg-gray-50 rounded-lg"
+            onClick={() => window.open(URL.createObjectURL(f.pdf), '_blank')}
+          >
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium truncate">{f.title}</p>
+              <p className="text-xs text-gray-400 truncate">
+                {formatDate(f.date)} · filed by {f.by}
+                {f.version > 1 ? ` · v${f.version}` : ''}
+              </p>
+            </div>
+            <span className="text-xs text-navy">PDF ›</span>
+          </button>
+        ))}
+        {(latestFilings ?? []).length === 0 && (
+          <p className="text-sm text-gray-400">Nothing filed yet — submitted paperwork lands here.</p>
         )}
       </div>
 

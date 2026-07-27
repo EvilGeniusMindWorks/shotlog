@@ -37,12 +37,16 @@ export function SubmitDrillLogPage() {
           date: day?.date ?? log.createdAt.slice(0, 10),
           meta: { jobName: job?.name, driller: log.drillerName },
         });
-        await db.drillLogs.update(log.id, {
-          status: 'accepted',
-          acceptedBy: getSessionUser()?.name ?? '',
-          acceptedAt: nowISO(),
-          updatedAt: nowISO(),
-        });
+        // Backfill path: a log accepted before the archive existed just gets
+        // its office copy — the acceptance stands as-is
+        if (log.status !== 'accepted') {
+          await db.drillLogs.update(log.id, {
+            status: 'accepted',
+            acceptedBy: getSessionUser()?.name ?? '',
+            acceptedAt: nowISO(),
+            updatedAt: nowISO(),
+          });
+        }
         if (!cancelled) navigate(`/blast-day/${blastDayId}/drill-log/${log.id}`, { replace: true });
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'filing failed');

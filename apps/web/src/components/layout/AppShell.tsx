@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   CircleHelp,
+  FolderArchive,
   LayoutDashboard,
   BookOpen,
   Briefcase,
@@ -22,6 +23,7 @@ import { Tour } from './Tour';
 
 const baseNavItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/records', icon: FolderArchive, label: 'Records' },
   { to: '/jobs', icon: Briefcase, label: 'Jobs' },
   { to: '/reference', icon: BookOpen, label: 'Reference' },
   { to: '/settings', icon: Settings, label: 'Settings' },

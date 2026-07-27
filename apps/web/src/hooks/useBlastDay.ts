@@ -286,6 +286,8 @@ export async function createBlastDay(
       assetNumber: m.assetNumber || m.description,
       hoursStart: 0,
       hoursEnd: 0,
+      // registry link — the equipment history page traces usage through this
+      equipmentId: m.id,
       createdAt: now,
       updatedAt: now,
       syncStatus: 'local' as const,

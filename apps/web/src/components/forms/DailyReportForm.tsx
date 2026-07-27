@@ -2,6 +2,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { useLiveQuery, db, deleteWithTombstone } from '@/db';
 import { generateId, nowISO } from '@/lib/utils';
 import type { BlastDay, BlastLog, DailyReport, Shot, WorkForceEntry, EquipmentEntry, MaterialEntry, SubcontractorEntry } from '@/db/schema';
+import { equipmentEntryBucket } from '@/db/schema';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -296,6 +297,30 @@ function EquipmentSection({
     void deleteWithTombstone('equipmentEntries', id);
   };
 
+  // Registry-linked entry: picking an asset stamps id + number + bucket so
+  // the equipment history page can trace usage reliably
+  const registry =
+    useLiveQuery(() =>
+      db.equipment.filter((e) => e.isActive && e.status !== 'retired').toArray(),
+    ) ?? [];
+  const registrySorted = [...registry].sort((a, b) =>
+    a.assetNumber.localeCompare(b.assetNumber, undefined, { numeric: true }),
+  );
+  const pickAsset = (entryId: string, equipmentId: string) => {
+    if (equipmentId === '__other') {
+      void db.equipmentEntries.update(entryId, { equipmentId: undefined, updatedAt: nowISO() });
+      return;
+    }
+    const equip = registry.find((e) => e.id === equipmentId);
+    if (!equip) return;
+    void db.equipmentEntries.update(entryId, {
+      equipmentId: equip.id,
+      assetNumber: equip.assetNumber,
+      category: equipmentEntryBucket(equip.category),
+      updatedAt: nowISO(),
+    });
+  };
+
   // Group by category
   const grouped = EQUIPMENT_CATEGORIES.map((cat) => ({
     ...cat,
@@ -322,19 +347,36 @@ function EquipmentSection({
                 {group.label}
               </h4>
               {group.items.map((e) => (
-                <div key={e.id} className="flex items-center gap-2 mb-2">
+                <div key={e.id} className="flex items-center gap-2 mb-2 flex-wrap">
                   <Select
-                    value={e.category}
-                    onChange={(ev) => updateEntry(e.id, 'category', ev.target.value)}
-                    options={EQUIPMENT_CATEGORIES}
-                    className="w-32"
+                    value={e.equipmentId ?? (e.assetNumber ? '__other' : '')}
+                    onChange={(ev) => pickAsset(e.id, ev.target.value)}
+                    options={[
+                      { value: '', label: 'Pick asset…' },
+                      ...registrySorted.map((r) => ({
+                        value: r.id,
+                        label: `${r.assetNumber} — ${r.description}`,
+                      })),
+                      { value: '__other', label: 'Other / not listed' },
+                    ]}
+                    className="flex-1 min-w-[180px]"
                   />
-                  <Input
-                    value={e.assetNumber}
-                    onChange={(ev) => updateEntry(e.id, 'assetNumber', ev.target.value)}
-                    placeholder="Asset #"
-                    className="flex-1"
-                  />
+                  {!e.equipmentId && (
+                    <>
+                      <Select
+                        value={e.category}
+                        onChange={(ev) => updateEntry(e.id, 'category', ev.target.value)}
+                        options={EQUIPMENT_CATEGORIES}
+                        className="w-32"
+                      />
+                      <Input
+                        value={e.assetNumber}
+                        onChange={(ev) => updateEntry(e.id, 'assetNumber', ev.target.value)}
+                        placeholder="Asset #"
+                        className="w-28"
+                      />
+                    </>
+                  )}
                   <div className="w-20">
                     <Input
                       type="number"

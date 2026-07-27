@@ -311,6 +311,8 @@ export interface EquipmentEntry extends BaseRecord {
   assetNumber: string;
   hoursStart: number;
   hoursEnd: number;
+  /** Registry link (new picker); legacy rows match by assetNumber text */
+  equipmentId?: string;
 }
 
 export interface MaterialEntry extends BaseRecord {
