@@ -148,11 +148,13 @@ function LoginScreen({ onDone }: { onDone: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const submit = async () => {
+  // Values come from the DOM, not React state: Chrome autofill can populate
+  // fields without firing the events that update state
+  const submit = async (email: string, password: string) => {
     setBusy(true);
     setError(null);
     try {
-      await login(form.serverUrl, form.email, form.password);
+      await login(form.serverUrl, email, password);
       // Start replication in the background — don't block entry on hydration
       void connectPowerSync().catch(() => undefined);
       onDone();
@@ -168,11 +170,28 @@ function LoginScreen({ onDone }: { onDone: () => void }) {
       <p className="text-sm text-gray-500 mb-4">
         Use the account your company admin set up for you.
       </p>
-      <div className="space-y-3">
+      {/* A real <form> + submit is what lets Chrome offer saved passwords
+          and prompt to save after login — onClick-only buttons are
+          invisible to the password manager */}
+      <form
+        className="space-y-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const data = new FormData(e.currentTarget);
+          const email = String(data.get('email') ?? '').trim();
+          const password = String(data.get('password') ?? '');
+          if (!email || !password) {
+            setError('enter your email and password');
+            return;
+          }
+          void submit(email, password);
+        }}
+      >
         <div>
           <Label className="text-xs">Email</Label>
           <Input
             type="email"
+            name="email"
             autoComplete="username"
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -182,10 +201,10 @@ function LoginScreen({ onDone }: { onDone: () => void }) {
           <Label className="text-xs">Password</Label>
           <Input
             type="password"
+            name="password"
             autoComplete="current-password"
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
-            onKeyDown={(e) => e.key === 'Enter' && submit()}
           />
         </div>
         {showServer ? (
@@ -193,28 +212,29 @@ function LoginScreen({ onDone }: { onDone: () => void }) {
             <Label className="text-xs">Server URL</Label>
             <Input
               inputMode="url"
+              autoComplete="off"
               value={form.serverUrl}
               onChange={(e) => setForm({ ...form, serverUrl: e.target.value })}
             />
           </div>
         ) : (
-          <button className="text-xs text-gray-400 underline" onClick={() => setShowServer(true)}>
+          // type="button": inside a form, an untyped button submits
+          <button
+            type="button"
+            className="text-xs text-gray-400 underline"
+            onClick={() => setShowServer(true)}
+          >
             Advanced: server settings
           </button>
         )}
         {error && <p className="text-sm text-violation">{error}</p>}
-        <Button
-          className="w-full"
-          size="lg"
-          disabled={busy || !form.email || !form.password}
-          onClick={submit}
-        >
+        <Button type="submit" className="w-full" size="lg" disabled={busy}>
           {busy ? 'Signing in…' : 'Sign in'}
         </Button>
         <p className="text-xs text-gray-400 text-center">
           Requires a connection the first time. After that, ShotLog works fully offline.
         </p>
-      </div>
+      </form>
     </Frame>
   );
 }
