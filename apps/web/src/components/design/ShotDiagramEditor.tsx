@@ -8,6 +8,7 @@ import {
   computeFiringTimes,
   delayWindowSizes,
   hasWire,
+  materializeDrillPlan,
   type DrillPlan,
   type DrillPlanOverride,
   type ShotDiagram,
@@ -55,6 +56,7 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
   const [mode, setMode] = useState<'timing' | 'plan'>('timing');
   const [paintDepth, setPaintDepth] = useState('');
   const [paintAngle, setPaintAngle] = useState('');
+  const [noHole, setNoHole] = useState(false); // brush marks unused grid positions
   const undoStack = useRef<UndoAction[]>([]);
 
   const { rows, cols, delays, wires, start, interHoleMs } = diagram;
@@ -76,8 +78,10 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
   const effAngle = (idx: number) => plan.overrides[idx]?.angle ?? 0;
   const setPlan = (next: DrillPlan) => onChange({ ...diagram, plan: next });
 
-  /** The exception currently loaded on the brush, or null (= eraser) */
+  /** The exception currently loaded on the brush, or null (= eraser).
+   *  depth 0 = the "no hole" marker: that grid position isn't drilled. */
   const brush = (): DrillPlanOverride | null => {
+    if (noHole) return { depth: 0 };
     const d = parseFloat(paintDepth);
     const a = parseFloat(paintAngle);
     const o: DrillPlanOverride = {};
@@ -314,6 +318,7 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
                 className="h-10 w-20 font-mono"
                 placeholder="depth"
                 value={paintDepth}
+                disabled={noHole}
                 onChange={(e) => setPaintDepth(e.target.value)}
               />
               <Input
@@ -322,26 +327,36 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
                 className="h-10 w-16 font-mono"
                 placeholder="angle°"
                 value={paintAngle}
+                disabled={noHole}
                 onChange={(e) => setPaintAngle(e.target.value)}
               />
-              {(paintDepth !== '' || paintAngle !== '') && (
+              <Button
+                variant={noHole ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setNoHole(!noHole)}
+                title="Mark grid positions that aren't drilled (irregular patterns)"
+              >
+                ⌀ No hole
+              </Button>
+              {!noHole && (paintDepth !== '' || paintAngle !== '') && (
                 <Button variant="ghost" size="sm" onClick={() => { setPaintDepth(''); setPaintAngle(''); }}>
                   Clear
                 </Button>
               )}
             </span>
-            <span className="text-xs text-gray-500 ml-auto">
-              {Object.keys(plan.overrides).length} exception
-              {Object.keys(plan.overrides).length === 1 ? '' : 's'}
+            <span className="text-xs text-gray-600 ml-auto font-medium">
+              <b>{materializeDrillPlan(diagram, designDepth ?? 0).length}</b> holes to drill
             </span>
           </div>
           <p className="text-xs text-gray-600">
-            {brush()
-              ? `Tap holes (or a row handle) to paint ${[
-                  brush()?.depth !== undefined ? `${brush()!.depth} ft` : '',
-                  brush()?.angle !== undefined ? `${brush()!.angle}°` : '',
-                ].filter(Boolean).join(' · ')} — tap a painted hole again to clear it.`
-              : 'Type a brush depth/angle above, then tap holes to paint the exceptions. With an empty brush, tapping erases.'}
+            {noHole
+              ? 'Tap holes (or a row handle) to mark them NOT drilled — they leave the plan and the numbering. Tap again to restore.'
+              : brush()
+                ? `Tap holes (or a row handle) to paint ${[
+                    brush()?.depth !== undefined ? `${brush()!.depth} ft` : '',
+                    brush()?.angle !== undefined ? `${brush()!.angle}°` : '',
+                  ].filter(Boolean).join(' · ')} — tap a painted hole again to clear it.`
+                : 'Type a brush depth/angle above, then tap holes to paint the exceptions. With an empty brush, tapping erases. Holes without any depth are treated as not drilled.'}
           </p>
         </div>
       )}
@@ -516,22 +531,26 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
           {/* Holes */}
           {Array.from({ length: holeCount }, (_, idx) => {
             if (planMode) {
-              // Drill-plan view: label = planned depth; exceptions orange
-              const hasOverride = plan.overrides[idx] !== undefined;
-              const matchesBrush = sameOverride(plan.overrides[idx], brush());
+              // Drill-plan view: label = planned depth; exceptions orange;
+              // zero-depth positions are UNUSED — hollow, no label, no number
               const depth = effDepth(idx);
-              const angled = effAngle(idx) !== 0;
+              const unused = !(depth > 0);
+              const hasOverride = plan.overrides[idx] !== undefined && !unused;
+              const matchesBrush = sameOverride(plan.overrides[idx], brush());
+              const angled = !unused && effAngle(idx) !== 0;
               return (
                 <g key={idx} onClick={() => tapHole(idx)} className="cursor-pointer">
                   <circle cx={cx(idx)} cy={cy(idx)} r={HOLE_SPACING / 2} fill="transparent" />
                   <circle
                     cx={cx(idx)}
                     cy={cy(idx)}
-                    r={HOLE_RADIUS}
-                    fill={hasOverride ? '#dd6b20' : '#eef2f7'}
-                    stroke={matchesBrush ? '#1a365d' : hasOverride ? '#dd6b20' : '#c4ccd6'}
+                    r={unused ? HOLE_RADIUS - 5 : HOLE_RADIUS}
+                    fill={unused ? 'transparent' : hasOverride ? '#dd6b20' : '#eef2f7'}
+                    stroke={matchesBrush ? '#1a365d' : hasOverride ? '#dd6b20' : unused ? '#d8dde3' : '#c4ccd6'}
                     strokeWidth={matchesBrush ? 3 : 1.5}
+                    strokeDasharray={unused ? '3,3' : undefined}
                   />
+                  {!unused && (
                   <text
                     x={cx(idx)}
                     y={cy(idx) + 4}
@@ -541,8 +560,9 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
                     fill={hasOverride ? 'white' : '#334155'}
                     pointerEvents="none"
                   >
-                    {depth ? +depth.toFixed(1) : '—'}
+                    {+depth.toFixed(1)}
                   </text>
+                  )}
                   {angled && (
                     <text
                       x={cx(idx) + HOLE_RADIUS - 2}

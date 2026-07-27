@@ -81,9 +81,12 @@ export function parseDiagram(json: string | null): ShotDiagram {
   }
 }
 
-/** A hole of the materialized drill plan (n = hole index + 1, row-major) */
+/** A hole of the materialized drill plan. `n` is the hole NUMBER —
+ *  sequential row-major across holes-to-drill only (unused grid positions
+ *  don't consume numbers, like a paper pattern). `idx` is the grid cell. */
 export interface PlanHole {
   n: number;
+  idx: number;
   depth: number;
   angle: number;
 }
@@ -97,8 +100,10 @@ export function hasDrillPlan(d: ShotDiagram): boolean {
 }
 
 /**
- * Expand the sparse plan to one entry per grid hole. Depth resolution:
- * override → plan default → fallback (the shot's design depth). Returns []
+ * Expand the sparse plan to the holes actually being drilled. Depth
+ * resolution: override → plan default → fallback (the shot's design depth).
+ * A hole whose resolved depth is zero/unset is an UNUSED grid position —
+ * excluded entirely (irregular patterns on a rectangular grid). Returns []
  * when the diagram has no plan — callers fall back to unplanned behavior.
  */
 export function materializeDrillPlan(d: ShotDiagram, fallbackDepth: number): PlanHole[] {
@@ -106,13 +111,12 @@ export function materializeDrillPlan(d: ShotDiagram, fallbackDepth: number): Pla
   const plan = d.plan!;
   const count = d.rows * d.cols;
   const holes: PlanHole[] = [];
+  let n = 0;
   for (let idx = 0; idx < count; idx++) {
     const o = plan.overrides[idx];
-    holes.push({
-      n: idx + 1,
-      depth: o?.depth ?? plan.defaultDepth ?? fallbackDepth,
-      angle: o?.angle ?? 0,
-    });
+    const depth = o?.depth ?? plan.defaultDepth ?? fallbackDepth;
+    if (!(depth > 0)) continue; // no depth anywhere → not a hole to drill
+    holes.push({ n: ++n, idx, depth, angle: o?.angle ?? 0 });
   }
   return holes;
 }

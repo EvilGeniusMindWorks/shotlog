@@ -31,15 +31,15 @@ describe('materializeDrillPlan', () => {
       withPlan({ defaultDepth: 16, overrides: { 0: { depth: 18.5, angle: 15 } } }),
       0,
     );
-    expect(holes[0]).toEqual({ n: 1, depth: 18.5, angle: 15 });
-    expect(holes[1]).toEqual({ n: 2, depth: 16, angle: 0 });
-    expect(holes[5]).toEqual({ n: 6, depth: 16, angle: 0 });
+    expect(holes[0]).toEqual({ n: 1, idx: 0, depth: 18.5, angle: 15 });
+    expect(holes[1]).toEqual({ n: 2, idx: 1, depth: 16, angle: 0 });
+    expect(holes[5]).toEqual({ n: 6, idx: 5, depth: 16, angle: 0 });
   });
 
   it('falls back to the design depth when no default is set', () => {
     const holes = materializeDrillPlan(withPlan({ overrides: { 2: { angle: 10 } } }), 14);
     expect(holes[0].depth).toBe(14);
-    expect(holes[2]).toEqual({ n: 3, depth: 14, angle: 10 });
+    expect(holes[2]).toEqual({ n: 3, idx: 2, depth: 14, angle: 10 });
   });
 
   it('an angle-only override keeps the inherited depth', () => {
@@ -47,7 +47,36 @@ describe('materializeDrillPlan', () => {
       withPlan({ defaultDepth: 20, overrides: { 1: { angle: 15 } } }),
       0,
     );
-    expect(holes[1]).toEqual({ n: 2, depth: 20, angle: 15 });
+    expect(holes[1]).toEqual({ n: 2, idx: 1, depth: 20, angle: 15 });
+  });
+
+  it('holes without any depth are UNUSED — excluded, not zero-depth plan holes', () => {
+    // Mark's case: 21 painted holes on a 50-hole grid, no default set —
+    // only the painted holes are the plan
+    const holes = materializeDrillPlan(
+      withPlan({ overrides: { 0: { depth: 18 }, 3: { depth: 16 } } }),
+      0, // no design depth either
+    );
+    expect(holes).toHaveLength(2);
+    expect(holes.map((h) => h.idx)).toEqual([0, 3]);
+  });
+
+  it('numbering is sequential across holes-to-drill (unused positions skip)', () => {
+    const holes = materializeDrillPlan(
+      withPlan({ defaultDepth: 16, overrides: { 1: { depth: 0 }, 2: { depth: 0 } } }),
+      0,
+    );
+    // grid cells 0,3,4,5 are drilled and numbered 1..4 — like a paper pattern
+    expect(holes.map((h) => [h.n, h.idx])).toEqual([[1, 0], [2, 3], [3, 4], [4, 5]]);
+  });
+
+  it('the "no hole" marker (depth 0 override) beats a set default', () => {
+    const holes = materializeDrillPlan(
+      withPlan({ defaultDepth: 16, overrides: { 5: { depth: 0 } } }),
+      0,
+    );
+    expect(holes).toHaveLength(5);
+    expect(holes.some((h) => h.idx === 5)).toBe(false);
   });
 });
 

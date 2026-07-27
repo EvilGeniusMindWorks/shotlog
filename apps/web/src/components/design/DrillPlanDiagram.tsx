@@ -22,6 +22,7 @@ interface Props {
 export function DrillPlanDiagram({ diagram, fallbackDepth, drilled, selected, onTapHole }: Props) {
   const plan = materializeDrillPlan(diagram, fallbackDepth);
   if (plan.length === 0) return null;
+  const byIdx = new Map(plan.map((h) => [h.idx, h]));
   const { rows, cols } = diagram;
   const cx = (idx: number) => PAD + (idx % cols) * SPACING + SPACING / 2;
   const cy = (idx: number) => PAD + Math.floor(idx / cols) * SPACING + SPACING / 2;
@@ -32,7 +33,22 @@ export function DrillPlanDiagram({ diagram, fallbackDepth, drilled, selected, on
     <div>
       <div className="overflow-auto border border-gray-200 rounded-lg bg-white">
         <svg width={width} height={height} className="touch-manipulation">
-          {plan.map((hole, idx) => {
+          {Array.from({ length: rows * cols }, (_, idx) => {
+            const hole = byIdx.get(idx);
+            if (!hole) {
+              // Unused grid position — faint marker keeps the pattern's shape
+              return (
+                <circle
+                  key={idx}
+                  cx={cx(idx)}
+                  cy={cy(idx)}
+                  r={RADIUS - 7}
+                  fill="none"
+                  stroke="#e5e7eb"
+                  strokeDasharray="3,3"
+                />
+              );
+            }
             const n = String(hole.n);
             const isDrilled = drilled?.has(n) ?? false;
             const isSelected = selected === n;
@@ -95,7 +111,7 @@ export function DrillPlanDiagram({ diagram, fallbackDepth, drilled, selected, on
       </div>
       <p className="text-[11px] text-gray-400 mt-1 px-1">
         number · planned ft{onTapHole ? ' — tap an undrilled hole to log it' : ''} · ✓ drilled ·
-        orange = exception to the pattern depth
+        orange = exception · faint dashes = no hole there
       </p>
     </div>
   );
