@@ -19,6 +19,35 @@ export function derivedKFactor(actualPPV: number, sd: number): number {
   return actualPPV * Math.pow(sd, 1.6);
 }
 
+export interface KFit {
+  n: number;
+  /** Geometric mean of per-reading derived K — the site's typical response */
+  bestFit: number;
+  /** Highest derived K observed — the conservative envelope (no measured
+   *  reading exceeded a prediction made with this K) */
+  envelope: number;
+}
+
+/**
+ * Calibrate site K from measured seismograph history (PPV = K × SD^-1.6
+ * with the exponent fixed, per this app's prediction model). Best practice
+ * (Oriard/USBM): predict with the ENVELOPE for safety; the best-fit shows
+ * the site's typical transmission. Readings with non-positive PPV or SD
+ * are ignored. Returns null when nothing usable exists.
+ */
+export function fitKFactor(readings: { ppv: number; sd: number }[]): KFit | null {
+  const ks = readings
+    .filter((r) => r.ppv > 0 && r.sd > 0)
+    .map((r) => derivedKFactor(r.ppv, r.sd));
+  if (ks.length === 0) return null;
+  const logMean = ks.reduce((s, k) => s + Math.log(k), 0) / ks.length;
+  return {
+    n: ks.length,
+    bestFit: Math.round(Math.exp(logMean)),
+    envelope: Math.round(Math.max(...ks)),
+  };
+}
+
 /** Maximum charge weight per delay for a given distance and target SD: W = (D / SD)² */
 export function maxChargeWeight(distanceFt: number, targetSD: number): number {
   if (targetSD <= 0) return Infinity;

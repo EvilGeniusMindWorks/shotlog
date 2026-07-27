@@ -2,6 +2,7 @@ export {
   scaledDistance,
   predictedPPV,
   derivedKFactor,
+  fitKFactor,
   maxChargeWeight,
   minSafeDistance,
   usbmRI8507Limit,
@@ -26,7 +27,7 @@ export {
   conversions,
 } from './calculations.js';
 
-export type { ComplianceStatus, StructureType } from './calculations.js';
+export type { ComplianceStatus, StructureType, KFit } from './calculations.js';
 
 export { distributeByHoles } from './distribution.js';
 export type { ShotHoleCount, DistributionResult } from './distribution.js';

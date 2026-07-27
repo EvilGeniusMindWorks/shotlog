@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, MapPin } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
@@ -10,8 +10,9 @@ import { matchesWorkRow, workedRow } from '@/lib/personHistory';
 import { matchesAsset } from '@/lib/equipmentHistory';
 import { buildDocRows } from '@/lib/docRows';
 import { DocList } from '@/components/records/DocList';
-import { powderFactor } from '@shotlog/shared';
-import type { Job } from '@/db/schema';
+import { derivedKFactor, fitKFactor, powderFactor, scaledDistance } from '@shotlog/shared';
+import { nowISO } from '@/lib/utils';
+import type { Job, KFactorHistoryEntry } from '@/db/schema';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -97,12 +98,13 @@ export function JobDetailPage() {
         <div className="grid grid-cols-4 gap-2">
           <StatBox label="Blast Days" value={String(blastDays.length)} />
           <StatBox label="Total Shots" value={String(stats.shots)} />
-          <StatBox label="K Factor" value={String(job.kFactor)} />
+          <StatBox label="Site K" value={String(job.kFactor)} />
           <StatBox label="Avg PF" value={avgPF > 0 ? avgPF.toFixed(2) : '—'} />
         </div>
 
         <JobContactsCard job={job} readOnly={getSessionUser()?.role !== 'admin'} />
         <JobConfigCard job={job} />
+        <SiteKCard job={job} />
 
         {/* Blast day history */}
         <Card>
@@ -302,6 +304,107 @@ function JobActivity({ jobId, lbs }: { jobId: string; lbs: number }) {
   );
 }
 
+/**
+ * Site K calibration: back-calculate K from the job's own seismograph
+ * history (K = PPV × SD^1.6 per reading, SD from the shot's design plan —
+ * i.e. assuming the seismograph sits at the structure of concern). The
+ * geometric mean is the site's typical response; the ENVELOPE (worst
+ * reading) is the conservative choice — predictions made with it never
+ * under-called any measured shot. Applying updates the job default; every
+ * shot's design can still override.
+ */
+function SiteKCard({ job }: { job: Job }) {
+  const isAdmin = getSessionUser()?.role === 'admin';
+  // Re-run once after mount: on a fresh page load, live queries can resolve
+  // empty before local hydration finishes and never re-fire on their own
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => setTick(1), 1500);
+    return () => clearTimeout(t);
+  }, []);
+  const calib = useLiveQuery(async () => {
+    const days = await db.blastDays.where('jobId').equals(job.id).toArray();
+    const entries: KFactorHistoryEntry[] = [];
+    for (const day of days) {
+      const log = await db.blastLogs.where('blastDayId').equals(day.id).first();
+      if (!log) continue;
+      const shots = await db.shots.where('blastLogId').equals(log.id).toArray();
+      for (const shot of shots) {
+        const d = shot.designPlan.closestStructureDistance;
+        const w = shot.designPlan.maxPoundsPerDelay;
+        if (!(d > 0) || !(w > 0)) continue;
+        const sd = scaledDistance(d, w);
+        const readings = await db.seismoReadings.where('shotId').equals(shot.id).toArray();
+        for (const r of readings) {
+          const ppv = Math.max(r.ppvTran, r.ppvVert, r.ppvLong);
+          if (!(ppv > 0)) continue;
+          entries.push({
+            date: day.date,
+            actualPPV: ppv,
+            sd: +sd.toFixed(2),
+            derivedK: Math.round(derivedKFactor(ppv, sd)),
+          });
+        }
+      }
+    }
+    const fit = fitKFactor(entries.map((e) => ({ ppv: e.actualPPV, sd: e.sd })));
+    return { entries, fit };
+  }, [job.id, tick]);
+
+  const apply = (value: number) => {
+    void db.jobs.update(job.id, {
+      kFactor: value,
+      // snapshot the evidence the number came from
+      kFactorHistory: (calib?.entries ?? []).slice(-200),
+      updatedAt: nowISO(),
+    });
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Site K calibration</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {!calib || calib.entries.length === 0 ? (
+          <p className="text-sm text-gray-400">
+            No usable seismograph history yet — readings calibrate K once shots have a structure
+            distance, max lbs/delay, and measured PPV.
+          </p>
+        ) : (
+          <>
+            <p className="text-sm text-gray-600">
+              From <b>{calib.fit!.n}</b> measured reading{calib.fit!.n === 1 ? '' : 's'} on this
+              site: typical K ≈ <b>{calib.fit!.bestFit}</b>, conservative envelope K ≈{' '}
+              <b>{calib.fit!.envelope}</b> (no measured shot exceeded a prediction made with it).
+              Current site default: <b>{job.kFactor}</b>.
+            </p>
+            {isAdmin && (
+              <div className="flex gap-2 flex-wrap">
+                {job.kFactor !== calib.fit!.envelope && (
+                  <Button size="sm" onClick={() => apply(calib.fit!.envelope)}>
+                    Use envelope {calib.fit!.envelope} (safe)
+                  </Button>
+                )}
+                {job.kFactor !== calib.fit!.bestFit && (
+                  <Button size="sm" variant="outline" onClick={() => apply(calib.fit!.bestFit)}>
+                    Use typical {calib.fit!.bestFit}
+                  </Button>
+                )}
+              </div>
+            )}
+            <p className="text-[11px] text-gray-400">
+              Assumes readings were taken at the structure of concern (SD from each shot's design
+              distance and max lbs/delay). New shots inherit the site default; any shot's design
+              can still override its K.
+            </p>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function StatBox({ label, value }: { label: string; value: string }) {
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-3 text-center">
@@ -360,8 +463,11 @@ function JobConfigCard({ job }: { job: Job }) {
         </div>
         <div>
           <Label className="text-xs">
-            K Factor
-            <span className="text-gray-400 font-normal"> — drives PPV predictions</span>
+            Site K
+            <span className="text-gray-400 font-normal">
+              {' '}
+              — the default for new shots; each shot's design can override it
+            </span>
           </Label>
           <Input
             type="number"

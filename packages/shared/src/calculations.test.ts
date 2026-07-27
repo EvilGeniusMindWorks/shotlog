@@ -3,6 +3,7 @@ import {
   scaledDistance,
   predictedPPV,
   derivedKFactor,
+  fitKFactor,
   maxChargeWeight,
   minSafeDistance,
   usbmRI8507Limit,
@@ -108,6 +109,45 @@ describe('derivedKFactor', () => {
 
   it('handles zero SD', () => {
     expect(derivedKFactor(0.5, 0)).toBe(0);
+  });
+});
+
+describe('fitKFactor', () => {
+  it('returns null with no usable readings', () => {
+    expect(fitKFactor([])).toBeNull();
+    expect(fitKFactor([{ ppv: 0, sd: 50 }, { ppv: 0.5, sd: 0 }])).toBeNull();
+  });
+
+  it('single reading: bestFit = envelope = its derived K', () => {
+    const fit = fitKFactor([{ ppv: predictedPPV(180, 40), sd: 40 }])!;
+    expect(fit.n).toBe(1);
+    expect(fit.bestFit).toBe(180);
+    expect(fit.envelope).toBe(180);
+  });
+
+  it('bestFit is the geometric mean; envelope covers the worst reading', () => {
+    // readings generated from K = 120, 180, 270 (geo mean = 180)
+    const fit = fitKFactor([
+      { ppv: predictedPPV(120, 30), sd: 30 },
+      { ppv: predictedPPV(180, 50), sd: 50 },
+      { ppv: predictedPPV(270, 70), sd: 70 },
+    ])!;
+    expect(fit.n).toBe(3);
+    expect(fit.bestFit).toBe(180);
+    expect(fit.envelope).toBe(270);
+    // predicting with the envelope never under-predicts any reading
+    for (const sd of [30, 50, 70]) {
+      expect(predictedPPV(fit.envelope, sd)).toBeGreaterThanOrEqual(predictedPPV(120, sd));
+    }
+  });
+
+  it('ignores junk rows but fits the rest', () => {
+    const fit = fitKFactor([
+      { ppv: -1, sd: 40 },
+      { ppv: predictedPPV(200, 45), sd: 45 },
+    ])!;
+    expect(fit.n).toBe(1);
+    expect(fit.bestFit).toBe(200);
   });
 });
 
