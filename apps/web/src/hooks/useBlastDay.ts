@@ -264,6 +264,8 @@ export async function createBlastDay(
       dailyReportId,
       rowNumber: i + 1,
       workerName: member.name,
+      // roster link — person pages trace who worked which days through this
+      crewMemberId: member.id,
       timeIn: '',
       timeOut: '',
       straightTime: 0,

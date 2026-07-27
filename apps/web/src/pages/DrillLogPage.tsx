@@ -11,6 +11,7 @@ import { addHole, drilledHoleNumbers, getShotPlan, nextHoleNumber, useShotDrilli
 import { parseDiagram } from '@/lib/shotDiagram';
 import { DrillPlanDiagram } from '@/components/design/DrillPlanDiagram';
 import { useSubmissions } from '@/lib/archive';
+import { findCrewId } from '@/lib/personHistory';
 import { getSessionUser } from '@/lib/session';
 import { nowISO, formatDate } from '@/lib/utils';
 import type { HoleConditionCode } from '@/db/schema';
@@ -64,6 +65,12 @@ export function DrillLogPage() {
   const plan = getShotPlan(shot);
   const drilling = useShotDrilling(log?.shotId);
   const filedCopies = useSubmissions(log?.id);
+  // The driller's name in the header is a door to their person page
+  const drillerCrewId = useLiveQuery(
+    async () =>
+      log ? findCrewId({ userId: log.drillerUserId || undefined, name: log.drillerName }) : null,
+    [log?.drillerUserId, log?.drillerName],
+  );
   const drilled = useLiveQuery(
     async () => (log ? drilledHoleNumbers(log.shotId) : undefined),
     [log?.shotId],
@@ -160,8 +167,15 @@ export function DrillLogPage() {
               Drill Log — Shot {shot?.shotNumber ?? '?'}
             </h2>
             <p className="text-xs text-navy-200 truncate">
-              {job?.name} · {log.drillerName || 'unassigned'} · {holes.length} holes ·{' '}
-              {footage.toFixed(0)} ft
+              {job?.name} ·{' '}
+              {drillerCrewId ? (
+                <button className="underline" onClick={() => navigate(`/crew/${drillerCrewId}`)}>
+                  {log.drillerName}
+                </button>
+              ) : (
+                log.drillerName || 'unassigned'
+              )}{' '}
+              · {holes.length} holes · {footage.toFixed(0)} ft
             </p>
           </div>
           <Badge variant={STATUS_BADGE[log.status]}>{log.status}</Badge>

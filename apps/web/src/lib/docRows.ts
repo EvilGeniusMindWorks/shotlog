@@ -3,6 +3,8 @@
 // blast logs, daily reports, drill logs, rig checklists, incidents — with a
 // link to the live page; filed office copies are joined separately.
 import { db } from '@/db';
+import { matchesPersonName, matchesWorkRow, workedRow } from '@/lib/personHistory';
+import type { CrewMember } from '@/db/schema';
 
 export type DocKind = 'blast_log' | 'daily_report' | 'drill_log' | 'drill_checklist' | 'incident';
 
@@ -17,6 +19,7 @@ export interface DocRow {
   to: string;
   /** id used to look up filed office copies (submissions.sourceId) */
   sourceId: string;
+  jobId?: string;
 }
 
 export const DOC_KIND_LABEL: Record<DocKind, string> = {
@@ -34,16 +37,25 @@ export async function buildDocRows(opts: {
   meId?: string;
   meName?: string;
   role: string;
+  /** Restrict every doc type to this roster member (person-hub view) */
+  person?: CrewMember;
 }): Promise<DocRow[]> {
-  const { scope, meId, meName, role } = opts;
+  const { scope, meId, meName, role, person } = opts;
   const company = scope === 'company';
   const out: DocRow[] = [];
   const jobs = new Map((await db.jobs.toArray()).map((j) => [j.id, j.name]));
 
   // Drill logs
-  const logs = await db.drillLogs
+  const logs = (await db.drillLogs
     .filter((l) => company || !meId || l.drillerUserId === meId)
-    .toArray();
+    .toArray()
+  ).filter((l) =>
+    !person
+      ? true
+      : person.userId
+        ? l.drillerUserId === person.userId
+        : matchesPersonName(l.drillerName, person),
+  );
   for (const log of logs) {
     const day = await db.blastDays.get(log.blastDayId);
     const shot = await db.shots.get(log.shotId);
@@ -58,14 +70,22 @@ export async function buildDocRows(opts: {
       statusVariant: log.status === 'accepted' ? 'approved' : log.status === 'complete' ? 'submitted' : 'draft',
       to: `/blast-day/${log.blastDayId}/drill-log/${log.id}`,
       sourceId: log.id,
+      jobId: log.jobId,
     });
   }
 
   // Rig checklists — mechanics always see the whole fleet's filings
   const seeAllChecklists = company || role === 'mechanic';
-  const checklists = await db.drillChecklists
+  const checklists = (await db.drillChecklists
     .filter((c) => seeAllChecklists || !meId || c.drillerUserId === meId)
-    .toArray();
+    .toArray()
+  ).filter((c) =>
+    !person
+      ? true
+      : person.userId
+        ? c.drillerUserId === person.userId
+        : matchesPersonName(c.drillerName, person),
+  );
   for (const c of checklists) {
     const rig = await db.equipment.get(c.equipmentId);
     out.push({
@@ -78,13 +98,15 @@ export async function buildDocRows(opts: {
       statusVariant: 'approved',
       to: `/drill-checklist-print/${c.id}`,
       sourceId: c.id,
+      jobId: c.jobId,
     });
   }
 
   // Incidents (matched by reporter name in 'mine' — incidents predate user ids)
-  const incidents = await db.incidents
+  const incidents = (await db.incidents
     .filter((i) => company || !meName || i.reportedByName === meName)
-    .toArray();
+    .toArray()
+  ).filter((i) => !person || matchesPersonName(i.reportedByName, person));
   for (const i of incidents) {
     out.push({
       key: `in-${i.id}`,
@@ -96,6 +118,7 @@ export async function buildDocRows(opts: {
       statusVariant: i.status === 'closed' ? 'approved' : i.status === 'office_review' ? 'submitted' : 'draft',
       to: `/incident/${i.id}`,
       sourceId: i.id,
+      jobId: i.jobId,
     });
   }
 
@@ -106,7 +129,23 @@ export async function buildDocRows(opts: {
     for (const day of days) {
       const label = day.name || jobs.get(day.jobId) || day.date;
       const log = await db.blastLogs.where('blastDayId').equals(day.id).first();
-      if (log) {
+      const report = await db.dailyReports.where('blastDayId').equals(day.id).first();
+      // Person filter: blast log by signer; daily report by a worked row
+      const blastMatches =
+        !person ||
+        (log &&
+          (log.blasterUserId && person.userId
+            ? log.blasterUserId === person.userId
+            : matchesPersonName(log.blasterName, person)));
+      let reportMatches = !person;
+      if (person && report) {
+        const crewRows = await db.workForceEntries
+          .where('dailyReportId')
+          .equals(report.id)
+          .toArray();
+        reportMatches = crewRows.some((r) => matchesWorkRow(r, person) && workedRow(r));
+      }
+      if (log && blastMatches) {
         out.push({
           key: `bl-${log.id}`,
           kind: 'blast_log',
@@ -117,20 +156,23 @@ export async function buildDocRows(opts: {
           statusVariant: DAY_STATUS_VARIANT[day.status],
           to: `/blast-day/${day.id}`,
           sourceId: log.id,
+          jobId: day.jobId,
         });
       }
-      const report = await db.dailyReports.where('blastDayId').equals(day.id).first();
-      out.push({
-        key: `dr-${day.id}`,
-        kind: 'daily_report',
-        date: day.date,
-        title: `Daily Report — ${label}`,
-        sub: jobs.get(day.jobId) ?? '',
-        status: day.status,
-        statusVariant: DAY_STATUS_VARIANT[day.status],
-        to: `/blast-day/${day.id}`,
-        sourceId: report?.id ?? day.id,
-      });
+      if (reportMatches) {
+        out.push({
+          key: `dr-${day.id}`,
+          kind: 'daily_report',
+          date: day.date,
+          title: `Daily Report — ${label}`,
+          sub: jobs.get(day.jobId) ?? '',
+          status: day.status,
+          statusVariant: DAY_STATUS_VARIANT[day.status],
+          to: `/blast-day/${day.id}`,
+          sourceId: report?.id ?? day.id,
+          jobId: day.jobId,
+        });
+      }
     }
   }
 

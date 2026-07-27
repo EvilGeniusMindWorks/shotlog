@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2 } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { generateId, nowISO } from '@/lib/utils';
@@ -40,6 +41,7 @@ export function SettingsPage() {
 }
 
 function CrewCard() {
+  const navigate = useNavigate();
   const crew = useLiveQuery(() => db.crewMembers.filter((c) => c.isActive).toArray()) ?? [];
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
@@ -89,7 +91,7 @@ function CrewCard() {
                 .join('')
                 .toUpperCase()}
             </div>
-            <p className="flex-1 text-sm font-medium truncate">{member.name}</p>
+            <button className="flex-1 text-sm font-medium truncate text-left hover:underline" onClick={() => navigate(`/crew/${member.id}`)}>{member.name}</button>
             {canEdit && (
               <Button
                 variant="ghost"

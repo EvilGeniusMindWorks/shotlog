@@ -321,6 +321,8 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
                         }`}
                         onClick={() => {
                           setField('blasterName', session!.name);
+                          // person pages trace signed blast logs through this
+                          setField('blasterUserId', session!.id);
                           setField('licenseNumber', lic.licenseNumber);
                           setField('licenseState', lic.state);
                         }}

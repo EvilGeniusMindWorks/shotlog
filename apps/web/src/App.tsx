@@ -24,6 +24,7 @@ import { DrillLogPage } from '@/pages/DrillLogPage';
 import { MyRecordsPage } from '@/pages/MyRecordsPage';
 import { CompanyRecordsPage } from '@/pages/CompanyRecordsPage';
 import { EquipmentPage } from '@/pages/EquipmentPage';
+import { CrewPage } from '@/pages/CrewPage';
 import { SubmitDayPage } from '@/pages/SubmitDayPage';
 import { SubmitDrillLogPage } from '@/pages/SubmitDrillLogPage';
 import { PrintDrillChecklistPage, FileDrillChecklistPage } from '@/pages/PrintDrillChecklistPage';
@@ -85,6 +86,7 @@ export function App() {
           <Route path="/records" element={<RecordsRouter />} />
           <Route path="/drill-logs" element={<MyRecordsPage />} />
           <Route path="/equipment/:id" element={<EquipmentPage />} />
+          <Route path="/crew/:id" element={<CrewPage />} />
           <Route path="/drill-checklist/:equipmentId" element={<DrillChecklistPage />} />
           <Route path="/incident/:incidentId" element={<IncidentPage />} />
           <Route path="/admin" element={<AdminLayout />}>

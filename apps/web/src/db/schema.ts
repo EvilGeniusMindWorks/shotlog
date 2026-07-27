@@ -146,6 +146,8 @@ export interface BlastLog extends BaseRecord {
   precautions: string;
   onsiteDelivery: boolean;
   blasterName: string;
+  /** Login account of the signing blaster (stamped at license pick) */
+  blasterUserId?: string;
   licenseNumber: string;
   licenseState: string;
   signatureImage: Blob | null;
@@ -297,6 +299,8 @@ export interface WorkForceEntry extends BaseRecord {
   dailyReportId: string;
   rowNumber: number;
   workerName: string;
+  /** Roster link (stamped by auto-populate); legacy rows match by name */
+  crewMemberId?: string;
   timeIn: string; // HH:mm
   timeOut: string;
   straightTime: number; // auto from in/out

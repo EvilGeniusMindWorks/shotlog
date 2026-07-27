@@ -3,8 +3,10 @@
 //   Filed         — the immutable archive of point-in-time office copies
 //   All documents — every live document in the company, filed or not, with
 //                   a File-to-office backfill for accepted-but-unfiled logs
+import { useNavigate } from 'react-router-dom';
 import { getSessionUser } from '@/lib/session';
 import { buildDocRows } from '@/lib/docRows';
+import { findCrewId } from '@/lib/personHistory';
 import { DocList } from '@/components/records/DocList';
 import { useMemo, useState } from 'react';
 import { FileDown, FileText, Search } from 'lucide-react';
@@ -40,7 +42,13 @@ function pdfName(s: Submission) {
 }
 
 function SubmissionRow({ s, jobName, older }: { s: Submission; jobName?: string; older: Submission[] }) {
+  const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
+  // Submitter name → their person page (when they're on the roster)
+  const crewId = useLiveQuery(
+    () => findCrewId({ userId: s.submittedByUserId || undefined, name: s.submittedBy }),
+    [s.submittedByUserId, s.submittedBy],
+  );
   return (
     <div className="px-3 py-2.5">
       <div className="flex items-center gap-2 flex-wrap">
@@ -48,7 +56,14 @@ function SubmissionRow({ s, jobName, older }: { s: Submission; jobName?: string;
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold truncate">{s.title}</p>
           <p className="text-xs text-gray-400 truncate">
-            {formatDate(s.date)} · {jobName ?? '—'} · filed by {s.submittedBy}
+            {formatDate(s.date)} · {jobName ?? '—'} · filed by{' '}
+            {crewId ? (
+              <button className="underline" onClick={() => navigate(`/crew/${crewId}`)}>
+                {s.submittedBy}
+              </button>
+            ) : (
+              s.submittedBy
+            )}
           </p>
         </div>
         <Badge variant="secondary">{TYPE_LABEL[s.type]}</Badge>

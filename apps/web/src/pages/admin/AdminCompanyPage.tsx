@@ -3,7 +3,7 @@
 // admin/supervisor); this page adds what only admins can do: company
 // details and connecting roster names to real login accounts.
 import { useCallback, useEffect, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { Check, Copy, Link2, Mail, Send, UsersRound } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { authedFetch, getSessionUser } from '@/lib/session';
@@ -171,6 +171,7 @@ function CrewRow({
   online: boolean;
   onInvited: () => Promise<void> | void;
 }) {
+  const navigate = useNavigate();
   const [inviting, setInviting] = useState(false);
   const [role, setRole] = useState('blaster');
   const [email, setEmail] = useState('');
@@ -215,7 +216,13 @@ function CrewRow({
   return (
     <div className="py-2 space-y-2">
       <div className="flex items-center gap-2 flex-wrap">
-        <p className="flex-1 text-sm font-medium truncate">{member.name}</p>
+        <button
+          className="flex-1 text-sm font-medium truncate text-left hover:underline"
+          title="Open person page"
+          onClick={() => navigate(`/crew/${member.id}`)}
+        >
+          {member.name}
+        </button>
         {/* Roster role tag — drives the blaster's "Send to drillers" picker */}
         <Select
           value={member.role ?? ''}
