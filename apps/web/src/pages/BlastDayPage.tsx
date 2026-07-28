@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, FileText, ClipboardList, ChevronDown, ChevronUp, FileBarChart, Lock, PhoneCall, Printer } from 'lucide-react';
 import { canEditApproved, canTransitionStatus, type Role } from '@shotlog/shared';
 import { addBlastLogToDay, useBlastDay } from '@/hooks/useBlastDay';
@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { ChipSelect } from '@/components/ui/chip-select';
 import { BlastLogForm } from '@/components/forms/BlastLogForm';
 import { DailyReportForm } from '@/components/forms/DailyReportForm';
+import { DrillPlanCard } from '@/components/forms/DrillPlanCard';
 import { ContactList } from '@/components/forms/JobContactsCard';
 import { createIncident } from '@/pages/admin/AdminIncidentsPage';
 
@@ -75,8 +76,12 @@ function CondChip({ children, accent }: { children: ReactNode; accent?: boolean 
 export function BlastDayPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { blastDay, job, blastLog, dailyReport, shots, explosiveUsage } = useBlastDay(id);
-  const [activeTab, setActiveTab] = useState<Tab>('blast-log');
+  // ?tab=daily lets the dashboard launcher land straight on the daily report
+  const [activeTab, setActiveTab] = useState<Tab>(
+    searchParams.get('tab') === 'daily' ? 'daily-report' : 'blast-log',
+  );
   // Non-blasting days have no blast log — the daily report is the whole day
   const tab: Tab = blastLog ? activeTab : 'daily-report';
   const [showConditions, setShowConditions] = useState(false);
@@ -423,6 +428,14 @@ export function BlastDayPage() {
               ? 'This work day is approved and locked. A supervisor can reopen it if something needs to change.'
               : 'Filed with the office and locked. Ask a supervisor to unlock it — resubmitting files a new version.'}
           </p>
+        </div>
+      )}
+
+      {/* Drill plan at-a-glance — the plan's home, above the fold. Outside the
+          locked wrapper so accepted-log rows stay tappable on locked days. */}
+      {tab === 'blast-log' && blastLog && blastDay && (
+        <div className="max-w-5xl mx-auto px-4 pt-3">
+          <DrillPlanCard shots={shots} blastDayId={blastDay.id} jobId={blastDay.jobId} locked={locked} />
         </div>
       )}
 

@@ -12,6 +12,7 @@ import { ListSkeleton } from '@/components/ui/skeleton';
 import { cn, formatDate } from '@/lib/utils';
 import { NewBlastDayDialog } from '@/components/forms/NewBlastDayDialog';
 import { AdminHome, DrillerHome, DrillingReviewCard, MechanicHome, TodayCard } from '@/components/dashboard/RoleCards';
+import { StartGrid } from '@/components/dashboard/StartGrid';
 import { getSessionUser } from '@/lib/session';
 import type { WorkType } from '@/db/schema';
 
@@ -180,6 +181,7 @@ function BlasterDashboard() {
       </div>
 
       <TodayCard />
+      <StartGrid role={getSessionUser()?.role ?? 'blaster'} />
       <DrillingReviewCard />
 
       <WorkDayList />

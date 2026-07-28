@@ -72,8 +72,9 @@ export function WetHoleLoadingWarning({
 const STATUS_BADGE = { open: 'draft', complete: 'submitted', accepted: 'approved' } as const;
 
 /** Dispatch modal: pick who the drill plan goes to. Each pick becomes a
- *  pre-assigned open log on that driller's home ("Assigned to you"). */
-function SendToDrillersModal({
+ *  pre-assigned open log on that driller's home ("Assigned to you").
+ *  Exported for the day page's DrillPlanCard — one dispatch UI everywhere. */
+export function SendToDrillersModal({
   shot,
   blastDayId,
   jobId,
