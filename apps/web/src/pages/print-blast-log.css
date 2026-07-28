@@ -8,6 +8,10 @@
 .print-blast-log {
   font-family: 'Arial Narrow', Arial, Helvetica, sans-serif;
   font-size: 9.5px;
+  /* Explicit line-height everywhere: html2canvas draws text a few px lower
+     than the browser when line-height is `normal`, landing baselines on the
+     1px form rulings in the saved PDFs. */
+  line-height: 1.3;
   color: #000;
   background: white;
 }
@@ -43,7 +47,7 @@
 .print-blast-log td,
 .print-blast-log th {
   border: 1px solid #000;
-  padding: 2px 4px;
+  padding: 2px 4px 3px;
   vertical-align: top;
 }
 
@@ -269,4 +273,16 @@
   .print-blast-log .print-warnings {
     display: none;
   }
+}
+
+/* Applied only to the html2canvas clone (lib/pdf.ts onclone) — extra bottom
+   clearance so the rasterizer's slightly-lower glyph placement never touches
+   the rulings. Screen and browser-print rendering are unaffected. */
+.pdf-capture .print-blast-log td,
+.pdf-capture .print-blast-log th {
+  padding-bottom: 5px;
+}
+.pdf-capture .print-blast-log .print-toolbar,
+.pdf-capture .print-blast-log .print-warnings {
+  display: none;
 }

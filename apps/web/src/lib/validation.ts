@@ -74,6 +74,14 @@ export function validateForPrint(
     errors.push({ field: 'signature', section: 'Sign-off', message: 'Signature is missing' });
   }
 
+  if (explosiveUsage && explosiveUsage.leadLine < 0) {
+    errors.push({
+      field: 'leadLine',
+      section: 'Explosive Usage',
+      message: `Lead line is negative (${explosiveUsage.leadLine} ft)`,
+    });
+  }
+
   if (explosiveUsage) {
     const holeCounts = shots.map((s) => ({ shotId: s.id, holes: s.totals.numHoles }));
     for (const p of explosiveUsage.products) {

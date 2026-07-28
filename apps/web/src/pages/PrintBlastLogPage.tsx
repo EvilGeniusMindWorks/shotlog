@@ -911,7 +911,7 @@ function ComplianceTable({ shot }: { shot: Shot }) {
         <tr>
           <td>Predicted PPV: K Factor:</td>
           <td className="val">
-            {dp.predictedPPV ? `${dp.predictedPPV.toFixed(2)} in/s` : '—'} &nbsp; K={dp.kFactor}
+            {dp.predictedPPV ? `${dp.predictedPPV.toFixed(2)} in/s · ` : ''}K={dp.kFactor}
           </td>
         </tr>
       </tbody>

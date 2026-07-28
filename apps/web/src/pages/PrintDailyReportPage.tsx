@@ -285,7 +285,11 @@ export function PrintDailyReportPage() {
                   <td className="val center">{w && w.truckHours ? '✓' : ''}</td>
                   <td className="val center">{w && w.travelHours ? w.travelHours : ''}</td>
                   {cell?.label ? (
-                    <td colSpan={3} className="center" style={{ fontSize: 8, fontWeight: 'bold', fontStyle: 'italic' }}>
+                    <td
+                      colSpan={3}
+                      className="center"
+                      style={{ fontSize: 8, fontWeight: 'bold', fontStyle: 'italic', background: '#f0f0f0' }}
+                    >
                       {cell.label}
                     </td>
                   ) : cell?.item ? (

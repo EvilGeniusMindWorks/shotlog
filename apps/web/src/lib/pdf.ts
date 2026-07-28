@@ -16,11 +16,15 @@ async function renderPagesToPdf(): Promise<jsPDF> {
   const printableH = 11 - margin * 2;
 
   for (let i = 0; i < pages.length; i++) {
+    // 2.5× + JPEG 0.95: ~240dpi effective, sharp small text at sane file
+    // sizes. (PNG is a trap here — jsPDF re-processes canvas PNGs, which
+    // always carry an alpha channel, into near-raw data: 6–12MB per page.)
     const canvas = await html2canvas(pages[i], {
-      scale: 2,
+      scale: 2.5,
       useCORS: true,
       backgroundColor: '#ffffff',
       logging: false,
+      onclone: (doc) => doc.documentElement.classList.add('pdf-capture'),
     });
     const ratio = canvas.height / canvas.width;
     let w = printableW;
@@ -30,7 +34,7 @@ async function renderPagesToPdf(): Promise<jsPDF> {
       w = h / ratio;
     }
     if (i > 0) pdf.addPage();
-    pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, w, h);
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, w, h);
   }
 
   return pdf;
