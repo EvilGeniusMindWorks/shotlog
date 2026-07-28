@@ -137,6 +137,7 @@ export async function addAttachmentFiles(
   parentType: Attachment['parentType'],
   files: FileList | File[],
   kind?: string,
+  extra?: Partial<Pick<Attachment, 'sourceAttachmentId'>>,
 ): Promise<string[]> {
   const session = getSessionUser();
   const ids: string[] = [];
@@ -170,6 +171,7 @@ export async function addAttachmentFiles(
       sha256: await sha256Hex(stored),
       storageStatus: 'device',
       originName: session?.name ?? undefined,
+      ...extra,
       createdAt: now,
       updatedAt: now,
       syncStatus: 'local',
@@ -199,6 +201,8 @@ export interface AttachmentSummary {
   originName?: string;
   /** Legacy rows carry the binary inline (pre-R2) */
   legacyInline: boolean;
+  /** Extracted clip → the full-video attachment it came from */
+  sourceAttachmentId?: string;
   createdAt: string;
 }
 
@@ -212,7 +216,8 @@ export async function listAttachmentSummaries(parentIds: string[]): Promise<Atta
       clipStart: a.clipStart, clipEnd: a.clipEnd, thumb: a.thumb,
       localOnly: a.storageStatus === 'device', storageKey: a.storageKey,
       storageStatus: a.storageStatus, originName: a.originName,
-      legacyInline: !a.storageStatus && (a.data?.size ?? 0) > 0, createdAt: a.createdAt,
+      legacyInline: !a.storageStatus && (a.data?.size ?? 0) > 0,
+      sourceAttachmentId: a.sourceAttachmentId, createdAt: a.createdAt,
     }));
   }
   const placeholders = parentIds.map(() => '?').join(',');
@@ -221,7 +226,7 @@ export async function listAttachmentSummaries(parentIds: string[]): Promise<Atta
     kind: string | null; size: number | null; duration: number | null;
     clipStart: number | null; clipEnd: number | null; thumb: string | null;
     storageKey: string | null; storageStatus: string | null; originName: string | null;
-    dataLen: number | null; createdAt: string;
+    sourceAttachmentId: string | null; dataLen: number | null; createdAt: string;
   }>(
     `SELECT id,
             json_extract(payload,'$.parentId')      AS parentId,
@@ -237,6 +242,7 @@ export async function listAttachmentSummaries(parentIds: string[]): Promise<Atta
             json_extract(payload,'$.storageKey')    AS storageKey,
             json_extract(payload,'$.storageStatus') AS storageStatus,
             json_extract(payload,'$.originName')    AS originName,
+            json_extract(payload,'$.sourceAttachmentId') AS sourceAttachmentId,
             length(json_extract(payload,'$.data.__blob')) AS dataLen,
             json_extract(payload,'$.createdAt')     AS createdAt
      FROM records
@@ -252,6 +258,7 @@ export async function listAttachmentSummaries(parentIds: string[]): Promise<Atta
     storageKey: r.storageKey ?? undefined, storageStatus: r.storageStatus ?? undefined,
     originName: r.originName ?? undefined,
     legacyInline: !r.storageStatus && (r.dataLen ?? 0) > 0,
+    sourceAttachmentId: r.sourceAttachmentId ?? undefined,
     createdAt: r.createdAt,
   })).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }

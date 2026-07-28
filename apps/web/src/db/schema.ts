@@ -665,6 +665,8 @@ export interface Attachment extends BaseRecord {
   storageStatus?: 'device' | 'stored';
   /** Who captured it (whose device holds a device-only binary) */
   originName?: string;
+  /** For extracted clips: the full-video attachment this was cut from */
+  sourceAttachmentId?: string;
 }
 
 // ══════════════════════════════════════════════════════

@@ -3,8 +3,11 @@
 // (tiny metadata — syncs everywhere instantly). Physical clip extraction to
 // a small synced file is phase 2.
 import { useEffect, useRef, useState } from 'react';
-import { Scissors, X } from 'lucide-react';
-import { saveClipMarks, type AttachmentSummary } from '@/lib/attachments';
+import { Scissors, Upload, X } from 'lucide-react';
+import { addAttachmentFiles, saveClipMarks, type AttachmentSummary } from '@/lib/attachments';
+import { clipExtension, extractClip, pickRecorderType } from '@/lib/clipExtractor';
+import { runFileUploader } from '@/lib/fileUploader';
+import type { Attachment } from '@/db/schema';
 import { Button } from '@/components/ui/button';
 
 function fmtT(s: number): string {
@@ -40,6 +43,9 @@ export function VideoLightbox({
   const [outPoint, setOutPoint] = useState<number | null>(summary.clipEnd ?? null);
   const [previewing, setPreviewing] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [extracting, setExtracting] = useState<string | null>(null);
+  const [extractDone, setExtractDone] = useState(false);
+  const [extractError, setExtractError] = useState<string | null>(null);
 
   // Preview mode: stop at the out point
   useEffect(() => {
@@ -82,6 +88,37 @@ export function VideoLightbox({
     await saveClipMarks(summary.id, +inPoint.toFixed(2), +outPoint.toFixed(2));
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  };
+
+  // Phase-2: physically extract the marked range into a small file that
+  // uploads to R2 — the office-visible record of the shot.
+  const extract = async () => {
+    if (inPoint === null || outPoint === null || outPoint <= inPoint || extracting) return;
+    setExtractError(null);
+    setExtracting('starting…');
+    try {
+      await saveClipMarks(summary.id, +inPoint.toFixed(2), +outPoint.toFixed(2));
+      videoRef.current?.pause();
+      const clip = await extractClip(blob, inPoint, outPoint, (p) =>
+        setExtracting(`${Math.floor(p.done)}s / ${Math.ceil(p.total)}s`),
+      );
+      const type = pickRecorderType() ?? 'video/webm';
+      const base = summary.fileName.replace(/\.[A-Za-z0-9]+$/, '') || 'shot';
+      const file = new File([clip], `${base}-clip.${clipExtension(type)}`, { type: clip.type });
+      await addAttachmentFiles(
+        summary.parentId,
+        summary.parentType as Attachment['parentType'],
+        [file],
+        'shot_video',
+        { sourceAttachmentId: summary.id },
+      );
+      void runFileUploader();
+      setExtractDone(true);
+    } catch (err) {
+      setExtractError(err instanceof Error ? err.message : 'extraction failed');
+    } finally {
+      setExtracting(null);
+    }
   };
 
   return (
@@ -149,14 +186,31 @@ export function VideoLightbox({
               </Button>
             )}
             {canEdit && clipLen !== null && clipLen > 0 && (
-              <Button size="sm" variant="safety" onClick={() => void save()}>
-                {saved ? 'Saved ✓' : 'Save clip marks'}
+              <Button size="sm" variant="secondary" onClick={() => void save()}>
+                {saved ? 'Saved ✓' : 'Save marks'}
+              </Button>
+            )}
+            {canEdit && clipLen !== null && clipLen > 0 && !summary.sourceAttachmentId && (
+              <Button size="sm" variant="safety" disabled={Boolean(extracting)} onClick={() => void extract()}>
+                <Upload className="h-4 w-4 mr-1" />
+                {extracting
+                  ? `Extracting ${extracting}`
+                  : extractDone
+                    ? 'Clip created ✓'
+                    : 'Extract clip'}
               </Button>
             )}
           </div>
+          {extractError && <p className="text-xs text-red-300">{extractError}</p>}
+          {extractDone && (
+            <p className="text-xs text-green-300">
+              Clip added to this {summary.parentType === 'shot' ? 'shot' : 'day'} — it uploads and
+              syncs like any photo, so the office can watch it.
+            </p>
+          )}
           <p className="text-[11px] text-white/50">
             The full video stays on {summary.originName ? `${summary.originName}'s` : 'this'} device —
-            saved marks sync now; the extracted clip uploads for the office in the next update.
+            Extract clip cuts the marked range into a small file the office can watch anywhere.
           </p>
         </div>
       )}

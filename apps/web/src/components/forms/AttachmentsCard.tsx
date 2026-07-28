@@ -212,7 +212,7 @@ function AttachmentTile({
       </button>
       <div className="absolute bottom-1 left-1 right-1 flex items-center gap-1 pointer-events-none">
         <span className="text-[8px] font-semibold bg-black/60 text-white rounded px-1 py-0.5 truncate">
-          {kindLabel(s.kind)}
+          {s.sourceAttachmentId ? 'Clip' : kindLabel(s.kind)}
         </span>
         {dur && (
           <span className="text-[8px] bg-black/60 text-white rounded px-1 py-0.5 tabular-nums">{dur}</span>
