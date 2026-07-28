@@ -712,7 +712,9 @@ function PrintShotDiagram({ shot }: { shot: Shot }) {
 
   return (
     <div style={{ textAlign: 'center', padding: 2 }}>
-      <svg viewBox={`0 0 ${width} ${height}`} style={{ maxWidth: '100%', maxHeight: 150 }}>
+      {/* 136 (not 150): leaves room for the timing caption below, which the
+          fixed-height diagram row would otherwise clip under the next section */}
+      <svg viewBox={`0 0 ${width} ${height}`} style={{ maxWidth: '100%', maxHeight: 136 }}>
         <defs>
           <marker id="print-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
             <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a365d" />
