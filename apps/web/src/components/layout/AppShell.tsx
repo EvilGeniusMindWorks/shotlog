@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   CircleHelp,
@@ -15,6 +15,7 @@ import { useLiveQuery, db } from '@/db';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/hooks/useTheme';
 import { useReconnectWatchdog } from '@/hooks/useReconnectWatchdog';
+import { startFileUploader } from '@/lib/fileUploader';
 import { getSessionUser, getRealSessionUser, getViewRole, setViewRole } from '@/lib/session';
 import { FirstSyncStrip, SessionExpiredBanner, SyncChip, UpdateChip } from './SyncChip';
 import { Tour } from './Tour';
@@ -93,6 +94,7 @@ function Wordmark({ compact }: { compact?: boolean }) {
 
 export function AppShell() {
   useReconnectWatchdog();
+  useEffect(() => startFileUploader(), []);
   const { theme, toggle } = useTheme();
   const [touring, setTouring] = useState(false);
   const navigate = useNavigate();

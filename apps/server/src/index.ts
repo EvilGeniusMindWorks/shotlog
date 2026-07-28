@@ -6,6 +6,7 @@ import { authRouter, ensureAdminUser } from './auth.js';
 import { adminRouter } from './admin.js';
 import { enrollRouter, invitesRouter } from './enrollment.js';
 import { powersyncRouter } from './powersync.js';
+import { filesRouter } from './files.js';
 import { usersRouter } from './users.js';
 
 const app = express();
@@ -22,6 +23,7 @@ app.use('/admin', adminRouter);
 app.use('/admin/invites', invitesRouter);
 app.use('/enroll', enrollRouter);
 app.use('/powersync', powersyncRouter);
+app.use('/files', filesRouter);
 app.use('/users', usersRouter);
 
 const port = Number(process.env.PORT ?? 4000);

@@ -43,6 +43,74 @@ interface InviteLite {
   usedAt: string | null;
 }
 
+/** Company-defined attachment types, merged into every attachment picker */
+function AttachmentTypesSection({
+  settings,
+}: {
+  settings: { attachmentTypes?: string[] } | undefined;
+}) {
+  const types = settings?.attachmentTypes ?? [];
+  const [draft, setDraft] = useState('');
+  const save = async (next: string[]) => {
+    await db.companySettings.update('companySettings-singleton', {
+      attachmentTypes: next,
+      updatedAt: nowISO(),
+    });
+  };
+  return (
+    <section className="rounded-xl border border-gray-200 bg-white p-4 space-y-3">
+      <p className="font-medium text-sm">Attachment types</p>
+      <p className="text-xs text-gray-400">
+        Built-ins (Bill of lading, Shot video, Photo, Other) are always offered — types added here
+        appear alongside them on every attachment picker in the field.
+      </p>
+      <div className="flex gap-1.5 flex-wrap">
+        {types.map((t) => (
+          <span
+            key={t}
+            className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-gray-50 px-2.5 py-1 text-xs font-medium"
+          >
+            {t}
+            <button
+              className="text-gray-400 hover:text-gray-700"
+              title={`Remove ${t}`}
+              onClick={() => void save(types.filter((x) => x !== t))}
+            >
+              ✕
+            </button>
+          </span>
+        ))}
+        {types.length === 0 && <p className="text-xs text-gray-400">No custom types yet.</p>}
+      </div>
+      <div className="flex items-end gap-2">
+        <div className="w-56">
+          <Label className="text-xs">New type (e.g. Permit, Pre-blast survey)</Label>
+          <Input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && draft.trim()) {
+                void save([...types, draft.trim()]);
+                setDraft('');
+              }
+            }}
+          />
+        </div>
+        <Button
+          size="sm"
+          disabled={!draft.trim() || types.includes(draft.trim())}
+          onClick={() => {
+            void save([...types, draft.trim()]);
+            setDraft('');
+          }}
+        >
+          Add
+        </Button>
+      </div>
+    </section>
+  );
+}
+
 /** Office routing (Tony/Bob/Evette style): who the field calls for what */
 function OfficeContactsSection({
   settings,
@@ -426,6 +494,7 @@ export function AdminCompanyPage() {
       </section>
 
       <OfficeContactsSection settings={settings} online={online} />
+      <AttachmentTypesSection settings={settings} />
 
       <section className="rounded-xl border border-gray-200 bg-white p-4 space-y-3">
         <p className="font-medium text-sm flex items-center gap-2">

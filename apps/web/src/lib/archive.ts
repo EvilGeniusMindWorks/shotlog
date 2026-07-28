@@ -4,7 +4,8 @@
 // so the office's record book never changes under it.
 import { useLiveQuery, db, POWERSYNC_ENABLED } from '@/db';
 import { getPowerSync } from '@/db/powersync/client';
-import { getSessionUser } from '@/lib/session';
+import { authedFetch, getSessionUser } from '@/lib/session';
+import { getLocalMedia } from '@/lib/localMedia';
 import { generateId, nowISO } from '@/lib/utils';
 import { pagesToPdfBlob } from '@/lib/pdf';
 import type { Attachment, Submission, SubmissionAsset, SubmissionType } from '@/db/schema';
@@ -88,19 +89,54 @@ async function toArchivalImage(blob: Blob): Promise<Blob> {
   }
 }
 
+/** Resolve an attachment's binary at archive time: legacy inline data →
+ *  this device's media store → R2 (online only). Null = unavailable here. */
+async function resolveBinary(a: Attachment): Promise<Blob | null> {
+  if (a.data && a.data.size > 0) return a.data;
+  const local = await getLocalMedia(a.id);
+  if (local) return local;
+  if (a.storageKey) {
+    try {
+      const res = await authedFetch('/files/presign-download', {
+        method: 'POST',
+        body: JSON.stringify({ key: a.storageKey }),
+      });
+      if (!res.ok) return null;
+      const { url } = (await res.json()) as { url: string };
+      const fileRes = await fetch(url);
+      return fileRes.ok ? await fileRes.blob() : null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
 /** Freeze attachments for the archive: images downscaled, PDFs copied,
- *  videos skipped (too heavy to duplicate through sync — referenced). */
+ *  videos referenced (with clip marks + where the full file lives). */
 async function freezeAttachments(
   attachments: Attachment[],
 ): Promise<{ assets: SubmissionAsset[]; skippedVideos: string[] }> {
   const assets: SubmissionAsset[] = [];
   const skippedVideos: string[] = [];
+  const fmtT = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
   for (const a of attachments) {
     if (a.mimeType.startsWith('video/')) {
-      skippedVideos.push(a.fileName || a.id);
+      const marks =
+        a.clipStart !== undefined && a.clipEnd !== undefined
+          ? ` · clip ${fmtT(a.clipStart)}–${fmtT(a.clipEnd)}`
+          : '';
+      const where = a.storageStatus === 'device' && a.originName ? ` · full video on ${a.originName}'s device` : '';
+      skippedVideos.push(`${a.fileName || a.id}${marks}${where}`);
       continue;
     }
-    const data = a.mimeType.startsWith('image/') ? await toArchivalImage(a.data) : a.data;
+    const binary = await resolveBinary(a);
+    if (!binary) {
+      // Not reachable from this device right now — reference, don't block filing
+      skippedVideos.push(`${a.fileName || a.id} · not available on this device`);
+      continue;
+    }
+    const data = a.mimeType.startsWith('image/') ? await toArchivalImage(binary) : binary;
     assets.push({ id: a.id, fileName: a.fileName, mimeType: a.mimeType, data });
   }
   return { assets, skippedVideos };

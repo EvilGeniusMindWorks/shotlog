@@ -294,7 +294,7 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
       )}
 
       {/* Attachments */}
-      <AttachmentsCard blastDayId={blastDay.id} />
+      <AttachmentsCard parentId={blastDay.id} parentType="blast_day" />
 
       {/* Sign-off */}
       <SectionCard

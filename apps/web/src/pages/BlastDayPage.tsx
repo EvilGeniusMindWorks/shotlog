@@ -17,6 +17,7 @@ import { ChipSelect } from '@/components/ui/chip-select';
 import { BlastLogForm } from '@/components/forms/BlastLogForm';
 import { DailyReportForm } from '@/components/forms/DailyReportForm';
 import { DrillPlanCard } from '@/components/forms/DrillPlanCard';
+import { AttachmentsCard } from '@/components/forms/AttachmentsCard';
 import { ContactList } from '@/components/forms/JobContactsCard';
 import { createIncident } from '@/pages/admin/AdminIncidentsPage';
 
@@ -452,6 +453,11 @@ export function BlastDayPage() {
             explosiveUsage={explosiveUsage}
             job={job}
           />
+        )}
+        {tab === 'daily-report' && dailyReport && blastDay && (
+          <div className="mb-4">
+            <AttachmentsCard parentId={blastDay.id} parentType="blast_day" title="Day attachments" />
+          </div>
         )}
         {tab === 'daily-report' && dailyReport && (
           <DailyReportForm

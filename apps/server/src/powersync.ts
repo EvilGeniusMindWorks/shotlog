@@ -157,6 +157,16 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
         // stored row is the identity source for those.
         const stored = await batch.get(op.id);
         const tableName = op.data?.table_name ?? stored?.tableName ?? '';
+
+        // 0. Oversize backstop: attachment binaries live in R2 now; the only
+        // legitimately-heavy payloads left are filed submissions (PDF+assets,
+        // well under 10MB). Anything near the express 30MB body cap would
+        // 413 and wedge the fleet's ordered upload queue — discard instead.
+        if ((op.data?.payload?.length ?? 0) > 25_000_000) {
+          discard(op, tableName, `payload too large (${op.data?.payload?.length} chars)`);
+          continue;
+        }
+
         const incoming = parsePayloadSafe(op.data?.payload);
         // The record's effective payload after this op (PATCH replaces the
         // whole payload column when present; COALESCE keeps stored otherwise)

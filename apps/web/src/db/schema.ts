@@ -604,6 +604,8 @@ export interface CompanySettings extends BaseRecord {
   phone: string;
   /** Office routing (who to call for scope changes / equipment / incidents) */
   officeContacts?: { id: string; label: string; name: string; phone: string }[];
+  /** Company-defined attachment types, merged into the built-in picker */
+  attachmentTypes?: string[];
 }
 
 /** Explosive manufacturer — first-class, admin-managed (id: mfr-<slug>) */
@@ -637,7 +639,32 @@ export interface Attachment extends BaseRecord {
   parentType: 'seismo_reading' | 'shot' | 'blast_day' | 'blast_log' | 'daily_report';
   fileName: string;
   mimeType: string;
-  data: Blob;
+  /**
+   * LEGACY inline binary only. New attachments carry NULL here — the binary
+   * lives in R2 (metadata + checksum sync; blob fetched on demand) or, for
+   * full-length videos, in the capturing device's local media store.
+   * (Empty blobs revive as null through the sync payload round-trip.)
+   */
+  data: Blob | null;
+  /** Built-in kind slug or a company-defined custom label; undefined = other */
+  kind?: string;
+  /** Original binary size in bytes */
+  size?: number;
+  /** Video duration in seconds (null = unknown, e.g. MediaRecorder output) */
+  duration?: number | null;
+  /** Shot-video clip marks (seconds) — the blaster's in/out selection */
+  clipStart?: number;
+  clipEnd?: number;
+  /** Tiny inline JPEG data URL for instant offline previews (≤ ~15KB) */
+  thumb?: string;
+  /** SHA-256 of the binary — tamper-evidence for the audit chain */
+  sha256?: string;
+  /** R2 object key once uploaded */
+  storageKey?: string;
+  /** 'device' = binary only on the origin device · 'stored' = in R2 */
+  storageStatus?: 'device' | 'stored';
+  /** Who captured it (whose device holds a device-only binary) */
+  originName?: string;
 }
 
 // ══════════════════════════════════════════════════════

@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { ChipSelect } from '@/components/ui/chip-select';
 import { IconChip, SubSection } from '@/components/ui/section-card';
+import { AttachmentsCard } from './AttachmentsCard';
 
 interface Props {
   shot: Shot;
@@ -207,6 +208,14 @@ export function ShotForm({ shot, allShots, explosiveUsage, kFactor: _kFactor, bl
           navigate={() => navigate(`/blast-day/${blastDayId}/seismo/${shot.id}`)}
         />
       )}
+
+      {/* Per-shot media: shot videos (clip-markable), pre/post-blast photos */}
+      <AttachmentsCard
+        parentId={shot.id}
+        parentType="shot"
+        title="Shot media"
+        defaultKind="shot_video"
+      />
     </div>
   );
 }
