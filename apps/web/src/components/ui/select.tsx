@@ -3,11 +3,13 @@ import { cn } from '@/lib/utils';
 
 export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   options: { value: string; label: string }[];
+  /** Rendered as <optgroup>s between the placeholder and the flat options */
+  groups?: { label: string; options: { value: string; label: string }[] }[];
   placeholder?: string;
 }
 
 const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className, options, placeholder, ...props }, ref) => {
+  ({ className, options, groups, placeholder, ...props }, ref) => {
     return (
       <select
         className={cn(
@@ -18,6 +20,15 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         {...props}
       >
         {placeholder && <option value="">{placeholder}</option>}
+        {groups?.map((g) => (
+          <optgroup key={g.label} label={g.label}>
+            {g.options.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </optgroup>
+        ))}
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>
             {opt.label}

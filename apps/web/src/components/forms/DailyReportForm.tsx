@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { useLiveQuery, db, deleteWithTombstone } from '@/db';
 import { generateId, nowISO } from '@/lib/utils';
@@ -139,6 +140,39 @@ function WorkForceSection({
   dailyReportId: string;
   entries: WorkForceEntry[];
 }) {
+  // Roster-linked rows: picking a member stamps crewMemberId + name so the
+  // person history page can trace worked days reliably (mirror of pickAsset).
+  // Boolean fields aren't indexable in IndexedDB — must .filter(), not .where().
+  const roster =
+    useLiveQuery(() => db.crewMembers.filter((m) => m.isActive).toArray()) ?? [];
+  const rosterSorted = [...roster].sort((a, b) => a.name.localeCompare(b.name));
+  // Rows the user explicitly switched to free text (before a name is typed)
+  const [otherRows, setOtherRows] = useState<Set<string>>(new Set());
+
+  const pickWorker = (entryId: string, value: string) => {
+    if (value === '__other') {
+      setOtherRows((s) => new Set(s).add(entryId));
+      void db.workForceEntries.update(entryId, {
+        crewMemberId: undefined,
+        workerName: '',
+        updatedAt: nowISO(),
+      });
+      return;
+    }
+    const member = roster.find((m) => m.id === value);
+    if (!member) return;
+    setOtherRows((s) => {
+      const next = new Set(s);
+      next.delete(entryId);
+      return next;
+    });
+    void db.workForceEntries.update(entryId, {
+      crewMemberId: member.id,
+      workerName: member.name,
+      updatedAt: nowISO(),
+    });
+  };
+
   const addEntry = async () => {
     const now = nowISO();
     await db.workForceEntries.add({
@@ -191,17 +225,39 @@ function WorkForceSection({
         {entries.length === 0 && (
           <p className="text-sm text-gray-400 text-center py-3">No workers added</p>
         )}
-        {entries.map((e) => (
+        {entries.map((e) => {
+          const freeText = !e.crewMemberId && (Boolean(e.workerName) || otherRows.has(e.id));
+          return (
           <div key={e.id} className="border border-gray-200 rounded-lg p-3">
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex-1 mr-2">
-                <Input
-                  value={e.workerName}
-                  onChange={(ev) => updateEntry(e.id, 'workerName', ev.target.value)}
-                  placeholder="Worker name"
-                  className="font-medium"
+            <div className="flex items-start justify-between gap-2 mb-2 flex-wrap">
+              <div className="flex-1 min-w-[160px]">
+                <Select
+                  value={e.crewMemberId ?? (freeText ? '__other' : '')}
+                  onChange={(ev) => pickWorker(e.id, ev.target.value)}
+                  placeholder="Pick from roster…"
+                  options={[
+                    ...rosterSorted.map((m) => ({
+                      value: m.id,
+                      label: m.role ? `${m.name} · ${m.role}` : m.name,
+                    })),
+                    // Keep rows stamped to a since-deactivated member readable
+                    ...(e.crewMemberId && !roster.some((m) => m.id === e.crewMemberId)
+                      ? [{ value: e.crewMemberId, label: e.workerName || 'Former member' }]
+                      : []),
+                    { value: '__other', label: 'Other / not on roster' },
+                  ]}
                 />
               </div>
+              {freeText && (
+                <div className="flex-1 min-w-[140px]">
+                  <Input
+                    value={e.workerName}
+                    onChange={(ev) => updateEntry(e.id, 'workerName', ev.target.value)}
+                    placeholder="Worker name"
+                    className="font-medium"
+                  />
+                </div>
+              )}
               <Button variant="ghost" size="icon" onClick={() => removeEntry(e.id)}>
                 <Trash2 className="h-4 w-4 text-gray-400" />
               </Button>
@@ -261,7 +317,8 @@ function WorkForceSection({
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
       </CardContent>
     </Card>
   );
@@ -351,16 +408,24 @@ function EquipmentSection({
                   <Select
                     value={e.equipmentId ?? (e.assetNumber ? '__other' : '')}
                     onChange={(ev) => pickAsset(e.id, ev.target.value)}
-                    options={[
-                      { value: '', label: 'Pick asset…' },
-                      ...registrySorted.map((r) => ({
-                        value: r.id,
-                        label: `${r.assetNumber} — ${r.description}`,
-                      })),
-                      { value: '__other', label: 'Other / not listed' },
-                    ]}
+                    placeholder="Pick asset…"
+                    groups={EQUIPMENT_CATEGORIES.map((cat) => ({
+                      label: cat.label,
+                      options: registrySorted
+                        .filter((r) => equipmentEntryBucket(r.category) === cat.value)
+                        .map((r) => ({
+                          value: r.id,
+                          label: `${r.assetNumber} — ${r.description}`,
+                        })),
+                    })).filter((g) => g.options.length > 0)}
+                    options={[{ value: '__other', label: 'Other / not listed' }]}
                     className="flex-1 min-w-[180px]"
                   />
+                  {e.equipmentId && (
+                    <span className="text-[10px] font-semibold uppercase tracking-wide bg-gray-100 text-gray-500 rounded px-1.5 py-0.5 whitespace-nowrap">
+                      {EQUIPMENT_CATEGORIES.find((c) => c.value === e.category)?.label ?? e.category}
+                    </span>
+                  )}
                   {!e.equipmentId && (
                     <>
                       <Select

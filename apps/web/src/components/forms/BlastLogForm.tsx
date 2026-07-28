@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { db } from '@/db';
 import { addShot, deleteShot } from '@/hooks/useBlastDay';
@@ -77,6 +77,15 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
   const [expandedShots, setExpandedShots] = useState<Set<string>>(
     new Set(shots.length > 0 ? [shots[0]?.id] : [])
   );
+  // On a fresh page load `shots` resolves AFTER first render (local-DB
+  // hydration), so the useState initializer above sees an empty array and
+  // Shot #1 renders collapsed. Expand it once when shots first arrive.
+  const didAutoExpand = useRef(shots.length > 0);
+  useEffect(() => {
+    if (didAutoExpand.current || shots.length === 0) return;
+    didAutoExpand.current = true;
+    setExpandedShots((prev) => (prev.size > 0 ? prev : new Set([shots[0].id])));
+  }, [shots]);
 
   const toggleShot = (id: string) => {
     setExpandedShots((prev) => {

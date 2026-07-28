@@ -217,7 +217,9 @@ export function AppShell() {
       </aside>
 
       {/* ── Content ──────────────────────────────────────────────────── */}
-      <div className="flex-1 lg:pl-56 flex flex-col min-h-screen">
+      {/* min-w-0: flex children default to min-width:auto, so one wide widget
+          stretches the whole shell past the viewport on phones */}
+      <div className="flex-1 min-w-0 lg:pl-56 flex flex-col min-h-screen">
         <ViewAsBanner />
         {/* Mobile header */}
         <header className="lg:hidden bg-navy text-white px-4 py-3 shadow-md flex items-center justify-between shrink-0">
@@ -253,7 +255,7 @@ export function AppShell() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-auto pb-20 lg:pb-4">
+        <main className="flex-1 min-w-0 overflow-auto pb-20 lg:pb-4">
           <Outlet />
         </main>
       </div>
