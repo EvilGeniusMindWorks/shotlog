@@ -2,7 +2,8 @@
 // written once as a `submissions` record. The server discards any re-PUT
 // of an existing submission id — corrections are new versions (v1, v2, …),
 // so the office's record book never changes under it.
-import { useLiveQuery, db } from '@/db';
+import { useLiveQuery, db, POWERSYNC_ENABLED } from '@/db';
+import { getPowerSync } from '@/db/powersync/client';
 import { getSessionUser } from '@/lib/session';
 import { generateId, nowISO } from '@/lib/utils';
 import { pagesToPdfBlob } from '@/lib/pdf';
@@ -110,6 +111,104 @@ export async function nextSubmissionVersion(sourceId: string, type: SubmissionTy
     .filter((s) => s.sourceId === sourceId && s.type === type)
     .toArray();
   return 1 + prior.reduce((m, s) => Math.max(m, s.version), 0);
+}
+
+// ── Blob-free submission lists ────────────────────────────────────────────
+// Every Submission row carries its full PDF + frozen attachment copies as
+// blobs. Loading them wholesale for LIST views materialized every filed
+// document into JS memory on each Records/dashboard visit — enough for
+// Safari to kill the page ("this webpage was using significant memory").
+// Summaries keep the heavy base64 inside SQLite via json_extract; the full
+// record is fetched one-at-a-time only when a PDF is actually opened.
+
+export interface SubmissionSummary {
+  id: string;
+  type: SubmissionType;
+  sourceId: string;
+  blastDayId?: string;
+  jobId?: string;
+  version: number;
+  title: string;
+  date: string;
+  submittedBy: string;
+  submittedByUserId: string;
+  assetCount: number;
+  createdAt: string;
+  meta?: Record<string, unknown>;
+}
+
+export async function listSubmissionSummaries(): Promise<SubmissionSummary[]> {
+  if (!POWERSYNC_ENABLED) {
+    // Dexie emergency fallback: no projection available — strip after load
+    const all = await db.submissions.toArray();
+    return all.map((s) => ({
+      id: s.id, type: s.type, sourceId: s.sourceId, blastDayId: s.blastDayId, jobId: s.jobId,
+      version: s.version, title: s.title, date: s.date, submittedBy: s.submittedBy,
+      submittedByUserId: s.submittedByUserId, assetCount: s.assets.length,
+      createdAt: s.createdAt, meta: s.meta,
+    }));
+  }
+  const rows = await getPowerSync().getAll<{
+    id: string; type: SubmissionType; sourceId: string; blastDayId: string | null;
+    jobId: string | null; version: number; title: string; date: string;
+    submittedBy: string; submittedByUserId: string; assetCount: number | null;
+    createdAt: string; metaJson: string | null;
+  }>(
+    `SELECT id,
+            json_extract(payload,'$.type')              AS type,
+            json_extract(payload,'$.sourceId')          AS sourceId,
+            json_extract(payload,'$.blastDayId')        AS blastDayId,
+            json_extract(payload,'$.jobId')             AS jobId,
+            json_extract(payload,'$.version')           AS version,
+            json_extract(payload,'$.title')             AS title,
+            json_extract(payload,'$.date')              AS date,
+            json_extract(payload,'$.submittedBy')       AS submittedBy,
+            json_extract(payload,'$.submittedByUserId') AS submittedByUserId,
+            json_array_length(payload,'$.assets')       AS assetCount,
+            json_extract(payload,'$.createdAt')         AS createdAt,
+            json_extract(payload,'$.meta')              AS metaJson
+     FROM records WHERE table_name = 'submissions'`,
+  );
+  return rows.map((r) => ({
+    id: r.id, type: r.type, sourceId: r.sourceId,
+    blastDayId: r.blastDayId ?? undefined, jobId: r.jobId ?? undefined,
+    version: r.version, title: r.title, date: r.date,
+    submittedBy: r.submittedBy, submittedByUserId: r.submittedByUserId,
+    assetCount: r.assetCount ?? 0,
+    createdAt: r.createdAt,
+    meta: r.metaJson ? (JSON.parse(r.metaJson) as Record<string, unknown>) : undefined,
+  }));
+}
+
+/** Live blob-free list of ALL filed copies (list views only) */
+export function useSubmissionSummaries(): SubmissionSummary[] | undefined {
+  return useLiveQuery(listSubmissionSummaries, []);
+}
+
+/**
+ * Open one filed PDF. The window opens SYNCHRONOUSLY (Safari blocks
+ * window.open after an await) and the blob streams in after the single
+ * record is fetched.
+ */
+export function openSubmissionPdfById(id: string): void {
+  const w = window.open('', '_blank');
+  void db.submissions.get(id).then((s) => {
+    if (!s) return w?.close();
+    const url = URL.createObjectURL(s.pdf);
+    if (w) w.location.href = url;
+    else window.open(url, '_blank');
+  });
+}
+
+export async function downloadSubmissionPdfById(id: string, fileName: string): Promise<void> {
+  const s = await db.submissions.get(id);
+  if (!s) return;
+  const url = URL.createObjectURL(s.pdf);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 /**

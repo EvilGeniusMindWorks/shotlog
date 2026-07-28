@@ -10,6 +10,7 @@ import { useLiveQuery, db } from '@/db';
 import { createDrillLog, getShotPlan } from '@/hooks/useDrillLogs';
 import { useOpenTickets, useTodayChecklist } from '@/hooks/useMaintenance';
 import { getSessionUser, getRealSessionUser, setViewRole } from '@/lib/session';
+import { listSubmissionSummaries, openSubmissionPdfById } from '@/lib/archive';
 import { formatDate, todayISO } from '@/lib/utils';
 import { isBlastingWork } from '@/db/schema';
 import { Badge } from '@/components/ui/badge';
@@ -675,12 +676,13 @@ export function AdminHome() {
   const openIncidents = useLiveQuery(() =>
     db.incidents.filter((i) => i.status !== 'closed').count(),
   );
-  // The daily paperwork pulse: newest office copies filed from the field
+  // The daily paperwork pulse: newest office copies filed from the field.
+  // Blob-free summaries — the PDF is fetched only when a row is tapped.
   const latestFilings = useLiveQuery(async () =>
-    (await db.submissions.toArray())
+    (await listSubmissionSummaries())
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .slice(0, 5)
-      .map((s) => ({ id: s.id, title: s.title, by: s.submittedBy, date: s.date, version: s.version, pdf: s.pdf })),
+      .map((s) => ({ id: s.id, title: s.title, by: s.submittedBy, date: s.date, version: s.version })),
   );
 
   return (
@@ -707,7 +709,7 @@ export function AdminHome() {
           <button
             key={f.id}
             className="w-full flex items-center gap-2 py-1.5 text-left hover:bg-gray-50 rounded-lg"
-            onClick={() => window.open(URL.createObjectURL(f.pdf), '_blank')}
+            onClick={() => openSubmissionPdfById(f.id)}
           >
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium truncate">{f.title}</p>

@@ -5,11 +5,14 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
-import { useLiveQuery, db } from '@/db';
 import { cn, formatDate } from '@/lib/utils';
 import { DOC_KIND_LABEL, type DocRow } from '@/lib/docRows';
 import { ListSkeleton } from '@/components/ui/skeleton';
-import type { Submission } from '@/db/schema';
+import {
+  openSubmissionPdfById,
+  useSubmissionSummaries,
+  type SubmissionSummary,
+} from '@/lib/archive';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 
@@ -25,9 +28,10 @@ export function DocList({
   const [search, setSearch] = useState('');
   const [kindFilter, setKindFilter] = useState<string>('all');
 
-  const submissions = useLiveQuery(() => db.submissions.toArray());
+  // Blob-free summaries — full PDFs are fetched one-at-a-time on open
+  const submissions = useSubmissionSummaries();
   const filedBySource = useMemo(() => {
-    const map = new Map<string, Submission[]>();
+    const map = new Map<string, SubmissionSummary[]>();
     for (const s of submissions ?? []) {
       map.set(s.sourceId, [...(map.get(s.sourceId) ?? []), s]);
     }
@@ -112,7 +116,7 @@ export function DocList({
                 <button
                   className="text-[11px] font-medium text-navy bg-navy-50 border border-navy/20 rounded-full px-2 py-0.5"
                   title="Open the filed office copy"
-                  onClick={() => window.open(URL.createObjectURL(filed[0].pdf), '_blank')}
+                  onClick={() => openSubmissionPdfById(filed[0].id)}
                 >
                   filed v{filed[0].version}
                 </button>

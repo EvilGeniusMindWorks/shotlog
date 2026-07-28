@@ -12,7 +12,13 @@ import { useMemo, useState } from 'react';
 import { FileDown, FileText, Search } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { cn, formatDate } from '@/lib/utils';
-import type { Submission, SubmissionType } from '@/db/schema';
+import type { SubmissionType } from '@/db/schema';
+import {
+  downloadSubmissionPdfById,
+  openSubmissionPdfById,
+  useSubmissionSummaries,
+  type SubmissionSummary,
+} from '@/lib/archive';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -37,13 +43,26 @@ function downloadBlob(blob: Blob, filename: string) {
   setTimeout(() => URL.revokeObjectURL(a.href), 10_000);
 }
 
-function pdfName(s: Submission) {
+function pdfName(s: Pick<SubmissionSummary, 'type' | 'date' | 'version'>) {
   return `${s.type}-${s.date}-v${s.version}.pdf`;
 }
 
-function SubmissionRow({ s, jobName, older }: { s: Submission; jobName?: string; older: Submission[] }) {
+function SubmissionRow({
+  s,
+  jobName,
+  older,
+}: {
+  s: SubmissionSummary;
+  jobName?: string;
+  older: SubmissionSummary[];
+}) {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
+  // Attachments live on the FULL record — fetched only when expanded
+  const full = useLiveQuery(
+    () => (expanded && s.assetCount > 0 ? db.submissions.get(s.id) : undefined),
+    [expanded, s.id, s.assetCount],
+  );
   // Submitter name → their person page (when they're on the roster)
   const crewId = useLiveQuery(
     () => findCrewId({ userId: s.submittedByUserId || undefined, name: s.submittedBy }),
@@ -68,24 +87,24 @@ function SubmissionRow({ s, jobName, older }: { s: Submission; jobName?: string;
         </div>
         <Badge variant="secondary">{TYPE_LABEL[s.type]}</Badge>
         {(s.version > 1 || older.length > 0) && <Badge variant="pending">v{s.version}</Badge>}
-        <button className="text-xs text-navy underline" onClick={() => openBlob(s.pdf)}>
+        <button className="text-xs text-navy underline" onClick={() => openSubmissionPdfById(s.id)}>
           View
         </button>
         <button
           className="text-xs text-navy underline inline-flex items-center gap-0.5"
-          onClick={() => downloadBlob(s.pdf, pdfName(s))}
+          onClick={() => void downloadSubmissionPdfById(s.id, pdfName(s))}
         >
           <FileDown className="h-3.5 w-3.5" /> PDF
         </button>
-        {(s.assets.length > 0 || older.length > 0) && (
+        {(s.assetCount > 0 || older.length > 0) && (
           <button className="text-xs text-gray-400 underline" onClick={() => setExpanded(!expanded)}>
-            {expanded ? 'less' : `${s.assets.length ? `${s.assets.length} attachment${s.assets.length === 1 ? '' : 's'}` : ''}${s.assets.length && older.length ? ' · ' : ''}${older.length ? `${older.length} older` : ''}`}
+            {expanded ? 'less' : `${s.assetCount ? `${s.assetCount} attachment${s.assetCount === 1 ? '' : 's'}` : ''}${s.assetCount && older.length ? ' · ' : ''}${older.length ? `${older.length} older` : ''}`}
           </button>
         )}
       </div>
       {expanded && (
         <div className="mt-1.5 ml-6 space-y-1">
-          {s.assets.map((a) => (
+          {(full?.assets ?? []).map((a) => (
             <div key={a.id} className="flex items-center gap-2 text-xs text-gray-500">
               <span className="truncate flex-1">📎 {a.fileName || a.id}</span>
               <button className="text-navy underline" onClick={() => openBlob(a.data)}>
@@ -96,15 +115,18 @@ function SubmissionRow({ s, jobName, older }: { s: Submission; jobName?: string;
               </button>
             </div>
           ))}
+          {expanded && s.assetCount > 0 && !full && (
+            <p className="text-xs text-gray-400">Loading attachments…</p>
+          )}
           {older.map((o) => (
             <div key={o.id} className="flex items-center gap-2 text-xs text-gray-400">
               <span className="truncate flex-1">
                 v{o.version} · filed {formatDate(o.createdAt.slice(0, 10))} by {o.submittedBy}
               </span>
-              <button className="text-navy underline" onClick={() => openBlob(o.pdf)}>
+              <button className="text-navy underline" onClick={() => openSubmissionPdfById(o.id)}>
                 View
               </button>
-              <button className="text-navy underline" onClick={() => downloadBlob(o.pdf, pdfName(o))}>
+              <button className="text-navy underline" onClick={() => void downloadSubmissionPdfById(o.id, pdfName(o))}>
                 PDF
               </button>
             </div>
@@ -120,7 +142,8 @@ function FiledLens() {
   const [jobFilter, setJobFilter] = useState('');
   const [search, setSearch] = useState('');
 
-  const submissions = useLiveQuery(() => db.submissions.toArray());
+  // Blob-free summaries — PDFs/attachments load one-at-a-time on demand
+  const submissions = useSubmissionSummaries();
   const jobs = useLiveQuery(() => db.jobs.toArray()) ?? [];
   const jobName = useMemo(() => new Map(jobs.map((j) => [j.id, j.name])), [jobs]);
 
@@ -139,7 +162,7 @@ function FiledLens() {
       );
     }
     // Latest version leads each source; older versions nest under it
-    const bySource = new Map<string, Submission[]>();
+    const bySource = new Map<string, SubmissionSummary[]>();
     for (const s of list) {
       const key = `${s.type}:${s.sourceId}`;
       bySource.set(key, [...(bySource.get(key) ?? []), s]);
