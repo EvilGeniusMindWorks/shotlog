@@ -13,6 +13,7 @@ import {
   canPerformOp,
   canTransitionDrillLog,
   canTransitionStatus,
+  diffPayloads,
   APPROVAL_LOCKED_TABLES,
   LOCKED_DAY_STATUSES,
   PARENT_CHAIN,
@@ -132,6 +133,32 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
   const now = new Date().toISOString();
   const discardedIds: string[] = [];
 
+  // Audit actor: name resolved once per request (JWT carries only the id)
+  const actorId = req.userId as string;
+  const actorName =
+    (await prisma.user.findUnique({ where: { id: actorId }, select: { name: true } }))?.name ??
+    actorId;
+  const audits: Prisma.AuditEntryCreateManyInput[] = [];
+  const audit = (
+    recordId: string,
+    tableName: string,
+    op: string,
+    changes: unknown,
+    reason?: string,
+  ) => {
+    audits.push({
+      companyId: cid,
+      tableName: tableName || '?',
+      recordId,
+      op,
+      actorId,
+      actorName,
+      actorRole: role,
+      changes: changes as Prisma.InputJsonValue,
+      reason,
+    });
+  };
+
   try {
     await prisma.$transaction(async (tx) => {
       const batch = new BatchRecords(tx, cid);
@@ -147,6 +174,8 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
       };
       const discard = (op: { id: string; op: string }, tableName: string, reason: string) => {
         discardedIds.push(op.id);
+        // Refused writes are part of the audit record too
+        audit(op.id, tableName, 'DISCARD', [], reason);
         console.warn(
           `[upload] discarded ${op.op} on ${tableName || '?'} (${op.id}) by ${req.userId} role=${role}: ${reason}`,
         );
@@ -242,15 +271,20 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
           }
         }
 
-        // 4. apply
+        // 4. apply (+ audit: field-level diff of stored → effective)
         if (op.op === 'PUT' || op.op === 'PATCH') {
+          const changes = diffPayloads(stored?.payload ?? null, effective);
+          if (changes.length > 0) audit(op.id, tableName, op.op, changes);
           await upsertRecord(tx, cid, op.id, op.data?.table_name ?? null, op.data?.payload ?? null, now);
           batch.applied(op.id, tableName, effective);
         } else {
+          audit(op.id, tableName, 'DELETE', [{ field: '*', note: 'deleted' }]);
           await deleteRecord(tx, cid, op.id);
           batch.deleted(op.id);
         }
       }
+
+      if (audits.length > 0) await tx.auditEntry.createMany({ data: audits });
     });
   } catch (err) {
     console.error('powersync upload failed:', err);

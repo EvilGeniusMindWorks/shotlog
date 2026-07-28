@@ -97,6 +97,31 @@ model Record {
   @@map("records")
 }
 
+/// Append-only audit trail written at the /powersync/upload choke point:
+/// who changed which record, when it reached the server, and the field-level
+/// before→after diff. DISCARD entries record rejected writes (role denials,
+/// locked-day edits, write-once replays) — refusals are part of the record.
+model AuditEntry {
+  id        String   @id @default(uuid())
+  companyId String
+  tableName String
+  recordId  String
+  /// PUT | PATCH | DELETE | DISCARD
+  op        String
+  actorId   String
+  actorName String
+  actorRole String
+  at        DateTime @default(now())
+  /// [{field, old?, new?, note?}] — heavy fields recorded without values
+  changes   Json     @default("[]")
+  /// Discards only: why the write was rejected
+  reason    String?
+
+  @@index([companyId, at])
+  @@index([companyId, recordId, at])
+  @@index([companyId, actorId, at])
+}
+
 model SyncRecord {
   /// Company-scoped: every user in the company shares the same records
   companyId String

@@ -46,6 +46,9 @@ export type { InstantelReading } from './instantel.js';
 export { PRODUCT_CATALOG_SEED, buildProductCatalogSeed, slugify } from './productCatalogSeed.js';
 export type { SeedProduct, SeedCatalogDoc } from './productCatalogSeed.js';
 
+export { diffPayloads } from './auditDiff.js';
+export type { AuditChange } from './auditDiff.js';
+
 export {
   ROLES,
   TABLE_PERMISSIONS,

@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, FileText, ClipboardList, ChevronDown, ChevronUp, FileBarChart, Lock, PhoneCall, Printer } from 'lucide-react';
+import { ArrowLeft, FileText, ClipboardList, ChevronDown, ChevronUp, FileBarChart, History, Lock, PhoneCall, Printer } from 'lucide-react';
 import { canEditApproved, canTransitionStatus, type Role } from '@shotlog/shared';
 import { addBlastLogToDay, useBlastDay } from '@/hooks/useBlastDay';
 import { canPerformOp } from '@shotlog/shared';
@@ -18,6 +18,7 @@ import { BlastLogForm } from '@/components/forms/BlastLogForm';
 import { DailyReportForm } from '@/components/forms/DailyReportForm';
 import { DrillPlanCard } from '@/components/forms/DrillPlanCard';
 import { AttachmentsCard } from '@/components/forms/AttachmentsCard';
+import { DayHistorySheet } from '@/components/forms/DayHistorySheet';
 import { ContactList } from '@/components/forms/JobContactsCard';
 import { createIncident } from '@/pages/admin/AdminIncidentsPage';
 
@@ -87,6 +88,7 @@ export function BlastDayPage() {
   const tab: Tab = blastLog ? activeTab : 'daily-report';
   const [showConditions, setShowConditions] = useState(false);
   const [showContacts, setShowContacts] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [statusBusy, setStatusBusy] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
   const online = useOnlineStatus();
@@ -224,6 +226,15 @@ export function BlastDayPage() {
           >
             <PhoneCall className="h-5 w-5" />
           </button>
+          {['admin', 'office', 'supervisor'].includes(role) && (
+            <button
+              className="h-10 w-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20"
+              title="Change history"
+              onClick={() => setShowHistory(true)}
+            >
+              <History className="h-5 w-5" />
+            </button>
+          )}
           <button
             className="h-10 w-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20"
             title={tab === 'blast-log' ? 'Print Blasting Log' : 'Print Daily Report'}
@@ -411,6 +422,10 @@ export function BlastDayPage() {
         <div className="max-w-5xl mx-auto px-4 pt-3">
           <ContactList contacts={job?.contacts ?? []} notes={job?.contactNotes} />
         </div>
+      )}
+
+      {showHistory && (
+        <DayHistorySheet blastDayId={blastDay.id} onClose={() => setShowHistory(false)} />
       )}
 
       {statusError && (

@@ -8,6 +8,8 @@ import { getSessionUser } from '@/lib/session';
 import { buildDocRows } from '@/lib/docRows';
 import { findCrewId } from '@/lib/personHistory';
 import { DocList } from '@/components/records/DocList';
+import { AuditLens } from '@/components/records/AuditLens';
+import { BinderExport } from '@/components/records/BinderExport';
 import { useMemo, useState } from 'react';
 import { FileDown, FileText, Search } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
@@ -240,19 +242,22 @@ function FiledLens() {
 }
 
 
+const LENS_LABEL = { filed: 'Filed', all: 'All documents', audit: 'Audit' } as const;
+
 export function CompanyRecordsPage() {
   const me = getSessionUser();
-  const [lens, setLens] = useState<'filed' | 'all'>('filed');
+  const [lens, setLens] = useState<'filed' | 'all' | 'audit'>('filed');
   const rows = useLiveQuery(
     () => buildDocRows({ scope: 'company', role: me?.role ?? 'admin' }),
     [me?.role],
   );
   return (
     <div className="p-4 max-w-3xl mx-auto space-y-3">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <h2 className="text-xl font-bold text-gray-900 flex-1">Records</h2>
+        {lens === 'filed' && <BinderExport />}
         <div className="flex rounded-lg border border-gray-300 overflow-hidden">
-          {(['filed', 'all'] as const).map((l) => (
+          {(['filed', 'all', 'audit'] as const).map((l) => (
             <button
               key={l}
               className={
@@ -262,12 +267,18 @@ export function CompanyRecordsPage() {
               }
               onClick={() => setLens(l)}
             >
-              {l === 'filed' ? 'Filed' : 'All documents'}
+              {LENS_LABEL[l]}
             </button>
           ))}
         </div>
       </div>
-      {lens === 'filed' ? <FiledLens /> : <DocList rows={rows} showFileAction />}
+      {lens === 'filed' ? (
+        <FiledLens />
+      ) : lens === 'all' ? (
+        <DocList rows={rows} showFileAction />
+      ) : (
+        <AuditLens />
+      )}
     </div>
   );
 }
