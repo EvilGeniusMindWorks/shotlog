@@ -6,6 +6,7 @@ import { getSessionUser } from '@/lib/session';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ListSkeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select } from '@/components/ui/select';
@@ -20,7 +21,9 @@ const OPERATION_OPTIONS = [
 
 export function JobsPage() {
   const navigate = useNavigate();
-  const jobs = useLiveQuery(() => db.jobs.orderBy('updatedAt').reverse().toArray()) ?? [];
+  // undefined = still hydrating from the local DB — skeleton, never "No jobs yet"
+  const jobsQuery = useLiveQuery(() => db.jobs.orderBy('updatedAt').reverse().toArray());
+  const jobs = jobsQuery ?? [];
   const [showNew, setShowNew] = useState(false);
   const [form, setForm] = useState({
     name: '', customer: '', address: '', city: '', state: '', operation: 'construction' as const,
@@ -96,7 +99,8 @@ export function JobsPage() {
             </CardContent>
           </Card>
         ))}
-        {jobs.length === 0 && (
+        {jobsQuery === undefined && <ListSkeleton rows={3} />}
+        {jobsQuery !== undefined && jobs.length === 0 && (
           <p className="text-center py-8 text-gray-400">No jobs yet. Create one to get started.</p>
         )}
       </div>

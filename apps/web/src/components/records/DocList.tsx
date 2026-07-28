@@ -8,6 +8,7 @@ import { Search } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { cn, formatDate } from '@/lib/utils';
 import { DOC_KIND_LABEL, type DocRow } from '@/lib/docRows';
+import { ListSkeleton } from '@/components/ui/skeleton';
 import type { Submission } from '@/db/schema';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -120,7 +121,12 @@ export function DocList({
             </div>
           );
         })}
-        {filtered.length === 0 && (
+        {rows === undefined && (
+          <div className="p-3">
+            <ListSkeleton rows={3} />
+          </div>
+        )}
+        {rows !== undefined && filtered.length === 0 && (
           <p className="p-4 text-sm text-gray-400">
             {search || kindFilter !== 'all' ? 'Nothing matches.' : 'Nothing here yet.'}
           </p>

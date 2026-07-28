@@ -19,7 +19,9 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt': new builds download quietly and an Update chip lets the
+      // user choose when to restart — no surprise reloads mid-form
+      registerType: 'prompt',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
       manifest: {
         name: 'ShotLog',
@@ -48,6 +50,10 @@ export default defineConfig({
         // printout scanning works fully offline
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,gz}'],
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
+        // SPA fallback: offline deep links (bookmarks, shared URLs) render the
+        // app shell instead of a browser error page. API is cross-origin, so
+        // no denylist is needed.
+        navigateFallback: 'index.html',
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/api\.weather\.gov\/.*/i,

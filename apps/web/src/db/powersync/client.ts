@@ -13,6 +13,7 @@ import {
   type PowerSyncBackendConnector,
 } from '@powersync/web';
 import { authedFetch, getSession } from '@/lib/session';
+import { logSyncEvent } from '@/lib/syncLog';
 import type { SqlAdapter } from './adapter';
 
 const schema = new Schema({
@@ -35,10 +36,15 @@ class ShotLogConnector implements PowerSyncBackendConnector {
       const { token } = await fetch(devTokenUrl).then((r) => r.json());
       return { endpoint: import.meta.env.VITE_POWERSYNC_URL ?? 'http://localhost:8095', token };
     }
-    const res = await authedFetch('/powersync/token');
-    if (!res.ok) throw new Error(`powersync token failed (${res.status})`);
-    const { token, endpoint } = (await res.json()) as { token: string; endpoint: string };
-    return { endpoint: import.meta.env.VITE_POWERSYNC_URL ?? endpoint, token };
+    try {
+      const res = await authedFetch('/powersync/token');
+      if (!res.ok) throw new Error(`powersync token failed (${res.status})`);
+      const { token, endpoint } = (await res.json()) as { token: string; endpoint: string };
+      return { endpoint: import.meta.env.VITE_POWERSYNC_URL ?? endpoint, token };
+    } catch (err) {
+      logSyncEvent(`token fetch failed: ${err instanceof Error ? err.message : 'error'}`);
+      throw err;
+    }
   }
 
   async uploadData(database: AbstractPowerSyncDatabase) {
@@ -57,7 +63,10 @@ class ShotLogConnector implements PowerSyncBackendConnector {
           body: JSON.stringify({ ops }),
         });
     // Throwing keeps the CRUD queue intact; PowerSync retries with backoff.
-    if (!res.ok) throw new Error(`upload failed (${res.status})`);
+    if (!res.ok) {
+      logSyncEvent(`upload failed (${res.status})`);
+      throw new Error(`upload failed (${res.status})`);
+    }
     await tx.complete();
   }
 }
@@ -82,6 +91,25 @@ export function getPowerSync(): PowerSyncDatabase {
 /** Call after login: starts (or restarts) replication with fresh credentials. */
 export async function connectPowerSync(): Promise<void> {
   await getPowerSync().connect(new ShotLogConnector());
+}
+
+// Debounce so a burst of online/visibility events triggers ONE reconnect
+let lastReconnectAt = 0;
+
+/**
+ * Nudge the SDK to reconnect NOW (window 'online', app foregrounded, or the
+ * panel's Reconnect button) instead of waiting out its internal backoff.
+ * No-op when nobody is logged in or the stream is already up.
+ */
+export async function reconnectPowerSync(): Promise<void> {
+  if (!getSession().loggedIn && !import.meta.env.VITE_POWERSYNC_TOKEN_URL) return;
+  const ps = getPowerSync();
+  if (ps.currentStatus?.connected) return;
+  const now = Date.now();
+  if (now - lastReconnectAt < 5000) return;
+  lastReconnectAt = now;
+  logSyncEvent('reconnect nudge');
+  await ps.connect(new ShotLogConnector());
 }
 
 /**

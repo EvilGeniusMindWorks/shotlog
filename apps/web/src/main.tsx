@@ -7,9 +7,16 @@ import './index.css';
 // Explicit SW registration with an hourly update check. Without this, a
 // long-lived installed PWA only checks for new versions on the browser's
 // own schedule (up to 24h) — field tablets ran stale builds for days.
-// autoUpdate mode reloads the app automatically when a new build activates.
-registerSW({
+// 'prompt' mode: a new build downloads quietly and the AppShell Update chip
+// applies it when the USER chooses — no surprise reloads mid-form.
+const updateSW = registerSW({
   immediate: true,
+  onNeedRefresh() {
+    (window as unknown as Record<string, unknown>).__shotlogSwUpdateReady = true;
+    (window as unknown as Record<string, unknown>).__shotlogApplySwUpdate = () =>
+      void updateSW(true);
+    window.dispatchEvent(new Event('shotlog-sw-update-ready'));
+  },
   onRegisteredSW(_url, registration) {
     if (registration) {
       window.setInterval(() => void registration.update(), 60 * 60 * 1000);

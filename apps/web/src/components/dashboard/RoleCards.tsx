@@ -14,6 +14,7 @@ import { formatDate, todayISO } from '@/lib/utils';
 import { isBlastingWork } from '@/db/schema';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const STATUS_BADGE = { open: 'draft', complete: 'submitted', accepted: 'approved' } as const;
 
@@ -58,7 +59,7 @@ export function TodayCard() {
     return out;
   }, [today]);
 
-  if (!data) return null;
+  if (!data) return <Skeleton className="h-20 mb-3" />;
   return (
     <div className="rounded-xl border-l-4 border border-gray-200 border-l-safety-orange bg-white p-3 mb-3">
       <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">

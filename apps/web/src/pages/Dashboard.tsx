@@ -8,6 +8,7 @@ import type { BlastDay, Job } from '@/db/schema';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { ListSkeleton } from '@/components/ui/skeleton';
 import { cn, formatDate } from '@/lib/utils';
 import { NewBlastDayDialog } from '@/components/forms/NewBlastDayDialog';
 import { AdminHome, DrillerHome, DrillingReviewCard, MechanicHome, TodayCard } from '@/components/dashboard/RoleCards';
@@ -287,7 +288,9 @@ export function WorkDayList() {
         </div>
       )}
 
-      {summaries !== undefined && filtered.length === 0 ? (
+      {summaries === undefined ? (
+        <ListSkeleton rows={3} />
+      ) : summaries !== undefined && filtered.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
           <p className="text-lg mb-2">No blast days{search || statusFilter !== 'all' ? ' match' : ' yet'}</p>
           <p className="text-sm">Tap "+" to get started</p>

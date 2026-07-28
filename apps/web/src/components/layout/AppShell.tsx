@@ -7,18 +7,16 @@ import {
   BookOpen,
   Briefcase,
   Moon,
-  RefreshCw,
   Settings,
   ShieldCheck,
   Sun,
 } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
-import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useTheme } from '@/hooks/useTheme';
+import { useReconnectWatchdog } from '@/hooks/useReconnectWatchdog';
 import { getSessionUser, getRealSessionUser, getViewRole, setViewRole } from '@/lib/session';
-import { useSyncStatus } from '@/db/powersync/useSyncStatus';
+import { FirstSyncStrip, SessionExpiredBanner, SyncChip, UpdateChip } from './SyncChip';
 import { Tour } from './Tour';
 
 const baseNavItems = [
@@ -94,8 +92,7 @@ function Wordmark({ compact }: { compact?: boolean }) {
 }
 
 export function AppShell() {
-  const online = useOnlineStatus();
-  const sync = useSyncStatus();
+  useReconnectWatchdog();
   const { theme, toggle } = useTheme();
   const [touring, setTouring] = useState(false);
   const navigate = useNavigate();
@@ -167,24 +164,9 @@ export function AppShell() {
               </select>
             </label>
           )}
-          <div className="flex items-center gap-2 px-3 py-1 text-[11px] text-navy-200">
-            {sync.queued > 0 ? (
-              <>
-                <RefreshCw className={cn('h-3 w-3', sync.connected && 'animate-spin')} />
-                {sync.queued} change{sync.queued === 1 ? '' : 's'} waiting
-              </>
-            ) : !sync.connected || !online ? (
-              <>
-                <span className="h-2 w-2 rounded-full bg-gray-400" /> Offline — saved on this
-                device
-              </>
-            ) : (
-              <>
-                <span className="h-2 w-2 rounded-full bg-green-400" /> All changes saved
-                {sync.lastSyncedAt &&
-                  ` ${sync.lastSyncedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
-              </>
-            )}
+          <div className="px-1 py-1 flex items-center gap-2">
+            <SyncChip variant="sidebar" />
+            <UpdateChip />
           </div>
           <button
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-navy-200 hover:text-white hover:bg-white/5 transition-colors"
@@ -221,6 +203,8 @@ export function AppShell() {
           stretches the whole shell past the viewport on phones */}
       <div className="flex-1 min-w-0 lg:pl-56 flex flex-col min-h-screen">
         <ViewAsBanner />
+        <SessionExpiredBanner />
+        <FirstSyncStrip />
         {/* Mobile header */}
         <header className="lg:hidden bg-navy text-white px-4 py-3 shadow-md flex items-center justify-between shrink-0">
           <Wordmark compact />
@@ -242,9 +226,8 @@ export function AppShell() {
             >
               {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </button>
-            <Badge variant={online ? 'synced' : 'local'}>
-              {sync.queued > 0 ? `${sync.queued} waiting` : online ? 'Online' : 'Offline'}
-            </Badge>
+            <UpdateChip />
+            <SyncChip variant="badge" />
             <button
               className="h-9 w-9 rounded-full bg-white/15 flex items-center justify-center text-xs font-bold ml-1"
               title="My Profile"

@@ -42,10 +42,14 @@ const POWERSYNC_JWT_AUD = process.env.POWERSYNC_JWT_AUD ?? 'powersync';
 export const powersyncRouter = Router();
 
 powersyncRouter.get('/token', requireAuth, (req: AuthedRequest, res) => {
+  // 12h (was 1h): the SDK re-fetches credentials on expiry, and every refetch
+  // that hits a slow server response flips the stream to "disconnected" —
+  // hourly flaps read as the app "going offline" in the field. The token only
+  // authorizes sync for this user's company; 12h covers a full shift.
   const token = jwt.sign({ sub: req.userId, cid: req.companyId }, POWERSYNC_JWT_SECRET, {
     algorithm: 'HS256',
     audience: POWERSYNC_JWT_AUD,
-    expiresIn: '1h',
+    expiresIn: '12h',
     keyid: POWERSYNC_JWT_KID,
   });
   res.json({ token, endpoint: POWERSYNC_URL });

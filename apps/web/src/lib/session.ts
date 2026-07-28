@@ -11,6 +11,22 @@ const LS_KEYS = {
   userInfo: 'shotlog-user-info',
 };
 
+// Session-expired flag: set when the server DEFINITIVELY rejects our refresh
+// token. The user stays signed in on-device (PIN + local data keep working —
+// never lock field data behind the network); syncing pauses until re-login.
+const SESSION_EXPIRED_KEY = 'shotlog-session-expired';
+export const SESSION_CHANGED_EVENT = 'shotlog-session-changed';
+
+export function isSessionExpired(): boolean {
+  return localStorage.getItem(SESSION_EXPIRED_KEY) === '1';
+}
+
+function setSessionExpired(expired: boolean): void {
+  if (expired) localStorage.setItem(SESSION_EXPIRED_KEY, '1');
+  else localStorage.removeItem(SESSION_EXPIRED_KEY);
+  window.dispatchEvent(new Event(SESSION_CHANGED_EVENT));
+}
+
 /** Production API server — pre-filled on the login screen */
 export const DEFAULT_SERVER_URL = 'https://shotlogserver-production.up.railway.app';
 
@@ -102,6 +118,7 @@ export async function login(serverUrl: string, email: string, password: string):
   localStorage.setItem(LS_KEYS.accessToken, data.accessToken);
   localStorage.setItem(LS_KEYS.refreshToken, data.refreshToken);
   localStorage.setItem(LS_KEYS.userInfo, JSON.stringify(data.user));
+  setSessionExpired(false);
 }
 
 export async function logout(): Promise<void> {
@@ -119,6 +136,7 @@ export async function logout(): Promise<void> {
   localStorage.removeItem(LS_KEYS.userEmail);
   localStorage.removeItem(LS_KEYS.userInfo);
   localStorage.removeItem(VIEW_ROLE_KEY);
+  setSessionExpired(false);
 }
 
 /** Refresh the cached session user (name, role, licenses) from the server */
@@ -199,12 +217,19 @@ async function refreshTokens(serverUrl: string): Promise<void> {
       body: JSON.stringify({ refreshToken }),
     });
     if (!refresh.ok) {
-      await logout();
-      throw new Error('session expired — log in again');
+      // Definitive rejection (4xx) → session expired: pause syncing but keep
+      // the user signed in on-device (PIN + local data still work). Server
+      // errors (5xx) are transient — throw without flagging.
+      if (refresh.status >= 400 && refresh.status < 500) {
+        setSessionExpired(true);
+        throw new Error('session expired — sign in to resume syncing');
+      }
+      throw new Error(`token refresh failed (${refresh.status})`);
     }
     const tokens = (await refresh.json()) as { accessToken: string; refreshToken: string };
     localStorage.setItem(LS_KEYS.accessToken, tokens.accessToken);
     localStorage.setItem(LS_KEYS.refreshToken, tokens.refreshToken);
+    setSessionExpired(false);
   })().finally(() => {
     refreshInFlight = null;
   });
