@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { buildProductCatalogSeed, slugify } from '@shotlog/shared';
+import { TABLE_PERMISSIONS, buildProductCatalogSeed, slugify } from '@shotlog/shared';
 import { prisma } from './db.js';
 import { authRouter, ensureAdminUser } from './auth.js';
 import { adminRouter } from './admin.js';
@@ -16,7 +16,14 @@ app.use(cors());
 app.use(express.json({ limit: '30mb' }));
 
 app.get('/health', (_req, res) => {
-  res.json({ ok: true, service: 'shotlog-sync', time: new Date().toISOString() });
+  // `tables` surfaces the permission matrix size — a cheap deploy marker
+  // proving which @shotlog/shared build this server is running.
+  res.json({
+    ok: true,
+    service: 'shotlog-sync',
+    time: new Date().toISOString(),
+    tables: Object.keys(TABLE_PERMISSIONS).length,
+  });
 });
 
 app.use('/auth', authRouter);
