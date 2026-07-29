@@ -23,9 +23,15 @@ export function PrintDrillLogPage() {
           : [],
       [logId],
     ) ?? [];
-  const shot = useLiveQuery(() => (log ? db.shots.get(log.shotId) : undefined), [log?.shotId]);
+  const shot = useLiveQuery(
+    () => (log?.shotId ? db.shots.get(log.shotId) : undefined),
+    [log?.shotId],
+  );
   const job = useLiveQuery(() => (log ? db.jobs.get(log.jobId) : undefined), [log?.jobId]);
-  const day = useLiveQuery(() => (log ? db.blastDays.get(log.blastDayId) : undefined), [log?.blastDayId]);
+  const day = useLiveQuery(
+    () => (log?.blastDayId ? db.blastDays.get(log.blastDayId) : undefined),
+    [log?.blastDayId],
+  );
   const rig = useLiveQuery(
     () => (log?.drillRigEquipmentId ? db.equipment.get(log.drillRigEquipmentId) : undefined),
     [log?.drillRigEquipmentId],

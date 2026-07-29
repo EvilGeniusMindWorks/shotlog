@@ -5,7 +5,7 @@ import { useLiveQuery, db } from '@/db';
 import { getSessionUser } from '@/lib/session';
 import { generateId, nowISO, todayISO } from '@/lib/utils';
 import { classifyDeviation, materializeDrillPlan, parseDiagram, type PlanHole } from '@/lib/shotDiagram';
-import type { DrillLog, DrillLogHole, HoleConditionCode, Shot } from '@/db/schema';
+import type { DrillLog, DrillLogHole, HoleCondition, KickDirection, Shot } from '@/db/schema';
 
 /** The blaster's materialized per-hole plan for a shot, or null when none */
 export function getShotPlan(shot: Shot | undefined | null): PlanHole[] | null {
@@ -84,10 +84,14 @@ export async function addHole(
     actualDepth: number;
     angle: number;
     subdrill: number;
-    conditions: HoleConditionCode[];
+    /** Full condition objects — quick-entry toggles pass whole-hole bands
+     *  (fromFt 0..actualDepth); at-depth details + notes ride along */
+    conditions: HoleCondition[];
     comment: string;
     plannedDepth?: number;
     plannedAngle?: number;
+    plannedKick?: number;
+    plannedKickDir?: KickDirection;
   },
 ): Promise<string> {
   const now = nowISO();
@@ -100,12 +104,12 @@ export async function addHole(
     angle: values.angle,
     actualDepth: values.actualDepth,
     subdrill: values.subdrill,
-    // Quick-entry: a condition toggle marks the whole hole depth; precise
-    // from/to bands can be edited later if it ever matters
-    conditions: values.conditions.map((code) => ({ fromFt: 0, toFt: values.actualDepth, code })),
+    conditions: values.conditions,
     comment: values.comment,
     plannedDepth: values.plannedDepth,
     plannedAngle: values.plannedAngle,
+    plannedKick: values.plannedKick,
+    plannedKickDir: values.plannedKickDir,
     createdAt: now,
     updatedAt: now,
     syncStatus: 'local',
@@ -139,68 +143,77 @@ export interface ShotDrilling {
   flagged: FlaggedHole[];
 }
 
+/** Aggregate a set of drill logs against an optional per-hole plan — the
+ *  shared core behind useShotDrilling (shot logs) and usePlanDrilling
+ *  (standalone-plan logs). */
+export async function aggregateDrilling(
+  logs: DrillLog[],
+  plan: PlanHole[] | null,
+): Promise<ShotDrilling> {
+  const seen = new Map<string, number>();
+  const flagged: FlaggedHole[] = [];
+  const extras: string[] = [];
+  let totalHoles = 0;
+  let totalFootage = 0;
+  let wetHoles = 0;
+  let voidHoles = 0;
+  const enriched = [];
+  for (const log of [...logs].sort((a, b) => a.createdAt.localeCompare(b.createdAt))) {
+    const holes = await db.drillLogHoles.where('drillLogId').equals(log.id).toArray();
+    let footage = 0;
+    let wet = 0;
+    let deviations = 0;
+    for (const h of holes) {
+      footage += h.actualDepth;
+      seen.set(h.holeNumber.trim(), (seen.get(h.holeNumber.trim()) ?? 0) + 1);
+      if (h.conditions.some((c) => c.code === 'W')) {
+        wet++;
+        wetHoles++;
+      }
+      if (h.conditions.some((c) => c.code === 'V')) voidHoles++;
+      if (h.plannedDepth !== undefined) {
+        const dev = classifyDeviation(
+          { depth: h.plannedDepth, angle: h.plannedAngle ?? 0 },
+          { depth: h.actualDepth, angle: h.angle },
+        );
+        if (dev?.flagged) {
+          deviations++;
+          flagged.push({
+            holeNumber: h.holeNumber,
+            plannedDepth: h.plannedDepth,
+            actualDepth: h.actualDepth,
+            depthDelta: dev.depthDelta,
+            angleChanged: dev.angleChanged,
+          });
+        }
+      }
+      if (plan && !plan.some((p) => String(p.n) === h.holeNumber.trim()))
+        extras.push(h.holeNumber);
+    }
+    totalHoles += holes.length;
+    totalFootage += footage;
+    enriched.push({ ...log, holeCount: holes.length, footage, wetHoles: wet, deviations });
+  }
+  return {
+    logs: enriched,
+    totalHoles,
+    totalFootage,
+    wetHoles,
+    voidHoles,
+    duplicateNumbers: [...seen.entries()].filter(([, n]) => n > 1).map(([k]) => k),
+    planned: plan ? plan.length : null,
+    undrilled: plan ? plan.filter((p) => !seen.has(String(p.n))).map((p) => String(p.n)) : [],
+    extras,
+    flagged,
+  };
+}
+
 /** Aggregate drilling across all of a shot's logs (live). */
 export function useShotDrilling(shotId: string | undefined): ShotDrilling | undefined {
   return useLiveQuery(async () => {
     if (!shotId) return undefined;
     const shot = await db.shots.get(shotId);
-    const plan = getShotPlan(shot);
     const logs = await db.drillLogs.where('shotId').equals(shotId).toArray();
-    const seen = new Map<string, number>();
-    const flagged: FlaggedHole[] = [];
-    const extras: string[] = [];
-    let totalHoles = 0;
-    let totalFootage = 0;
-    let wetHoles = 0;
-    let voidHoles = 0;
-    const enriched = [];
-    for (const log of logs.sort((a, b) => a.createdAt.localeCompare(b.createdAt))) {
-      const holes = await db.drillLogHoles.where('drillLogId').equals(log.id).toArray();
-      let footage = 0;
-      let wet = 0;
-      let deviations = 0;
-      for (const h of holes) {
-        footage += h.actualDepth;
-        seen.set(h.holeNumber.trim(), (seen.get(h.holeNumber.trim()) ?? 0) + 1);
-        if (h.conditions.some((c) => c.code === 'W')) {
-          wet++;
-          wetHoles++;
-        }
-        if (h.conditions.some((c) => c.code === 'V')) voidHoles++;
-        if (h.plannedDepth !== undefined) {
-          const dev = classifyDeviation(
-            { depth: h.plannedDepth, angle: h.plannedAngle ?? 0 },
-            { depth: h.actualDepth, angle: h.angle },
-          );
-          if (dev?.flagged) {
-            deviations++;
-            flagged.push({
-              holeNumber: h.holeNumber,
-              plannedDepth: h.plannedDepth,
-              actualDepth: h.actualDepth,
-              depthDelta: dev.depthDelta,
-              angleChanged: dev.angleChanged,
-            });
-          }
-        }
-        if (plan && !plan.some((p) => String(p.n) === h.holeNumber.trim()))
-          extras.push(h.holeNumber);
-      }
-      totalHoles += holes.length;
-      totalFootage += footage;
-      enriched.push({ ...log, holeCount: holes.length, footage, wetHoles: wet, deviations });
-    }
-    return {
-      logs: enriched,
-      totalHoles,
-      totalFootage,
-      wetHoles,
-      voidHoles,
-      duplicateNumbers: [...seen.entries()].filter(([, n]) => n > 1).map(([k]) => k),
-      planned: plan ? plan.length : null,
-      undrilled: plan ? plan.filter((p) => !seen.has(String(p.n))).map((p) => String(p.n)) : [],
-      extras,
-      flagged,
-    };
+    return aggregateDrilling(logs, getShotPlan(shot));
   }, [shotId]);
 }

@@ -7,7 +7,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Check, Droplets, Printer, Trash2 } from 'lucide-react';
 import { canEditAcceptedDrillLog, canTransitionDrillLog, type Role } from '@shotlog/shared';
 import { useLiveQuery, db } from '@/db';
-import { addHole, drilledHoleNumbers, getShotPlan, nextHoleNumber, useShotDrilling } from '@/hooks/useDrillLogs';
+import { addHole, aggregateDrilling, drilledHoleNumbers, getShotPlan, nextHoleNumber } from '@/hooks/useDrillLogs';
+import { getPlanHoles, planDrilledHoleNumbers, planToDiagram } from '@/hooks/useDrillPlans';
 import { parseDiagram } from '@/lib/shotDiagram';
 import { DrillPlanDiagram } from '@/components/design/DrillPlanDiagram';
 import { AttachmentsCard } from '@/components/forms/AttachmentsCard';
@@ -15,7 +16,7 @@ import { useSubmissions } from '@/lib/archive';
 import { findCrewId } from '@/lib/personHistory';
 import { getSessionUser } from '@/lib/session';
 import { nowISO, formatDate } from '@/lib/utils';
-import type { HoleConditionCode } from '@/db/schema';
+import type { HoleCondition, HoleConditionCode } from '@/db/schema';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,7 +35,10 @@ const CONDITIONS: { code: HoleConditionCode; label: string }[] = [
 const STATUS_BADGE = { open: 'draft', complete: 'submitted', accepted: 'approved' } as const;
 
 export function DrillLogPage() {
-  const { id: blastDayId, logId } = useParams<{ id: string; logId: string }>();
+  // Serves BOTH routes: /blast-day/:id/drill-log/:logId (shot-parented) and
+  // /jobs/:jobId/drill-plan/:planId/log/:logId (plan-parented) — the log
+  // record itself decides which world it lives in.
+  const { logId } = useParams<{ logId: string }>();
   const navigate = useNavigate();
   const role = (getSessionUser()?.role ?? 'driller') as Role;
   const me = getSessionUser();
@@ -50,7 +54,14 @@ export function DrillLogPage() {
           : [],
       [logId],
     ) ?? [];
-  const shot = useLiveQuery(() => (log ? db.shots.get(log.shotId) : undefined), [log?.shotId]);
+  const shot = useLiveQuery(
+    () => (log?.shotId ? db.shots.get(log.shotId) : undefined),
+    [log?.shotId],
+  );
+  const drillPlan = useLiveQuery(
+    () => (log?.drillPlanId ? db.drillPlans.get(log.drillPlanId) : undefined),
+    [log?.drillPlanId],
+  );
   const job = useLiveQuery(() => (log ? db.jobs.get(log.jobId) : undefined), [log?.jobId]);
   const rigs =
     useLiveQuery(() =>
@@ -61,10 +72,21 @@ export function DrillLogPage() {
 
   const todayChecklist = useTodayChecklist(log?.drillRigEquipmentId);
 
-  // The blaster's per-hole plan + the shot-wide claim ledger: a hole
-  // drilled in ANY log (any driller) is off everyone's remaining list
-  const plan = getShotPlan(shot);
-  const drilling = useShotDrilling(log?.shotId);
+  // The blaster's per-hole plan + the claim ledger: a hole drilled in ANY
+  // log (any driller, any day) is off everyone's remaining list
+  const plan = log?.drillPlanId ? getPlanHoles(drillPlan) : getShotPlan(shot);
+  const drilling = useLiveQuery(async () => {
+    if (!log) return undefined;
+    if (log.drillPlanId) {
+      const p = await db.drillPlans.get(log.drillPlanId);
+      const logs = await db.drillLogs.filter((l) => l.drillPlanId === log.drillPlanId).toArray();
+      return aggregateDrilling(logs, getPlanHoles(p));
+    }
+    if (!log.shotId) return undefined;
+    const s = await db.shots.get(log.shotId);
+    const logs = await db.drillLogs.where('shotId').equals(log.shotId).toArray();
+    return aggregateDrilling(logs, getShotPlan(s));
+  }, [log?.shotId, log?.drillPlanId]);
   const filedCopies = useSubmissions(log?.id);
   // The driller's name in the header is a door to their person page
   const drillerCrewId = useLiveQuery(
@@ -72,16 +94,23 @@ export function DrillLogPage() {
       log ? findCrewId({ userId: log.drillerUserId || undefined, name: log.drillerName }) : null,
     [log?.drillerUserId, log?.drillerName],
   );
-  const drilled = useLiveQuery(
-    async () => (log ? drilledHoleNumbers(log.shotId) : undefined),
-    [log?.shotId],
-  );
+  const drilled = useLiveQuery(async () => {
+    if (!log) return undefined;
+    if (log.drillPlanId) return planDrilledHoleNumbers(log.drillPlanId);
+    if (log.shotId) return drilledHoleNumbers(log.shotId);
+    return new Set<string>();
+  }, [log?.shotId, log?.drillPlanId]);
   const remaining = plan && drilled ? plan.filter((p) => !drilled.has(String(p.n))) : null;
 
   // Quick-entry state
   const [holeNumber, setHoleNumber] = useState('');
   const [depth, setDepth] = useState('');
   const [conditions, setConditions] = useState<HoleConditionCode[]>([]);
+  // Per-condition hazard detail: at-depth (ft) + free note — optional,
+  // shown inline under each toggled-on condition
+  const [condDetail, setCondDetail] = useState<
+    Partial<Record<HoleConditionCode, { at: string; note: string }>>
+  >({});
   const [comment, setComment] = useState('');
   const [showDetail, setShowDetail] = useState(false);
   const [angle, setAngle] = useState('0');
@@ -98,8 +127,10 @@ export function DrillLogPage() {
         const next = plan.find((p) => !drilled.has(String(p.n)));
         setHoleNumber(next ? String(next.n) : String(plan.length + 1));
       }
-    } else {
+    } else if (log.shotId) {
       void nextHoleNumber(log.shotId).then((n) => setHoleNumber(String(n)));
+    } else {
+      setHoleNumber('1');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [log?.id, plan !== null, drilled !== undefined]);
@@ -113,13 +144,25 @@ export function DrillLogPage() {
 
   if (!log) return <div className="p-4 text-center text-gray-500">Loading…</div>;
 
+  // Where "back", "print", and "accept" go depends on the log's world
+  const backTo = log.drillPlanId
+    ? `/jobs/${log.jobId}/drill-plan/${log.drillPlanId}`
+    : `/blast-day/${log.blastDayId}`;
+  const logBase = log.drillPlanId
+    ? `/jobs/${log.jobId}/drill-plan/${log.drillPlanId}/log/${log.id}`
+    : `/blast-day/${log.blastDayId}/drill-log/${log.id}`;
+  const contextTitle = drillPlan ? drillPlan.name : `Shot ${shot?.shotNumber ?? '?'}`;
+
   const designDepth = shot?.totals.avgDrillDepth || log.faceHeight || 0;
   const designSubdrill = shot?.drillParams.subDrill ?? 0;
   const locked = log.status === 'accepted' && !canEditAcceptedDrillLog(role);
   const editable = !locked && log.status !== 'accepted';
   const footage = holes.reduce((s, h) => s + h.actualDepth, 0);
   const planHole = plan?.find((p) => String(p.n) === holeNumber.trim());
-  const targetDepth = planHole?.depth || designDepth;
+  // The driller drills the LENGTH — for kicked holes that's longer than the
+  // vertical depth, so it is the plan target everywhere on this page
+  const planTarget = planHole ? +(planHole.holeLength || planHole.depth).toFixed(1) : undefined;
+  const targetDepth = planTarget || designDepth;
 
   const update = (changes: Record<string, unknown>) =>
     db.drillLogs.update(log.id, { ...changes, updatedAt: nowISO() });
@@ -128,15 +171,29 @@ export function DrillLogPage() {
     const d = parseFloat(depth) || targetDepth;
     if (!holeNumber.trim() || d <= 0) return;
     const a = angle.trim() === '' ? (planHole?.angle ?? 0) : parseFloat(angle) || 0;
+    // Condition toggles mark the whole hole; an at-depth detail narrows the
+    // band to that point and a note rides along ("water at 8 ft")
+    const fullConditions: HoleCondition[] = conditions.map((code) => {
+      const detail = condDetail[code];
+      const at = detail && detail.at !== '' ? parseFloat(detail.at) : NaN;
+      return {
+        fromFt: Number.isNaN(at) ? 0 : at,
+        toFt: Number.isNaN(at) ? d : at,
+        code,
+        ...(detail?.note.trim() ? { note: detail.note.trim() } : {}),
+      };
+    });
     await addHole(log, {
       holeNumber: holeNumber.trim(),
       actualDepth: d,
       angle: a,
       subdrill: subdrill === '' ? designSubdrill : parseFloat(subdrill) || 0,
-      conditions,
+      conditions: fullConditions,
       comment: comment.trim(),
-      plannedDepth: planHole?.depth,
-      plannedAngle: planHole?.angle,
+      plannedDepth: planTarget,
+      plannedAngle: planHole?.angle !== undefined ? +planHole.angle.toFixed(1) : undefined,
+      plannedKick: planHole?.kick,
+      plannedKickDir: planHole?.kickDir,
     });
     if (plan && drilled) {
       // Advance to the next unclaimed plan hole (the one just drilled included)
@@ -150,6 +207,7 @@ export function DrillLogPage() {
     }
     setDepth('');
     setConditions([]);
+    setCondDetail({});
     setComment('');
   };
 
@@ -159,13 +217,13 @@ export function DrillLogPage() {
         <div className="max-w-3xl mx-auto flex items-center gap-3">
           <button
             className="h-10 w-10 rounded-lg flex items-center justify-center text-navy-200 hover:text-white hover:bg-white/10"
-            onClick={() => navigate(`/blast-day/${blastDayId}`)}
+            onClick={() => navigate(backTo)}
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="flex-1 min-w-0">
             <h2 className="font-bold text-lg truncate leading-tight">
-              Drill Log — Shot {shot?.shotNumber ?? '?'}
+              Drill Log — {contextTitle}
             </h2>
             <p className="text-xs text-navy-200 truncate">
               {job?.name} ·{' '}
@@ -188,7 +246,7 @@ export function DrillLogPage() {
           )}
           {log.status === 'complete' && canTransitionDrillLog('complete', 'accepted', role) && (
             <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white"
-              onClick={() => navigate(`/blast-day/${blastDayId}/drill-log/${log.id}/submit`)}>
+              onClick={() => navigate(`${logBase}/submit`)}>
               <Check className="h-4 w-4 mr-1" /> Accept &amp; File
             </Button>
           )}
@@ -204,7 +262,7 @@ export function DrillLogPage() {
             canTransitionDrillLog('complete', 'accepted', role) && (
               // Backfill: accepted before the archive existed → no office copy
               <Button size="sm" variant="secondary"
-                onClick={() => navigate(`/blast-day/${blastDayId}/drill-log/${log.id}/submit`)}>
+                onClick={() => navigate(`${logBase}/submit`)}>
                 File to office
               </Button>
             )}
@@ -216,7 +274,7 @@ export function DrillLogPage() {
           <button
             className="h-10 w-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20"
             title="Print Drill Log"
-            onClick={() => navigate(`/blast-day/${blastDayId}/drill-log/${log.id}/print`)}
+            onClick={() => navigate(`${logBase}/print`)}
           >
             <Printer className="h-5 w-5" />
           </button>
@@ -346,8 +404,8 @@ export function DrillLogPage() {
                   </span>
                   {planHole && (
                     <span className="font-medium text-navy">
-                      Hole {planHole.n} — plan {planHole.depth} ft
-                      {planHole.angle ? ` · ${planHole.angle}°` : ''}
+                      Hole {planHole.n} — plan {planTarget} ft
+                      {planHole.angle ? ` · ${planHole.angle.toFixed(1)}°` : ''}
                     </span>
                   )}
                 </div>
@@ -370,7 +428,7 @@ export function DrillLogPage() {
                             ? 'bg-navy text-white border-navy'
                             : 'bg-white text-gray-600 border-gray-300'
                         }`}
-                        title={`plan ${p.depth} ft${p.angle ? ` · ${p.angle}°` : ''}`}
+                        title={`plan ${+(p.holeLength || p.depth).toFixed(1)} ft${p.angle ? ` · ${p.angle.toFixed(1)}°` : ''}`}
                         onClick={() => setHoleNumber(String(p.n))}
                       >
                         {p.n}
@@ -385,6 +443,40 @@ export function DrillLogPage() {
                 )}
               </div>
             )}
+            {/* THE hole card — what the driller needs at the controls, big */}
+            {planHole && (
+              <div className="rounded-xl bg-navy text-white px-4 py-3 flex items-end gap-5 flex-wrap">
+                <div>
+                  <p className="text-[11px] uppercase tracking-wider text-navy-200">Hole {planHole.n}</p>
+                  <p className="text-[32px] leading-none font-bold font-mono">
+                    {planTarget}<span className="text-base font-semibold"> ft</span>
+                  </p>
+                  {planHole.kick ? (
+                    <p className="text-xs text-navy-200 mt-1">{planHole.depth} ft vertical</p>
+                  ) : null}
+                </div>
+                {planHole.angle ? (
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wider text-navy-200">Angle</p>
+                    <p className="text-[24px] leading-none font-bold font-mono">
+                      {planHole.angle.toFixed(1)}°
+                    </p>
+                  </div>
+                ) : null}
+                {planHole.kick ? (
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wider text-navy-200">Kick</p>
+                    <p className="text-[24px] leading-none font-bold font-mono">
+                      {planHole.kick} ft {planHole.kickDir ?? ''}
+                    </p>
+                  </div>
+                ) : null}
+                <div className="ml-auto">
+                  <p className="text-[11px] uppercase tracking-wider text-navy-200">Bit</p>
+                  <p className="text-[24px] leading-none font-bold font-mono">{log.holeDiameter}"</p>
+                </div>
+              </div>
+            )}
             <div className="flex gap-2">
               <div className="w-24">
                 <Label className="text-xs">Hole #</Label>
@@ -392,7 +484,7 @@ export function DrillLogPage() {
               </div>
               <div className="flex-1">
                 <Label className="text-xs">
-                  Depth (ft) — {planHole ? `plan ${planHole.depth}` : `design ${designDepth || '—'}`}
+                  Depth drilled (ft) — {planHole ? `plan ${planTarget}` : `design ${designDepth || '—'}`}
                 </Label>
                 <Input type="number" inputMode="decimal" placeholder={String(targetDepth || '')}
                   value={depth} onChange={(e) => setDepth(e.target.value)} />
@@ -419,6 +511,38 @@ export function DrillLogPage() {
                 );
               })}
             </div>
+            {/* Hazard detail — optional at-depth + note per active condition */}
+            {conditions.map((code) => (
+              <div key={code} className="flex items-center gap-2 pl-1">
+                <span className="text-xs font-bold text-gray-500 w-16">
+                  {CONDITIONS.find((c) => c.code === code)?.label}
+                </span>
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  className="w-20 h-10"
+                  placeholder="at ft"
+                  value={condDetail[code]?.at ?? ''}
+                  onChange={(e) =>
+                    setCondDetail({
+                      ...condDetail,
+                      [code]: { at: e.target.value, note: condDetail[code]?.note ?? '' },
+                    })
+                  }
+                />
+                <Input
+                  className="flex-1 h-10"
+                  placeholder={code === 'W' ? 'e.g. water at 8 ft, heavy' : 'note (optional)'}
+                  value={condDetail[code]?.note ?? ''}
+                  onChange={(e) =>
+                    setCondDetail({
+                      ...condDetail,
+                      [code]: { at: condDetail[code]?.at ?? '', note: e.target.value },
+                    })
+                  }
+                />
+              </div>
+            ))}
             {showDetail ? (
               <div className="flex gap-2">
                 <div className="w-24"><Label className="text-xs">Angle (°)</Label>
@@ -444,7 +568,7 @@ export function DrillLogPage() {
         )}
 
         {/* The blaster's pattern map — read-only reference; tap targets a hole */}
-        {plan && shot && (
+        {plan && (shot || drillPlan) && (
           <div className="rounded-xl border border-gray-200 bg-white p-3">
             <div className="flex items-center justify-between mb-2">
               <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
@@ -459,8 +583,12 @@ export function DrillLogPage() {
             </div>
             {showMap && (
               <DrillPlanDiagram
-                diagram={parseDiagram(shot.designPlan.shotDiagramData)}
-                fallbackDepth={shot.totals.avgDrillDepth || 0}
+                diagram={
+                  drillPlan
+                    ? planToDiagram(drillPlan)
+                    : parseDiagram(shot!.designPlan.shotDiagramData)
+                }
+                fallbackDepth={shot?.totals.avgDrillDepth || 0}
                 drilled={drilled}
                 selected={holeNumber.trim()}
                 onTapHole={editable ? (n) => setHoleNumber(String(n)) : undefined}
@@ -487,10 +615,12 @@ export function DrillLogPage() {
               </div>
               {h.conditions.map((c) => (
                 <span key={c.code}
+                  title={c.note}
                   className={`text-[11px] font-bold rounded px-1.5 py-0.5 ${
                     c.code === 'W' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
                   }`}>
                   {c.code}
+                  {c.note ? ` · ${c.note}` : c.fromFt === c.toFt && c.fromFt > 0 ? ` @${c.fromFt}ft` : ''}
                 </span>
               ))}
               <span className="text-[11px] text-gray-300">{formatDate(h.date)}</span>

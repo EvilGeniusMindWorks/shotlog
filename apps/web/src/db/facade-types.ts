@@ -6,6 +6,7 @@ import type {
   CompanySettings,
   DrillChecklist,
   DrillLog,
+  DrillPlanRecord,
   DrillLogHole,
   Incident,
   Submission,
@@ -79,6 +80,7 @@ export interface ShotLogDataAccess {
   attachments: FacadeTable<Attachment>;
   companySettings: FacadeTable<CompanySettings>;
   manufacturers: FacadeTable<Manufacturer>;
+  drillPlans: FacadeTable<DrillPlanRecord>;
   drillLogs: FacadeTable<DrillLog>;
   drillLogHoles: FacadeTable<DrillLogHole>;
   drillChecklists: FacadeTable<DrillChecklist>;

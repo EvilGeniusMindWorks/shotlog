@@ -49,6 +49,9 @@ export type { SeedProduct, SeedCatalogDoc } from './productCatalogSeed.js';
 export { diffPayloads } from './auditDiff.js';
 export type { AuditChange } from './auditDiff.js';
 
+export { KICK_DIRECTIONS, deriveDrillAngle, deriveHoleLength } from './drillGeometry.js';
+export type { KickDirection } from './drillGeometry.js';
+
 export {
   ROLES,
   TABLE_PERMISSIONS,

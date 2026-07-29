@@ -3,7 +3,7 @@
 import { pdf } from '@react-pdf/renderer';
 import { db } from '@/db';
 import { formatDate } from '@/lib/utils';
-import type { BlastDay, DrillLog, DrillLogHole, Equipment, Job, Shot } from '@/db/schema';
+import type { BlastDay, DrillLog, DrillLogHole, DrillPlanRecord, Equipment, Job, Shot } from '@/db/schema';
 import {
   Document,
   Footer,
@@ -30,30 +30,36 @@ interface Data {
   shot?: Shot;
   job?: Job;
   day?: BlastDay;
+  plan?: DrillPlanRecord;
   rig?: Equipment;
   companyName: string;
   dealerNumber?: string;
   sigUrl: string | null;
 }
 
-function DrillLogDoc({ log, holes, shot, job, day, rig, companyName, dealerNumber, sigUrl }: Data) {
+function DrillLogDoc({ log, holes, shot, job, day, plan, rig, companyName, dealerNumber, sigUrl }: Data) {
   const footage = holes.reduce((s, h) => s + h.actualDepth, 0);
   const subTotal = holes.reduce((s, h) => s + h.subdrill, 0);
   const hasPlan = holes.some((h) => h.plannedDepth !== undefined);
+  const hasKick = holes.some((h) => h.plannedKick !== undefined);
   const offPlan = (h: DrillLogHole) =>
     h.plannedDepth !== undefined &&
     (Math.abs(h.actualDepth - h.plannedDepth) >= 1 || (h.angle || 0) !== (h.plannedAngle ?? 0));
 
   return (
-    <Document title={`Drill Log — ${day?.date ?? ''} — ${log.drillerName}`}>
+    <Document title={`Drill Log — ${log.date ?? day?.date ?? ''} — ${log.drillerName}`}>
       <Page size="LETTER" style={K.page}>
         <HeaderBar companyName={companyName} dealerNumber={dealerNumber} title="Drill Log" />
 
         <T style={{ marginBottom: 6 }}>
           <TR>
             <TD><LV label="Site:" value={`${job?.name ?? ''}${day?.name ? ` — ${day.name}` : ''}`} /></TD>
-            <TD w={80}><LV label="Shot #:" value={shot?.shotNumber ?? ''} /></TD>
-            <TD w={150}><LV label="Date completed:" value={log.completedAt ? formatDate(log.completedAt.slice(0, 10)) : '—'} /></TD>
+            {plan ? (
+              <TD w={140}><LV label="Drill plan:" value={plan.name} /></TD>
+            ) : (
+              <TD w={80}><LV label="Shot #:" value={shot?.shotNumber ?? ''} /></TD>
+            )}
+            <TD w={150}><LV label="Date:" value={log.date ? formatDate(log.date) : log.completedAt ? formatDate(log.completedAt.slice(0, 10)) : '—'} /></TD>
           </TR>
           <TR>
             <TD><LV label="Location:" value={log.locationNote || [job?.address, job?.city].filter(Boolean).join(', ')} /></TD>
@@ -73,6 +79,8 @@ function DrillLogDoc({ log, holes, shot, job, day, rig, companyName, dealerNumbe
             <TD w={44} textStyle={[K.bold, K.center]}>Hole #</TD>
             <TD w={40} textStyle={[K.bold, K.center]}>Angle</TD>
             {hasPlan ? <TD w={48} textStyle={[K.bold, K.center]}>Plan (ft)</TD> : null}
+            {hasKick ? <TD w={44} textStyle={[K.bold, K.center]}>Kick (ft)</TD> : null}
+            {hasKick ? <TD w={30} textStyle={[K.bold, K.center]}>Dir</TD> : null}
             <TD w={52} textStyle={[K.bold, K.center]}>Depth (ft)</TD>
             <TD w={46} textStyle={[K.bold, K.center]}>Subdrill</TD>
             <TD w={70} textStyle={[K.bold, K.center]}>Conditions</TD>
@@ -88,14 +96,16 @@ function DrillLogDoc({ log, holes, shot, job, day, rig, companyName, dealerNumbe
               {hasPlan ? (
                 <TD w={48} textStyle={K.center}>{`${h.plannedDepth ?? ''}${offPlan(h) ? ` ${WARN}` : ''}`}</TD>
               ) : null}
+              {hasKick ? <TD w={44} textStyle={K.center}>{h.plannedKick !== undefined ? String(h.plannedKick) : ''}</TD> : null}
+              {hasKick ? <TD w={30} textStyle={K.center}>{h.plannedKickDir ?? ''}</TD> : null}
               <TD w={52} textStyle={K.center}>{String(h.actualDepth)}</TD>
               <TD w={46} textStyle={K.center}>{h.subdrill ? String(h.subdrill) : ''}</TD>
-              <TD w={70} textStyle={K.center}>{[...new Set(h.conditions.map((c) => c.code))].join(', ')}</TD>
+              <TD w={70} textStyle={{ fontSize: 6.5 }}>{h.conditions.map((c) => c.note ? `${c.code} (${c.note})` : c.fromFt === c.toFt && c.fromFt > 0 ? `${c.code} @${c.fromFt}ft` : c.code).join(', ')}</TD>
               <TD>{h.comment}</TD>
             </TR>
           ))}
           <TR>
-            <TD w={hasPlan ? 190 : 142} textStyle={K.bold}>Totals</TD>
+            <TD w={(hasPlan ? 190 : 142) + (hasKick ? 74 : 0)} textStyle={K.bold}>Totals</TD>
             <TD w={52} textStyle={[K.bold, K.center]}>{footage.toFixed(0)}</TD>
             <TD w={46} textStyle={[K.bold, K.center]}>{subTotal.toFixed(0)}</TD>
             <TD textStyle={K.bold}>{`${holes.length} holes`}</TD>
@@ -136,6 +146,7 @@ export async function buildDrillLogPdf(logId: string): Promise<Blob> {
   const shot = log.shotId ? await db.shots.get(log.shotId) : undefined;
   const job = await db.jobs.get(log.jobId);
   const day = log.blastDayId ? await db.blastDays.get(log.blastDayId) : undefined;
+  const plan = log.drillPlanId ? await db.drillPlans.get(log.drillPlanId) : undefined;
   const rig = log.drillRigEquipmentId ? await db.equipment.get(log.drillRigEquipmentId) : undefined;
   const company = await db.companySettings.get('companySettings-singleton');
   const sigUrl =
@@ -149,6 +160,7 @@ export async function buildDrillLogPdf(logId: string): Promise<Blob> {
       shot={shot}
       job={job}
       day={day}
+      plan={plan}
       rig={rig}
       companyName={company?.companyName || 'Baystate Blasting, Inc.'}
       dealerNumber={company?.dealerNumber}

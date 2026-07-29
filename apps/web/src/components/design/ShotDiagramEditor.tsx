@@ -221,7 +221,8 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
   };
 
   const resize = (field: 'rows' | 'cols', delta: number) => {
-    const value = Math.max(1, Math.min(20, diagram[field] + delta));
+    const max = field === 'rows' ? 30 : 50; // big production patterns
+    const value = Math.max(1, Math.min(max, diagram[field] + delta));
     if (value === diagram[field]) return;
     const nextCols = field === 'cols' ? value : cols;
     const nextRows = field === 'rows' ? value : rows;

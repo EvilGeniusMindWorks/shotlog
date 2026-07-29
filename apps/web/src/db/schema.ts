@@ -1,3 +1,7 @@
+import type { KickDirection } from '@shotlog/shared';
+
+export type { KickDirection };
+
 // ══════════════════════════════════════════════════════
 // SYNC & BASE TYPES
 // ══════════════════════════════════════════════════════
@@ -200,6 +204,8 @@ export interface Shot extends BaseRecord {
   drillParams: DrillParams;
   totals: ShotTotals;
   designPlan: DesignPlan;
+  /** Standalone drill plan this shot was imported from (totals + grid) */
+  drillPlanId?: string;
 }
 
 // ══════════════════════════════════════════════════════
@@ -443,6 +449,40 @@ export type ProductCategory =
   | 'cartridge';
 
 // ══════════════════════════════════════════════════════
+// DRILL PLANS — the blaster's plan for a pattern, authored AHEAD of any
+// blast day, worked by multiple drillers over multiple days. Holes are a
+// grid; each planned hole is a vertical depth plus an optional "kick"
+// (horizontal offset in ft + compass direction) — drill angle and true
+// hole length are DERIVED, never stored.
+// ══════════════════════════════════════════════════════
+
+export interface DrillPlanHoleOverride {
+  /** Vertical depth (ft); 0 or noHole = position not drilled */
+  depth?: number;
+  /** Horizontal kick-out at the toe (ft) */
+  kick?: number;
+  kickDir?: KickDirection;
+  noHole?: boolean;
+}
+
+export interface DrillPlanRecord extends BaseRecord {
+  jobId: string;
+  name: string;
+  status: 'open' | 'complete';
+  rows: number;
+  cols: number;
+  /** Depth every hole inherits unless overridden */
+  defaultDepth?: number;
+  /** Exceptions keyed by grid index (row-major) */
+  overrides: Record<number, DrillPlanHoleOverride>;
+  holeDiameter: number;
+  burden: number;
+  spacing: number;
+  notes?: string;
+  createdBy: string; // userId
+}
+
+// ══════════════════════════════════════════════════════
 // DRILL LOGS — the Driller→Blaster handoff. A shot's pattern may take
 // several drillers/days: EACH driller's contribution is its own signed
 // log; the shot aggregates them.
@@ -454,12 +494,19 @@ export interface HoleCondition {
   fromFt: number;
   toFt: number;
   code: HoleConditionCode;
+  /** Driller's detail: "water at 8 ft", "void 11-13", a measured value… */
+  note?: string;
 }
 
 export interface DrillLog extends BaseRecord {
   jobId: string;
-  blastDayId: string;
-  shotId: string;
+  /** Shot-parented (legacy) logs: the owning blast day + shot */
+  blastDayId?: string;
+  shotId?: string;
+  /** Plan-parented logs: the standalone drill plan this log works against */
+  drillPlanId?: string;
+  /** Plan logs are per driller per DAY — this is that day (ISO date) */
+  date?: string;
   /** Equipment id of the rig, when picked */
   drillRigEquipmentId?: string;
   status: 'open' | 'complete' | 'accepted';
@@ -497,6 +544,8 @@ export interface DrillLogHole extends BaseRecord {
   // stays truthful even if the plan is edited later)
   plannedDepth?: number;
   plannedAngle?: number;
+  plannedKick?: number;
+  plannedKickDir?: KickDirection;
 }
 
 // ══════════════════════════════════════════════════════

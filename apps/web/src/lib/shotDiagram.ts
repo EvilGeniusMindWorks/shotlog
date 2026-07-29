@@ -9,7 +9,7 @@
 // downstream. Diagrams saved before this model ("painted" per-hole delays)
 // still render via the legacy `delays` map.
 
-import type { TimingWire } from '@shotlog/shared';
+import { deriveDrillAngle, deriveHoleLength, type KickDirection, type TimingWire } from '@shotlog/shared';
 
 // Timing math (computeFiringTimes, delayWindowSizes, 8ms rule) lives in
 // @shotlog/shared — ShotDiagram satisfies its TimingPlan shape structurally.
@@ -20,6 +20,9 @@ export type Wire = TimingWire;
 export interface DrillPlanOverride {
   depth?: number;
   angle?: number;
+  /** Horizontal kick-out at the toe (ft) — angle/length derive from it */
+  kick?: number;
+  kickDir?: KickDirection;
 }
 
 /** Per-hole drilling plan authored by the blaster in the shot designer.
@@ -87,8 +90,14 @@ export function parseDiagram(json: string | null): ShotDiagram {
 export interface PlanHole {
   n: number;
   idx: number;
+  /** Vertical depth (ft) */
   depth: number;
+  /** Angle from vertical (°) — derived from kick when kick is present */
   angle: number;
+  /** True drill-string length (ft) — what the driller actually drills */
+  holeLength: number;
+  kick?: number;
+  kickDir?: KickDirection;
 }
 
 /** Does the diagram carry any drill-plan intent at all? */
@@ -116,9 +125,56 @@ export function materializeDrillPlan(d: ShotDiagram, fallbackDepth: number): Pla
     const o = plan.overrides[idx];
     const depth = o?.depth ?? plan.defaultDepth ?? fallbackDepth;
     if (!(depth > 0)) continue; // no depth anywhere → not a hole to drill
-    holes.push({ n: ++n, idx, depth, angle: o?.angle ?? 0 });
+    const angle = o?.kick ? deriveDrillAngle(depth, o.kick) : (o?.angle ?? 0);
+    holes.push({
+      n: ++n,
+      idx,
+      depth,
+      angle,
+      holeLength: deriveHoleLength(depth, o?.kick),
+      kick: o?.kick,
+      kickDir: o?.kickDir,
+    });
   }
   return holes;
+}
+
+/**
+ * Seed a shot diagram from a standalone drill plan: the grid layout and
+ * per-hole depths/derived angles carry over; TIMING starts blank — the
+ * blaster wires the shot fresh. (The import flow warns about this.)
+ */
+export function seedDiagramFromPlan(plan: {
+  rows: number;
+  cols: number;
+  defaultDepth?: number;
+  overrides: Record<number, { depth?: number; kick?: number; kickDir?: KickDirection; noHole?: boolean }>;
+}): string {
+  const overrides: Record<number, DrillPlanOverride> = {};
+  for (const [k, o] of Object.entries(plan.overrides)) {
+    const idx = Number(k);
+    if (o.noHole || o.depth === 0) {
+      overrides[idx] = { depth: 0 };
+      continue;
+    }
+    const entry: DrillPlanOverride = {};
+    if (o.depth !== undefined) entry.depth = o.depth;
+    if (o.kick) {
+      entry.kick = o.kick;
+      entry.kickDir = o.kickDir;
+      entry.angle = deriveDrillAngle(o.depth ?? plan.defaultDepth ?? 0, o.kick);
+    }
+    if (Object.keys(entry).length > 0) overrides[idx] = entry;
+  }
+  const diagram: ShotDiagram = {
+    rows: plan.rows,
+    cols: plan.cols,
+    delays: {},
+    wires: [],
+    interHoleMs: DEFAULT_INTER_HOLE_MS,
+    plan: { defaultDepth: plan.defaultDepth, overrides },
+  };
+  return serializeDiagram(diagram);
 }
 
 export function serializeDiagram(d: ShotDiagram): string {

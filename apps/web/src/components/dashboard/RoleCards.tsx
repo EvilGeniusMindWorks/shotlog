@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, ClipboardCheck, Wrench, X } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
+import { createDrillPlanLog, drillLogRoute, getPlanHoles, usePlanDrilling } from '@/hooks/useDrillPlans';
 import { createDrillLog, getShotPlan } from '@/hooks/useDrillLogs';
 import { useOpenTickets, useTodayChecklist } from '@/hooks/useMaintenance';
 import { getSessionUser, getRealSessionUser, setViewRole } from '@/lib/session';
@@ -111,12 +112,13 @@ export function DrillingReviewCard() {
     const out = [];
     for (const log of logs) {
       const job = await db.jobs.get(log.jobId);
-      const shot = await db.shots.get(log.shotId);
+      const shot = log.shotId ? await db.shots.get(log.shotId) : undefined;
+      const plan = log.drillPlanId ? await db.drillPlans.get(log.drillPlanId) : undefined;
       const holes = await db.drillLogHoles.where('drillLogId').equals(log.id).toArray();
       out.push({
         log,
         jobName: job?.name ?? '—',
-        shotNumber: shot?.shotNumber,
+        context: plan ? plan.name : `Shot ${shot?.shotNumber ?? '?'}`,
         holes: holes.length,
         wet: holes.filter((h) => h.conditions.some((c) => c.code === 'W')).length,
       });
@@ -129,13 +131,13 @@ export function DrillingReviewCard() {
       <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
         Drilling to review · {rows.length}
       </p>
-      {rows.map(({ log, jobName, shotNumber, holes, wet }) => (
+      {rows.map(({ log, jobName, context, holes, wet }) => (
         <button key={log.id}
           className="w-full flex items-center gap-2 py-1.5 text-left hover:bg-gray-50 rounded-lg"
-          onClick={() => navigate(`/blast-day/${log.blastDayId}/drill-log/${log.id}`)}>
+          onClick={() => navigate(drillLogRoute(log))}>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium truncate">
-              Shot {shotNumber ?? '?'} — {log.drillerName || 'unassigned'}
+              {context} — {log.drillerName || 'unassigned'}
             </p>
             <p className="text-xs text-gray-400 truncate">
               {jobName} · {holes} holes{wet > 0 ? ` · ${wet} wet` : ''}
@@ -168,16 +170,18 @@ export function DrillerHome() {
     const out = [];
     for (const log of logs) {
       const job = await db.jobs.get(log.jobId);
-      const day = await db.blastDays.get(log.blastDayId);
-      const shot = await db.shots.get(log.shotId);
+      const day = log.blastDayId ? await db.blastDays.get(log.blastDayId) : undefined;
+      const shot = log.shotId ? await db.shots.get(log.shotId) : undefined;
+      const plan = log.drillPlanId ? await db.drillPlans.get(log.drillPlanId) : undefined;
       const holes = await db.drillLogHoles.where('drillLogId').equals(log.id).toArray();
       out.push({
         log,
         jobName: job?.name ?? '—',
-        dayName: day?.name,
-        shotNumber: shot?.shotNumber,
+        context: plan ? plan.name : `Shot ${shot?.shotNumber ?? '?'} · ${day?.name || job?.name || '—'}`,
         holes: holes.length,
-        designed: getShotPlan(shot)?.length ?? shot?.totals.numHoles ?? 0,
+        designed: plan
+          ? (getPlanHoles(plan)?.length ?? 0)
+          : (getShotPlan(shot)?.length ?? shot?.totals.numHoles ?? 0),
       });
     }
     return out;
@@ -231,10 +235,34 @@ export function DrillerHome() {
     const latest = logs.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 3);
     const out = [];
     for (const log of latest) {
-      const day = await db.blastDays.get(log.blastDayId);
+      const day = log.blastDayId ? await db.blastDays.get(log.blastDayId) : undefined;
       const job = await db.jobs.get(log.jobId);
       const count = await db.drillLogHoles.where('drillLogId').equals(log.id).count();
-      out.push({ log, label: day?.name || job?.name || '—', date: day?.date ?? '', holes: count });
+      const plan = log.drillPlanId ? await db.drillPlans.get(log.drillPlanId) : undefined;
+      out.push({ log, label: plan?.name || day?.name || job?.name || '—', date: log.date ?? day?.date ?? '', holes: count });
+    }
+    return out;
+  }, [me?.id]);
+
+  // Open standalone drill plans where I have no open log TODAY — the
+  // per-driller-per-day model: each day on a plan is its own log
+  const openPlans = useLiveQuery(async () => {
+    const plans = await db.drillPlans.filter((p) => p.status === 'open').toArray();
+    const out = [];
+    for (const plan of plans) {
+      const holes = getPlanHoles(plan);
+      if (!holes || holes.length === 0) continue;
+      const logs = await db.drillLogs.filter((l) => l.drillPlanId === plan.id).toArray();
+      let drilled = 0;
+      let mineOpenToday = false;
+      for (const dl of logs) {
+        drilled += await db.drillLogHoles.where('drillLogId').equals(dl.id).count();
+        if (dl.status === 'open' && dl.drillerUserId === me?.id && dl.date === todayISO())
+          mineOpenToday = true;
+      }
+      if (drilled >= holes.length || mineOpenToday) continue;
+      const jobName = (await db.jobs.get(plan.jobId))?.name;
+      out.push({ plan, jobName, target: holes.length, drilled });
     }
     return out;
   }, [me?.id]);
@@ -300,16 +328,14 @@ export function DrillerHome() {
           <p className="text-[11px] font-semibold text-navy uppercase tracking-wider mb-1">
             📋 Assigned to you
           </p>
-          {assignedNew.map(({ log, jobName, dayName, shotNumber, designed }) => (
+          {assignedNew.map(({ log, context, designed }) => (
             <button
               key={log.id}
               className="w-full flex items-center gap-2 py-2 text-left hover:bg-white/60 rounded-lg"
-              onClick={() => navigate(`/blast-day/${log.blastDayId}/drill-log/${log.id}`)}
+              onClick={() => navigate(drillLogRoute(log))}
             >
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold truncate">
-                  Shot {shotNumber ?? '?'} · {dayName || jobName}
-                </p>
+                <p className="text-sm font-semibold truncate">{context}</p>
                 <p className="text-xs text-gray-500">
                   {designed ? `${designed} holes planned · ` : ''}sent by {log.assignedBy}
                 </p>
@@ -324,13 +350,13 @@ export function DrillerHome() {
         <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
           My open drill logs
         </p>
-        {activeLogs.map(({ log, jobName, shotNumber, holes, designed }) => (
+        {activeLogs.map(({ log, context, holes, designed }) => (
           <button key={log.id}
             className="w-full py-2 text-left hover:bg-gray-50 rounded-lg"
-            onClick={() => navigate(`/blast-day/${log.blastDayId}/drill-log/${log.id}`)}>
+            onClick={() => navigate(drillLogRoute(log))}>
             <div className="flex items-center gap-2">
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold truncate">Shot {shotNumber ?? '?'} · {jobName}</p>
+                <p className="text-sm font-semibold truncate">{context}</p>
                 <p className="text-xs text-gray-400">
                   {holes}{designed ? ` of ${designed}` : ''} holes
                   {log.assignedBy ? ` · sent by ${log.assignedBy}` : ''}
@@ -356,6 +382,35 @@ export function DrillerHome() {
           </p>
         )}
       </div>
+
+      {(openPlans ?? []).length > 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white p-3">
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
+            Open drill plans
+          </p>
+          {(openPlans ?? []).map(({ plan, jobName, target, drilled }) => (
+            <button
+              key={plan.id}
+              className="w-full flex items-center gap-2 py-2 text-left hover:bg-gray-50 rounded-lg"
+              onClick={() => {
+                void createDrillPlanLog(plan).then((logId) =>
+                  navigate(`/jobs/${plan.jobId}/drill-plan/${plan.id}/log/${logId}`),
+                );
+              }}
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold truncate">{plan.name} · {jobName ?? '—'}</p>
+                <p className="text-xs text-gray-400">
+                  {drilled} of {target} holes drilled
+                </p>
+              </div>
+              <span className="text-sm text-safety-orange font-semibold shrink-0">
+                Start today's log ›
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {(readyToDrill ?? []).length > 0 && (
         <div className="rounded-xl border border-gray-200 bg-white p-3">
@@ -407,7 +462,7 @@ export function DrillerHome() {
             <button
               key={log.id}
               className="w-full flex items-center gap-2 py-1.5 text-left hover:bg-gray-50 rounded-lg"
-              onClick={() => navigate(`/blast-day/${log.blastDayId}/drill-log/${log.id}`)}
+              onClick={() => navigate(drillLogRoute(log))}
             >
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium truncate">{label}</p>

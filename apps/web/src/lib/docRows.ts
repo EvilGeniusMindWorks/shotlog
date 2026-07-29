@@ -4,6 +4,7 @@
 // link to the live page; filed office copies are joined separately.
 import { db } from '@/db';
 import { matchesPersonName, matchesWorkRow, workedRow } from '@/lib/personHistory';
+import { drillLogRoute } from '@/hooks/useDrillPlans';
 import type { CrewMember } from '@/db/schema';
 
 export type DocKind = 'blast_log' | 'daily_report' | 'drill_log' | 'drill_checklist' | 'incident';
@@ -57,18 +58,20 @@ export async function buildDocRows(opts: {
         : matchesPersonName(l.drillerName, person),
   );
   for (const log of logs) {
-    const day = await db.blastDays.get(log.blastDayId);
-    const shot = await db.shots.get(log.shotId);
+    const day = log.blastDayId ? await db.blastDays.get(log.blastDayId) : undefined;
+    const shot = log.shotId ? await db.shots.get(log.shotId) : undefined;
+    const plan = log.drillPlanId ? await db.drillPlans.get(log.drillPlanId) : undefined;
     const holes = await db.drillLogHoles.where('drillLogId').equals(log.id).count();
+    const context = plan ? plan.name : `Shot ${shot?.shotNumber ?? '?'}`;
     out.push({
       key: `dl-${log.id}`,
       kind: 'drill_log',
-      date: day?.date ?? log.createdAt.slice(0, 10),
-      title: `${day?.name || jobs.get(log.jobId) || '—'} · Shot ${shot?.shotNumber ?? '?'}${company ? ` · ${log.drillerName || 'unassigned'}` : ''}`,
+      date: log.date ?? day?.date ?? log.createdAt.slice(0, 10),
+      title: `${day?.name || jobs.get(log.jobId) || '—'} · ${context}${company ? ` · ${log.drillerName || 'unassigned'}` : ''}`,
       sub: `${holes} holes`,
       status: log.status,
       statusVariant: log.status === 'accepted' ? 'approved' : log.status === 'complete' ? 'submitted' : 'draft',
-      to: `/blast-day/${log.blastDayId}/drill-log/${log.id}`,
+      to: drillLogRoute(log),
       sourceId: log.id,
       jobId: log.jobId,
     });

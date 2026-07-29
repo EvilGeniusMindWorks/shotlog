@@ -64,6 +64,9 @@ export const TABLE_PERMISSIONS: Record<string, TableRule> = {
 
   // Drill logs — the Driller→Blaster handoff (N signed logs per shot)
   drillLogs: { PUT: REPORT_FAMILY, PATCH: REPORT_FAMILY, DELETE: REGISTRY },
+  // Standalone drill plans: authored by the blast side; drillers read the
+  // plan and write only their own drillLogs/holes against it
+  drillPlans: { PUT: BLAST_FAMILY, PATCH: BLAST_FAMILY, DELETE: REGISTRY },
   drillLogHoles: uniform(REPORT_FAMILY),
 
   // Rig checklists + the shop's repair queue: field roles file, mechanics

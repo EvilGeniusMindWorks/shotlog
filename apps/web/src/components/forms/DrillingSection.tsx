@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { Drill, Plus, Send, X } from 'lucide-react';
 import { canPerformOp, type Role } from '@shotlog/shared';
 import { createDrillLog, useShotDrilling } from '@/hooks/useDrillLogs';
+import { materializeDrillPlan, parseDiagram } from '@/lib/shotDiagram';
 import { getSessionUser } from '@/lib/session';
 import { useLiveQuery, db } from '@/db';
 import type { ExplosiveUsage, Shot } from '@/db/schema';
@@ -227,6 +228,7 @@ export function DrillingSection({
           product suitability when loading.
         </p>
       )}
+      <PlanCoverageBadge shot={shot} />
       {drilling && drilling.duplicateNumbers.length > 0 && (
         <p className="text-xs text-safety-orange">
           ⚠ hole number{drilling.duplicateNumbers.length === 1 ? '' : 's'}{' '}
@@ -291,5 +293,36 @@ export function DrillingSection({
         />
       )}
     </div>
+  );
+}
+
+/** After "Import from drill plan": does the shot's design use every hole
+ *  that was actually drilled on the plan? Mark's verification ask. */
+function PlanCoverageBadge({ shot }: { shot: Shot }) {
+  const check = useLiveQuery(async () => {
+    if (!shot.drillPlanId) return null;
+    const plan = await db.drillPlans.get(shot.drillPlanId);
+    if (!plan) return null;
+    const logs = await db.drillLogs.filter((l) => l.drillPlanId === plan.id).toArray();
+    let drilledCount = 0;
+    for (const l of logs) drilledCount += await db.drillLogHoles.where('drillLogId').equals(l.id).count();
+    const shotHoles = materializeDrillPlan(
+      parseDiagram(shot.designPlan.shotDiagramData),
+      shot.totals.avgDrillDepth || 0,
+    ).length;
+    return { name: plan.name, drilledCount, shotHoles };
+  }, [shot.drillPlanId, shot.designPlan.shotDiagramData]);
+  if (!check || check.drilledCount === 0) return null;
+  const covered = check.shotHoles >= check.drilledCount;
+  return covered ? (
+    <p className="text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded px-2 py-1">
+      ✓ Shot plan covers all {check.drilledCount} drilled holes from {check.name}.
+    </p>
+  ) : (
+    <p className="text-xs font-medium text-safety-orange bg-orange-50 border border-orange-200 rounded px-2 py-1">
+      ⚠ Only {check.shotHoles} of {check.drilledCount} drilled holes from {check.name} are in
+      this shot plan — {check.drilledCount - check.shotHoles} drilled hole
+      {check.drilledCount - check.shotHoles === 1 ? '' : 's'} unused.
+    </p>
   );
 }

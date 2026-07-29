@@ -21,6 +21,7 @@ import type {
   CompanySettings,
   DrillChecklist,
   DrillLog,
+  DrillPlanRecord,
   DrillLogHole,
   Incident,
   Submission,
@@ -68,6 +69,7 @@ const RECORD_TABLES = [
   'attachments',
   'companySettings',
   'manufacturers',
+  'drillPlans',
   'drillLogs',
   'drillLogHoles',
   'drillChecklists',
@@ -306,6 +308,7 @@ export class PowerSyncFacade implements ShotLogDataAccess {
   attachments!: FacadeTable<Attachment>;
   companySettings!: FacadeTable<CompanySettings>;
   manufacturers!: FacadeTable<Manufacturer>;
+  drillPlans!: FacadeTable<DrillPlanRecord>;
   drillLogs!: FacadeTable<DrillLog>;
   drillLogHoles!: FacadeTable<DrillLogHole>;
   drillChecklists!: FacadeTable<DrillChecklist>;

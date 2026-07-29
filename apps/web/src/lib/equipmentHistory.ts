@@ -3,6 +3,7 @@
 // equipment rows historically carry only a free-text asset number — match
 // by id when present (new picker), else by normalized asset number.
 import { db } from '@/db';
+import { drillLogRoute } from '@/hooks/useDrillPlans';
 import type { Equipment } from '@/db/schema';
 
 export interface EquipmentEvent {
@@ -88,19 +89,23 @@ export async function buildEquipmentTimeline(equip: Equipment): Promise<Equipmen
   // Drill logs where this asset was the rig
   const logs = await db.drillLogs.filter((l) => l.drillRigEquipmentId === equip.id).toArray();
   for (const log of logs) {
-    const { day, label } = await dayLabel(log.blastDayId);
-    const shot = await db.shots.get(log.shotId);
+    const { day, label } = log.blastDayId
+      ? await dayLabel(log.blastDayId)
+      : { day: undefined, label: undefined };
+    const shot = log.shotId ? await db.shots.get(log.shotId) : undefined;
+    const plan = log.drillPlanId ? await db.drillPlans.get(log.drillPlanId) : undefined;
     const holes = await db.drillLogHoles.where('drillLogId').equals(log.id).toArray();
     const footage = holes.reduce((s, h) => s + h.actualDepth, 0);
+    const context = plan ? plan.name : `${label ?? '—'} · Shot ${shot?.shotNumber ?? '?'}`;
     events.push({
       key: `dl-${log.id}`,
-      date: day?.date ?? log.createdAt.slice(0, 10),
+      date: log.date ?? day?.date ?? log.createdAt.slice(0, 10),
       at: log.createdAt,
       kind: 'drill_log',
-      title: `Drill log — ${label} · Shot ${shot?.shotNumber ?? '?'}`,
+      title: `Drill log — ${context}`,
       sub: `${holes.length} holes · ${footage.toFixed(0)} ft · ${log.drillerName}`,
       flag: false,
-      to: `/blast-day/${log.blastDayId}/drill-log/${log.id}`,
+      to: drillLogRoute(log),
     });
   }
 

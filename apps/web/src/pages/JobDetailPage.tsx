@@ -11,7 +11,8 @@ import { matchesWorkRow, workedRow } from '@/lib/personHistory';
 import { matchesAsset } from '@/lib/equipmentHistory';
 import { buildDocRows } from '@/lib/docRows';
 import { DocList } from '@/components/records/DocList';
-import { derivedKFactor, fitKFactor, powderFactor, scaledDistance } from '@shotlog/shared';
+import { canPerformOp, derivedKFactor, fitKFactor, powderFactor, scaledDistance, type Role } from '@shotlog/shared';
+import { createDrillPlan, getPlanHoles } from '@/hooks/useDrillPlans';
 import { nowISO } from '@/lib/utils';
 import type { Job, KFactorHistoryEntry } from '@/db/schema';
 import { Button } from '@/components/ui/button';
@@ -106,6 +107,7 @@ export function JobDetailPage() {
         <JobContactsCard job={job} readOnly={getSessionUser()?.role !== 'admin'} />
         <JobConfigCard job={job} />
         <SiteKCard job={job} />
+        <DrillPlansCard jobId={job.id} />
 
         {/* Blast day history */}
         <Card>
@@ -314,6 +316,71 @@ function JobActivity({ jobId, lbs }: { jobId: string; lbs: number }) {
  * under-called any measured shot. Applying updates the job default; every
  * shot's design can still override.
  */
+/** Standalone drill plans for this job — Mark's plan-ahead workflow: author
+ *  here, drillers work it over days, the blast report imports the result. */
+function DrillPlansCard({ jobId }: { jobId: string }) {
+  const navigate = useNavigate();
+  const role = (getSessionUser()?.role ?? 'driller') as Role;
+  const canCreate = canPerformOp('drillPlans', 'PUT', role);
+  const plans = useLiveQuery(
+    async () =>
+      (await db.drillPlans.where('jobId').equals(jobId).toArray()).sort((a, b) =>
+        b.createdAt.localeCompare(a.createdAt),
+      ),
+    [jobId],
+  );
+  const rows = useLiveQuery(async () => {
+    const out = [];
+    for (const plan of (plans ?? []).slice(0, 5)) {
+      const holes = getPlanHoles(plan)?.length ?? 0;
+      const logs = await db.drillLogs.filter((l) => l.drillPlanId === plan.id).toArray();
+      let drilled = 0;
+      for (const l of logs) drilled += await db.drillLogHoles.where('drillLogId').equals(l.id).count();
+      out.push({ plan, holes, drilled });
+    }
+    return out;
+  }, [plans?.map((p) => p.id + p.updatedAt).join(',')]);
+  if (!canCreate && (plans ?? []).length === 0) return null;
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <CardTitle className="text-base">Drill Plans</CardTitle>
+        {canCreate && (
+          <Button size="sm" variant="outline"
+            onClick={() =>
+              void createDrillPlan(jobId).then((id) => navigate(`/jobs/${jobId}/drill-plan/${id}`))
+            }>
+            New Drill Plan
+          </Button>
+        )}
+      </CardHeader>
+      <CardContent className="space-y-1">
+        {(rows ?? []).map(({ plan, holes, drilled }) => (
+          <button
+            key={plan.id}
+            className="w-full flex items-center gap-2 py-2 px-2 text-left hover:bg-gray-50 rounded-lg"
+            onClick={() => navigate(`/jobs/${jobId}/drill-plan/${plan.id}`)}
+          >
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium truncate">{plan.name}</p>
+              <p className="text-xs text-gray-400">
+                {drilled} of {holes} holes drilled · {formatDate(plan.createdAt.slice(0, 10))}
+              </p>
+            </div>
+            <Badge variant={plan.status === 'complete' ? 'approved' : 'draft'}>{plan.status}</Badge>
+          </button>
+        ))}
+        {(rows ?? []).length === 0 && (
+          <p className="text-sm text-gray-400">
+            Plan drilling ahead of the blast — build the pattern here and send it to
+            your drillers.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function SiteKCard({ job }: { job: Job }) {
   const isAdmin = getSessionUser()?.role === 'admin';
   // Re-run once after mount: on a fresh page load, live queries can resolve

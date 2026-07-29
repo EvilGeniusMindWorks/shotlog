@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery, db } from '@/db';
 import { fileSubmission } from '@/lib/archive';
+import { drillLogRoute } from '@/hooks/useDrillPlans';
 import { getSessionUser } from '@/lib/session';
 import { nowISO } from '@/lib/utils';
 import { PrintDrillLogPage } from '@/pages/PrintDrillLogPage';
@@ -26,16 +27,18 @@ export function SubmitDrillLogPage() {
         const { buildDrillLogPdf } = await import('@/pdfdocs');
         const pdf = await buildDrillLogPdf(log.id);
         if (cancelled) return;
-        const day = await db.blastDays.get(log.blastDayId);
+        const day = log.blastDayId ? await db.blastDays.get(log.blastDayId) : undefined;
         const job = await db.jobs.get(log.jobId);
-        const shot = await db.shots.get(log.shotId);
+        const shot = log.shotId ? await db.shots.get(log.shotId) : undefined;
+        const plan = log.drillPlanId ? await db.drillPlans.get(log.drillPlanId) : undefined;
+        const context = plan ? plan.name : `Shot ${shot?.shotNumber ?? '?'}`;
         await fileSubmission({
           type: 'drill_log',
           sourceId: log.id,
           blastDayId: log.blastDayId,
           jobId: log.jobId,
-          title: `Drill Log — ${day?.name || job?.name || ''} · Shot ${shot?.shotNumber ?? '?'} · ${log.drillerName}`,
-          date: day?.date ?? log.createdAt.slice(0, 10),
+          title: `Drill Log — ${day?.name || job?.name || ''} · ${context} · ${log.drillerName}`,
+          date: log.date ?? day?.date ?? log.createdAt.slice(0, 10),
           pdf,
           meta: { jobName: job?.name, driller: log.drillerName },
         });
@@ -49,7 +52,7 @@ export function SubmitDrillLogPage() {
             updatedAt: nowISO(),
           });
         }
-        if (!cancelled) navigate(`/blast-day/${blastDayId}/drill-log/${log.id}`, { replace: true });
+        if (!cancelled) navigate(drillLogRoute(log), { replace: true });
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'filing failed');
       }
@@ -71,7 +74,7 @@ export function SubmitDrillLogPage() {
               <p className="text-sm text-gray-600">{error}</p>
               <Button
                 variant="outline"
-                onClick={() => navigate(`/blast-day/${blastDayId}/drill-log/${logId}`)}
+                onClick={() => navigate(log ? drillLogRoute(log) : `/blast-day/${blastDayId}/drill-log/${logId}`)}
               >
                 Back — log not accepted
               </Button>

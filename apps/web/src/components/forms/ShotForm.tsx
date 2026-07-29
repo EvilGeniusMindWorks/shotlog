@@ -4,7 +4,11 @@ import { Activity, BarChart3, Flame, MapPin, Wrench } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { nowISO } from '@/lib/utils';
 import { distributeByHoles, totalSqFt, avgDrillDepth, totalYardsShot } from '@shotlog/shared';
-import type { Shot, DrillParams, ShotTotals, ExplosiveUsage } from '@/db/schema';
+import { getPlanHoles } from '@/hooks/useDrillPlans';
+import { aggregateDrilling } from '@/hooks/useDrillLogs';
+import { seedDiagramFromPlan } from '@/lib/shotDiagram';
+import type { Shot, DrillParams, ShotTotals, ExplosiveUsage, DrillPlanRecord } from '@/db/schema';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -140,6 +144,7 @@ export function ShotForm({ shot, allShots, explosiveUsage, kFactor: _kFactor, bl
         summary={totalsSummary}
         defaultOpen={t.numHoles === 0}
       >
+        <ImportFromDrillPlan shot={shot} />
         <div className="grid grid-cols-3 border border-gray-200 rounded-lg overflow-hidden divide-x divide-y divide-gray-200 -space-y-px">
           <TotalsCell label="# Holes">
             <Input
@@ -319,6 +324,98 @@ function ShotExplosives({
       <div className="text-right text-sm font-bold pt-1">
         Shot subtotal: <span className="font-mono">{subtotal.toFixed(1)} lbs</span>
       </div>
+    </div>
+  );
+}
+
+/** Import the as-drilled result of a standalone drill plan into this shot:
+ *  totals from the actual holes, grid layout seeded into the shot diagram
+ *  (timing cleared), and a link for the coverage verification badge. */
+function ImportFromDrillPlan({ shot }: { shot: Shot }) {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const job = useLiveQuery(async () => {
+    const log = await db.blastLogs.get(shot.blastLogId);
+    const day = log ? await db.blastDays.get(log.blastDayId) : undefined;
+    return day ? db.jobs.get(day.jobId) : undefined;
+  }, [shot.blastLogId]);
+  const candidates = useLiveQuery(async () => {
+    if (!job) return [];
+    const plans = (await db.drillPlans.where('jobId').equals(job.id).toArray()).sort((a, b) =>
+      b.updatedAt.localeCompare(a.updatedAt),
+    );
+    const out = [];
+    for (const plan of plans) {
+      const logs = await db.drillLogs.filter((l) => l.drillPlanId === plan.id).toArray();
+      const agg = await aggregateDrilling(logs, getPlanHoles(plan));
+      if (agg.totalHoles > 0) out.push({ plan, agg });
+    }
+    return out;
+  }, [job?.id]);
+  const linked = useLiveQuery(
+    () => (shot.drillPlanId ? db.drillPlans.get(shot.drillPlanId) : undefined),
+    [shot.drillPlanId],
+  );
+
+  const runImport = async (plan: DrillPlanRecord, agg: { totalHoles: number; totalFootage: number }) => {
+    setBusy(true);
+    await db.shots.update(shot.id, {
+      drillPlanId: plan.id,
+      totals: {
+        ...shot.totals,
+        numHoles: agg.totalHoles,
+        totalDrillFootage: +agg.totalFootage.toFixed(1),
+        avgDrillDepth: agg.totalHoles > 0 ? +(agg.totalFootage / agg.totalHoles).toFixed(1) : 0,
+      },
+      designPlan: { ...shot.designPlan, shotDiagramData: seedDiagramFromPlan(plan) },
+      updatedAt: nowISO(),
+    });
+    setBusy(false);
+    setOpen(false);
+  };
+
+  if ((candidates ?? []).length === 0 && !linked) return null;
+  return (
+    <div className="mb-2">
+      {linked && (
+        <p className="text-xs text-navy mb-1">
+          Imported from <b>{linked.name}</b> — totals + grid follow the as-drilled pattern.
+        </p>
+      )}
+      {(candidates ?? []).length > 0 && (
+        <button className="text-xs text-safety-orange underline font-medium" onClick={() => setOpen(true)}>
+          Import from drill plan…
+        </button>
+      )}
+      {open && (
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="w-full sm:max-w-sm bg-white rounded-t-xl sm:rounded-xl p-4 space-y-2 max-h-[80vh] overflow-auto">
+            <p className="font-bold">Import from drill plan</p>
+            <p className="text-xs text-gray-500">
+              Pulls the as-drilled totals and seeds the shot diagram with the plan's
+              grid. <b>The shot's timing design is cleared</b> — you wire it fresh.
+            </p>
+            {(candidates ?? []).map(({ plan, agg }) => (
+              <button
+                key={plan.id}
+                disabled={busy}
+                className="w-full text-left rounded-lg border border-gray-200 hover:bg-gray-50 px-3 py-2"
+                onClick={() => void runImport(plan, agg)}
+              >
+                <p className="text-sm font-semibold">{plan.name}</p>
+                <p className="text-xs text-gray-500">
+                  {agg.totalHoles} holes drilled · {Math.round(agg.totalFootage)} ft · avg{' '}
+                  {agg.totalHoles > 0 ? (agg.totalFootage / agg.totalHoles).toFixed(1) : 0} ft ·{' '}
+                  {plan.rows}×{plan.cols} grid
+                </p>
+              </button>
+            ))}
+            <Button variant="outline" className="w-full" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

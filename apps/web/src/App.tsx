@@ -21,6 +21,7 @@ import { AdminCompanyPage } from '@/pages/admin/AdminCompanyPage';
 import { AdminEquipmentPage } from '@/pages/admin/AdminEquipmentPage';
 import { EnrollPage } from '@/pages/EnrollPage';
 import { DrillLogPage } from '@/pages/DrillLogPage';
+import { DrillPlanPage } from '@/pages/DrillPlanPage';
 import { MyRecordsPage } from '@/pages/MyRecordsPage';
 import { CompanyRecordsPage } from '@/pages/CompanyRecordsPage';
 import { EquipmentPage } from '@/pages/EquipmentPage';
@@ -83,6 +84,8 @@ export function App() {
           <Route path="/blast-day/:id/design/:shotId" element={<DesignPlanPage />} />
           <Route path="/blast-day/:id/seismo/:shotId" element={<SeismoPage />} />
           <Route path="/blast-day/:id/drill-log/:logId" element={<DrillLogPage />} />
+          <Route path="/jobs/:jobId/drill-plan/:planId" element={<DrillPlanPage />} />
+          <Route path="/jobs/:jobId/drill-plan/:planId/log/:logId" element={<DrillLogPage />} />
           <Route path="/records" element={<RecordsRouter />} />
           <Route path="/drill-logs" element={<MyRecordsPage />} />
           <Route path="/equipment/:id" element={<EquipmentPage />} />
@@ -102,12 +105,14 @@ export function App() {
         </Route>
         <Route path="/blast-day/:id/submit" element={<SubmitDayPage />} />
         <Route path="/blast-day/:id/drill-log/:logId/submit" element={<SubmitDrillLogPage />} />
+        <Route path="/jobs/:jobId/drill-plan/:planId/log/:logId/submit" element={<SubmitDrillLogPage />} />
         <Route path="/drill-checklist-print/:checklistId" element={<PrintDrillChecklistPage />} />
         <Route path="/drill-checklist-file/:checklistId" element={<FileDrillChecklistPage />} />
         <Route path="/incident/:incidentId/print" element={<PrintIncidentPage />} />
         <Route path="/incident/:incidentId/submit" element={<SubmitIncidentPage />} />
         <Route path="/blast-day/:id/print" element={<PrintBlastLogPage />} />
         <Route path="/blast-day/:id/drill-log/:logId/print" element={<PrintDrillLogPage />} />
+        <Route path="/jobs/:jobId/drill-plan/:planId/log/:logId/print" element={<PrintDrillLogPage />} />
         <Route path="/blast-day/:id/print-daily" element={<PrintDailyReportPage />} />
         <Route path="/blast-day/:id/report" element={<BlastReportPage />} />
       </Routes>
