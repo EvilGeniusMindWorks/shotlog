@@ -85,9 +85,9 @@ async (page) => {
     await a.waitForTimeout(1500);
     await a.evaluate(() => document.querySelector('video')?.play());
     await a.waitForTimeout(1000);
-    await a.getByRole('button', { name: 'Mark in' }).click();
+    await a.getByRole('button', { name: 'Start here' }).click();
     await a.waitForTimeout(2000);
-    await a.getByRole('button', { name: 'Mark out' }).click();
+    await a.getByRole('button', { name: 'End here' }).click();
     await a.evaluate(() => document.querySelector('video')?.pause());
     await a.getByRole('button', { name: /Extract clip/ }).click();
     const extracted = await (async () => {

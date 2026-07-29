@@ -142,21 +142,20 @@ export function VideoLightbox({
       {isVideo && (
         <div className="p-3 space-y-2 text-white" onClick={(e) => e.stopPropagation()}>
           {duration > 0 && (
-            <div className="relative h-2 rounded bg-white/20">
-              {inPoint !== null && outPoint !== null && (
-                <div
-                  className="absolute h-full bg-safety-orange/80 rounded"
-                  style={{
-                    left: `${(inPoint / duration) * 100}%`,
-                    width: `${(Math.max(0, outPoint - inPoint) / duration) * 100}%`,
-                  }}
-                />
-              )}
-              <div
-                className="absolute -top-1 h-4 w-1 bg-white rounded"
-                style={{ left: `${Math.min(100, (time / duration) * 100)}%` }}
-              />
-            </div>
+            <TrimTrack
+              duration={duration}
+              time={time}
+              inPoint={inPoint}
+              outPoint={outPoint}
+              canEdit={canEdit}
+              onSeek={(t) => {
+                const v = videoRef.current;
+                if (v) v.currentTime = t;
+                setTime(t);
+              }}
+              onSetIn={(t) => setInPoint(+t.toFixed(2))}
+              onSetOut={(t) => setOutPoint(+t.toFixed(2))}
+            />
           )}
           <div className="flex items-center gap-2 flex-wrap text-sm">
             <span className="tabular-nums text-white/70">
@@ -165,10 +164,10 @@ export function VideoLightbox({
             {canEdit && (
               <>
                 <Button size="sm" variant="secondary" onClick={() => setInPoint(+time.toFixed(2))}>
-                  Mark in
+                  Start here
                 </Button>
                 <Button size="sm" variant="secondary" onClick={() => setOutPoint(+time.toFixed(2))}>
-                  Mark out
+                  End here
                 </Button>
               </>
             )}
@@ -209,11 +208,106 @@ export function VideoLightbox({
             </p>
           )}
           <p className="text-[11px] text-white/50">
-            The full video stays on {summary.originName ? `${summary.originName}'s` : 'this'} device —
-            Extract clip cuts the marked range into a small file the office can watch anywhere.
+            Tap the bar to jump around · drag the orange handles (or use Start/End here) to frame
+            the shot · Extract clip cuts that range into a small file the office can watch
+            anywhere. The full video stays on{' '}
+            {summary.originName ? `${summary.originName}'s` : 'this'} device.
           </p>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Trimmer track: tap/drag anywhere to scrub; the in/out handles drag with
+ * fat touch targets. Times derive from pointer x within the track.
+ */
+function TrimTrack({
+  duration,
+  time,
+  inPoint,
+  outPoint,
+  canEdit,
+  onSeek,
+  onSetIn,
+  onSetOut,
+}: {
+  duration: number;
+  time: number;
+  inPoint: number | null;
+  outPoint: number | null;
+  canEdit: boolean;
+  onSeek: (t: number) => void;
+  onSetIn: (t: number) => void;
+  onSetOut: (t: number) => void;
+}) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [dragging, setDragging] = useState<'in' | 'out' | 'seek' | null>(null);
+
+  const timeAt = (clientX: number): number => {
+    const rect = trackRef.current?.getBoundingClientRect();
+    if (!rect || rect.width === 0) return 0;
+    const frac = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+    return frac * duration;
+  };
+
+  const move = (kind: 'in' | 'out' | 'seek', clientX: number) => {
+    const t = timeAt(clientX);
+    if (kind === 'in') onSetIn(Math.min(t, (outPoint ?? duration) - 0.1));
+    else if (kind === 'out') onSetOut(Math.max(t, (inPoint ?? 0) + 0.1));
+    else onSeek(t);
+  };
+
+  const startDrag = (kind: 'in' | 'out' | 'seek') => (e: React.PointerEvent) => {
+    e.stopPropagation();
+    (e.target as Element).setPointerCapture(e.pointerId);
+    setDragging(kind);
+    move(kind, e.clientX);
+  };
+
+  const pct = (t: number) => `${Math.min(100, Math.max(0, (t / duration) * 100))}%`;
+
+  return (
+    <div className="px-2 pt-3 pb-1">
+      <div
+        ref={trackRef}
+        className="relative h-3 rounded bg-white/20 cursor-pointer touch-none"
+        onPointerDown={startDrag('seek')}
+        onPointerMove={(e) => dragging && move(dragging, e.clientX)}
+        onPointerUp={() => setDragging(null)}
+        onPointerCancel={() => setDragging(null)}
+      >
+        {inPoint !== null && outPoint !== null && (
+          <div
+            className="absolute h-full bg-safety-orange/70 rounded pointer-events-none"
+            style={{ left: pct(inPoint), width: pct(Math.max(0, outPoint - inPoint)) }}
+          />
+        )}
+        {/* playhead */}
+        <div
+          className="absolute -top-1 h-5 w-0.5 bg-white pointer-events-none"
+          style={{ left: pct(time) }}
+        />
+        {canEdit && inPoint !== null && (
+          <div
+            className="absolute -top-2.5 h-8 w-8 -ml-4 flex items-center justify-center"
+            style={{ left: pct(inPoint) }}
+            onPointerDown={startDrag('in')}
+          >
+            <div className="h-7 w-2.5 rounded bg-safety-orange border border-white/70" />
+          </div>
+        )}
+        {canEdit && outPoint !== null && (
+          <div
+            className="absolute -top-2.5 h-8 w-8 -ml-4 flex items-center justify-center"
+            style={{ left: pct(outPoint) }}
+            onPointerDown={startDrag('out')}
+          >
+            <div className="h-7 w-2.5 rounded bg-safety-orange border border-white/70" />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
