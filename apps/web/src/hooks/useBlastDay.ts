@@ -10,7 +10,7 @@ import type {
   EquipmentEntry,
   WorkType,
 } from '@/db/schema';
-import { equipmentEntryBucket, isBlastingWork } from '@/db/schema';
+import { isBlastingWork } from '@/db/schema';
 import { generateId, nowISO, todayISO } from '@/lib/utils';
 import { getSessionUser } from '@/lib/session';
 
@@ -223,9 +223,9 @@ export async function createBlastDay(
     syncStatus: 'local',
   };
 
-  // Crew & equipment: carry the previous day's rows forward when copying,
-  // otherwise auto-populate from the Settings rosters (Spec §15). Times and
-  // meter hours always start blank.
+  // Crew & equipment: carry the previous day's rows forward when copying
+  // (times and meter hours cleared). Fresh days start EMPTY — nobody and no
+  // machine is on the report unless the blaster adds them (or copies a day).
   let crewRows: WorkForceEntry[] = [];
   let equipRows: EquipmentEntry[] = [];
   if (copy?.crewEquipment && sourceReport) {
@@ -253,43 +253,6 @@ export async function createBlastDay(
       dailyReportId,
       hoursStart: 0,
       hoursEnd: 0,
-      createdAt: now,
-      updatedAt: now,
-      syncStatus: 'local' as const,
-    }));
-  } else {
-    const roster = await db.crewMembers.filter((c) => c.isActive).toArray();
-    crewRows = roster.map((member, i) => ({
-      id: generateId(),
-      dailyReportId,
-      rowNumber: i + 1,
-      workerName: member.name,
-      // roster link — person pages trace who worked which days through this
-      crewMemberId: member.id,
-      timeIn: '',
-      timeOut: '',
-      straightTime: 0,
-      overtime: 0,
-      truckHours: 0,
-      travelHours: 0,
-      createdAt: now,
-      updatedAt: now,
-      syncStatus: 'local' as const,
-    }));
-    // Only assets in service ride onto the daily report; registry categories
-    // fold down to the paper form's three sections
-    const machines = await db.equipment
-      .filter((e) => e.isActive && (e.status ?? 'active') === 'active')
-      .toArray();
-    equipRows = machines.map((m) => ({
-      id: generateId(),
-      dailyReportId,
-      category: equipmentEntryBucket(m.category),
-      assetNumber: m.assetNumber || m.description,
-      hoursStart: 0,
-      hoursEnd: 0,
-      // registry link — the equipment history page traces usage through this
-      equipmentId: m.id,
       createdAt: now,
       updatedAt: now,
       syncStatus: 'local' as const,
