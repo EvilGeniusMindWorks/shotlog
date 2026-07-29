@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, MapPin } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
+import { getPowerSync } from '@/db/powersync/client';
 import { cn, formatDate } from '@/lib/utils';
 import { useDraftRecord } from '@/hooks/useDraftRecord';
 import { getSessionUser } from '@/lib/session';
@@ -334,9 +335,21 @@ function SiteKCard({ job }: { job: Job }) {
         const w = shot.designPlan.maxPoundsPerDelay;
         if (!(d > 0) || !(w > 0)) continue;
         const sd = scaledDistance(d, w);
-        const readings = await db.seismoReadings.where('shotId').equals(shot.id).toArray();
+        // Projection: readings carry printout photos — never revive those
+        // blobs just to read three PPV numbers
+        const readings = await getPowerSync().getAll<{
+          ppvTran: number; ppvVert: number; ppvLong: number;
+        }>(
+          `SELECT json_extract(payload,'$.ppvTran') AS ppvTran,
+                  json_extract(payload,'$.ppvVert') AS ppvVert,
+                  json_extract(payload,'$.ppvLong') AS ppvLong
+           FROM records
+           WHERE table_name = 'seismoReadings'
+             AND json_extract(payload,'$.shotId') = ?`,
+          [shot.id],
+        );
         for (const r of readings) {
-          const ppv = Math.max(r.ppvTran, r.ppvVert, r.ppvLong);
+          const ppv = Math.max(r.ppvTran ?? 0, r.ppvVert ?? 0, r.ppvLong ?? 0);
           if (!(ppv > 0)) continue;
           entries.push({
             date: day.date,

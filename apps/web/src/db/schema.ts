@@ -636,7 +636,7 @@ export interface ProductCatalogItem extends BaseRecord {
 
 export interface Attachment extends BaseRecord {
   parentId: string;
-  parentType: 'seismo_reading' | 'shot' | 'blast_day' | 'blast_log' | 'daily_report';
+  parentType: 'seismo_reading' | 'shot' | 'blast_day' | 'blast_log' | 'daily_report' | 'drill_log';
   fileName: string;
   mimeType: string;
   /**
@@ -685,7 +685,11 @@ export interface SubmissionAsset {
   id: string; // original attachment id
   fileName: string;
   mimeType: string;
-  data: Blob;
+  /** LEGACY inline copy only — new filings carry null (binary in R2) */
+  data: Blob | null;
+  /** SHA-256 of the frozen copy — content immutability proof */
+  sha256?: string;
+  size?: number;
 }
 
 /**
@@ -705,8 +709,21 @@ export interface Submission extends BaseRecord {
   date: string; // the document's date (work day / checklist / incident date)
   submittedBy: string;
   submittedByUserId: string;
-  pdf: Blob;
+  /** LEGACY inline PDF only — new filings carry null (binary in R2) */
+  pdf: Blob | null;
+  /** SHA-256 + size of the filed PDF — the archive's integrity anchor */
+  pdfSha256?: string;
+  pdfSize?: number;
   assets: SubmissionAsset[];
+  /**
+   * Binary residence. The DOCUMENT is immutable from filing; the only
+   * permitted post-file change (server-enforced) is the storage pointer
+   * flip below when the uploader lands binaries in R2.
+   */
+  storageStatus?: 'device' | 'stored';
+  pdfKey?: string;
+  /** asset id → R2 key, written by the uploader */
+  assetKeys?: Record<string, string>;
   /** Display facts for lists (holes, lbs, shots …) + skippedVideos refs */
   meta?: Record<string, unknown>;
 }

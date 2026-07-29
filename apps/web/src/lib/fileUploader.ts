@@ -8,8 +8,76 @@ import { nowISO } from '@/lib/utils';
 import { logSyncEvent } from '@/lib/syncLog';
 import { getLocalMedia, listLocalMediaIds } from '@/lib/localMedia';
 import { eligibleForR2 } from '@/lib/attachments';
+import { subAssetKey, subPdfKey } from '@/lib/archive';
 
 let running = false;
+
+async function presignAndPut(
+  id: string,
+  fileName: string,
+  mimeType: string,
+  blob: Blob,
+): Promise<string | null | 'unconfigured'> {
+  const presign = await authedFetch('/files/presign-upload', {
+    method: 'POST',
+    body: JSON.stringify({ attachmentId: id, fileName, mimeType, size: blob.size }),
+  });
+  if (presign.status === 503) return 'unconfigured';
+  if (!presign.ok) {
+    logSyncEvent(`file upload presign failed (${presign.status}) for ${fileName}`);
+    return null;
+  }
+  const { url, key } = (await presign.json()) as { url: string; key: string };
+  const put = await fetch(url, { method: 'PUT', headers: { 'content-type': mimeType }, body: blob });
+  if (!put.ok) {
+    logSyncEvent(`file upload PUT failed (${put.status}) for ${fileName}`);
+    return null;
+  }
+  return key;
+}
+
+/** Move filed-submission binaries (PDF + frozen assets) from this device
+ *  into R2, then flip the record's storage pointer — the one post-file
+ *  change the server's write-once rule permits. */
+async function uploadSubmissionBinaries(localIds: Set<string>): Promise<void> {
+  const pending = (await db.submissions.filter((s) => s.storageStatus === 'device').toArray())
+    .filter((s) => localIds.has(subPdfKey(s.id)));
+  for (const s of pending) {
+    try {
+      const pdf = await getLocalMedia(subPdfKey(s.id));
+      if (!pdf) continue;
+      const pdfKey = await presignAndPut(subPdfKey(s.id), `${s.type}-${s.date}-v${s.version}.pdf`, 'application/pdf', pdf);
+      if (pdfKey === 'unconfigured') return;
+      if (!pdfKey) continue;
+      const assetKeys: Record<string, string> = {};
+      let allAssets = true;
+      for (const a of s.assets) {
+        const blob = await getLocalMedia(subAssetKey(s.id, a.id));
+        if (!blob) {
+          allAssets = false;
+          continue;
+        }
+        const key = await presignAndPut(subAssetKey(s.id, a.id), a.fileName || a.id, a.mimeType, blob);
+        if (key === 'unconfigured') return;
+        if (!key) {
+          allAssets = false;
+          continue;
+        }
+        assetKeys[a.id] = key;
+      }
+      if (!allAssets) continue; // retry the whole submission next run
+      await db.submissions.update(s.id, {
+        storageStatus: 'stored',
+        pdfKey,
+        assetKeys,
+        updatedAt: nowISO(),
+      });
+      logSyncEvent(`filing uploaded: ${s.title} v${s.version}`);
+    } catch {
+      return; // offline blip — next run retries
+    }
+  }
+}
 
 export async function runFileUploader(): Promise<void> {
   if (running || !navigator.onLine || !getSession().loggedIn) return;
@@ -24,30 +92,9 @@ export async function runFileUploader(): Promise<void> {
       const blob = await getLocalMedia(a.id);
       if (!blob) continue;
       try {
-        const presign = await authedFetch('/files/presign-upload', {
-          method: 'POST',
-          body: JSON.stringify({
-            attachmentId: a.id,
-            fileName: a.fileName,
-            mimeType: a.mimeType,
-            size: blob.size,
-          }),
-        });
-        if (presign.status === 503) return; // storage not configured — try later
-        if (!presign.ok) {
-          logSyncEvent(`file upload presign failed (${presign.status}) for ${a.fileName}`);
-          continue;
-        }
-        const { url, key } = (await presign.json()) as { url: string; key: string };
-        const put = await fetch(url, {
-          method: 'PUT',
-          headers: { 'content-type': a.mimeType },
-          body: blob,
-        });
-        if (!put.ok) {
-          logSyncEvent(`file upload PUT failed (${put.status}) for ${a.fileName}`);
-          continue;
-        }
+        const key = await presignAndPut(a.id, a.fileName, a.mimeType, blob);
+        if (key === 'unconfigured') return; // storage not configured — try later
+        if (!key) continue;
         await db.attachments.update(a.id, {
           storageStatus: 'stored',
           storageKey: key,
@@ -59,6 +106,7 @@ export async function runFileUploader(): Promise<void> {
         return;
       }
     }
+    await uploadSubmissionBinaries(localIds);
   } finally {
     running = false;
   }

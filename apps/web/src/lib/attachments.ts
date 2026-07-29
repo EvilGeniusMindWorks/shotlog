@@ -3,7 +3,7 @@
 // binary goes to the device-local media store at capture time, then to R2 via
 // the background uploader (photos/PDFs/small videos) or stays on the device
 // (full-length shot videos, until a clip is extracted — phase 2).
-import { useLiveQuery, db, POWERSYNC_ENABLED } from '@/db';
+import { useLiveQuery, db } from '@/db';
 import { getPowerSync } from '@/db/powersync/client';
 import { authedFetch, getSessionUser } from '@/lib/session';
 import { generateId, nowISO } from '@/lib/utils';
@@ -208,18 +208,6 @@ export interface AttachmentSummary {
 
 export async function listAttachmentSummaries(parentIds: string[]): Promise<AttachmentSummary[]> {
   if (parentIds.length === 0) return [];
-  if (!POWERSYNC_ENABLED) {
-    const rows = await db.attachments.filter((a) => parentIds.includes(a.parentId)).toArray();
-    return rows.map((a) => ({
-      id: a.id, parentId: a.parentId, parentType: a.parentType, fileName: a.fileName,
-      mimeType: a.mimeType, kind: a.kind, size: a.size, duration: a.duration,
-      clipStart: a.clipStart, clipEnd: a.clipEnd, thumb: a.thumb,
-      localOnly: a.storageStatus === 'device', storageKey: a.storageKey,
-      storageStatus: a.storageStatus, originName: a.originName,
-      legacyInline: !a.storageStatus && (a.data?.size ?? 0) > 0,
-      sourceAttachmentId: a.sourceAttachmentId, createdAt: a.createdAt,
-    }));
-  }
   const placeholders = parentIds.map(() => '?').join(',');
   const rows = await getPowerSync().getAll<{
     id: string; parentId: string; parentType: string; fileName: string; mimeType: string;

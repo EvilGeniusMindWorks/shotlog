@@ -17,6 +17,7 @@ import { cn, formatDate } from '@/lib/utils';
 import type { SubmissionType } from '@/db/schema';
 import {
   downloadSubmissionPdfById,
+  getSubmissionAssetBlob,
   openSubmissionPdfById,
   useSubmissionSummaries,
   type SubmissionSummary,
@@ -109,10 +110,27 @@ function SubmissionRow({
           {(full?.assets ?? []).map((a) => (
             <div key={a.id} className="flex items-center gap-2 text-xs text-gray-500">
               <span className="truncate flex-1">📎 {a.fileName || a.id}</span>
-              <button className="text-navy underline" onClick={() => openBlob(a.data)}>
+              <button
+                className="text-navy underline"
+                onClick={() => {
+                  const w = window.open('', '_blank');
+                  void getSubmissionAssetBlob(s.id, a.id).then((blob) => {
+                    if (!blob) return w?.close();
+                    const url = URL.createObjectURL(blob);
+                    if (w) w.location.href = url;
+                  });
+                }}
+              >
                 View
               </button>
-              <button className="text-navy underline" onClick={() => downloadBlob(a.data, a.fileName || `${a.id}`)}>
+              <button
+                className="text-navy underline"
+                onClick={() =>
+                  void getSubmissionAssetBlob(s.id, a.id).then(
+                    (blob) => blob && downloadBlob(blob, a.fileName || `${a.id}`),
+                  )
+                }
+              >
                 Download
               </button>
             </div>

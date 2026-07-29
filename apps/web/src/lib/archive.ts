@@ -2,10 +2,10 @@
 // written once as a `submissions` record. The server discards any re-PUT
 // of an existing submission id — corrections are new versions (v1, v2, …),
 // so the office's record book never changes under it.
-import { useLiveQuery, db, POWERSYNC_ENABLED } from '@/db';
+import { useLiveQuery, db } from '@/db';
 import { getPowerSync } from '@/db/powersync/client';
 import { authedFetch, getSessionUser } from '@/lib/session';
-import { getLocalMedia } from '@/lib/localMedia';
+import { getLocalMedia, putLocalMedia } from '@/lib/localMedia';
 import { generateId, nowISO } from '@/lib/utils';
 import { pagesToPdfBlob } from '@/lib/pdf';
 import type { Attachment, Submission, SubmissionAsset, SubmissionType } from '@/db/schema';
@@ -142,6 +142,16 @@ async function freezeAttachments(
   return { assets, skippedVideos };
 }
 
+async function sha256Hex(blob: Blob): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer());
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/** localMedia keys for a submission's binaries */
+export const subPdfKey = (submissionId: string) => `sub-pdf-${submissionId}`;
+export const subAssetKey = (submissionId: string, assetId: string) =>
+  `sub-asset-${submissionId}-${assetId}`;
+
 export async function nextSubmissionVersion(sourceId: string, type: SubmissionType): Promise<number> {
   const prior = await db.submissions
     .filter((s) => s.sourceId === sourceId && s.type === type)
@@ -174,16 +184,6 @@ export interface SubmissionSummary {
 }
 
 export async function listSubmissionSummaries(): Promise<SubmissionSummary[]> {
-  if (!POWERSYNC_ENABLED) {
-    // Dexie emergency fallback: no projection available — strip after load
-    const all = await db.submissions.toArray();
-    return all.map((s) => ({
-      id: s.id, type: s.type, sourceId: s.sourceId, blastDayId: s.blastDayId, jobId: s.jobId,
-      version: s.version, title: s.title, date: s.date, submittedBy: s.submittedBy,
-      submittedByUserId: s.submittedByUserId, assetCount: s.assets.length,
-      createdAt: s.createdAt, meta: s.meta,
-    }));
-  }
   const rows = await getPowerSync().getAll<{
     id: string; type: SubmissionType; sourceId: string; blastDayId: string | null;
     jobId: string | null; version: number; title: string; date: string;
@@ -228,18 +228,18 @@ export function useSubmissionSummaries(): SubmissionSummary[] | undefined {
  */
 export function openSubmissionPdfById(id: string): void {
   const w = window.open('', '_blank');
-  void db.submissions.get(id).then((s) => {
-    if (!s) return w?.close();
-    const url = URL.createObjectURL(s.pdf);
+  void getSubmissionPdfBlob(id).then((pdf) => {
+    if (!pdf) return w?.close();
+    const url = URL.createObjectURL(pdf);
     if (w) w.location.href = url;
     else window.open(url, '_blank');
   });
 }
 
 export async function downloadSubmissionPdfById(id: string, fileName: string): Promise<void> {
-  const s = await db.submissions.get(id);
-  if (!s) return;
-  const url = URL.createObjectURL(s.pdf);
+  const pdf = await getSubmissionPdfBlob(id);
+  if (!pdf) return;
+  const url = URL.createObjectURL(pdf);
   const a = document.createElement('a');
   a.href = url;
   a.download = fileName;
@@ -267,6 +267,23 @@ export async function fileSubmission(opts: {
   const { assets, skippedVideos } = await freezeAttachments(opts.attachments ?? []);
   const now = nowISO();
   const id = generateId();
+  // Binaries go to the device media store; the record carries metadata +
+  // checksums only. The background uploader lands binaries in R2 and flips
+  // the storage pointer — the ONE post-file change the server permits.
+  await putLocalMedia(subPdfKey(id), pdf);
+  const assetRefs: SubmissionAsset[] = [];
+  for (const a of assets) {
+    const data = a.data as Blob;
+    await putLocalMedia(subAssetKey(id, a.id), data);
+    assetRefs.push({
+      id: a.id,
+      fileName: a.fileName,
+      mimeType: a.mimeType,
+      data: null,
+      sha256: await sha256Hex(data),
+      size: data.size,
+    });
+  }
   const submission: Submission = {
     id,
     type: opts.type,
@@ -278,8 +295,11 @@ export async function fileSubmission(opts: {
     date: opts.date,
     submittedBy: session?.name ?? '',
     submittedByUserId: session?.id ?? '',
-    pdf,
-    assets,
+    pdf: null,
+    pdfSha256: await sha256Hex(pdf),
+    pdfSize: pdf.size,
+    assets: assetRefs,
+    storageStatus: 'device',
     meta: skippedVideos.length ? { ...opts.meta, skippedVideos } : opts.meta,
     createdAt: now,
     updatedAt: now,
@@ -287,6 +307,56 @@ export async function fileSubmission(opts: {
   };
   await db.submissions.add(submission);
   return id;
+}
+
+/** Resolve a submission's PDF: legacy inline → device store → R2 (cached) */
+export async function getSubmissionPdfBlob(id: string): Promise<Blob | null> {
+  const s = await db.submissions.get(id);
+  if (!s) return null;
+  if (s.pdf && s.pdf.size > 0) return s.pdf;
+  const local = await getLocalMedia(subPdfKey(id));
+  if (local) return local;
+  if (s.pdfKey) {
+    const blob = await fetchFromStorage(s.pdfKey);
+    if (blob) await putLocalMedia(subPdfKey(id), blob).catch(() => undefined);
+    return blob;
+  }
+  return null;
+}
+
+/** Resolve one frozen asset copy the same way */
+export async function getSubmissionAssetBlob(
+  submissionId: string,
+  assetId: string,
+): Promise<Blob | null> {
+  const s = await db.submissions.get(submissionId);
+  const asset = s?.assets.find((a) => a.id === assetId);
+  if (!s || !asset) return null;
+  if (asset.data && asset.data.size > 0) return asset.data;
+  const local = await getLocalMedia(subAssetKey(submissionId, assetId));
+  if (local) return local;
+  const key = s.assetKeys?.[assetId];
+  if (key) {
+    const blob = await fetchFromStorage(key);
+    if (blob) await putLocalMedia(subAssetKey(submissionId, assetId), blob).catch(() => undefined);
+    return blob;
+  }
+  return null;
+}
+
+async function fetchFromStorage(key: string): Promise<Blob | null> {
+  try {
+    const res = await authedFetch('/files/presign-download', {
+      method: 'POST',
+      body: JSON.stringify({ key }),
+    });
+    if (!res.ok) return null;
+    const { url } = (await res.json()) as { url: string };
+    const fileRes = await fetch(url);
+    return fileRes.ok ? await fileRes.blob() : null;
+  } catch {
+    return null;
+  }
 }
 
 /** Live list of a source record's filed versions, newest first */

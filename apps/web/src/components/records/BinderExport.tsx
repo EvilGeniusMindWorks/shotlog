@@ -6,7 +6,7 @@ import { useState } from 'react';
 import JSZip from 'jszip';
 import { FolderDown, X } from 'lucide-react';
 import { db } from '@/db';
-import { listSubmissionSummaries } from '@/lib/archive';
+import { getSubmissionPdfBlob, listSubmissionSummaries } from '@/lib/archive';
 import { fetchAuditRange, describeEntry, tableLabel } from '@/lib/audit';
 import { toCsv } from '@/lib/csv';
 import { getSessionUser } from '@/lib/session';
@@ -73,16 +73,22 @@ export function BinderExport() {
         (s) => s.date >= from && s.date <= to,
       );
       setStatus(`Packing ${summaries.length} filed document${summaries.length === 1 ? '' : 's'}…`);
+      let unavailable = 0;
       for (const [i, s] of summaries.entries()) {
         setStatus(`Packing PDFs… ${i + 1}/${summaries.length}`);
-        const full = await db.submissions.get(s.id);
-        if (!full) continue;
+        const pdf = await getSubmissionPdfBlob(s.id);
+        if (!pdf) {
+          unavailable++;
+          manifest.push(`MISSING: ${s.type}-${s.date}-v${s.version} (not reachable from this device)`);
+          continue;
+        }
         // id suffix: two same-type docs filed the same day would otherwise
         // collide (e.g. two rigs' checklists, both v1)
         const name = `pdfs/${s.type}-${s.date}-v${s.version}-${s.id.slice(0, 8)}.pdf`;
-        zip.file(name, full.pdf);
-        manifest.push(`${name}  ${await sha256Hex(full.pdf)}`);
+        zip.file(name, pdf);
+        manifest.push(`${name}  ${await sha256Hex(pdf)}`);
       }
+      if (unavailable > 0) setStatus(`${unavailable} PDF(s) unreachable — noted in manifest`);
 
       setStatus('Building explosives summary…');
       zip.file('explosives-summary.csv', await buildExplosivesCsv(from, to));

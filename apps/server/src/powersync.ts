@@ -209,11 +209,24 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
           continue;
         }
 
-        // 1b. submissions are write-once: a PUT on an existing id is a
-        // replay or a forgery — corrections come as NEW submissions (vN+1)
+        // 1b. submissions are write-once: the DOCUMENT (pdf checksum, assets,
+        // facts) can never change after filing — corrections come as NEW
+        // submissions (vN+1). The ONE permitted post-file change is the
+        // storage-pointer flip when the uploader lands binaries in R2.
         if (tableName === 'submissions' && stored && op.op !== 'DELETE') {
-          discard(op, tableName, 'submission is write-once');
-          continue;
+          const STORAGE_POINTER_FIELDS = new Set([
+            'storageStatus',
+            'pdfKey',
+            'assetKeys',
+            'updatedAt',
+            'syncStatus',
+          ]);
+          const changes = diffPayloads(stored.payload, effective);
+          const contentTouched = changes.some((c) => !STORAGE_POINTER_FIELDS.has(c.field));
+          if (contentTouched) {
+            discard(op, tableName, 'submission is write-once');
+            continue;
+          }
         }
 
         // 2. blastDay status transitions

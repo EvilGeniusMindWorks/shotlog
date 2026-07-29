@@ -10,6 +10,7 @@ import { useLiveQuery, db } from '@/db';
 import { addHole, drilledHoleNumbers, getShotPlan, nextHoleNumber, useShotDrilling } from '@/hooks/useDrillLogs';
 import { parseDiagram } from '@/lib/shotDiagram';
 import { DrillPlanDiagram } from '@/components/design/DrillPlanDiagram';
+import { AttachmentsCard } from '@/components/forms/AttachmentsCard';
 import { useSubmissions } from '@/lib/archive';
 import { findCrewId } from '@/lib/personHistory';
 import { getSessionUser } from '@/lib/session';
@@ -504,6 +505,14 @@ export function DrillLogPage() {
             <p className="p-4 text-sm text-gray-400">No holes yet — log them as you drill.</p>
           )}
         </div>
+
+        {/* Driller media: hole conditions, rig problems, drilled-face photos */}
+        <AttachmentsCard
+          parentId={log.id}
+          parentType="drill_log"
+          title="Drill log photos & media"
+          defaultKind="photo"
+        />
 
         {/* Handoff-note prompt (complete: driller → blaster; reopen: reverse) */}
         {notePrompt && (

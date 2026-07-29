@@ -59,7 +59,8 @@ export const TABLE_PERMISSIONS: Record<string, TableRule> = {
   seismoReadings: uniform(BLAST_FAMILY),
   explosiveUsages: uniform(BLAST_FAMILY),
   typicalColumns: uniform(BLAST_FAMILY),
-  attachments: uniform(BLAST_FAMILY),
+  // Drillers photograph their work too (drill-log conditions, rig issues)
+  attachments: uniform(REPORT_FAMILY),
 
   // Drill logs — the Driller→Blaster handoff (N signed logs per shot)
   drillLogs: { PUT: REPORT_FAMILY, PATCH: REPORT_FAMILY, DELETE: REGISTRY },
