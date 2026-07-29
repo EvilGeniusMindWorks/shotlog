@@ -14,7 +14,7 @@ import { PrintBlastLogPage } from '@/pages/PrintBlastLogPage';
 import { PrintDailyReportPage } from '@/pages/PrintDailyReportPage';
 import { BlastReportPage } from '@/pages/BlastReportPage';
 import { AdminLayout } from '@/pages/admin/AdminLayout';
-import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
+import { AdminPeoplePage } from '@/pages/admin/AdminPeoplePage';
 import { AdminApprovalsPage } from '@/pages/admin/AdminApprovalsPage';
 import { AdminCatalogPage } from '@/pages/admin/AdminCatalogPage';
 import { AdminCompanyPage } from '@/pages/admin/AdminCompanyPage';
@@ -39,7 +39,7 @@ import { getSessionUser } from '@/lib/session';
 function AdminIndexRedirect() {
   const role = getSessionUser()?.role;
   const target =
-    role === 'supervisor' ? '/admin/approvals' : role === 'mechanic' ? '/admin/equipment' : role === 'office' ? '/admin/incidents' : '/admin/users';
+    role === 'supervisor' ? '/admin/approvals' : role === 'mechanic' ? '/admin/equipment' : role === 'office' ? '/admin/incidents' : '/admin/people';
   return <Navigate to={target} replace />;
 }
 
@@ -91,7 +91,8 @@ export function App() {
           <Route path="/incident/:incidentId" element={<IncidentPage />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminIndexRedirect />} />
-            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="people" element={<AdminPeoplePage />} />
+            <Route path="users" element={<Navigate to="/admin/people" replace />} />
             <Route path="approvals" element={<AdminApprovalsPage />} />
             <Route path="catalog" element={<AdminCatalogPage />} />
             <Route path="equipment" element={<AdminEquipmentPage />} />

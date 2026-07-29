@@ -9,7 +9,7 @@ import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { cn } from '@/lib/utils';
 
 const TABS: { to: string; label: string; roles: string[] }[] = [
-  { to: '/admin/users', label: 'Users', roles: ['admin'] },
+  { to: '/admin/people', label: 'People', roles: ['admin', 'supervisor'] },
   { to: '/admin/approvals', label: 'Approvals', roles: ['admin', 'supervisor'] },
   { to: '/admin/catalog', label: 'Catalog', roles: ['admin'] },
   { to: '/admin/equipment', label: 'Equipment', roles: ['admin', 'supervisor', 'mechanic'] },
