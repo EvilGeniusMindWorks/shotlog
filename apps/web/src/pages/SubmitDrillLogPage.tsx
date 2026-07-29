@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery, db } from '@/db';
-import { fileSubmission, waitForPagesReady } from '@/lib/archive';
+import { fileSubmission } from '@/lib/archive';
 import { getSessionUser } from '@/lib/session';
 import { nowISO } from '@/lib/utils';
 import { PrintDrillLogPage } from '@/pages/PrintDrillLogPage';
@@ -23,7 +23,8 @@ export function SubmitDrillLogPage() {
     let cancelled = false;
     void (async () => {
       try {
-        await waitForPagesReady();
+        const { buildDrillLogPdf } = await import('@/pdfdocs');
+        const pdf = await buildDrillLogPdf(log.id);
         if (cancelled) return;
         const day = await db.blastDays.get(log.blastDayId);
         const job = await db.jobs.get(log.jobId);
@@ -35,6 +36,7 @@ export function SubmitDrillLogPage() {
           jobId: log.jobId,
           title: `Drill Log — ${day?.name || job?.name || ''} · Shot ${shot?.shotNumber ?? '?'} · ${log.drillerName}`,
           date: day?.date ?? log.createdAt.slice(0, 10),
+          pdf,
           meta: { jobName: job?.name, driller: log.drillerName },
         });
         // Backfill path: a log accepted before the archive existed just gets

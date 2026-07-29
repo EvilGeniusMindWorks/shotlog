@@ -6,8 +6,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { FileDown, Printer } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { formatDate } from '@/lib/utils';
-import { savePagesAsPdf } from '@/lib/pdf';
-import { fileSubmission, waitForPagesReady } from '@/lib/archive';
+import { fileSubmission } from '@/lib/archive';
 import { DRILL_DAILY_CHECKS, DRILL_WEEKLY_CHECKS, type CheckState } from '@/db/schema';
 import { Button } from '@/components/ui/button';
 import './print-blast-log.css';
@@ -118,7 +117,8 @@ export function PrintDrillChecklistPage() {
           onClick={async () => {
             setSaving(true);
             try {
-              await savePagesAsPdf(`drill-checklist-${checklistId.slice(0, 8)}.pdf`);
+              const { buildChecklistPdf, downloadPdf } = await import('@/pdfdocs');
+              downloadPdf(await buildChecklistPdf(checklistId), `drill-checklist-${checklistId.slice(0, 8)}.pdf`);
             } finally {
               setSaving(false);
             }
@@ -161,7 +161,7 @@ export function FileDrillChecklistPage() {
     ran.current = true;
     void (async () => {
       try {
-        await waitForPagesReady();
+        const { buildChecklistPdf } = await import('@/pdfdocs');
         const rig = await db.equipment.get(checklist.equipmentId);
         await fileSubmission({
           type: 'drill_checklist',
@@ -169,6 +169,7 @@ export function FileDrillChecklistPage() {
           jobId: checklist.jobId,
           title: `Rig Checklist — ${rig?.assetNumber ?? checklist.equipmentId} · ${checklist.drillerName}`,
           date: checklist.date,
+          pdf: await buildChecklistPdf(checklist.id),
           meta: { rig: rig?.assetNumber, outOfService: checklist.outOfService },
         });
         setDone(true);

@@ -4,7 +4,6 @@ import { ArrowLeft, FileDown, Printer } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { useBlastDay } from '@/hooks/useBlastDay';
 import type { EquipmentEntry, ProductCategory, WorkForceEntry } from '@/db/schema';
-import { savePagesAsPdf } from '@/lib/pdf';
 import './print-blast-log.css';
 
 const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -127,7 +126,8 @@ export function PrintDailyReportPage() {
             onClick={async () => {
               setSavingPdf(true);
               try {
-                await savePagesAsPdf(`daily-report-${blastDay.date}.pdf`);
+                const { buildDailyReportPdf, downloadPdf } = await import('@/pdfdocs');
+                downloadPdf(await buildDailyReportPdf(blastDay.id), `daily-report-${blastDay.date}.pdf`);
               } finally {
                 setSavingPdf(false);
               }

@@ -6,7 +6,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { FileDown, Printer } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { formatDate } from '@/lib/utils';
-import { savePagesAsPdf } from '@/lib/pdf';
 
 const CONDITION_LEGEND = 'V = Void · SR = Soft Rock · O = Overburden · W = Water';
 
@@ -63,7 +62,9 @@ export function PrintDrillLogPage() {
           onClick={async () => {
             setSaving(true);
             try {
-              await savePagesAsPdf(
+              const { buildDrillLogPdf, downloadPdf } = await import('@/pdfdocs');
+              downloadPdf(
+                await buildDrillLogPdf(log.id),
                 `drill-log-${day?.date ?? ''}-shot${shot?.shotNumber ?? ''}-${(log.drillerName || 'driller').replace(/\s+/g, '-').toLowerCase()}.pdf`,
               );
             } finally {

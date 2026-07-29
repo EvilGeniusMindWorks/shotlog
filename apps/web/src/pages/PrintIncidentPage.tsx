@@ -6,8 +6,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { FileDown, Printer } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { formatDate, nowISO } from '@/lib/utils';
-import { savePagesAsPdf } from '@/lib/pdf';
-import { fileSubmission, waitForPagesReady } from '@/lib/archive';
+import { fileSubmission } from '@/lib/archive';
 import { Button } from '@/components/ui/button';
 import './print-blast-log.css';
 
@@ -112,7 +111,8 @@ export function PrintIncidentPage() {
           onClick={async () => {
             setSaving(true);
             try {
-              await savePagesAsPdf(`incident-${incidentId.slice(0, 8)}.pdf`);
+              const { buildIncidentPdf, downloadPdf } = await import('@/pdfdocs');
+              downloadPdf(await buildIncidentPdf(incidentId), `incident-${incidentId.slice(0, 8)}.pdf`);
             } finally {
               setSaving(false);
             }
@@ -152,7 +152,8 @@ export function SubmitIncidentPage() {
     ran.current = true;
     void (async () => {
       try {
-        await waitForPagesReady();
+        const { buildIncidentPdf } = await import('@/pdfdocs');
+        const pdf = await buildIncidentPdf(incident.id);
         const job = incident.jobId ? await db.jobs.get(incident.jobId) : undefined;
         // Freeze the day's attachments when the incident points at a blast day
         const attachments = incident.blastDayId
@@ -165,6 +166,7 @@ export function SubmitIncidentPage() {
           jobId: incident.jobId,
           title: `${TYPE_TITLE[incident.type]} — ${job?.name ?? formatDate(incident.date)}`,
           date: incident.date,
+          pdf,
           attachments,
           meta: { jobName: job?.name, incidentType: incident.type },
         });

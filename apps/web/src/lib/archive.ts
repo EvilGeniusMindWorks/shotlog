@@ -7,7 +7,6 @@ import { getPowerSync } from '@/db/powersync/client';
 import { authedFetch, getSessionUser } from '@/lib/session';
 import { getLocalMedia, putLocalMedia } from '@/lib/localMedia';
 import { generateId, nowISO } from '@/lib/utils';
-import { pagesToPdfBlob } from '@/lib/pdf';
 import type { Attachment, Submission, SubmissionAsset, SubmissionType } from '@/db/schema';
 
 /** Archive copies of images are capped at this edge (originals stay live) */
@@ -248,8 +247,9 @@ export async function downloadSubmissionPdfById(id: string, fileName: string): P
 }
 
 /**
- * File the CURRENTLY RENDERED `.page` document with the office. The caller
- * is responsible for having the right print layout mounted and visible.
+ * File a document with the office. The caller builds the PDF (a searchable
+ * text-native blob from `@/pdfdocs`) and passes it in — filing itself is
+ * pure data from here on.
  */
 export async function fileSubmission(opts: {
   type: SubmissionType;
@@ -258,12 +258,12 @@ export async function fileSubmission(opts: {
   jobId?: string;
   title: string;
   date: string;
+  pdf: Blob;
   attachments?: Attachment[];
   meta?: Record<string, unknown>;
 }): Promise<string> {
   const session = getSessionUser();
-  await waitForPageImages();
-  const pdf = await pagesToPdfBlob();
+  const pdf = opts.pdf;
   const { assets, skippedVideos } = await freezeAttachments(opts.attachments ?? []);
   const now = nowISO();
   const id = generateId();

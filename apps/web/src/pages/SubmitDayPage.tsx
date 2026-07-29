@@ -1,15 +1,13 @@
-// "Submit to Office": renders the real print layouts in sequence (blast log
-// → daily report), files each as a point-in-time PDF submission with frozen
+// "Submit to Office": builds the searchable PDFs in sequence (blast log
+// → daily report), files each as a point-in-time submission with frozen
 // attachment copies, then marks the day submitted (locks it for field roles).
 // Fully offline — the PDFs are generated on-device and ride sync.
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { db } from '@/db';
 import { isBlastingWork } from '@/db/schema';
-import { collectDayAttachments, fileSubmission, waitForPagesReady } from '@/lib/archive';
+import { collectDayAttachments, fileSubmission } from '@/lib/archive';
 import { nowISO } from '@/lib/utils';
-import { PrintBlastLogPage } from '@/pages/PrintBlastLogPage';
-import { PrintDailyReportPage } from '@/pages/PrintDailyReportPage';
 import { Button } from '@/components/ui/button';
 
 type Phase = 'init' | 'blast_log' | 'daily_report';
@@ -64,7 +62,7 @@ export function SubmitDayPage() {
     let cancelled = false;
     void (async () => {
       try {
-        await waitForPagesReady();
+        const { buildBlastLogPdf, buildDailyReportPdf } = await import('@/pdfdocs');
         if (cancelled) return;
         filed.current.add(phase);
         const day = (await db.blastDays.get(id))!;
@@ -80,6 +78,7 @@ export function SubmitDayPage() {
               jobId: day.jobId,
               title: `Blast Log — ${label}`,
               date: day.date,
+              pdf: await buildBlastLogPdf(day.id),
               attachments: await collectDayAttachments(day.id),
               meta: { jobName: job?.name },
             });
@@ -95,6 +94,7 @@ export function SubmitDayPage() {
           jobId: day.jobId,
           title: `Daily Report — ${label}`,
           date: day.date,
+          pdf: await buildDailyReportPdf(day.id),
           // attachments ride the blast-log copy when one exists
           attachments: hasLog ? [] : await collectDayAttachments(day.id),
           meta: { jobName: job?.name },
@@ -116,10 +116,6 @@ export function SubmitDayPage() {
 
   return (
     <div>
-      {/* The real print layout renders here — html2canvas needs true layout */}
-      {phase === 'blast_log' && <PrintBlastLogPage />}
-      {phase === 'daily_report' && <PrintDailyReportPage />}
-
       <div className="fixed inset-0 z-50 bg-navy/90 flex items-center justify-center p-6">
         <div className="bg-white rounded-xl p-6 max-w-sm w-full text-center space-y-3">
           {error ? (

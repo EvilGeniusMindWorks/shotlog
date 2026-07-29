@@ -6,7 +6,6 @@ import { useBlastDay } from '@/hooks/useBlastDay';
 import { ColumnVisual } from '@/components/design/TypicalColumnBuilder';
 import { distributeByHoles, powderFactor } from '@shotlog/shared';
 import { validateForPrint } from '@/lib/validation';
-import { savePagesAsPdf } from '@/lib/pdf';
 import { DELAY_COLORS, computeFiringTimes, parseDiagram } from '@/lib/shotDiagram';
 import { distanceFt, parseSiteDiagram } from '@/lib/siteDiagram';
 import type { Shot } from '@/db/schema';
@@ -844,7 +843,8 @@ function PrintToolbar({ blastDayId, filename }: { blastDayId: string; filename: 
           onClick={async () => {
             setSaving(true);
             try {
-              await savePagesAsPdf(filename);
+              const { buildBlastLogPdf, downloadPdf } = await import('@/pdfdocs');
+              downloadPdf(await buildBlastLogPdf(blastDayId), filename);
             } finally {
               setSaving(false);
             }
