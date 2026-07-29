@@ -1,7 +1,12 @@
-// Full-screen media viewer. Videos get the clip-marking treatment: scrub the
-// timeline, set in/out at the playhead, preview just the clip, save marks
-// (tiny metadata — syncs everywhere instantly). Physical clip extraction to
-// a small synced file is phase 2.
+// Full-screen media viewer + trimmer.
+//
+// Two modes:
+//  - 'staged': a just-picked/recorded video that is NOT attached yet — the
+//    trimmer opens FIRST and the user chooses "Attach full video" or
+//    "Extract clip & attach"; only the choice becomes an attachment.
+//  - 'existing': viewing an attached file; videos can still save marks and
+//    extract a linked clip. After an extraction the sheet closes itself —
+//    no lingering button to double-tap into duplicate clips.
 import { useEffect, useRef, useState } from 'react';
 import { Scissors, Upload, X } from 'lucide-react';
 import { addAttachmentFiles, saveClipMarks, type AttachmentSummary } from '@/lib/attachments';
@@ -16,18 +21,34 @@ function fmtT(s: number): string {
   return `${m}:${String(sec).padStart(2, '0')}`;
 }
 
+export type LightboxTarget =
+  | { mode: 'existing'; summary: AttachmentSummary }
+  | {
+      mode: 'staged';
+      fileName: string;
+      mimeType: string;
+      parentId: string;
+      parentType: Attachment['parentType'];
+      kind: string;
+    };
+
 export function VideoLightbox({
-  summary,
+  target,
   blob,
   canEdit,
   onClose,
 }: {
-  summary: AttachmentSummary;
+  target: LightboxTarget;
   blob: Blob;
   canEdit: boolean;
   onClose: () => void;
 }) {
-  const isVideo = summary.mimeType.startsWith('video/');
+  const summary = target.mode === 'existing' ? target.summary : null;
+  const fileName = summary?.fileName ?? (target.mode === 'staged' ? target.fileName : '');
+  const mimeType = summary?.mimeType ?? (target.mode === 'staged' ? target.mimeType : '');
+  const isVideo = mimeType.startsWith('video/');
+  const staged = target.mode === 'staged';
+
   // Object URL lives in an effect (NOT a state initializer): StrictMode's
   // mount→cleanup→remount would revoke an initializer-created URL for good.
   const [url, setUrl] = useState<string | null>(null);
@@ -37,15 +58,15 @@ export function VideoLightbox({
     return () => URL.revokeObjectURL(u);
   }, [blob]);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [duration, setDuration] = useState<number>(summary.duration ?? 0);
+  const [duration, setDuration] = useState<number>(summary?.duration ?? 0);
   const [time, setTime] = useState(0);
-  const [inPoint, setInPoint] = useState<number | null>(summary.clipStart ?? null);
-  const [outPoint, setOutPoint] = useState<number | null>(summary.clipEnd ?? null);
+  const [inPoint, setInPoint] = useState<number | null>(summary?.clipStart ?? null);
+  const [outPoint, setOutPoint] = useState<number | null>(summary?.clipEnd ?? null);
   const [previewing, setPreviewing] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [extracting, setExtracting] = useState<string | null>(null);
-  const [extractDone, setExtractDone] = useState(false);
-  const [extractError, setExtractError] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [done, setDone] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Preview mode: stop at the out point
   useEffect(() => {
@@ -73,7 +94,7 @@ export function VideoLightbox({
 
   const clipLen = inPoint !== null && outPoint !== null ? Math.max(0, outPoint - inPoint) : null;
   const estBytes =
-    clipLen !== null && duration > 0 && summary.size ? (summary.size * clipLen) / duration : null;
+    clipLen !== null && duration > 0 && blob.size ? (blob.size * clipLen) / duration : null;
 
   const previewClip = () => {
     const v = videoRef.current;
@@ -84,47 +105,90 @@ export function VideoLightbox({
   };
 
   const save = async () => {
-    if (inPoint === null || outPoint === null || outPoint <= inPoint) return;
+    if (!summary || inPoint === null || outPoint === null || outPoint <= inPoint) return;
     await saveClipMarks(summary.id, +inPoint.toFixed(2), +outPoint.toFixed(2));
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
-  // Phase-2: physically extract the marked range into a small file that
-  // uploads to R2 — the office-visible record of the shot.
-  const extract = async () => {
-    if (inPoint === null || outPoint === null || outPoint <= inPoint || extracting) return;
-    setExtractError(null);
-    setExtracting('starting…');
+  const finishAndClose = (message: string) => {
+    setDone(message);
+    setTimeout(onClose, 1400);
+  };
+
+  /** Cut the marked range and return it as a File */
+  const cutClip = async (): Promise<File> => {
+    videoRef.current?.pause();
+    const clip = await extractClip(blob, inPoint!, outPoint!, (p) =>
+      setBusy(`Extracting ${Math.floor(p.done)}s / ${Math.ceil(p.total)}s`),
+    );
+    const type = pickRecorderType() ?? 'video/webm';
+    const base = fileName.replace(/\.[A-Za-z0-9]+$/, '') || 'shot';
+    return new File([clip], `${base}-clip.${clipExtension(type)}`, { type: clip.type });
+  };
+
+  // Existing attachment: extract a linked clip, then close (no double-taps)
+  const extractForExisting = async () => {
+    if (!summary || inPoint === null || outPoint === null || outPoint <= inPoint || busy || done)
+      return;
+    setError(null);
+    setBusy('Extracting…');
     try {
       await saveClipMarks(summary.id, +inPoint.toFixed(2), +outPoint.toFixed(2));
-      videoRef.current?.pause();
-      const clip = await extractClip(blob, inPoint, outPoint, (p) =>
-        setExtracting(`${Math.floor(p.done)}s / ${Math.ceil(p.total)}s`),
-      );
-      const type = pickRecorderType() ?? 'video/webm';
-      const base = summary.fileName.replace(/\.[A-Za-z0-9]+$/, '') || 'shot';
-      const file = new File([clip], `${base}-clip.${clipExtension(type)}`, { type: clip.type });
-      await addAttachmentFiles(
-        summary.parentId,
-        summary.parentType as Attachment['parentType'],
-        [file],
-        'shot_video',
-        { sourceAttachmentId: summary.id },
-      );
+      const file = await cutClip();
+      await addAttachmentFiles(summary.parentId, summary.parentType as Attachment['parentType'], [file], 'shot_video', {
+        sourceAttachmentId: summary.id,
+      });
       void runFileUploader();
-      setExtractDone(true);
+      finishAndClose('Clip attached ✓');
     } catch (err) {
-      setExtractError(err instanceof Error ? err.message : 'extraction failed');
+      setError(err instanceof Error ? err.message : 'extraction failed');
     } finally {
-      setExtracting(null);
+      setBusy(null);
+    }
+  };
+
+  // Staged video: attach EITHER the full video OR just the clip — never both
+  const attachFull = async () => {
+    if (target.mode !== 'staged' || busy || done) return;
+    setError(null);
+    setBusy('Attaching…');
+    try {
+      const file = new File([blob], target.fileName, { type: target.mimeType });
+      await addAttachmentFiles(target.parentId, target.parentType, [file], target.kind);
+      void runFileUploader();
+      finishAndClose('Full video attached ✓');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'attach failed');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const attachClipOnly = async () => {
+    if (target.mode !== 'staged' || inPoint === null || outPoint === null || outPoint <= inPoint || busy || done)
+      return;
+    setError(null);
+    setBusy('Extracting…');
+    try {
+      const file = await cutClip();
+      await addAttachmentFiles(target.parentId, target.parentType, [file], target.kind);
+      void runFileUploader();
+      finishAndClose('Clip attached ✓ (full video not attached)');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'extraction failed');
+    } finally {
+      setBusy(null);
     }
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/90 flex flex-col" onClick={onClose}>
       <div className="flex items-center gap-2 p-3 text-white" onClick={(e) => e.stopPropagation()}>
-        <p className="text-sm font-medium truncate flex-1">{summary.fileName}</p>
+        <p className="text-sm font-medium truncate flex-1">
+          {fileName}
+          {staged && <span className="text-white/50"> · not attached yet</span>}
+        </p>
         <button className="p-2" onClick={onClose} aria-label="Close">
           <X className="h-6 w-6" />
         </button>
@@ -136,7 +200,7 @@ export function VideoLightbox({
         {isVideo ? (
           <video ref={videoRef} src={url ?? undefined} controls playsInline className="max-h-full max-w-full" />
         ) : (
-          <img src={url ?? undefined} alt={summary.fileName} className="max-h-full max-w-full object-contain" />
+          <img src={url ?? undefined} alt={fileName} className="max-h-full max-w-full object-contain" />
         )}
       </div>
       {isVideo && (
@@ -161,7 +225,7 @@ export function VideoLightbox({
             <span className="tabular-nums text-white/70">
               {fmtT(time)}{duration > 0 ? ` / ${fmtT(duration)}` : ''}
             </span>
-            {canEdit && (
+            {canEdit && !done && (
               <>
                 <Button size="sm" variant="secondary" onClick={() => setInPoint(+time.toFixed(2))}>
                   Start here
@@ -179,39 +243,52 @@ export function VideoLightbox({
               </span>
             )}
             <span className="flex-1" />
-            {inPoint !== null && (
+            {inPoint !== null && !done && (
               <Button size="sm" variant="secondary" onClick={previewClip}>
                 ▶ Preview clip
               </Button>
             )}
-            {canEdit && clipLen !== null && clipLen > 0 && (
+            {!staged && canEdit && clipLen !== null && clipLen > 0 && !done && (
               <Button size="sm" variant="secondary" onClick={() => void save()}>
                 {saved ? 'Saved ✓' : 'Save marks'}
               </Button>
             )}
-            {canEdit && clipLen !== null && clipLen > 0 && !summary.sourceAttachmentId && (
-              <Button size="sm" variant="safety" disabled={Boolean(extracting)} onClick={() => void extract()}>
+            {!staged && canEdit && clipLen !== null && clipLen > 0 && !summary?.sourceAttachmentId && !done && (
+              <Button size="sm" variant="safety" disabled={Boolean(busy)} onClick={() => void extractForExisting()}>
                 <Upload className="h-4 w-4 mr-1" />
-                {extracting
-                  ? `Extracting ${extracting}`
-                  : extractDone
-                    ? 'Clip created ✓'
-                    : 'Extract clip'}
+                {busy ?? 'Extract clip'}
+              </Button>
+            )}
+            {staged && !done && (
+              <>
+                <Button size="sm" variant="secondary" disabled={Boolean(busy)} onClick={() => void attachFull()}>
+                  Attach full video
+                </Button>
+                <Button
+                  size="sm"
+                  variant="safety"
+                  disabled={Boolean(busy) || clipLen === null || clipLen <= 0}
+                  onClick={() => void attachClipOnly()}
+                >
+                  <Upload className="h-4 w-4 mr-1" />
+                  {busy ?? 'Extract clip & attach'}
+                </Button>
+              </>
+            )}
+            {done && (
+              <Button size="sm" variant="secondary" onClick={onClose}>
+                Done
               </Button>
             )}
           </div>
-          {extractError && <p className="text-xs text-red-300">{extractError}</p>}
-          {extractDone && (
-            <p className="text-xs text-green-300">
-              Clip added to this {summary.parentType === 'shot' ? 'shot' : 'day'} — it uploads and
-              syncs like any photo, so the office can watch it.
-            </p>
-          )}
+          {error && <p className="text-xs text-red-300">{error}</p>}
+          {done && <p className="text-xs text-green-300">{done}</p>}
           <p className="text-[11px] text-white/50">
-            Tap the bar to jump around · drag the orange handles (or use Start/End here) to frame
-            the shot · Extract clip cuts that range into a small file the office can watch
-            anywhere. The full video stays on{' '}
-            {summary.originName ? `${summary.originName}'s` : 'this'} device.
+            {staged
+              ? 'Tap the bar to jump around · drag the orange handles (or Start/End here) to frame the shot, then attach the clip — or attach the whole video.'
+              : `Tap the bar to jump around · drag the orange handles to frame the shot · Extract clip cuts that range into a small file the office can watch anywhere. The full video stays on ${
+                  summary?.originName ? `${summary.originName}'s` : 'this'
+                } device.`}
           </p>
         </div>
       )}

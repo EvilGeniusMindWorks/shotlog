@@ -93,12 +93,16 @@ async (page) => {
     const extracted = await (async () => {
       const deadline = Date.now() + 60000;
       while (Date.now() < deadline) {
-        if ((await a.locator('body').innerText()).includes('Clip created')) return true;
+        if ((await a.locator('body').innerText()).includes('Clip attached')) return true;
         await a.waitForTimeout(1000);
       }
       return false;
     })();
     ok('extraction completed with progress UI', extracted);
+    // sheet closes itself — no lingering button to double-tap
+    await a.waitForTimeout(2500);
+    ok('lightbox auto-closed after extraction',
+      (await a.locator('button[aria-label="Close"]').count()) === 0);
 
     const clipRec = await a.evaluate(async ({ shotId, attId }) => {
       const rows = await window.shotlogDb.attachments.filter((r) => r.parentId === shotId).toArray();
@@ -118,10 +122,76 @@ async (page) => {
     ok('clip is smaller than the source', clipRec && clipRec.size < clipRec.srcSize * 0.95 || (clipRec && clipRec.size < 4_000_000));
 
     // Tile shows the Clip badge; second device gets the metadata
-    await a.mouse.click(5, 5); // close lightbox
     await a.waitForTimeout(1000);
     const clipBadge = (await a.locator('span', { hasText: /^Clip$/ }).count()) > 0;
     ok('Clip badge on the tile', clipBadge);
+
+    // ── Trim-first staging: pick a video → trimmer BEFORE attaching →
+    //    "Extract clip & attach" attaches ONLY the clip, never the full video ─
+    await a.evaluate(async () => {
+      const c = document.createElement('canvas');
+      c.width = 320; c.height = 240;
+      const x = c.getContext('2d');
+      const rec = new MediaRecorder(c.captureStream(20), { mimeType: 'video/webm' });
+      const chunks = [];
+      rec.ondataavailable = (e) => chunks.push(e.data);
+      const stopped = new Promise((r) => (rec.onstop = r));
+      rec.start();
+      const t0 = performance.now();
+      await new Promise((done) => {
+        const draw = () => {
+          const t = performance.now() - t0;
+          x.fillStyle = `hsl(${(t / 10) % 360},60%,45%)`;
+          x.fillRect(0, 0, 320, 240);
+          if (t < 4000) requestAnimationFrame(draw);
+          else done();
+        };
+        draw();
+      });
+      rec.stop();
+      await stopped;
+      const file = new File([new Blob(chunks, { type: 'video/webm' })], 'staged-pick.webm', { type: 'video/webm' });
+      const input = document.querySelector('input[accept="video/*"]');
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      input.files = dt.files;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await a.waitForTimeout(1500);
+    ok('staged trimmer opens before attaching',
+      (await a.locator('body').innerText()).includes('not attached yet'));
+    const preCount = await a.evaluate(async (shotId) =>
+      (await window.shotlogDb.attachments.filter((r) => r.parentId === shotId).toArray()).length,
+    ids.shotId);
+    await a.evaluate(() => document.querySelector('.fixed video')?.play());
+    await a.waitForTimeout(800);
+    await a.getByRole('button', { name: 'Start here' }).click();
+    await a.waitForTimeout(1500);
+    await a.getByRole('button', { name: 'End here' }).click();
+    await a.evaluate(() => document.querySelector('.fixed video')?.pause());
+    await a.getByRole('button', { name: /Extract clip & attach/ }).click();
+    const stagedDone = await (async () => {
+      const deadline = Date.now() + 60000;
+      while (Date.now() < deadline) {
+        if ((await a.locator('body').innerText()).includes('full video not attached')) return true;
+        await a.waitForTimeout(1000);
+      }
+      return false;
+    })();
+    ok('staged extraction attaches the clip', stagedDone);
+    await a.waitForTimeout(2500);
+    void preCount;
+    // The first video input on the page belongs to the day-level card, so the
+    // clip lands on the day — assert by filename across all attachments
+    const stagedState = await a.evaluate(async () => {
+      const rows = await window.shotlogDb.attachments.toArray();
+      return {
+        fullAttached: rows.some((r) => r.fileName === 'staged-pick.webm'),
+        clipAttached: rows.some((r) => /^staged-pick-clip\.(webm|mp4)$/.test(r.fileName)),
+      };
+    });
+    ok('ONLY the clip attached (full video not attached)',
+      !stagedState.fullAttached && stagedState.clipAttached);
 
     b = await mk();
     await login(b, 'blaster@test.local', 'blaster-pass-123');

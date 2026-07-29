@@ -4,7 +4,7 @@
 // addAttachmentFiles pipeline (compression, thumbs, checksum, local-first
 // storage) and the background uploader lands eligible binaries in R2.
 import { useMemo, useRef, useState } from 'react';
-import { Camera, CloudUpload, FileText, Play, Plus, Scissors, Smartphone, X } from 'lucide-react';
+import { Camera, Clapperboard, CloudUpload, FileText, Play, Plus, Scissors, Smartphone, X } from 'lucide-react';
 import { useLiveQuery, db, deleteWithTombstone } from '@/db';
 import {
   addAttachmentFiles,
@@ -20,7 +20,7 @@ import { canPerformOp, type Role } from '@shotlog/shared';
 import { getSessionUser } from '@/lib/session';
 import type { Attachment } from '@/db/schema';
 import { SectionCard } from '@/components/ui/section-card';
-import { VideoLightbox } from '@/components/media/VideoLightbox';
+import { VideoLightbox, type LightboxTarget } from '@/components/media/VideoLightbox';
 import { cn } from '@/lib/utils';
 
 export function AttachmentsCard({
@@ -43,13 +43,34 @@ export function AttachmentsCard({
   const [kind, setKind] = useState(defaultKind ?? 'photo');
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
-  const [lightbox, setLightbox] = useState<{ summary: AttachmentSummary; blob: Blob } | null>(null);
+  const videoRef = useRef<HTMLInputElement>(null);
+  const [lightbox, setLightbox] = useState<{ target: LightboxTarget; blob: Blob } | null>(null);
   const [opening, setOpening] = useState<string | null>(null);
 
   const addFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    await addAttachmentFiles(parentId, parentType, files, kind);
-    void runFileUploader();
+    const list = Array.from(files);
+    // Videos go through the trim-first flow — the user chooses whether the
+    // full video or just the extracted clip becomes the attachment
+    const video = list.find((f) => f.type.startsWith('video/'));
+    const rest = list.filter((f) => !f.type.startsWith('video/'));
+    if (rest.length > 0) {
+      await addAttachmentFiles(parentId, parentType, rest, kind);
+      void runFileUploader();
+    }
+    if (video) {
+      setLightbox({
+        target: {
+          mode: 'staged',
+          fileName: video.name || `video-${Date.now()}.mp4`,
+          mimeType: video.type || 'video/mp4',
+          parentId,
+          parentType,
+          kind: kind === 'photo' ? 'shot_video' : kind,
+        },
+        blob: video,
+      });
+    }
   };
 
   const open = async (s: AttachmentSummary) => {
@@ -65,7 +86,7 @@ export function AttachmentsCard({
     setOpening(s.id);
     try {
       const blob = await getAttachmentBlob(s);
-      if (blob) setLightbox({ summary: s, blob });
+      if (blob) setLightbox({ target: { mode: 'existing', summary: s }, blob });
       else alert(s.localOnly ? `The full file is on ${s.originName ?? 'another'}'s device.` : 'File unavailable — check your connection.');
     } finally {
       setOpening(null);
@@ -103,7 +124,7 @@ export function AttachmentsCard({
         <input
           ref={fileRef}
           type="file"
-          accept="image/*,application/pdf,video/*"
+          accept="image/*,application/pdf"
           multiple
           className="hidden"
           onChange={(e) => {
@@ -116,6 +137,19 @@ export function AttachmentsCard({
           type="file"
           accept="image/*"
           capture="environment"
+          className="hidden"
+          onChange={(e) => {
+            void addFiles(e.target.files);
+            e.target.value = '';
+          }}
+        />
+        {/* Dedicated SINGLE-select video input: iOS Photos fails to confirm
+            video selections on a `multiple` input (the picker transcodes and
+            never dismisses) — single-select is the reliable path */}
+        <input
+          ref={videoRef}
+          type="file"
+          accept="video/*"
           className="hidden"
           onChange={(e) => {
             void addFiles(e.target.files);
@@ -144,7 +178,15 @@ export function AttachmentsCard({
               </button>
               <button
                 className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:border-navy hover:text-navy transition-colors"
-                title="Add files"
+                title="Add a video — you'll trim it before it attaches"
+                onClick={() => videoRef.current?.click()}
+              >
+                <Clapperboard className="h-6 w-6" />
+                <span className="text-[9px]">Video</span>
+              </button>
+              <button
+                className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:border-navy hover:text-navy transition-colors"
+                title="Add photos or PDFs"
                 onClick={() => fileRef.current?.click()}
               >
                 <Plus className="h-6 w-6" />
@@ -156,7 +198,7 @@ export function AttachmentsCard({
       </div>
       {lightbox && (
         <VideoLightbox
-          summary={lightbox.summary}
+          target={lightbox.target}
           blob={lightbox.blob}
           canEdit={canEdit}
           onClose={() => setLightbox(null)}
