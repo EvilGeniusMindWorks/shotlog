@@ -90,6 +90,9 @@ function SubmissionRow({
         </div>
         <Badge variant="secondary">{TYPE_LABEL[s.type]}</Badge>
         {(s.version > 1 || older.length > 0) && <Badge variant="pending">v{s.version}</Badge>}
+        {older.some((o) => o.version === s.version) && (
+          <Badge variant="violation">duplicate v{s.version}</Badge>
+        )}
         <button className="text-xs text-navy underline" onClick={() => openSubmissionPdfById(s.id)}>
           View
         </button>
@@ -188,7 +191,11 @@ function FiledLens() {
       bySource.set(key, [...(bySource.get(key) ?? []), s]);
     }
     return [...bySource.values()]
-      .map((versions) => versions.sort((a, b) => b.version - a.version))
+      // createdAt breaks version ties: two offline devices can both file
+      // "v1" — the later filing displays after the earlier one
+      .map((versions) =>
+        versions.sort((a, b) => b.version - a.version || b.createdAt.localeCompare(a.createdAt)),
+      )
       .sort(
         (a, b) =>
           b[0].date.localeCompare(a[0].date) || b[0].createdAt.localeCompare(a[0].createdAt),

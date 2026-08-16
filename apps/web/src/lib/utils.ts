@@ -14,7 +14,11 @@ export function nowISO(): string {
 }
 
 export function todayISO(): string {
-  return new Date().toISOString().split('T')[0];
+  // LOCAL calendar date — toISOString() is UTC and stamped evening work
+  // (after ~7pm Eastern) with TOMORROW's date, misaligning field records
+  // with paper permits and binder date ranges.
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 export function formatDate(iso: string): string {

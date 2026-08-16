@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowDown, ArrowUp, LayoutGrid, Plus, Search, Table2 } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
+import { getPowerSync } from '@/db/powersync/client';
 import { createBlastDay } from '@/hooks/useBlastDay';
 import { powderFactor } from '@shotlog/shared';
 import type { BlastDay, Job } from '@/db/schema';
@@ -32,22 +33,56 @@ function useDaySummaries(): DaySummary[] | undefined {
     const days = await db.blastDays.orderBy('date').reverse().toArray();
     const jobs = new Map((await db.jobs.toArray()).map((j) => [j.id, j]));
     const summaries: DaySummary[] = [];
+    const sql = getPowerSync();
+    // Blob-free projections: full Shot records carry up to three inline
+    // images each — reviving every shot on dashboard open was the same
+    // Safari-OOM pattern the submission lists already fixed. The ONE shot
+    // whose map snapshot becomes the hero image loads individually.
+    const logRows = await sql.getAll<{ id: string; dayId: string }>(
+      `SELECT id, json_extract(payload,'$.blastDayId') AS dayId
+       FROM records WHERE table_name = 'blastLogs'`,
+    );
+    const logByDay = new Map(logRows.map((r) => [r.dayId, r.id]));
+    const shotRows = await sql.getAll<{
+      id: string; logId: string; numHoles: number | null; yards: number | null; hasSketch: number;
+    }>(
+      `SELECT id,
+              json_extract(payload,'$.blastLogId') AS logId,
+              json_extract(payload,'$.totals.numHoles') AS numHoles,
+              json_extract(payload,'$.totals.totalYardsShot') AS yards,
+              CASE WHEN json_extract(payload,'$.designPlan.siteSketchImage.__blob') IS NOT NULL THEN 1 ELSE 0 END AS hasSketch
+       FROM records WHERE table_name = 'shots'`,
+    );
+    const shotsByLog = new Map<string, typeof shotRows>();
+    for (const r of shotRows) {
+      const arr = shotsByLog.get(r.logId) ?? [];
+      arr.push(r);
+      shotsByLog.set(r.logId, arr);
+    }
+    const usageRows = await sql.getAll<{ logId: string; lbs: number | null }>(
+      `SELECT json_extract(payload,'$.blastLogId') AS logId,
+              json_extract(payload,'$.totalPoundsShot') AS lbs
+       FROM records WHERE table_name = 'explosiveUsages'`,
+    );
+    const lbsByLog = new Map(usageRows.map((r) => [r.logId, r.lbs ?? 0]));
     for (const day of days) {
-      const log = await db.blastLogs.where('blastDayId').equals(day.id).first();
+      const logId = logByDay.get(day.id);
       let shots = 0;
       let holes = 0;
       let totalLbs = 0;
       let yards = 0;
       let snapshot: Blob | null = null;
-      if (log) {
-        const dayShots = await db.shots.where('blastLogId').equals(log.id).toArray();
+      if (logId) {
+        const dayShots = shotsByLog.get(logId) ?? [];
         shots = dayShots.length;
-        holes = dayShots.reduce((s, sh) => s + (sh.totals?.numHoles ?? 0), 0);
-        yards = dayShots.reduce((s, sh) => s + (sh.totals?.totalYardsShot ?? 0), 0);
-        snapshot = dayShots.find((sh) => sh.designPlan.siteSketchImage)?.designPlan
-          .siteSketchImage ?? null;
-        const usage = await db.explosiveUsages.where('blastLogId').equals(log.id).first();
-        totalLbs = usage?.totalPoundsShot ?? 0;
+        holes = dayShots.reduce((s, sh) => s + (sh.numHoles ?? 0), 0);
+        yards = dayShots.reduce((s, sh) => s + (sh.yards ?? 0), 0);
+        const sketchShot = dayShots.find((sh) => sh.hasSketch);
+        if (sketchShot) {
+          const full = await db.shots.get(sketchShot.id);
+          snapshot = full?.designPlan.siteSketchImage ?? null;
+        }
+        totalLbs = lbsByLog.get(logId) ?? 0;
       }
       summaries.push({
         day,
@@ -84,12 +119,17 @@ function useKpis() {
         ytdLbs += usage?.totalPoundsShot ?? 0;
       }
     }
-    // Compliance: shots with seismo readings where none is a violation
-    const readings = await db.seismoReadings.toArray();
+    // Compliance: PROJECTED — seismo readings carry printout photos; only
+    // shotId + complianceStatus are needed here
+    const readings = await getPowerSync().getAll<{ shotId: string; status: string | null }>(
+      `SELECT json_extract(payload,'$.shotId') AS shotId,
+              json_extract(payload,'$.complianceStatus') AS status
+       FROM records WHERE table_name = 'seismoReadings'`,
+    );
     const byShot = new Map<string, boolean>();
     for (const r of readings) {
       const prev = byShot.get(r.shotId) ?? true;
-      byShot.set(r.shotId, prev && r.complianceStatus !== 'violation');
+      byShot.set(r.shotId, prev && r.status !== 'violation');
     }
     const measured = byShot.size;
     const compliant = [...byShot.values()].filter(Boolean).length;

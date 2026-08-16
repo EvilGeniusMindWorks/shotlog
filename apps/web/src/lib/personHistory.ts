@@ -3,6 +3,7 @@
 // roster ids (workforce rows via the new crewMemberId stamp), and free-text
 // names (legacy rows, blast logs, incidents) — matched normalized.
 import { db } from '@/db';
+import { getPowerSync } from '@/db/powersync/client';
 import type { CrewMember, WorkForceEntry } from '@/db/schema';
 
 export function normalizeName(s: string): string {
@@ -84,25 +85,39 @@ export async function buildPersonView(crew: CrewMember): Promise<PersonView> {
     byJob.set(day.jobId, entry);
   }
 
-  // Documents they filed
-  const drillLogs = (await db.drillLogs.toArray()).filter((l) =>
-    crew.userId ? l.drillerUserId === crew.userId : matchesPersonName(l.drillerName, crew),
+  // Documents they filed — PROJECTED reads: these tables carry signature
+  // image blobs, and .toArray() scans were reviving every one of them into
+  // memory just to count matches (the Safari-OOM pattern)
+  const sql = getPowerSync();
+  const identityRows = (table: string, userField: string, nameField: string) =>
+    sql.getAll<{ id: string; userId: string | null; name: string | null }>(
+      `SELECT id,
+              json_extract(payload,'$.${userField}') AS userId,
+              json_extract(payload,'$.${nameField}') AS name
+       FROM records WHERE table_name = ?`,
+      [table],
+    );
+  const drillLogRows = (await identityRows('drillLogs', 'drillerUserId', 'drillerName')).filter(
+    (l) => (crew.userId ? l.userId === crew.userId : matchesPersonName(l.name ?? undefined, crew)),
   );
   let footageDrilled = 0;
-  for (const log of drillLogs) {
+  for (const log of drillLogRows) {
     const holes = await db.drillLogHoles.where('drillLogId').equals(log.id).toArray();
     footageDrilled += holes.reduce((s, h) => s + h.actualDepth, 0);
   }
-  const checklists = (await db.drillChecklists.toArray()).filter((c) =>
-    crew.userId ? c.drillerUserId === crew.userId : matchesPersonName(c.drillerName, crew),
+  const checklists = (await identityRows('drillChecklists', 'drillerUserId', 'drillerName')).filter(
+    (c) => (crew.userId ? c.userId === crew.userId : matchesPersonName(c.name ?? undefined, crew)),
   ).length;
-  const blastLogsSigned = (await db.blastLogs.toArray()).filter((b) =>
-    b.blasterUserId && crew.userId
-      ? b.blasterUserId === crew.userId
-      : matchesPersonName(b.blasterName, crew),
+  const blastLogsSigned = (await identityRows('blastLogs', 'blasterUserId', 'blasterName')).filter(
+    (b) =>
+      b.userId && crew.userId
+        ? b.userId === crew.userId
+        : matchesPersonName(b.name ?? undefined, crew),
   ).length;
   const incidents = (await db.incidents.toArray()).filter((i) =>
-    matchesPersonName(i.reportedByName, crew),
+    crew.userId && i.reportedByUserId
+      ? i.reportedByUserId === crew.userId
+      : matchesPersonName(i.reportedByName, crew),
   ).length;
 
   return {
@@ -110,7 +125,7 @@ export async function buildPersonView(crew: CrewMember): Promise<PersonView> {
       daysWorked: workedDays.size,
       totalHours: +totalHours.toFixed(1),
       footageDrilled: Math.round(footageDrilled),
-      drillLogs: drillLogs.length,
+      drillLogs: drillLogRows.length,
       checklists,
       blastLogsSigned,
       incidents,

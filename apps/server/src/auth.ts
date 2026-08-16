@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { prisma } from './db.js';
+import { parsePayloadSafe, upsertRecord } from './records.js';
 
 const JWT_SECRET = process.env.JWT_SECRET ?? '';
 if (!JWT_SECRET) {
@@ -254,7 +255,35 @@ authRouter.put('/me/licenses', requireAuth, async (req: AuthedRequest, res: Resp
     res.status(400).json({ error: 'invalid licenses — one per 2-letter state' });
     return;
   }
-  await prisma.user.update({ where: { id: req.userId! }, data: { licenses: parsed.data } });
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({ where: { id: req.userId! }, data: { licenses: parsed.data } });
+    // Single source of truth: the roster record mirrors the primary license
+    // so the crew page never shows a stale number (audit finding: the two
+    // stores drifted with no sync path).
+    const rows = await tx.$queryRaw<{ id: string; payload: string }[]>`
+      SELECT "id", "payload" FROM "records"
+      WHERE "company_id" = ${req.companyId} AND "table_name" = 'crewMembers'`;
+    const crew = rows
+      .map((r) => ({ id: r.id, payload: parsePayloadSafe(r.payload) }))
+      .find((c) => c.payload.userId === req.userId);
+    if (crew) {
+      const primary = parsed.data[0];
+      const now = new Date().toISOString();
+      await upsertRecord(
+        tx,
+        req.companyId!,
+        crew.id,
+        'crewMembers',
+        JSON.stringify({
+          ...crew.payload,
+          licenseNumber: primary?.licenseNumber ?? '',
+          licenseState: primary?.state ?? '',
+          updatedAt: now,
+        }),
+        now,
+      );
+    }
+  });
   res.json({ ok: true, licenses: parsed.data });
 });
 

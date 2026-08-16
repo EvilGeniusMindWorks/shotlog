@@ -9,6 +9,7 @@ import { canTransitionStatus, slugify, type Role } from '@shotlog/shared';
 import { prisma } from './db.js';
 import { requireAuth, requireRole, type AuthedRequest } from './auth.js';
 import { getRecord, upsertRecord } from './records.js';
+import { resolveActor, writeAudit } from './auditWrite.js';
 
 export const adminRouter = Router();
 adminRouter.use(requireAuth);
@@ -56,6 +57,11 @@ adminRouter.post('/manufacturers', requireRole('admin'), async (req: AuthedReque
       const count = await tx.record.count({ where: { companyId: cid, tableName: 'manufacturers' } });
       const doc = { id, name, isActive: true, sortOrder: count, createdAt: now, updatedAt: now, syncStatus: 'synced' };
       await upsertRecord(tx, cid, id, 'manufacturers', JSON.stringify(doc), now);
+      await writeAudit(tx, {
+        companyId: cid, tableName: 'manufacturers', recordId: id, op: 'PUT',
+        actor: await resolveActor(req.userId, req.role),
+        changes: [{ field: '*', note: `created ${name}` }],
+      });
       return { code: 201 as const, manufacturer: doc };
     });
     if (result.code === 409) {
@@ -108,6 +114,11 @@ adminRouter.put('/manufacturers/:id', requireRole('admin'), async (req: AuthedRe
           cascaded++;
         }
       }
+      await writeAudit(tx, {
+        companyId: cid, tableName: 'manufacturers', recordId: id, op: 'PATCH',
+        actor: await resolveActor(req.userId, req.role),
+        changes: [{ field: '*', note: `updated${cascaded ? ` (renamed ${cascaded} products)` : ''}` }],
+      });
       return { code: 200 as const, manufacturer: doc, cascaded };
     });
     if (result.code === 404) {
@@ -151,6 +162,13 @@ adminRouter.post(
           });
           n++;
         }
+        if (n > 0) {
+          await writeAudit(tx, {
+            companyId: cid, tableName: 'manufacturers', recordId: id, op: 'PATCH',
+            actor: await resolveActor(req.userId, req.role),
+            changes: [{ field: 'products.isActive', new: parsed.data.active, note: `${n} products` }],
+          });
+        }
         return n;
       });
       res.json({ ok: true, changed });
@@ -189,6 +207,14 @@ adminRouter.put('/company', requireRole('admin'), async (req: AuthedRequest, res
         updatedAt: now,
       };
       await upsertRecord(tx, cid, id, 'companySettings', JSON.stringify(doc), now);
+      await writeAudit(tx, {
+        companyId: cid,
+        tableName: 'companySettings',
+        recordId: id,
+        op: 'PATCH',
+        actor: await resolveActor(req.userId, req.role),
+        changes: [{ field: '*', note: 'company details updated' }],
+      });
     });
     res.json({ ok: true });
   } catch (err) {
@@ -243,6 +269,11 @@ adminRouter.post('/catalog', requireRole('admin'), async (req: AuthedRequest, re
         );
       }
       await upsertRecord(tx, cid, id, 'productCatalog', JSON.stringify(doc), now);
+      await writeAudit(tx, {
+        companyId: cid, tableName: 'productCatalog', recordId: id, op: 'PUT',
+        actor: await resolveActor(req.userId, req.role),
+        changes: [{ field: '*', note: 'product created' }],
+      });
     });
     res.status(201).json({ ok: true, product: doc });
   } catch (err) {
@@ -274,6 +305,11 @@ adminRouter.put('/catalog/:id', requireRole('admin'), async (req: AuthedRequest,
       merged.fullDescription = `${merged.manufacturer as string} - ${merged.productName as string}`;
       merged.manufacturerId = `mfr-${slugify(merged.manufacturer as string)}`;
       await upsertRecord(tx, cid, id, 'productCatalog', JSON.stringify(merged), now);
+      await writeAudit(tx, {
+        companyId: cid, tableName: 'productCatalog', recordId: id, op: 'PATCH',
+        actor: await resolveActor(req.userId, req.role),
+        changes: [{ field: '*', note: 'product updated' }],
+      });
       return { code: 200 as const, product: merged };
     });
     if (result.code === 404) {
@@ -325,6 +361,16 @@ adminRouter.post(
           updatedAt: new Date().toISOString(),
         });
         await upsertRecord(tx, cid, id, 'blastDays', payload, new Date().toISOString());
+        // OFFICE approvals must be in the change log the ATF binder exports
+        await writeAudit(tx, {
+          companyId: cid,
+          tableName: 'blastDays',
+          recordId: id,
+          op: 'PATCH',
+          actor: await resolveActor(req.userId, role),
+          changes: [{ field: 'status', old: from, new: to }],
+          reason: 'office status change',
+        });
         return { code: 200 as const, status: to };
       });
       if (result.code !== 200) {

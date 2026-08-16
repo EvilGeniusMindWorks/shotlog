@@ -107,9 +107,15 @@ export async function buildDocRows(opts: {
 
   // Incidents (matched by reporter name in 'mine' — incidents predate user ids)
   const incidents = (await db.incidents
-    .filter((i) => company || !meName || i.reportedByName === meName)
+    .filter((i) => company || (meId && i.reportedByUserId ? i.reportedByUserId === meId : !meName || matchesPersonName(i.reportedByName, { name: meName })))
     .toArray()
-  ).filter((i) => !person || matchesPersonName(i.reportedByName, person));
+  ).filter((i) =>
+    !person
+      ? true
+      : person.userId && i.reportedByUserId
+        ? i.reportedByUserId === person.userId
+        : matchesPersonName(i.reportedByName, person),
+  );
   for (const i of incidents) {
     out.push({
       key: `in-${i.id}`,

@@ -63,6 +63,8 @@ export {
   canPerformOp,
   canTransitionStatus,
   canTransitionDrillLog,
+  canTransitionRecordStatus,
+  STATUS_GUARDED_TABLES,
   canEditApproved,
   canEditAcceptedDrillLog,
 } from './permissions.js';

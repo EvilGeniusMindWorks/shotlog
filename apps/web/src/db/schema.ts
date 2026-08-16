@@ -630,7 +630,9 @@ export interface RepairTicket extends BaseRecord {
   outOfService: boolean;
   status: 'open' | 'resolved';
   openedByName: string;
+  openedByUserId?: string;
   resolvedByName?: string;
+  resolvedByUserId?: string;
   resolvedAt?: string;
   resolutionNote?: string;
 }
@@ -651,6 +653,8 @@ export interface Incident extends BaseRecord {
   time: string;
   description: string;
   reportedByName: string;
+  /** Login of the reporter — id-based person matching (names drift) */
+  reportedByUserId?: string;
   // Blasting section
   blastDayId?: string;
   shotId?: string;

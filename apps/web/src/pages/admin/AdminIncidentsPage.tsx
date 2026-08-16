@@ -27,6 +27,7 @@ export async function createIncident(
     time: '',
     description: '',
     reportedByName: session?.name ?? '',
+    reportedByUserId: session?.id ?? '',
     ...links,
     createdAt: now,
     updatedAt: now,

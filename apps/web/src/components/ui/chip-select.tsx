@@ -88,7 +88,9 @@ export function ChipMultiSelect({
   };
 
   const addCustom = () => {
-    const text = customText.trim();
+    // storage is comma-separated — a comma inside a custom value would
+    // split it into phantom chips on the next read
+    const text = customText.replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
     if (text && !selected.includes(text)) onChange([...selected, text].join(', '));
     setCustomText('');
     setAdding(false);

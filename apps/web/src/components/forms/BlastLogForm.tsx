@@ -219,6 +219,31 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
       </SectionCard>
 
 
+      {/* Offline collision: two devices both created "Shot #3" — surface it
+          with a one-tap fix instead of letting the PDF print twins */}
+      {new Set(shots.map((x) => x.shotNumber)).size < shots.length && (
+        <div className="flex items-center gap-2 text-sm text-safety-orange bg-orange-50 border border-orange-200 rounded-lg px-3 py-2">
+          <span className="flex-1">
+            ⚠ Two shots share a number (added from two devices while offline).
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              const ordered = [...shots].sort(
+                (a, b) => a.shotNumber - b.shotNumber || a.createdAt.localeCompare(b.createdAt),
+              );
+              ordered.forEach((x, i) => {
+                if (x.shotNumber !== i + 1)
+                  void db.shots.update(x.id, { shotNumber: i + 1, updatedAt: new Date().toISOString() });
+              });
+            }}
+          >
+            Renumber
+          </Button>
+        </div>
+      )}
+
       {shots.map((shot) => {
         const shotLbs = shotPounds.get(shot.id) ?? 0;
         return (

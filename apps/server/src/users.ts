@@ -6,6 +6,7 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from './db.js';
 import { requireAuth, requireAdmin, type AuthedRequest } from './auth.js';
 import { parsePayloadSafe, upsertRecord } from './records.js';
+import { resolveActor, writeAudit } from './auditWrite.js';
 
 export const usersRouter = Router();
 usersRouter.use(requireAuth, requireAdmin);
@@ -36,6 +37,7 @@ async function syncCrewForUser(
   cid: string,
   user: { id: string; name: string; role: string; isActive?: boolean },
   preferCrewId?: string,
+  actor?: { actorId: string; actorName: string; actorRole: string },
 ): Promise<string> {
   const crew = await listCrewRecords(tx, cid);
   const linked =
@@ -59,6 +61,12 @@ async function syncCrewForUser(
       }),
       now,
     );
+    if (actor) {
+      await writeAudit(tx, {
+        companyId: cid, tableName: 'crewMembers', recordId: linked.id, op: 'PATCH',
+        actor, changes: [{ field: '*', note: `roster synced from login (${user.name})` }],
+      });
+    }
     return linked.id;
   }
   const id = randomUUID();
@@ -80,6 +88,12 @@ async function syncCrewForUser(
     }),
     now,
   );
+  if (actor) {
+    await writeAudit(tx, {
+      companyId: cid, tableName: 'crewMembers', recordId: id, op: 'PUT',
+      actor, changes: [{ field: '*', note: `roster entry created for login (${user.name})` }],
+    });
+  }
   return id;
 }
 
@@ -135,7 +149,7 @@ usersRouter.post('/', async (req: AuthedRequest, res: Response) => {
       select: { id: true, email: true, name: true, role: true, isActive: true },
     });
     // every login is a roster person — link or create the crew record
-    await syncCrewForUser(tx, req.companyId!, created, crewMemberId);
+    await syncCrewForUser(tx, req.companyId!, created, crewMemberId, await resolveActor(req.userId, req.role));
     return created;
   });
   res.status(201).json({ user });
@@ -188,7 +202,7 @@ usersRouter.patch('/:id', async (req: AuthedRequest, res: Response) => {
     });
     // one role/name per person: the roster record follows the login
     if (name !== undefined || role !== undefined) {
-      await syncCrewForUser(tx, req.companyId!, u);
+      await syncCrewForUser(tx, req.companyId!, u, undefined, await resolveActor(req.userId, req.role));
     }
     return u;
   });
@@ -230,7 +244,7 @@ usersRouter.post('/:id/set-active', async (req: AuthedRequest, res: Response) =>
       select: { id: true, name: true, role: true, isActive: true },
     });
     // ONE deactivate switch: the person leaves (or rejoins) the roster too
-    await syncCrewForUser(tx, req.companyId!, u);
+    await syncCrewForUser(tx, req.companyId!, u, undefined, await resolveActor(req.userId, req.role));
   });
   if (!active) {
     await prisma.refreshToken.updateMany({
@@ -254,7 +268,7 @@ usersRouter.post('/backfill-roster', async (req: AuthedRequest, res: Response) =
     let count = 0;
     for (const u of users) {
       if (byUserId.has(u.id)) continue;
-      await syncCrewForUser(tx, req.companyId!, u);
+      await syncCrewForUser(tx, req.companyId!, u, undefined, await resolveActor(req.userId, req.role));
       count++;
     }
     return count;

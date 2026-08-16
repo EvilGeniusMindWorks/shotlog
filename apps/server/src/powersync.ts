@@ -8,10 +8,12 @@ import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import {
+  STATUS_GUARDED_TABLES,
   canEditAcceptedDrillLog,
   canEditApproved,
   canPerformOp,
   canTransitionDrillLog,
+  canTransitionRecordStatus,
   canTransitionStatus,
   diffPayloads,
   APPROVAL_LOCKED_TABLES,
@@ -39,6 +41,14 @@ const POWERSYNC_JWT_KID = process.env.POWERSYNC_JWT_KID ?? 'shotlog-spike';
 const POWERSYNC_URL = process.env.POWERSYNC_URL ?? 'http://localhost:8095';
 /** Token audience — PowerSync Cloud may expect the instance URL here */
 const POWERSYNC_JWT_AUD = process.env.POWERSYNC_JWT_AUD ?? 'powersync';
+
+/** Tables that must stay 1:1 with their parent (audit finding: offline
+ *  read-then-create races could produce invisible duplicates). */
+const ONE_PER_PARENT: Record<string, string> = {
+  blastLogs: 'blastDayId',
+  dailyReports: 'blastDayId',
+  explosiveUsages: 'blastLogId',
+};
 
 export const powersyncRouter = Router();
 
@@ -172,8 +182,10 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
         }
         return s;
       };
+      const discardedInBatch = new Set<string>();
       const discard = (op: { id: string; op: string }, tableName: string, reason: string) => {
         discardedIds.push(op.id);
+        discardedInBatch.add(op.id);
         // Refused writes are part of the audit record too
         audit(op.id, tableName, 'DISCARD', [], reason);
         console.warn(
@@ -229,6 +241,47 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
           }
         }
 
+        // 1b2. children of a discarded record must not land as orphans —
+        // same batch (parent id in this batch's discard set) OR a later
+        // batch (parent simply doesn't exist server-side because it was
+        // discarded earlier). Only guarded-parent tables pay the lookup.
+        {
+          const link = PARENT_CHAIN[tableName];
+          const parentId = link ? (effective[link.parentIdField] ?? stored?.payload[link.parentIdField]) : undefined;
+          if (typeof parentId === 'string' && parentId) {
+            if (discardedInBatch.has(parentId)) {
+              discard(op, tableName, 'parent record was discarded');
+              continue;
+            }
+            if (op.op === 'PUT' && !stored && link && ONE_PER_PARENT[tableName] === undefined && ONE_PER_PARENT[link.parentTable] !== undefined) {
+              const parent = await batch.get(parentId);
+              if (!parent) {
+                discard(op, tableName, 'parent record was discarded');
+                continue;
+              }
+            }
+          }
+        }
+
+        // 1c. one-per-parent children: two offline devices can BOTH create
+        // "the day's blast log" — first to sync wins, the copy is discarded
+        // (the loser's device keeps local data; the shared record stays 1:1)
+        if (op.op === 'PUT' && !stored) {
+          const parentField = ONE_PER_PARENT[tableName];
+          const parentId = parentField ? effective[parentField] : undefined;
+          if (parentField && typeof parentId === 'string' && parentId) {
+            const dup = await tx.$queryRaw<{ id: string }[]>`
+              SELECT "id" FROM "records"
+              WHERE "company_id" = ${cid} AND "table_name" = ${tableName}
+                AND ("payload"::jsonb ->> ${parentField}) = ${parentId}
+              LIMIT 1`;
+            if (dup.length > 0) {
+              discard(op, tableName, `parent already has a ${tableName} record`);
+              continue;
+            }
+          }
+        }
+
         // 2. blastDay status transitions
         if (tableName === 'blastDays' && op.op !== 'DELETE') {
           const from = (stored?.payload.status as string | undefined) ?? 'draft';
@@ -253,6 +306,17 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
           const to = (effective.status as string | undefined) ?? from;
           if (!canTransitionDrillLog(from, to, role)) {
             discard(op, tableName, `forbidden drill-log transition ${from}->${to}`);
+            continue;
+          }
+        }
+
+        // 2b2. sensitive status flips on the remaining status tables
+        // (repair tickets, incidents, equipment, drill plans)
+        if (STATUS_GUARDED_TABLES.has(tableName) && op.op !== 'DELETE') {
+          const from = (stored?.payload.status as string | undefined) ?? '';
+          const to = (effective.status as string | undefined) ?? from;
+          if (!canTransitionRecordStatus(tableName, from, to, role)) {
+            discard(op, tableName, `forbidden ${tableName} transition ${from}->${to}`);
             continue;
           }
         }

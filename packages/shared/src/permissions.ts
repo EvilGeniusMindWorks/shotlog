@@ -167,6 +167,56 @@ export function canEditAcceptedDrillLog(role: Role): boolean {
   return role === 'admin' || role === 'supervisor' || role === 'blaster';
 }
 
+// ── Status guards for the remaining status-bearing tables ──────────────────
+// blastDays and drillLogs have full transition matrices above; these tables
+// previously had NO server-side rules — any device with PATCH rights could
+// set any status. Sensitive transitions are now role-gated at the sync
+// choke point; unlisted transitions stay open to whoever holds PATCH.
+
+const SENSITIVE_STATUS_TRANSITIONS: Record<
+  string,
+  Record<string, Record<string, readonly Role[]>>
+> = {
+  // A broken rig must be signed back to life by the shop, not the field
+  repairTickets: {
+    open: { resolved: ['admin', 'supervisor', 'mechanic'] },
+    resolved: { open: ['admin', 'supervisor', 'mechanic'] },
+  },
+  // Closing an incident is an OFFICE decision — the field files and reviews
+  incidents: {
+    open: { closed: ['admin', 'office'] },
+    office_review: { closed: ['admin', 'office'] },
+    closed: { open: ['admin', 'office'], office_review: ['admin', 'office'] },
+  },
+  // Retiring / un-retiring an asset changes the fleet, not a reading
+  equipment: {
+    active: { retired: ['admin', 'supervisor'] },
+    in_shop: { retired: ['admin', 'supervisor'] },
+    retired: { active: ['admin', 'supervisor'], in_shop: ['admin', 'supervisor'] },
+  },
+  // Completing/reopening a drill plan is the blast side's call
+  drillPlans: {
+    open: { complete: BLAST_FAMILY as Role[] },
+    complete: { open: BLAST_FAMILY as Role[] },
+  },
+};
+
+/** True when a status change on `tableName` is allowed for `role`.
+ *  Same-status and unlisted transitions pass (PATCH rights still apply). */
+export function canTransitionRecordStatus(
+  tableName: string,
+  from: string,
+  to: string,
+  role: Role,
+): boolean {
+  if (from === to) return true;
+  const allowed = SENSITIVE_STATUS_TRANSITIONS[tableName]?.[from]?.[to];
+  return allowed === undefined || allowed.includes(role);
+}
+
+/** Tables the sync choke point runs canTransitionRecordStatus against */
+export const STATUS_GUARDED_TABLES = new Set(Object.keys(SENSITIVE_STATUS_TRANSITIONS));
+
 // ── Approval lock ──────────────────────────────────────────────────────────
 
 /**

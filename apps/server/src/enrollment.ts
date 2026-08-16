@@ -11,6 +11,7 @@ import { z } from 'zod';
 import { prisma } from './db.js';
 import { requireAuth, requireAdmin, type AuthedRequest } from './auth.js';
 import { getRecord, upsertRecord } from './records.js';
+import { writeAudit } from './auditWrite.js';
 
 const ROLES = ['admin', 'supervisor', 'blaster', 'driller', 'mechanic', 'office'] as const;
 const INVITE_TTL_DAYS = 14;
@@ -237,6 +238,12 @@ enrollRouter.post('/:token', async (req: Request, res: Response) => {
             JSON.stringify({ ...crew.payload, userId: created.id, role: invite.role, updatedAt: now }),
             now,
           );
+          await writeAudit(tx, {
+            companyId: invite.companyId, tableName: 'crewMembers', recordId: invite.crewMemberId,
+            op: 'PATCH',
+            actor: { actorId: created.id, actorName: created.name, actorRole: invite.role },
+            changes: [{ field: 'userId', new: created.id, note: 'enrolled via invite' }],
+          });
         }
       }
       return created;

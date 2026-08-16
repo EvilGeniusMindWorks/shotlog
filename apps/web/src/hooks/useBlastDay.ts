@@ -449,6 +449,15 @@ export async function addShot(blastLogId: string, kFactor: number = 180): Promis
 }
 
 export async function deleteShot(shotId: string, blastLogId: string): Promise<void> {
+  // Cascade the shot's OWNED children — orphaned readings/columns/media
+  // pollute aggregates forever (drill logs are drillers' documents and
+  // survive; their pages tolerate a missing shot)
+  for (const r of await db.seismoReadings.where('shotId').equals(shotId).toArray())
+    await deleteWithTombstone('seismoReadings', r.id);
+  for (const c of await db.typicalColumns.where('shotId').equals(shotId).toArray())
+    await deleteWithTombstone('typicalColumns', c.id);
+  for (const a of await db.attachments.filter((x) => x.parentId === shotId).toArray())
+    await deleteWithTombstone('attachments', a.id);
   await deleteWithTombstone('shots', shotId);
   // Renumber remaining shots
   const remaining = await db.shots.where('blastLogId').equals(blastLogId).sortBy('shotNumber');

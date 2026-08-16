@@ -75,6 +75,9 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork }: Prop
       return days.reverse();
     }, [selectedJobId]) ?? [];
   const [copySourceId, setCopySourceId] = useState(''); // '' = start blank
+  // Two offline devices can both create "today's day" — warn, don't block
+  // (split shifts on one date are legitimate)
+  const sameDateExists = previousDays.some((d) => d.date === date);
   const [copySections, setCopySections] = useState<Record<string, boolean>>({
     blastInfo: true, drillParams: true, designPlan: true, explosives: true, crewEquipment: true,
   });
@@ -172,6 +175,12 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork }: Prop
                 </p>
               )}
 
+              {sameDateExists && (
+                <p className="text-xs text-safety-orange bg-orange-50 border border-orange-200 rounded-lg px-3 py-2 mb-2">
+                  ⚠ This job already has a work day on this date — creating another makes a
+                  second day (fine for split shifts, easy to miss otherwise).
+                </p>
+              )}
               {previousDays.length > 0 && (
                 <div className="mt-3 border border-gray-200 rounded-lg p-3 space-y-2">
                   <Label>Copy from Previous</Label>

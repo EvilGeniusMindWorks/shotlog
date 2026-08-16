@@ -68,6 +68,7 @@ export async function fileChecklist(checklist: DrillChecklist): Promise<{ ticket
     outOfService: checklist.outOfService,
     status: 'open',
     openedByName: checklist.drillerName,
+    openedByUserId: checklist.drillerUserId,
     createdAt: now,
     updatedAt: now,
     syncStatus: 'local',
@@ -86,6 +87,7 @@ export async function resolveTicket(ticket: RepairTicket, resolutionNote: string
   await db.repairTickets.update(ticket.id, {
     status: 'resolved',
     resolvedByName: session?.name ?? '',
+    resolvedByUserId: session?.id ?? '',
     resolvedAt: now,
     resolutionNote: resolutionNote.trim(),
     updatedAt: now,
