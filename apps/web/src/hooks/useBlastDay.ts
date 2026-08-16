@@ -13,6 +13,7 @@ import type {
 import { isBlastingWork } from '@/db/schema';
 import { generateId, nowISO, todayISO } from '@/lib/utils';
 import { getSessionUser } from '@/lib/session';
+import { ensureCustomerAndSite, getJobContext, getJobView, getJobViews } from '@/lib/jobContext';
 
 export function useBlastDays() {
   const blastDays = useLiveQuery(() =>
@@ -26,8 +27,11 @@ export function useBlastDay(id: string | undefined) {
     () => (id ? db.blastDays.get(id) : undefined),
     [id]
   );
+  // Hierarchy-overlaid view: customer/address/state/K resolve through the
+  // linked Site/Customer (legacy fields as fallback) — one point for all
+  // of the hook's consumers (day page, print pages, forms)
   const job = useLiveQuery(
-    () => (blastDay?.jobId ? db.jobs.get(blastDay.jobId) : undefined),
+    () => (blastDay?.jobId ? getJobView(blastDay.jobId) : undefined),
     [blastDay?.jobId]
   );
   const blastLog = useLiveQuery(
@@ -52,7 +56,7 @@ export function useBlastDay(id: string | undefined) {
 
 export function useJobs() {
   // NOTE: boolean fields can't be indexed in IndexedDB — use filter(), not where()
-  const jobs = useLiveQuery(() => db.jobs.filter((j) => j.isActive).toArray());
+  const jobs = useLiveQuery(async () => getJobViews(await db.jobs.filter((j) => j.isActive).toArray()));
   return jobs ?? [];
 }
 
@@ -92,6 +96,7 @@ export async function createBlastDay(
   const withBlastLog = isBlastingWork(typeOfWork);
 
   const job = await db.jobs.get(jobId);
+  const jobCtx = await getJobContext(jobId);
 
   // Load source records when copying from a previous blast day
   const sourceLog = copy
@@ -159,7 +164,7 @@ export async function createBlastDay(
     siteSketchData: null, siteSketchImage: null, shotDiagramData: null, shotDiagramImage: null,
     columnDiagramImage: null, closestStructureLocation: '', closestStructureDistance: 0,
     closestBoreholeDistance: 0, maxHolesPerDelay: 0, maxPoundsPerDelay: 0,
-    scaledDistance: 0, predictedPPV: 0, kFactor: job?.kFactor ?? 180,
+    scaledDistance: 0, predictedPPV: 0, kFactor: jobCtx?.kFactor ?? 180,
   };
 
   // Shots: mirror the source shot list when copying drill params or design
@@ -275,17 +280,17 @@ export async function createBlastDay(
     },
   );
 
-  if (withBlastLog) await autofillBlasterSignoff(blastLogId, job);
+  if (withBlastLog) await autofillBlasterSignoff(blastLogId, jobCtx?.state);
 
   return blastDayId;
 }
 
 /** Auto-fill blaster + license from the signed-in user's account (or the
- *  legacy local profile): name always; license by matching the job's state */
-async function autofillBlasterSignoff(blastLogId: string, job: Job | undefined): Promise<void> {
+ *  legacy local profile): name always; license by matching the SITE's state */
+async function autofillBlasterSignoff(blastLogId: string, siteState: string | undefined): Promise<void> {
   const session = getSessionUser();
-  if (session && job) {
-    const license = (session.licenses ?? []).find((l) => l.state === job.state);
+  if (session && siteState !== undefined) {
+    const license = (session.licenses ?? []).find((l) => l.state === siteState);
     await db.blastLogs.update(blastLogId, {
       blasterName: session.name,
       ...(license
@@ -296,8 +301,8 @@ async function autofillBlasterSignoff(blastLogId: string, job: Job | undefined):
     return;
   }
   const blaster = await db.blasterProfiles.filter((b) => b.isCurrentUser).first();
-  if (blaster && job) {
-    const license = blaster.licenses.find((l) => l.state === job.state && l.isActive);
+  if (blaster && siteState !== undefined) {
+    const license = blaster.licenses.find((l) => l.state === siteState && l.isActive);
     if (license) {
       await db.blastLogs.update(blastLogId, {
         blasterName: blaster.name,
@@ -319,6 +324,7 @@ export async function addBlastLogToDay(blastDayId: string): Promise<string> {
   const existing = await db.blastLogs.where('blastDayId').equals(blastDayId).first();
   if (existing) return existing.id;
   const job = await db.jobs.get(day.jobId);
+  const jobCtx = await getJobContext(day.jobId);
   const now = nowISO();
   const blastLogId = generateId();
 
@@ -355,7 +361,7 @@ export async function addBlastLogToDay(blastDayId: string): Promise<string> {
         siteSketchData: null, siteSketchImage: null, shotDiagramData: null, shotDiagramImage: null,
         columnDiagramImage: null, closestStructureLocation: '', closestStructureDistance: 0,
         closestBoreholeDistance: 0, maxHolesPerDelay: 0, maxPoundsPerDelay: 0,
-        scaledDistance: 0, predictedPPV: 0, kFactor: job?.kFactor ?? 180,
+        scaledDistance: 0, predictedPPV: 0, kFactor: jobCtx?.kFactor ?? 180,
       },
       createdAt: now,
       updatedAt: now,
@@ -375,28 +381,40 @@ export async function addBlastLogToDay(blastDayId: string): Promise<string> {
     });
   });
 
-  await autofillBlasterSignoff(blastLogId, job);
+  await autofillBlasterSignoff(blastLogId, jobCtx?.state);
   return blastLogId;
 }
 
 export async function createJob(data: Partial<Job> & { name: string; customer: string }): Promise<string> {
   const now = nowISO();
   const id = generateId();
-  const job: Job = {
-    id,
-    name: data.name,
-    customer: data.customer,
+  // One form, auto-structure: the customer name and address become real
+  // Customer/Site records (matched by name/address when they exist)
+  const { customerId, siteId } = await ensureCustomerAndSite({
+    customerName: data.customer,
     address: data.address ?? '',
     city: data.city ?? '',
     state: data.state ?? '',
+    kFactor: data.kFactor,
+  });
+  const job: Job = {
+    id,
+    name: data.name,
+    customerId,
+    siteId,
     operation: data.operation ?? 'construction',
     typeOfRock: data.typeOfRock ?? '',
     typeOfTerrain: data.typeOfTerrain ?? '',
     defaultHazards: data.defaultHazards ?? '',
     defaultPrecautions: data.defaultPrecautions ?? '',
+    isActive: true,
+    // legacy mirrors (readers fall back here for un-backfilled jobs)
+    customer: data.customer,
+    address: data.address ?? '',
+    city: data.city ?? '',
+    state: data.state ?? '',
     kFactor: data.kFactor ?? 180,
     kFactorHistory: [],
-    isActive: true,
     createdAt: now,
     updatedAt: now,
     syncStatus: 'local',

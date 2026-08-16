@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { canPerformOp, type Role } from '@shotlog/shared';
 import { useLiveQuery, db } from '@/db';
+import { getJobViews } from '@/lib/jobContext';
 import { getSessionUser } from '@/lib/session';
 import { createJob, type CopyFromPrevious, type CreateWorkDayOptions } from '@/hooks/useBlastDay';
 import type { WorkType } from '@/db/schema';
@@ -52,7 +53,7 @@ const OPERATION_OPTIONS = [
 
 export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork }: Props) {
   // NOTE: boolean fields can't be indexed in IndexedDB — use filter(), not where()
-  const jobs = useLiveQuery(() => db.jobs.filter((j) => j.isActive).toArray()) ?? [];
+  const jobs = useLiveQuery(async () => getJobViews(await db.jobs.filter((j) => j.isActive).toArray())) ?? [];
   // Jobs are admin-managed reference data — for field roles the server would
   // silently discard the write, so don't offer the inline create at all
   const canCreateJob = canPerformOp('jobs', 'PUT', (getSessionUser()?.role ?? 'blaster') as Role);

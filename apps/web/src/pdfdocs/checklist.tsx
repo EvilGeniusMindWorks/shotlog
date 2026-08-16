@@ -1,6 +1,7 @@
 // Rock Drill Checklist — searchable PDF mirroring the paper form.
 import { pdf } from '@react-pdf/renderer';
 import { db } from '@/db';
+import { getJobView } from '@/lib/jobContext';
 import { formatDate } from '@/lib/utils';
 import {
   DRILL_DAILY_CHECKS,
@@ -108,7 +109,7 @@ export async function buildChecklistPdf(checklistId: string): Promise<Blob> {
   const checklist = await db.drillChecklists.get(checklistId);
   if (!checklist) throw new Error('checklist not found');
   const rig = await db.equipment.get(checklist.equipmentId);
-  const job = checklist.jobId ? await db.jobs.get(checklist.jobId) : undefined;
+  const job = await getJobView(checklist.jobId);
   const company = await db.companySettings.get('companySettings-singleton');
   const sigUrl =
     checklist.signatureImage instanceof Blob && checklist.signatureImage.size > 0

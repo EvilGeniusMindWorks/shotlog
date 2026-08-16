@@ -42,6 +42,9 @@ export const TABLE_PERMISSIONS: Record<string, TableRule> = {
   productCatalog: uniform(ADMIN_ONLY),
   manufacturers: uniform(ADMIN_ONLY),
   jobs: uniform(ADMIN_ONLY),
+  // Customer → Site → Job hierarchy: reference data, office-managed
+  customers: uniform(ADMIN_ONLY),
+  sites: uniform(ADMIN_ONLY),
   companySettings: uniform(ADMIN_ONLY),
 
   // Registries. Equipment PATCH is open to field roles on purpose: hour

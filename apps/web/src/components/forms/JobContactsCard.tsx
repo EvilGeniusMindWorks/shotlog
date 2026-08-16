@@ -76,13 +76,17 @@ export function ContactList({ contacts, notes }: { contacts: JobContact[]; notes
 }
 
 /** Admin editor on the job page */
-export function JobContactsCard({ job, readOnly }: { job: Job; readOnly: boolean }) {
+export function JobContactsCard({ job, siteId, readOnly }: { job: Job; siteId?: string; readOnly: boolean }) {
   const contacts = job.contacts ?? [];
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ role: 'onsite' as JobContactRole, label: '', name: '', phone: '', notes: '' });
 
+  // Contacts belong to the SITE (the place) when the job is linked;
+  // legacy un-linked jobs keep writing their own field
   const save = (next: JobContact[]) =>
-    db.jobs.update(job.id, { contacts: next, updatedAt: nowISO() });
+    siteId
+      ? db.sites.update(siteId, { contacts: next, updatedAt: nowISO() })
+      : db.jobs.update(job.id, { contacts: next, updatedAt: nowISO() });
 
   return (
     <Card>
@@ -178,7 +182,7 @@ export function JobContactsCard({ job, readOnly }: { job: Job; readOnly: boolean
             <textarea
               className="w-full h-20 rounded-lg border border-gray-300 p-2 text-sm"
               defaultValue={job.contactNotes ?? ''}
-              onBlur={(e) => db.jobs.update(job.id, { contactNotes: e.target.value, updatedAt: nowISO() })}
+              onBlur={(e) => (siteId ? db.sites.update(siteId, { contactNotes: e.target.value, updatedAt: nowISO() }) : db.jobs.update(job.id, { contactNotes: e.target.value, updatedAt: nowISO() }))}
             />
           </div>
         ) : (

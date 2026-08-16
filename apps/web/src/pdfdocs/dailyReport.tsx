@@ -2,6 +2,7 @@
 // paper form (same structure as PrintDailyReportPage).
 import { pdf } from '@react-pdf/renderer';
 import { db } from '@/db';
+import { getJobView } from '@/lib/jobContext';
 import type {
   BlastDay,
   DailyReport,
@@ -453,7 +454,7 @@ export async function buildDailyReportPdf(blastDayId: string): Promise<Blob> {
   if (!blastDay) throw new Error('work day not found');
   const dailyReport = await db.dailyReports.where('blastDayId').equals(blastDayId).first();
   if (!dailyReport) throw new Error('daily report not found');
-  const job = await db.jobs.get(blastDay.jobId);
+  const job = await getJobView(blastDay.jobId);
   const blastLog = await db.blastLogs.where('blastDayId').equals(blastDayId).first();
   const shots = blastLog ? await db.shots.where('blastLogId').equals(blastLog.id).sortBy('shotNumber') : [];
   const explosiveUsage = blastLog

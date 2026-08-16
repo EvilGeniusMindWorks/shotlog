@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FileDown, Printer } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
+import { getJobView } from '@/lib/jobContext';
 import { formatDate, nowISO } from '@/lib/utils';
 import { fileSubmission } from '@/lib/archive';
 import { Button } from '@/components/ui/button';
@@ -28,7 +29,7 @@ function Row({ label, value }: { label: string; value: string | number | null | 
 function IncidentSheet({ incidentId }: { incidentId: string }) {
   const incident = useLiveQuery(() => db.incidents.get(incidentId), [incidentId]);
   const job = useLiveQuery(
-    () => (incident?.jobId ? db.jobs.get(incident.jobId) : undefined),
+    () => getJobView(incident?.jobId),
     [incident?.jobId],
   );
   const company = useLiveQuery(() => db.companySettings.get('companySettings-singleton'));
@@ -154,7 +155,7 @@ export function SubmitIncidentPage() {
       try {
         const { buildIncidentPdf } = await import('@/pdfdocs');
         const pdf = await buildIncidentPdf(incident.id);
-        const job = incident.jobId ? await db.jobs.get(incident.jobId) : undefined;
+        const job = await getJobView(incident.jobId);
         // Freeze the day's attachments when the incident points at a blast day
         const attachments = incident.blastDayId
           ? await db.attachments.filter((a) => a.parentId === incident.blastDayId).toArray()

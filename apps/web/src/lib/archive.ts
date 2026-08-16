@@ -6,6 +6,7 @@ import { useLiveQuery, db } from '@/db';
 import { getPowerSync } from '@/db/powersync/client';
 import { authedFetch, getSessionUser } from '@/lib/session';
 import { getLocalMedia, putLocalMedia } from '@/lib/localMedia';
+import { getJobContext } from '@/lib/jobContext';
 import { generateId, nowISO } from '@/lib/utils';
 import type { Attachment, Submission, SubmissionAsset, SubmissionType } from '@/db/schema';
 
@@ -284,12 +285,15 @@ export async function fileSubmission(opts: {
       size: data.size,
     });
   }
+  const jobCtx = await getJobContext(opts.jobId);
   const submission: Submission = {
     id,
     type: opts.type,
     sourceId: opts.sourceId,
     blastDayId: opts.blastDayId,
     jobId: opts.jobId,
+    customerId: jobCtx?.customer?.id,
+    siteId: jobCtx?.site?.id,
     version: await nextSubmissionVersion(opts.sourceId, opts.type),
     title: opts.title,
     date: opts.date,

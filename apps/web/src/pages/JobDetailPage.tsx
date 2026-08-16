@@ -13,6 +13,7 @@ import { buildDocRows } from '@/lib/docRows';
 import { DocList } from '@/components/records/DocList';
 import { canPerformOp, derivedKFactor, fitKFactor, powderFactor, scaledDistance, type Role } from '@shotlog/shared';
 import { createDrillPlan, getPlanHoles } from '@/hooks/useDrillPlans';
+import { useJobContext, type JobContext } from '@/lib/jobContext';
 import { nowISO } from '@/lib/utils';
 import type { Job, KFactorHistoryEntry } from '@/db/schema';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,7 @@ export function JobDetailPage() {
   const navigate = useNavigate();
   const [view, setView] = useState<'details' | 'activity'>('details');
   const job = useLiveQuery(() => (id ? db.jobs.get(id) : undefined), [id]);
+  const ctx = useJobContext(id);
 
   const blastDays =
     useLiveQuery(async () => {
@@ -100,11 +102,12 @@ export function JobDetailPage() {
         <div className="grid grid-cols-4 gap-2">
           <StatBox label="Blast Days" value={String(blastDays.length)} />
           <StatBox label="Total Shots" value={String(stats.shots)} />
-          <StatBox label="Site K" value={String(job.kFactor)} />
+          <StatBox label="Site K" value={String(ctx?.kFactor ?? job.kFactor)} />
           <StatBox label="Avg PF" value={avgPF > 0 ? avgPF.toFixed(2) : '—'} />
         </div>
 
-        <JobContactsCard job={job} readOnly={getSessionUser()?.role !== 'admin'} />
+        <CustomerSiteCard job={job} ctx={ctx} />
+        <JobContactsCard job={ctx?.site ? { ...job, contacts: ctx.contacts, contactNotes: ctx.contactNotes } : job} siteId={job.siteId} readOnly={getSessionUser()?.role !== 'admin'} />
         <JobConfigCard job={job} />
         <SiteKCard job={job} />
         <DrillPlansCard jobId={job.id} />
@@ -382,6 +385,7 @@ function DrillPlansCard({ jobId }: { jobId: string }) {
 }
 
 function SiteKCard({ job }: { job: Job }) {
+  const site = useLiveQuery(() => (job.siteId ? db.sites.get(job.siteId) : undefined), [job.siteId]);
   const isAdmin = getSessionUser()?.role === 'admin';
   // Re-run once after mount: on a fresh page load, live queries can resolve
   // empty before local hydration finishes and never re-fire on their own
@@ -432,12 +436,15 @@ function SiteKCard({ job }: { job: Job }) {
   }, [job.id, tick]);
 
   const apply = (value: number) => {
-    void db.jobs.update(job.id, {
+    const changes = {
       kFactor: value,
       // snapshot the evidence the number came from
       kFactorHistory: (calib?.entries ?? []).slice(-200),
       updatedAt: nowISO(),
-    });
+    };
+    // K belongs to the SITE (the ground) — legacy jobs fall back to the job
+    if (site) void db.sites.update(site.id, changes);
+    else void db.jobs.update(job.id, changes);
   };
 
   return (
@@ -457,16 +464,16 @@ function SiteKCard({ job }: { job: Job }) {
               From <b>{calib.fit!.n}</b> measured reading{calib.fit!.n === 1 ? '' : 's'} on this
               site: typical K ≈ <b>{calib.fit!.bestFit}</b>, conservative envelope K ≈{' '}
               <b>{calib.fit!.envelope}</b> (no measured shot exceeded a prediction made with it).
-              Current site default: <b>{job.kFactor}</b>.
+              Current site default: <b>{site?.kFactor ?? job.kFactor}</b>.
             </p>
             {isAdmin && (
               <div className="flex gap-2 flex-wrap">
-                {job.kFactor !== calib.fit!.envelope && (
+                {(site?.kFactor ?? job.kFactor) !== calib.fit!.envelope && (
                   <Button size="sm" onClick={() => apply(calib.fit!.envelope)}>
                     Use envelope {calib.fit!.envelope} (safe)
                   </Button>
                 )}
-                {job.kFactor !== calib.fit!.bestFit && (
+                {(site?.kFactor ?? job.kFactor) !== calib.fit!.bestFit && (
                   <Button size="sm" variant="outline" onClick={() => apply(calib.fit!.bestFit)}>
                     Use typical {calib.fit!.bestFit}
                   </Button>
@@ -480,6 +487,45 @@ function SiteKCard({ job }: { job: Job }) {
             </p>
           </>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Where this job sits in the hierarchy — the site owns the ground facts */
+function CustomerSiteCard({ job, ctx }: { job: Job; ctx: JobContext | undefined }) {
+  const navigate = useNavigate();
+  if (!job.siteId && !job.customer) return null;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Customer &amp; Site</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-1 text-sm">
+        <div className="flex items-center gap-2">
+          <span className="text-gray-400 w-20 text-xs">Customer</span>
+          {ctx?.customer ? (
+            <button className="font-medium text-navy underline" onClick={() => navigate(`/customers/${ctx.customer!.id}`)}>
+              {ctx.customerName}
+            </button>
+          ) : (
+            <span className="font-medium">{ctx?.customerName || '—'}</span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-gray-400 w-20 text-xs">Site</span>
+          {ctx?.site ? (
+            <button className="font-medium text-navy underline text-left" onClick={() => navigate(`/sites/${ctx.site!.id}`)}>
+              {ctx.siteName}
+            </button>
+          ) : (
+            <span className="font-medium">{[ctx?.address, ctx?.city, ctx?.state].filter(Boolean).join(', ') || '—'}</span>
+          )}
+        </div>
+        <p className="text-xs text-gray-400 pt-1">
+          Address, state, Site K, local limits, and jobsite contacts live on the site —
+          every job here inherits them.
+        </p>
       </CardContent>
     </Card>
   );
@@ -522,41 +568,6 @@ function JobConfigCard({ job }: { job: Job }) {
           <Input value={draft.name} onChange={(e) => setField('name', e.target.value)} />
         </div>
         <div>
-          <Label className="text-xs">Customer</Label>
-          <Input value={draft.customer} onChange={(e) => setField('customer', e.target.value)} />
-        </div>
-        <div>
-          <Label className="text-xs">Address</Label>
-          <Input value={draft.address} onChange={(e) => setField('address', e.target.value)} />
-        </div>
-        <div>
-          <Label className="text-xs">City</Label>
-          <Input value={draft.city} onChange={(e) => setField('city', e.target.value)} />
-        </div>
-        <div>
-          <Label className="text-xs">State</Label>
-          <Input
-            value={draft.state}
-            onChange={(e) => setField('state', e.target.value.toUpperCase().slice(0, 2))}
-            maxLength={2}
-          />
-        </div>
-        <div>
-          <Label className="text-xs">
-            Site K
-            <span className="text-gray-400 font-normal">
-              {' '}
-              — the default for new shots; each shot's design can override it
-            </span>
-          </Label>
-          <Input
-            type="number"
-            inputMode="decimal"
-            value={draft.kFactor || ''}
-            onChange={(e) => setField('kFactor', parseFloat(e.target.value) || 0)}
-          />
-        </div>
-        <div>
           <Label className="text-xs">Type of Rock</Label>
           <Input value={draft.typeOfRock} onChange={(e) => setField('typeOfRock', e.target.value)} />
         </div>
@@ -565,31 +576,6 @@ function JobConfigCard({ job }: { job: Job }) {
           <Input
             value={draft.typeOfTerrain}
             onChange={(e) => setField('typeOfTerrain', e.target.value)}
-          />
-        </div>
-        <div>
-          <Label className="text-xs">
-            Local Regulation
-            <span className="text-gray-400 font-normal"> — e.g. Whately Bylaw</span>
-          </Label>
-          <Input
-            value={draft.localRegName ?? ''}
-            onChange={(e) => setField('localRegName', e.target.value)}
-            placeholder="None"
-          />
-        </div>
-        <div>
-          <Label className="text-xs">
-            Local PPV Limit (in/s)
-            <span className="text-gray-400 font-normal"> — most restrictive wins</span>
-          </Label>
-          <Input
-            type="number"
-            inputMode="decimal"
-            step="0.1"
-            value={draft.localPPVLimit || ''}
-            onChange={(e) => setField('localPPVLimit', parseFloat(e.target.value) || 0)}
-            placeholder="—"
           />
         </div>
       </CardContent>

@@ -338,3 +338,91 @@ adminRouter.post(
     }
   },
 );
+
+// ── Customer → Site → Job backfill ─────────────────────────────────────────
+// Idempotent: every job lacking a siteId gets its legacy customer string
+// turned into a Customer (deduped by normalized name) and its address into
+// a Site under that customer (deduped by normalized address+city). Site
+// carries the job's K factor/history, local reg, and contacts. Legacy job
+// fields are left in place — readers fall back to them until synced.
+const normKey = (s: unknown) => String(s ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
+
+adminRouter.post('/backfill-hierarchy', requireRole('admin'), async (req: AuthedRequest, res: Response) => {
+  const cid = req.companyId as string;
+  try {
+    const linked = await prisma.$transaction(async (tx) => {
+      const load = async (table: string) =>
+        (
+          await tx.$queryRaw<{ id: string; payload: string }[]>`
+            SELECT "id", "payload" FROM "records"
+            WHERE "company_id" = ${cid} AND "table_name" = ${table}`
+        ).map((r) => ({ id: r.id, payload: JSON.parse(r.payload) as Record<string, unknown> }));
+
+      const jobs = await load('jobs');
+      const customers = await load('customers');
+      const sites = await load('sites');
+      const now = new Date().toISOString();
+      let count = 0;
+
+      for (const job of jobs) {
+        if (job.payload.siteId) continue;
+        const customerName = String(job.payload.customer ?? '').trim() || 'Unknown customer';
+
+        let customer = customers.find((c) => normKey(c.payload.name) === normKey(customerName));
+        if (!customer) {
+          const id = randomUUID();
+          const payload = {
+            id, name: customerName, isActive: true,
+            createdAt: now, updatedAt: now, syncStatus: 'synced',
+          };
+          await upsertRecord(tx, cid, id, 'customers', JSON.stringify(payload), now);
+          customer = { id, payload };
+          customers.push(customer);
+        }
+
+        const addr = String(job.payload.address ?? '');
+        const city = String(job.payload.city ?? '');
+        const siteKey = normKey(addr || job.payload.name) + '|' + normKey(city);
+        let site = sites.find(
+          (s) =>
+            s.payload.customerId === customer!.id &&
+            normKey(String(s.payload.address ?? '') || String(s.payload.name ?? '')) + '|' + normKey(s.payload.city) === siteKey,
+        );
+        if (!site) {
+          const id = randomUUID();
+          const payload = {
+            id,
+            customerId: customer.id,
+            name: [addr, city].filter(Boolean).join(', ') || String(job.payload.name ?? customerName),
+            address: addr,
+            city,
+            state: String(job.payload.state ?? ''),
+            kFactor: Number(job.payload.kFactor ?? 180),
+            kFactorHistory: job.payload.kFactorHistory ?? [],
+            ...(job.payload.localRegName !== undefined ? { localRegName: job.payload.localRegName } : {}),
+            ...(job.payload.localPPVLimit !== undefined ? { localPPVLimit: job.payload.localPPVLimit } : {}),
+            ...(job.payload.contacts !== undefined ? { contacts: job.payload.contacts } : {}),
+            ...(job.payload.contactNotes !== undefined ? { contactNotes: job.payload.contactNotes } : {}),
+            isActive: true,
+            createdAt: now, updatedAt: now, syncStatus: 'synced',
+          };
+          await upsertRecord(tx, cid, id, 'sites', JSON.stringify(payload), now);
+          site = { id, payload };
+          sites.push(site);
+        }
+
+        await upsertRecord(
+          tx, cid, job.id, 'jobs',
+          JSON.stringify({ ...job.payload, customerId: customer.id, siteId: site.id, updatedAt: now }),
+          now,
+        );
+        count++;
+      }
+      return count;
+    });
+    res.json({ ok: true, linked });
+  } catch (err) {
+    console.error('hierarchy backfill failed:', err);
+    res.status(500).json({ error: 'backfill failed' });
+  }
+});

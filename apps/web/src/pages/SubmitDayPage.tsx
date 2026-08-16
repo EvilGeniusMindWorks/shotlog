@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { db } from '@/db';
+import { getJobView } from '@/lib/jobContext';
 import { isBlastingWork } from '@/db/schema';
 import { collectDayAttachments, fileSubmission } from '@/lib/archive';
 import { nowISO } from '@/lib/utils';
@@ -66,7 +67,7 @@ export function SubmitDayPage() {
         if (cancelled) return;
         filed.current.add(phase);
         const day = (await db.blastDays.get(id))!;
-        const job = await db.jobs.get(day.jobId);
+        const job = await getJobView(day.jobId);
         const label = day.name || job?.name || day.date;
         if (phase === 'blast_log') {
           const log = await db.blastLogs.where('blastDayId').equals(id).first();

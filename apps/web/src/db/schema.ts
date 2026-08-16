@@ -26,30 +26,69 @@ export interface KFactorHistoryEntry {
   derivedK: number;
 }
 
-export interface Job extends BaseRecord {
+// ══════════════════════════════════════════════════════
+// CUSTOMER → SITE → JOB hierarchy. The CUSTOMER is who hires Baystate;
+// a customer has SITES (physical places — the ground, the jurisdiction,
+// the neighbors); a site hosts JOBS over time (engagements). Everything
+// physical/jurisdictional lives on the Site: address, state, Site K and
+// its calibration history, local PPV bylaws, the contact sheet. The Job
+// keeps only engagement facts.
+// ══════════════════════════════════════════════════════
+
+export interface Customer extends BaseRecord {
   name: string;
-  customer: string;
+  billingAddress?: string;
+  phone?: string;
+  notes?: string;
+  isActive: boolean;
+}
+
+export interface Site extends BaseRecord {
+  customerId: string;
+  /** Display label — defaults to the address when not named */
+  name: string;
   address: string;
   city: string;
-  state: string; // 2-letter
+  state: string; // 2-letter — drives license auto-pick + state regs
+  gps?: string;
+  kFactor: number;
+  kFactorHistory: KFactorHistoryEntry[];
+  // Local/municipal PPV override (Spec §16.1, e.g. Whately Bylaw 1.0 in/s)
+  localRegName?: string;
+  localPPVLimit?: number;
+  /** Site contact sheet — office-maintained, field-critical OFFLINE */
+  contacts?: JobContact[];
+  contactNotes?: string;
+  isActive: boolean;
+}
+
+export interface Job extends BaseRecord {
+  name: string;
+  /** Hierarchy links — set on every new job; backfilled on legacy jobs */
+  customerId?: string;
+  siteId?: string;
   operation: 'construction' | 'quarry' | 'trench' | 'open';
   typeOfRock: string;
   typeOfTerrain: string;
   defaultHazards: string;
   defaultPrecautions: string;
-  kFactor: number;
-  kFactorHistory: KFactorHistoryEntry[];
-  // Local/municipal PPV override (Spec §16.1, e.g. Whately Bylaw 1.0 in/s).
-  // Optional plain fields — no index change needed.
-  localRegName?: string;
-  localPPVLimit?: number;
   isActive: boolean;
-  /** Jobsite contact sheet — office-maintained, field-critical OFFLINE */
-  contacts?: JobContact[];
-  /** Freeform notes (fire-detail billing, scheduling rules, directions) */
-  contactNotes?: string;
   owner?: string;
   generalContractor?: string;
+  // ── LEGACY fields (pre-hierarchy). Readers resolve through
+  // lib/jobContext.ts which prefers the linked Site/Customer; these are
+  // kept so un-backfilled records keep working. Writers use the new
+  // records only. ──
+  customer: string;
+  address: string;
+  city: string;
+  state: string; // 2-letter
+  kFactor: number;
+  kFactorHistory: KFactorHistoryEntry[];
+  localRegName?: string;
+  localPPVLimit?: number;
+  contacts?: JobContact[];
+  contactNotes?: string;
 }
 
 export type JobContactRole =
@@ -753,6 +792,9 @@ export interface Submission extends BaseRecord {
   sourceId: string;
   blastDayId?: string;
   jobId?: string;
+  /** Hierarchy stamps (denormalized at file time, like jobId) */
+  customerId?: string;
+  siteId?: string;
   version: number;
   title: string;
   date: string; // the document's date (work day / checklist / incident date)

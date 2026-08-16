@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLiveQuery, db } from '@/db';
+import { getJobViews } from '@/lib/jobContext';
 import { createJob } from '@/hooks/useBlastDay';
-import { getSessionUser } from '@/lib/session';
+import { authedFetch, getSessionUser } from '@/lib/session';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,8 +22,15 @@ const OPERATION_OPTIONS = [
 
 export function JobsPage() {
   const navigate = useNavigate();
+  const [lens, setLens] = useState<'jobs' | 'customers'>('jobs');
+  // Heal pre-hierarchy jobs: server links customer/site records (idempotent)
+  useEffect(() => {
+    if (getSessionUser()?.role === 'admin' && navigator.onLine) {
+      void authedFetch('/admin/backfill-hierarchy', { method: 'POST' }).catch(() => undefined);
+    }
+  }, []);
   // undefined = still hydrating from the local DB — skeleton, never "No jobs yet"
-  const jobsQuery = useLiveQuery(() => db.jobs.orderBy('updatedAt').reverse().toArray());
+  const jobsQuery = useLiveQuery(async () => getJobViews(await db.jobs.orderBy('updatedAt').reverse().toArray()));
   const jobs = jobsQuery ?? [];
   const [showNew, setShowNew] = useState(false);
   const [form, setForm] = useState({
@@ -38,14 +46,31 @@ export function JobsPage() {
 
   return (
     <div className="p-4 max-w-2xl mx-auto">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
         <h2 className="text-xl font-bold text-gray-900">Jobs</h2>
+        <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+          {(['jobs', 'customers'] as const).map((l) => (
+            <button
+              key={l}
+              className={
+                lens === l
+                  ? 'px-3 py-1.5 text-sm font-medium bg-navy text-white'
+                  : 'px-3 py-1.5 text-sm font-medium bg-white text-gray-600'
+              }
+              onClick={() => setLens(l)}
+            >
+              {l === 'jobs' ? 'All jobs' : 'By customer'}
+            </button>
+          ))}
+        </div>
         {getSessionUser()?.role === 'admin' && (
           <Button onClick={() => setShowNew(!showNew)}>
             <Plus className="h-4 w-4 mr-1" /> New Job
           </Button>
         )}
       </div>
+
+      {lens === 'customers' && <CustomersLens />}
 
       {showNew && (
         <Card className="mb-4">
@@ -70,6 +95,7 @@ export function JobsPage() {
         </Card>
       )}
 
+      {lens === 'jobs' && (
       <div className="space-y-2">
         {jobs.map((job) => (
           <Card
@@ -104,6 +130,54 @@ export function JobsPage() {
           <p className="text-center py-8 text-gray-400">No jobs yet. Create one to get started.</p>
         )}
       </div>
+      )}
+    </div>
+  );
+}
+
+/** Customer → sites → jobs browse (the office lens; field flow stays flat) */
+function CustomersLens() {
+  const navigate = useNavigate();
+  const customers =
+    useLiveQuery(async () =>
+      (await db.customers.toArray()).sort((a, b) => a.name.localeCompare(b.name)),
+    ) ?? [];
+  const counts = useLiveQuery(async () => {
+    const sites = await db.sites.toArray();
+    const jobs = await db.jobs.toArray();
+    const bySite = new Map<string, number>();
+    const byJob = new Map<string, number>();
+    for (const s of sites) bySite.set(s.customerId, (bySite.get(s.customerId) ?? 0) + 1);
+    for (const j of jobs) if (j.customerId) byJob.set(j.customerId, (byJob.get(j.customerId) ?? 0) + 1);
+    return { bySite, byJob };
+  });
+  return (
+    <div className="space-y-2">
+      {customers.map((c) => (
+        <Card
+          key={c.id}
+          className="cursor-pointer hover:bg-gray-50 transition-colors"
+          onClick={() => navigate(`/customers/${c.id}`)}
+        >
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="font-semibold">{c.name}</p>
+              <p className="text-xs text-gray-400">
+                {counts?.bySite.get(c.id) ?? 0} site{(counts?.bySite.get(c.id) ?? 0) === 1 ? '' : 's'} ·{' '}
+                {counts?.byJob.get(c.id) ?? 0} job{(counts?.byJob.get(c.id) ?? 0) === 1 ? '' : 's'}
+              </p>
+            </div>
+            <Badge variant={c.isActive ? 'compliant' : 'draft'}>
+              {c.isActive ? 'Active' : 'Inactive'}
+            </Badge>
+          </CardContent>
+        </Card>
+      ))}
+      {customers.length === 0 && (
+        <p className="text-center py-8 text-gray-400">
+          No customers yet — they're created automatically with jobs.
+        </p>
+      )}
     </div>
   );
 }

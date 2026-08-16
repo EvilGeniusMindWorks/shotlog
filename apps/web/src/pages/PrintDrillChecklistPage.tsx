@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { FileDown, Printer } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
+import { getJobView } from '@/lib/jobContext';
 import { formatDate } from '@/lib/utils';
 import { fileSubmission } from '@/lib/archive';
 import { DRILL_DAILY_CHECKS, DRILL_WEEKLY_CHECKS, type CheckState } from '@/db/schema';
@@ -20,7 +21,7 @@ function ChecklistSheet({ checklistId }: { checklistId: string }) {
     [checklist?.equipmentId],
   );
   const job = useLiveQuery(
-    () => (checklist?.jobId ? db.jobs.get(checklist.jobId) : undefined),
+    () => getJobView(checklist?.jobId),
     [checklist?.jobId],
   );
   const company = useLiveQuery(() => db.companySettings.get('companySettings-singleton'));

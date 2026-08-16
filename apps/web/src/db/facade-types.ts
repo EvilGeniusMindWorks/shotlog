@@ -14,6 +14,8 @@ import type {
   Manufacturer,
   Tombstone,
   Job,
+  Customer,
+  Site,
   BlasterProfile,
   BlastDay,
   BlastLog,
@@ -62,6 +64,8 @@ export interface FacadeTable<T> {
 
 export interface ShotLogDataAccess {
   jobs: FacadeTable<Job>;
+  customers: FacadeTable<Customer>;
+  sites: FacadeTable<Site>;
   blasterProfiles: FacadeTable<BlasterProfile>;
   blastDays: FacadeTable<BlastDay>;
   blastLogs: FacadeTable<BlastLog>;

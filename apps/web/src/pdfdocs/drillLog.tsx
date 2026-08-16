@@ -2,6 +2,7 @@
 // condition codes, totals, driller signature.
 import { pdf } from '@react-pdf/renderer';
 import { db } from '@/db';
+import { getJobView } from '@/lib/jobContext';
 import { formatDate } from '@/lib/utils';
 import type { BlastDay, DrillLog, DrillLogHole, DrillPlanRecord, Equipment, Job, Shot } from '@/db/schema';
 import {
@@ -144,7 +145,7 @@ export async function buildDrillLogPdf(logId: string): Promise<Blob> {
     a.holeNumber.localeCompare(b.holeNumber, undefined, { numeric: true }),
   );
   const shot = log.shotId ? await db.shots.get(log.shotId) : undefined;
-  const job = await db.jobs.get(log.jobId);
+  const job = await getJobView(log.jobId);
   const day = log.blastDayId ? await db.blastDays.get(log.blastDayId) : undefined;
   const plan = log.drillPlanId ? await db.drillPlans.get(log.drillPlanId) : undefined;
   const rig = log.drillRigEquipmentId ? await db.equipment.get(log.drillRigEquipmentId) : undefined;

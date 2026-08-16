@@ -29,6 +29,8 @@ import type {
   Manufacturer,
   Tombstone,
   Job,
+  Customer,
+  Site,
   BlasterProfile,
   BlastDay,
   BlastLog,
@@ -51,6 +53,8 @@ import { reviveValue, serializeValue } from './blobMarkers';
 
 const RECORD_TABLES = [
   'jobs',
+  'customers',
+  'sites',
   'blasterProfiles',
   'blastDays',
   'blastLogs',
@@ -290,6 +294,8 @@ class PsTable<T extends { id: string }> implements FacadeTable<T> {
 
 export class PowerSyncFacade implements ShotLogDataAccess {
   jobs!: FacadeTable<Job>;
+  customers!: FacadeTable<Customer>;
+  sites!: FacadeTable<Site>;
   blasterProfiles!: FacadeTable<BlasterProfile>;
   blastDays!: FacadeTable<BlastDay>;
   blastLogs!: FacadeTable<BlastLog>;

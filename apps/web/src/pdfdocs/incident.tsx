@@ -1,6 +1,7 @@
 // Incident Report — searchable PDF (insurance-grade paper copy).
 import { pdf } from '@react-pdf/renderer';
 import { db } from '@/db';
+import { getJobView } from '@/lib/jobContext';
 import { formatDate } from '@/lib/utils';
 import type { Incident, Job } from '@/db/schema';
 import { Document, Footer, HeaderBar, K, Page, T, TD, TR, Text } from './kit';
@@ -104,7 +105,7 @@ function IncidentDoc({
 export async function buildIncidentPdf(incidentId: string): Promise<Blob> {
   const incident = await db.incidents.get(incidentId);
   if (!incident) throw new Error('incident not found');
-  const job = incident.jobId ? await db.jobs.get(incident.jobId) : undefined;
+  const job = await getJobView(incident.jobId);
   const company = await db.companySettings.get('companySettings-singleton');
   return pdf(
     <IncidentDoc

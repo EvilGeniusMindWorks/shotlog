@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FileDown, Printer } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
+import { getJobView } from '@/lib/jobContext';
 import { formatDate } from '@/lib/utils';
 
 const CONDITION_LEGEND = 'V = Void · SR = Soft Rock · O = Overburden · W = Water';
@@ -27,7 +28,7 @@ export function PrintDrillLogPage() {
     () => (log?.shotId ? db.shots.get(log.shotId) : undefined),
     [log?.shotId],
   );
-  const job = useLiveQuery(() => (log ? db.jobs.get(log.jobId) : undefined), [log?.jobId]);
+  const job = useLiveQuery(() => getJobView(log?.jobId), [log?.jobId]);
   const day = useLiveQuery(
     () => (log?.blastDayId ? db.blastDays.get(log.blastDayId) : undefined),
     [log?.blastDayId],

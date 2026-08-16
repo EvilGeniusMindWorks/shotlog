@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Check, Grid3x3, Layers3, Map as MapIcon, Ruler } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
+import { useJobContext } from '@/lib/jobContext';
 import { nowISO } from '@/lib/utils';
 import {
   parseDiagram,
@@ -71,6 +72,7 @@ function DesignPlanInner({
   siblings: Shot[];
 }) {
   const navigate = useNavigate();
+  const ctx = useJobContext(job?.id);
   const explosiveUsage = useLiveQuery(
     () => db.explosiveUsages.where('blastLogId').equals(shot.blastLogId).first(),
     [shot.blastLogId],
@@ -201,7 +203,7 @@ function DesignPlanInner({
     dp.closestStructureDistance > 0 && dp.maxPoundsPerDelay > 0
       ? scaledDistance(dp.closestStructureDistance, dp.maxPoundsPerDelay)
       : 0;
-  const ppv = sd > 0 ? predictedPPV(dp.kFactor || (job?.kFactor ?? 180), sd) : 0;
+  const ppv = sd > 0 ? predictedPPV(dp.kFactor || (ctx?.kFactor ?? 180), sd) : 0;
   const osmLimit = dp.closestStructureDistance > 0 ? osmPPVLimit(dp.closestStructureDistance) : 0;
   const usbmLimit = usbmRI8507Limit(15);
   // Timing tree (new model) with fallback to legacy painted delays
@@ -294,7 +296,7 @@ function DesignPlanInner({
             value={siteDiagram}
             onChange={handleSiteChange}
             jobAddress={
-              job ? [job.address, job.city, job.state].filter(Boolean).join(', ') : undefined
+              ctx ? [ctx.address, ctx.city, ctx.state].filter(Boolean).join(', ') : undefined
             }
             onUseClosest={useClosestForCompliance}
             onSnapshot={saveSnapshot}
@@ -334,7 +336,7 @@ function DesignPlanInner({
           <ComplianceInputs
             shot={shot}
             job={job}
-            defaultK={job?.kFactor ?? 180}
+            defaultK={ctx?.kFactor ?? 180}
             delaySuggestion={delaySuggestion}
           />
         </Panel>
@@ -395,6 +397,7 @@ function ComplianceInputs({
   defaultK: number;
   delaySuggestion: { holes: number; lbs: number | null } | null;
 }) {
+  const ctx = useJobContext(job?.id);
   const dp = shot.designPlan;
 
   const update = (fields: Partial<DesignPlan> | keyof DesignPlan, value?: string | number) => {
@@ -434,9 +437,9 @@ function ComplianceInputs({
               : '> 5,000 ft',
       });
     }
-    if (job?.state === 'MA') regs.push({ name: 'MA 540 CMR', limit: 2.0 });
-    if (job?.localPPVLimit && job.localPPVLimit > 0) {
-      regs.push({ name: job.localRegName || 'Local Bylaw', limit: job.localPPVLimit, note: 'override' });
+    if (ctx?.state === 'MA') regs.push({ name: 'MA 540 CMR', limit: 2.0 });
+    if (ctx?.localPPVLimit && ctx.localPPVLimit > 0) {
+      regs.push({ name: ctx.localRegName || 'Local Bylaw', limit: ctx.localPPVLimit, note: 'override' });
     }
   }
   const mostRestrictive = regs.length

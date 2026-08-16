@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { db } from '@/db';
+import { useJobContext } from '@/lib/jobContext';
 import { addShot, deleteShot } from '@/hooks/useBlastDay';
 import { useDraftRecord } from '@/hooks/useDraftRecord';
 import type { BlastDay, BlastLog, Shot, ExplosiveUsage, Job } from '@/db/schema';
@@ -74,6 +75,7 @@ interface Props {
 }
 
 export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }: Props) {
+  const jobCtx = useJobContext(job?.id);
   const [expandedShots, setExpandedShots] = useState<Set<string>>(
     new Set(shots.length > 0 ? [shots[0]?.id] : [])
   );
@@ -100,7 +102,7 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
   const { draft, setField } = useDraftRecord(db.blastLogs, blastLog);
 
   const handleAddShot = async () => {
-    const id = await addShot(blastLog.id, job?.kFactor ?? 180);
+    const id = await addShot(blastLog.id, jobCtx?.kFactor ?? 180);
     setExpandedShots((prev) => new Set(prev).add(id));
   };
 
@@ -264,7 +266,7 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
                 shot={shot}
                 allShots={shots}
                 explosiveUsage={explosiveUsage}
-                kFactor={job?.kFactor ?? 180}
+                kFactor={jobCtx?.kFactor ?? 180}
                 blastDayId={blastDay.id}
               />
             </CardContent>

@@ -5,6 +5,8 @@ import { Dashboard, WorkDaysPage } from '@/pages/Dashboard';
 import { BlastDayPage } from '@/pages/BlastDayPage';
 import { JobsPage } from '@/pages/JobsPage';
 import { JobDetailPage } from '@/pages/JobDetailPage';
+import { CustomerPage } from '@/pages/CustomerPage';
+import { SitePage } from '@/pages/SitePage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { ProfilePage } from '@/pages/ProfilePage';
 import { ReferencePage } from '@/pages/ReferencePage';
@@ -77,6 +79,8 @@ export function App() {
           <Route path="/days" element={<WorkDaysPage />} />
           <Route path="/jobs" element={<JobsPage />} />
           <Route path="/jobs/:id" element={<JobDetailPage />} />
+          <Route path="/customers/:id" element={<CustomerPage />} />
+          <Route path="/sites/:id" element={<SitePage />} />
           <Route path="/reference" element={<ReferencePage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/profile" element={<ProfilePage />} />

@@ -4,6 +4,7 @@
 // projected site schematic and timed shot diagram redraw as vectors.
 import { pdf, Circle, Line, Polygon, Rect, Svg, Text as SvgText } from '@react-pdf/renderer';
 import { db } from '@/db';
+import { getJobView } from '@/lib/jobContext';
 import { distributeByHoles, powderFactor } from '@shotlog/shared';
 import { DELAY_COLORS, computeFiringTimes, parseDiagram } from '@/lib/shotDiagram';
 import { distanceFt, parseSiteDiagram } from '@/lib/siteDiagram';
@@ -762,7 +763,7 @@ export async function buildBlastLogPdf(blastDayId: string): Promise<Blob> {
   if (!blastDay) throw new Error('work day not found');
   const blastLog = await db.blastLogs.where('blastDayId').equals(blastDayId).first();
   if (!blastLog) throw new Error('blast log not found');
-  const job = await db.jobs.get(blastDay.jobId);
+  const job = await getJobView(blastDay.jobId);
   const shots = await db.shots.where('blastLogId').equals(blastLog.id).sortBy('shotNumber');
   const explosiveUsage = await db.explosiveUsages.where('blastLogId').equals(blastLog.id).first();
   const shotIds = shots.map((s) => s.id);
