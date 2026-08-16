@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { canPerformOp, type Role } from '@shotlog/shared';
 import { useLiveQuery, db } from '@/db';
 import { getJobViews } from '@/lib/jobContext';
+import { CustomerSitePicker, emptyPick, pickReady, type CustomerSitePick } from '@/components/forms/CustomerSitePicker';
 import { getSessionUser } from '@/lib/session';
 import { createJob, type CopyFromPrevious, type CreateWorkDayOptions } from '@/hooks/useBlastDay';
 import type { WorkType } from '@/db/schema';
@@ -63,9 +64,9 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork }: Prop
   const [dayName, setDayName] = useState('');
   const [showNewJob, setShowNewJob] = useState(false);
   const [newJob, setNewJob] = useState({
-    name: '', customer: '', address: '', city: '', state: '', operation: 'construction' as const,
-    typeOfRock: '', typeOfTerrain: '',
+    name: '', operation: 'construction' as const, typeOfRock: '', typeOfTerrain: '',
   });
+  const [pick, setPick] = useState<CustomerSitePick>(emptyPick());
 
   // Copy from Previous: offered when the selected job has existing blast days
   const previousDays =
@@ -87,13 +88,16 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork }: Prop
     if (showNewJob) {
       jobId = await createJob({
         name: newJob.name,
-        customer: newJob.customer,
-        address: newJob.address,
-        city: newJob.city,
-        state: newJob.state,
         operation: newJob.operation,
         typeOfRock: newJob.typeOfRock,
         typeOfTerrain: newJob.typeOfTerrain,
+        customerId: pick.customerId,
+        siteId: pick.siteId,
+        customer: pick.customerName,
+        address: pick.address,
+        city: pick.city,
+        state: pick.state,
+        kFactor: pick.kFactor,
       });
     }
     if (!jobId) return;
@@ -111,7 +115,7 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork }: Prop
     onCreate(jobId, date, copy, { typeOfWork, name: dayName });
   };
 
-  const canCreate = showNewJob ? newJob.name && newJob.customer : selectedJobId;
+  const canCreate = showNewJob ? newJob.name && pickReady(pick) : selectedJobId;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
@@ -229,22 +233,7 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork }: Prop
                   <Label>Job Name *</Label>
                   <Input value={newJob.name} onChange={(e) => setNewJob({ ...newJob, name: e.target.value })} placeholder="Route 3 Widening" />
                 </div>
-                <div>
-                  <Label>Customer *</Label>
-                  <Input value={newJob.customer} onChange={(e) => setNewJob({ ...newJob, customer: e.target.value })} placeholder="ABC Corp" />
-                </div>
-                <div>
-                  <Label>Address</Label>
-                  <Input value={newJob.address} onChange={(e) => setNewJob({ ...newJob, address: e.target.value })} />
-                </div>
-                <div>
-                  <Label>City</Label>
-                  <Input value={newJob.city} onChange={(e) => setNewJob({ ...newJob, city: e.target.value })} />
-                </div>
-                <div>
-                  <Label>State</Label>
-                  <Input value={newJob.state} onChange={(e) => setNewJob({ ...newJob, state: e.target.value.toUpperCase().slice(0, 2) })} placeholder="MA" maxLength={2} />
-                </div>
+                <CustomerSitePicker value={pick} onChange={setPick} />
                 <div>
                   <Label>Operation</Label>
                   <Select

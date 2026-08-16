@@ -107,6 +107,72 @@ export async function getJobViews(jobs: Job[]): Promise<Job[]> {
 
 const norm = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim();
 
+/** Direct customer creation (Customers screen) — dedupes by name. */
+export async function createCustomer(data: {
+  name: string;
+  phone?: string;
+  billingAddress?: string;
+  notes?: string;
+}): Promise<string> {
+  const existing = (await db.customers.toArray()).find(
+    (c) => norm(c.name) === norm(data.name),
+  );
+  if (existing) return existing.id;
+  const now = nowISO();
+  const id = generateId();
+  await db.customers.add({
+    id,
+    name: data.name.trim(),
+    ...(data.phone?.trim() ? { phone: data.phone.trim() } : {}),
+    ...(data.billingAddress?.trim() ? { billingAddress: data.billingAddress.trim() } : {}),
+    ...(data.notes?.trim() ? { notes: data.notes.trim() } : {}),
+    isActive: true,
+    createdAt: now,
+    updatedAt: now,
+    syncStatus: 'local',
+  });
+  return id;
+}
+
+/** Direct site creation (Customer screen) — dedupes by address+city. */
+export async function createSite(
+  customerId: string,
+  data: {
+    name?: string;
+    address: string;
+    city: string;
+    state: string;
+    kFactor?: number;
+    localRegName?: string;
+    localPPVLimit?: number;
+  },
+): Promise<string> {
+  const key = norm(data.address || data.name || '');
+  const existing = (await db.sites.where('customerId').equals(customerId).toArray()).find(
+    (s) => norm(s.address || s.name) === key && norm(s.city) === norm(data.city),
+  );
+  if (existing) return existing.id;
+  const now = nowISO();
+  const id = generateId();
+  await db.sites.add({
+    id,
+    customerId,
+    name: data.name?.trim() || [data.address, data.city].filter(Boolean).join(', ') || 'Site',
+    address: data.address.trim(),
+    city: data.city.trim(),
+    state: data.state.trim().toUpperCase(),
+    kFactor: data.kFactor ?? 180,
+    kFactorHistory: [],
+    ...(data.localRegName?.trim() ? { localRegName: data.localRegName.trim() } : {}),
+    ...(data.localPPVLimit ? { localPPVLimit: data.localPPVLimit } : {}),
+    isActive: true,
+    createdAt: now,
+    updatedAt: now,
+    syncStatus: 'local',
+  });
+  return id;
+}
+
 /**
  * Quick-create structure: match-or-create the Customer (by normalized
  * name) and the Site (by normalized address under that customer, falling

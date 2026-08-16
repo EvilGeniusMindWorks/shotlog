@@ -1,5 +1,7 @@
 // One customer: identity + their sites + every job under them.
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { createSite } from '@/lib/jobContext';
 import { ArrowLeft, MapPin } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { getSessionUser } from '@/lib/session';
@@ -15,6 +17,9 @@ import { Label } from '@/components/ui/label';
 export function CustomerPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const isAdmin = getSessionUser()?.role === 'admin';
+  const [addingSite, setAddingSite] = useState(false);
+  const [site, setSite] = useState({ name: '', address: '', city: '', state: '', kFactor: 180 });
   const customer = useLiveQuery(() => (id ? db.customers.get(id) : undefined), [id]);
   const sites =
     useLiveQuery(
@@ -56,10 +61,43 @@ export function CustomerPage() {
         <CustomerConfigCard customer={customer} />
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-base">Sites</CardTitle>
+            {isAdmin && (
+              <Button size="sm" variant="outline" onClick={() => setAddingSite(!addingSite)}>
+                New Site
+              </Button>
+            )}
           </CardHeader>
           <CardContent className="space-y-2">
+            {addingSite && (
+              <div className="rounded-lg border border-gray-200 p-3 space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label className="text-xs">Site name</Label>
+                    <Input value={site.name} placeholder="defaults to address"
+                      onChange={(e) => setSite({ ...site, name: e.target.value })} /></div>
+                  <div><Label className="text-xs">Address</Label>
+                    <Input value={site.address} onChange={(e) => setSite({ ...site, address: e.target.value })} /></div>
+                  <div><Label className="text-xs">City</Label>
+                    <Input value={site.city} onChange={(e) => setSite({ ...site, city: e.target.value })} /></div>
+                  <div className="flex gap-2">
+                    <div className="w-16"><Label className="text-xs">State</Label>
+                      <Input value={site.state} maxLength={2}
+                        onChange={(e) => setSite({ ...site, state: e.target.value.toUpperCase().slice(0, 2) })} /></div>
+                    <div className="flex-1"><Label className="text-xs">Site K</Label>
+                      <Input type="number" inputMode="decimal" value={site.kFactor || ''}
+                        onChange={(e) => setSite({ ...site, kFactor: parseFloat(e.target.value) || 0 })} /></div>
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button size="sm" variant="outline" onClick={() => setAddingSite(false)}>Cancel</Button>
+                  <Button size="sm" disabled={!site.address.trim() && !site.name.trim()}
+                    onClick={() => void createSite(customer.id, site).then((sid) => navigate(`/sites/${sid}`))}>
+                    Create Site
+                  </Button>
+                </div>
+              </div>
+            )}
             {sites.map((s) => (
               <button
                 key={s.id}
@@ -79,7 +117,7 @@ export function CustomerPage() {
               </button>
             ))}
             {sites.length === 0 && (
-              <p className="text-sm text-gray-400">No sites yet — sites are created with jobs.</p>
+              <p className="text-sm text-gray-400">No sites yet — add one here, or they're created automatically with jobs.</p>
             )}
           </CardContent>
         </Card>

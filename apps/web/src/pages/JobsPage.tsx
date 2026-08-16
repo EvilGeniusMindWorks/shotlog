@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLiveQuery, db } from '@/db';
-import { getJobViews } from '@/lib/jobContext';
+import { createCustomer, getJobViews } from '@/lib/jobContext';
+import { CustomerSitePicker, emptyPick, pickReady, type CustomerSitePick } from '@/components/forms/CustomerSitePicker';
 import { createJob } from '@/hooks/useBlastDay';
 import { authedFetch, getSessionUser } from '@/lib/session';
 import { Button } from '@/components/ui/button';
@@ -34,14 +35,27 @@ export function JobsPage() {
   const jobs = jobsQuery ?? [];
   const [showNew, setShowNew] = useState(false);
   const [form, setForm] = useState({
-    name: '', customer: '', address: '', city: '', state: '', operation: 'construction' as const,
-    typeOfRock: '', typeOfTerrain: '', defaultHazards: '', defaultPrecautions: '', kFactor: 180,
+    name: '', operation: 'construction' as const, typeOfRock: '', typeOfTerrain: '',
   });
+  const [pick, setPick] = useState<CustomerSitePick>(emptyPick());
 
   const handleCreate = async () => {
-    await createJob(form);
+    await createJob({
+      name: form.name,
+      operation: form.operation,
+      typeOfRock: form.typeOfRock,
+      typeOfTerrain: form.typeOfTerrain,
+      customerId: pick.customerId,
+      siteId: pick.siteId,
+      customer: pick.customerName,
+      address: pick.address,
+      city: pick.city,
+      state: pick.state,
+      kFactor: pick.kFactor,
+    });
     setShowNew(false);
-    setForm({ name: '', customer: '', address: '', city: '', state: '', operation: 'construction', typeOfRock: '', typeOfTerrain: '', defaultHazards: '', defaultPrecautions: '', kFactor: 180 });
+    setForm({ name: '', operation: 'construction', typeOfRock: '', typeOfTerrain: '' });
+    setPick(emptyPick());
   };
 
   return (
@@ -78,18 +92,14 @@ export function JobsPage() {
           <CardContent className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Job Name *</Label><Input value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} /></div>
-              <div><Label>Customer *</Label><Input value={form.customer} onChange={(e) => setForm({...form, customer: e.target.value})} /></div>
-              <div><Label>Address</Label><Input value={form.address} onChange={(e) => setForm({...form, address: e.target.value})} /></div>
-              <div><Label>City</Label><Input value={form.city} onChange={(e) => setForm({...form, city: e.target.value})} /></div>
-              <div><Label>State</Label><Input value={form.state} onChange={(e) => setForm({...form, state: e.target.value.toUpperCase().slice(0,2)})} maxLength={2} /></div>
+              <CustomerSitePicker value={pick} onChange={setPick} />
               <div><Label>Operation</Label><Select value={form.operation} onChange={(e) => setForm({...form, operation: e.target.value as typeof form.operation})} options={OPERATION_OPTIONS} /></div>
               <div><Label>Rock Type</Label><Input value={form.typeOfRock} onChange={(e) => setForm({...form, typeOfRock: e.target.value})} /></div>
               <div><Label>Terrain</Label><Input value={form.typeOfTerrain} onChange={(e) => setForm({...form, typeOfTerrain: e.target.value})} /></div>
-              <div><Label>K Factor</Label><Input type="number" inputMode="decimal" value={form.kFactor || ''} onChange={(e) => setForm({...form, kFactor: parseFloat(e.target.value) || 0})} /></div>
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowNew(false)}>Cancel</Button>
-              <Button disabled={!form.name || !form.customer} onClick={handleCreate}>Create Job</Button>
+              <Button disabled={!form.name || !pickReady(pick)} onClick={handleCreate}>Create Job</Button>
             </div>
           </CardContent>
         </Card>
@@ -138,6 +148,9 @@ export function JobsPage() {
 /** Customer → sites → jobs browse (the office lens; field flow stays flat) */
 function CustomersLens() {
   const navigate = useNavigate();
+  const isAdmin = getSessionUser()?.role === 'admin';
+  const [adding, setAdding] = useState(false);
+  const [cust, setCust] = useState({ name: '', phone: '', billingAddress: '', notes: '' });
   const customers =
     useLiveQuery(async () =>
       (await db.customers.toArray()).sort((a, b) => a.name.localeCompare(b.name)),
@@ -153,6 +166,33 @@ function CustomersLens() {
   });
   return (
     <div className="space-y-2">
+      {isAdmin && (
+        <div className="flex justify-end">
+          <Button size="sm" variant="outline" onClick={() => setAdding(!adding)}>
+            <Plus className="h-4 w-4 mr-1" /> New Customer
+          </Button>
+        </div>
+      )}
+      {adding && (
+        <Card>
+          <CardHeader><CardTitle className="text-base">New Customer</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Name *</Label><Input value={cust.name} onChange={(e) => setCust({ ...cust, name: e.target.value })} /></div>
+              <div><Label>Phone</Label><Input value={cust.phone} onChange={(e) => setCust({ ...cust, phone: e.target.value })} /></div>
+              <div className="col-span-2"><Label>Billing address</Label><Input value={cust.billingAddress} onChange={(e) => setCust({ ...cust, billingAddress: e.target.value })} /></div>
+              <div className="col-span-2"><Label>Notes</Label><Input value={cust.notes} onChange={(e) => setCust({ ...cust, notes: e.target.value })} /></div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setAdding(false)}>Cancel</Button>
+              <Button disabled={!cust.name.trim()}
+                onClick={() => void createCustomer(cust).then((id) => navigate(`/customers/${id}`))}>
+                Create Customer
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       {customers.map((c) => (
         <Card
           key={c.id}

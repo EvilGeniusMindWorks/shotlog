@@ -388,15 +388,24 @@ export async function addBlastLogToDay(blastDayId: string): Promise<string> {
 export async function createJob(data: Partial<Job> & { name: string; customer: string }): Promise<string> {
   const now = nowISO();
   const id = generateId();
-  // One form, auto-structure: the customer name and address become real
-  // Customer/Site records (matched by name/address when they exist)
-  const { customerId, siteId } = await ensureCustomerAndSite({
-    customerName: data.customer,
-    address: data.address ?? '',
-    city: data.city ?? '',
-    state: data.state ?? '',
-    kFactor: data.kFactor,
-  });
+  // Explicit picks from the dropdowns win; otherwise one-form
+  // auto-structure turns the typed customer/address into records
+  let customerId = data.customerId;
+  let siteId = data.siteId;
+  if (!customerId || !siteId) {
+    const ensured = await ensureCustomerAndSite({
+      customerName: data.customer,
+      address: data.address ?? '',
+      city: data.city ?? '',
+      state: data.state ?? '',
+      kFactor: data.kFactor,
+    });
+    customerId = customerId ?? ensured.customerId;
+    siteId = siteId ?? ensured.siteId;
+  }
+  // Legacy mirror fields come from the PICKED records when selected
+  const site = await db.sites.get(siteId);
+  const customer = await db.customers.get(customerId);
   const job: Job = {
     id,
     name: data.name,
@@ -409,11 +418,11 @@ export async function createJob(data: Partial<Job> & { name: string; customer: s
     defaultPrecautions: data.defaultPrecautions ?? '',
     isActive: true,
     // legacy mirrors (readers fall back here for un-backfilled jobs)
-    customer: data.customer,
-    address: data.address ?? '',
-    city: data.city ?? '',
-    state: data.state ?? '',
-    kFactor: data.kFactor ?? 180,
+    customer: customer?.name ?? data.customer,
+    address: site?.address ?? data.address ?? '',
+    city: site?.city ?? data.city ?? '',
+    state: site?.state ?? data.state ?? '',
+    kFactor: site?.kFactor ?? data.kFactor ?? 180,
     kFactorHistory: [],
     createdAt: now,
     updatedAt: now,
