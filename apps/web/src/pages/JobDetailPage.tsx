@@ -11,7 +11,8 @@ import { matchesWorkRow, workedRow } from '@/lib/personHistory';
 import { matchesAsset } from '@/lib/equipmentHistory';
 import { buildDocRows } from '@/lib/docRows';
 import { DocList } from '@/components/records/DocList';
-import { canPerformOp, derivedKFactor, fitKFactor, powderFactor, scaledDistance, type Role } from '@shotlog/shared';
+import { derivedKFactor, fitKFactor, powderFactor, scaledDistance } from '@shotlog/shared';
+import { can } from '@/lib/perms';
 import { createDrillPlan, getPlanHoles } from '@/hooks/useDrillPlans';
 import { useJobContext, type JobContext } from '@/lib/jobContext';
 import { nowISO } from '@/lib/utils';
@@ -354,8 +355,7 @@ function JobActivity({ jobId, lbs }: { jobId: string; lbs: number }) {
  *  here, drillers work it over days, the blast report imports the result. */
 function DrillPlansCard({ jobId }: { jobId: string }) {
   const navigate = useNavigate();
-  const role = (getSessionUser()?.role ?? 'driller') as Role;
-  const canCreate = canPerformOp('drillPlans', 'PUT', role);
+  const canCreate = can('drillPlans', 'PUT');
   const plans = useLiveQuery(
     async () =>
       (await db.drillPlans.where('jobId').equals(jobId).toArray()).sort((a, b) =>

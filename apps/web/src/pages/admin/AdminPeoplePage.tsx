@@ -24,15 +24,23 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { ChipSelect } from '@/components/ui/chip-select';
+import { BUILT_IN_ROLES, BUILT_IN_ROLE_KEYS } from '@shotlog/shared';
 
-const ROLE_OPTIONS = [
-  { value: 'admin', label: 'Admin' },
-  { value: 'supervisor', label: 'Supervisor' },
-  { value: 'blaster', label: 'Blaster' },
-  { value: 'driller', label: 'Driller' },
-  { value: 'mechanic', label: 'Mechanic' },
-  { value: 'office', label: 'Office' },
-];
+// Built-ins + this company's custom role definitions (Admin › Roles) —
+// edited built-ins keep their key but show their edited display name
+function useRoleOptions(): { value: string; label: string }[] {
+  const defs = useLiveQuery(() => db.roleDefinitions.toArray()) ?? [];
+  const byKey = new Map(defs.map((d) => [d.key, d]));
+  return [
+    ...BUILT_IN_ROLES.map((b) => ({
+      value: b.key,
+      label: b.key === 'admin' ? b.name : (byKey.get(b.key)?.name ?? b.name),
+    })),
+    ...defs
+      .filter((d) => !BUILT_IN_ROLE_KEYS.has(d.key))
+      .map((d) => ({ value: d.key, label: d.name })),
+  ];
+}
 
 interface CompanyUser {
   id: string;
@@ -133,6 +141,7 @@ function PersonRow({
   onDirectory: () => Promise<void> | void;
 }) {
   const navigate = useNavigate();
+  const ROLE_OPTIONS = useRoleOptions();
   const [panel, setPanel] = useState<RowPanel>('none');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -397,6 +406,7 @@ export function AdminPeoplePage() {
   const me = getSessionUser();
   const isAdmin = me?.role === 'admin';
   const navigate = useNavigate();
+  const ROLE_OPTIONS = useRoleOptions();
   const people = useLiveQuery(() => db.crewMembers.toArray()) ?? [];
   const [users, setUsers] = useState<CompanyUser[]>([]);
   const [invites, setInvites] = useState<InviteLite[]>([]);

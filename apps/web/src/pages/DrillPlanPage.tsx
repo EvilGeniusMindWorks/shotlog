@@ -5,7 +5,8 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Send, X } from 'lucide-react';
-import { canPerformOp, type Role } from '@shotlog/shared';
+import { type Role } from '@shotlog/shared';
+import { can } from '@/lib/perms';
 import { useLiveQuery, db } from '@/db';
 import {
   createDrillPlanLog,
@@ -108,7 +109,7 @@ export function DrillPlanPage() {
   const { jobId, planId } = useParams<{ jobId: string; planId: string }>();
   const navigate = useNavigate();
   const role = (getSessionUser()?.role ?? 'driller') as Role;
-  const canEdit = canPerformOp('drillPlans', 'PATCH', role);
+  const canEdit = can('drillPlans', 'PATCH');
 
   const plan = useLiveQuery(() => (planId ? db.drillPlans.get(planId) : undefined), [planId]);
   const job = useLiveQuery(() => (jobId ? db.jobs.get(jobId) : undefined), [jobId]);

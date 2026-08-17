@@ -10,6 +10,7 @@ import type {
   DrillLogHole,
   Incident,
   Submission,
+  RoleDefinitionRecord,
   RepairTicket,
   Manufacturer,
   Tombstone,
@@ -91,6 +92,7 @@ export interface ShotLogDataAccess {
   repairTickets: FacadeTable<RepairTicket>;
   incidents: FacadeTable<Incident>;
   submissions: FacadeTable<Submission>;
+  roleDefinitions: FacadeTable<RoleDefinitionRecord>;
   tombstones: FacadeTable<Tombstone>;
 
   table(name: string): FacadeTable<Record<string, unknown> & { id: string }>;

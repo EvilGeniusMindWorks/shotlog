@@ -1,6 +1,23 @@
-import type { KickDirection } from '@shotlog/shared';
+import type { HomeDashboard, KickDirection } from '@shotlog/shared';
 
 export type { KickDirection };
+
+// ══════════════════════════════════════════════════════
+// ROLE DEFINITIONS — the configurable-roles capability layer. One record
+// per role KEY; absence = the built-in bundle from @shotlog/shared. The
+// 'admin' key is protected (server discards writes to it).
+// ══════════════════════════════════════════════════════
+
+export interface RoleDefinitionRecord {
+  id: string;
+  key: string; // 'blaster' (edited built-in) or a custom slug
+  name: string;
+  capabilities: string[];
+  homeDashboard: HomeDashboard;
+  createdAt: string;
+  updatedAt: string;
+  syncStatus: 'local' | 'pending' | 'synced';
+}
 
 // ══════════════════════════════════════════════════════
 // SYNC & BASE TYPES

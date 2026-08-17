@@ -9,17 +9,18 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import {
   STATUS_GUARDED_TABLES,
-  canEditAcceptedDrillLog,
-  canEditApproved,
-  canPerformOp,
-  canTransitionDrillLog,
-  canTransitionRecordStatus,
-  canTransitionStatus,
+  buildRoleDefsLookup,
+  canEditAcceptedDrillLogAs,
+  canEditApprovedAs,
+  canPerformOpAs,
+  canTransitionDrillLogAs,
+  canTransitionRecordStatusAs,
+  canTransitionStatusAs,
   diffPayloads,
   APPROVAL_LOCKED_TABLES,
   LOCKED_DAY_STATUSES,
   PARENT_CHAIN,
-  type Role,
+  type RoleDefsLookup,
 } from '@shotlog/shared';
 import type { Prisma } from '@prisma/client';
 import { prisma } from './db.js';
@@ -139,7 +140,9 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
     return;
   }
   const cid = req.companyId as string;
-  const role = (req.role ?? 'office') as Role;
+  // May be a CUSTOM role key — every check below resolves it through the
+  // company's role definitions (capability layer), built-ins as fallback
+  const role = req.role ?? 'office';
   const now = new Date().toISOString();
   const discardedIds: string[] = [];
 
@@ -172,6 +175,16 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
   try {
     await prisma.$transaction(async (tx) => {
       const batch = new BatchRecords(tx, cid);
+      // The company's role definitions, loaded once per batch — permission
+      // checks resolve custom/edited roles through these (admin protected,
+      // built-ins the fallback when a role has no definition record)
+      const defRows = await tx.record.findMany({
+        where: { companyId: cid, tableName: 'roleDefinitions' },
+        select: { payload: true },
+      });
+      const roleDefs: RoleDefsLookup = buildRoleDefsLookup(
+        defRows.map((r) => parsePayloadSafe(r.payload)),
+      );
       const blastDayStatus = new Map<string, string>();
       const statusOf = async (blastDayId: string): Promise<string> => {
         let s = blastDayStatus.get(blastDayId);
@@ -215,10 +228,20 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
 
         if (op.op === 'DELETE' && !stored) continue; // deleting nothing — no-op
 
-        // 1. table × op × role
-        if (!canPerformOp(tableName, op.op, role)) {
+        // 1. table × op × role (capability-resolved; custom roles supported)
+        if (!canPerformOpAs(tableName, op.op, role, roleDefs)) {
           discard(op, tableName, 'role denied');
           continue;
+        }
+
+        // 1a. role definitions are structural: a key is required, and the
+        // 'admin' bundle can never be redefined (protected by design)
+        if (tableName === 'roleDefinitions' && op.op !== 'DELETE') {
+          const key = effective.key;
+          if (typeof key !== 'string' || !key.trim() || key.trim() === 'admin') {
+            discard(op, tableName, 'invalid or protected role key');
+            continue;
+          }
         }
 
         // 1b. submissions are write-once: the DOCUMENT (pdf checksum, assets,
@@ -286,13 +309,13 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
         if (tableName === 'blastDays' && op.op !== 'DELETE') {
           const from = (stored?.payload.status as string | undefined) ?? 'draft';
           const to = (effective.status as string | undefined) ?? from;
-          if (!canTransitionStatus(from, to, role)) {
+          if (!canTransitionStatusAs(from, to, role, roleDefs)) {
             discard(op, tableName, `forbidden transition ${from}->${to}`);
             continue;
           }
           // Same-status edits to a FILED day are frozen for field roles —
           // the office copy and the live record must not silently diverge
-          if (from === to && LOCKED_DAY_STATUSES.has(from) && !canEditApproved(role)) {
+          if (from === to && LOCKED_DAY_STATUSES.has(from) && !canEditApprovedAs(role, roleDefs)) {
             discard(op, tableName, `day ${from} (locked)`);
             continue;
           }
@@ -304,7 +327,7 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
         if (tableName === 'drillLogs' && op.op !== 'DELETE') {
           const from = (stored?.payload.status as string | undefined) ?? 'open';
           const to = (effective.status as string | undefined) ?? from;
-          if (!canTransitionDrillLog(from, to, role)) {
+          if (!canTransitionDrillLogAs(from, to, role, roleDefs)) {
             discard(op, tableName, `forbidden drill-log transition ${from}->${to}`);
             continue;
           }
@@ -315,14 +338,14 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
         if (STATUS_GUARDED_TABLES.has(tableName) && op.op !== 'DELETE') {
           const from = (stored?.payload.status as string | undefined) ?? '';
           const to = (effective.status as string | undefined) ?? from;
-          if (!canTransitionRecordStatus(tableName, from, to, role)) {
+          if (!canTransitionRecordStatusAs(tableName, from, to, role, roleDefs)) {
             discard(op, tableName, `forbidden ${tableName} transition ${from}->${to}`);
             continue;
           }
         }
 
         // 2c. hole rows freeze for drillers once their log is accepted
-        if (tableName === 'drillLogHoles' && !canEditAcceptedDrillLog(role)) {
+        if (tableName === 'drillLogHoles' && !canEditAcceptedDrillLogAs(role, roleDefs)) {
           const logId = (effective.drillLogId ?? stored?.payload.drillLogId) as
             | string
             | undefined;
@@ -337,7 +360,7 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
 
         // 3. filed/approved lock on the blast-day family: children freeze
         // for field roles once the day is submitted to the office
-        if (APPROVAL_LOCKED_TABLES.has(tableName) && !canEditApproved(role)) {
+        if (APPROVAL_LOCKED_TABLES.has(tableName) && !canEditApprovedAs(role, roleDefs)) {
           const dayId = await resolveBlastDayId(tableName, effective, batch);
           if (dayId) {
             const status = await statusOf(dayId);

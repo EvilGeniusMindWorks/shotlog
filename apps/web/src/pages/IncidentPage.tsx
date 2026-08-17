@@ -4,7 +4,8 @@
 // and seismo reading with PPV/dB pulled in automatically.
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { canPerformOp, type Role } from '@shotlog/shared';
+import { type Role } from '@shotlog/shared';
+import { can } from '@/lib/perms';
 import { useLiveQuery, db } from '@/db';
 import { useDraftRecord } from '@/hooks/useDraftRecord';
 import { getSessionUser } from '@/lib/session';
@@ -183,7 +184,7 @@ function IncidentForm({
           </div>
         )}
 
-        {canClaim && canPerformOp('incidents', 'PATCH', role) && (
+        {canClaim && can('incidents', 'PATCH') && (
           <div className="rounded-xl border-2 border-navy-200 bg-white p-4 grid gap-3 sm:grid-cols-2">
             <p className="sm:col-span-2 text-sm font-semibold">Office use — claim</p>
             <div>

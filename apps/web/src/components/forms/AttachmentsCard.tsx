@@ -16,7 +16,8 @@ import {
 } from '@/lib/attachments';
 import { runFileUploader } from '@/lib/fileUploader';
 import { deleteLocalMedia } from '@/lib/localMedia';
-import { canPerformOp, type Role } from '@shotlog/shared';
+import { type Role } from '@shotlog/shared';
+import { can } from '@/lib/perms';
 import { getSessionUser } from '@/lib/session';
 import type { Attachment } from '@/db/schema';
 import { SectionCard } from '@/components/ui/section-card';
@@ -35,7 +36,7 @@ export function AttachmentsCard({
   defaultKind?: string;
 }) {
   const role = (getSessionUser()?.role ?? 'blaster') as Role;
-  const canEdit = canPerformOp('attachments', 'PUT', role);
+  const canEdit = can('attachments', 'PUT');
   const parentIds = useMemo(() => [parentId], [parentId]);
   const attachments = useAttachmentSummaries(parentIds) ?? [];
   const company = useLiveQuery(() => db.companySettings.get('companySettings-singleton'));

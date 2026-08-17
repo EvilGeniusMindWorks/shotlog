@@ -69,3 +69,28 @@ export {
   canEditAcceptedDrillLog,
 } from './permissions.js';
 export type { Role, WriteOp, BlastDayStatus, DrillLogStatus } from './permissions.js';
+export {
+  CAPABILITIES,
+  CAPABILITY_KEYS,
+  BUILT_IN_ROLES,
+  BUILT_IN_ROLE_KEYS,
+  buildRoleDefsLookup,
+  capabilitiesFor,
+  hasCapability,
+  roleDefinitionFor,
+  homeDashboardFor,
+  canPerformOpAs,
+  canTransitionStatusAs,
+  canTransitionDrillLogAs,
+  canTransitionRecordStatusAs,
+  canEditApprovedAs,
+  canEditAcceptedDrillLogAs,
+  isValidRoleKey,
+} from './capabilities.js';
+export type {
+  CapabilityDef,
+  CapabilityGroup,
+  HomeDashboard,
+  RoleDefinitionData,
+  RoleDefsLookup,
+} from './capabilities.js';

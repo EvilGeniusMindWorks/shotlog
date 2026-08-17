@@ -38,11 +38,23 @@ import { IncidentPage } from '@/pages/IncidentPage';
 import { AdminIncidentsPage } from '@/pages/admin/AdminIncidentsPage';
 import { Navigate } from 'react-router-dom';
 import { getSessionUser } from '@/lib/session';
+import { hasCap } from '@/lib/perms';
+import { AdminRolesPage } from '@/pages/admin/AdminRolesPage';
 
 function AdminIndexRedirect() {
   const role = getSessionUser()?.role;
+  // First area the role can actually use (capability-resolved for
+  // custom roles; built-ins keep their familiar landing tab)
   const target =
-    role === 'supervisor' ? '/admin/approvals' : role === 'mechanic' ? '/admin/equipment' : role === 'office' ? '/admin/incidents' : '/admin/people';
+    role === 'supervisor' ? '/admin/approvals'
+    : role === 'mechanic' ? '/admin/equipment'
+    : role === 'office' ? '/admin/incidents'
+    : role === 'admin' ? '/admin/people'
+    : hasCap('manage_people') ? '/admin/people'
+    : hasCap('approve_days') ? '/admin/approvals'
+    : hasCap('manage_equipment') ? '/admin/equipment'
+    : hasCap('process_incidents') ? '/admin/incidents'
+    : '/admin/people';
   return <Navigate to={target} replace />;
 }
 
@@ -104,6 +116,7 @@ export function App() {
             <Route path="catalog" element={<AdminCatalogPage />} />
             <Route path="equipment" element={<AdminEquipmentPage />} />
             <Route path="incidents" element={<AdminIncidentsPage />} />
+            <Route path="roles" element={<AdminRolesPage />} />
             <Route path="company" element={<AdminCompanyPage />} />
           </Route>
         </Route>

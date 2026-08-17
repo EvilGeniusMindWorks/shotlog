@@ -10,10 +10,19 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { prisma } from './db.js';
 import { requireAuth, requireAdmin, type AuthedRequest } from './auth.js';
-import { getRecord, upsertRecord } from './records.js';
+import { BUILT_IN_ROLE_KEYS, buildRoleDefsLookup } from '@shotlog/shared';
+import { getRecord, parsePayloadSafe, upsertRecord } from './records.js';
 import { writeAudit } from './auditWrite.js';
 
-const ROLES = ['admin', 'supervisor', 'blaster', 'driller', 'mechanic', 'office'] as const;
+/** Built-in role keys OR this company's custom role definitions */
+async function isAssignableRole(cid: string, role: string): Promise<boolean> {
+  if (BUILT_IN_ROLE_KEYS.has(role)) return true;
+  const defRows = await prisma.record.findMany({
+    where: { companyId: cid, tableName: 'roleDefinitions' },
+    select: { payload: true },
+  });
+  return buildRoleDefsLookup(defRows.map((r) => parsePayloadSafe(r.payload))).has(role);
+}
 const INVITE_TTL_DAYS = 14;
 const APP_URL = (process.env.APP_URL ?? 'https://shotlog-app.vercel.app').replace(/\/$/, '');
 const RESEND_API_KEY = process.env.RESEND_API_KEY ?? '';
@@ -79,7 +88,7 @@ invitesRouter.use(requireAuth, requireAdmin);
 const inviteSchema = z.object({
   name: z.string().min(1),
   email: z.string().email().optional(),
-  role: z.enum(ROLES).default('blaster'),
+  role: z.string().min(1).default('blaster'),
   crewMemberId: z.string().optional(),
 });
 
@@ -91,6 +100,10 @@ invitesRouter.post('/', async (req: AuthedRequest, res: Response) => {
   }
   const { name, email, role, crewMemberId } = parsed.data;
   const cid = req.companyId as string;
+  if (!(await isAssignableRole(cid, role))) {
+    res.status(400).json({ error: 'unknown role' });
+    return;
+  }
 
   if (email) {
     const taken = await prisma.user.findUnique({ where: { email } });

@@ -5,7 +5,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Drill, Plus, Send, X } from 'lucide-react';
-import { canPerformOp, type Role } from '@shotlog/shared';
+import { type Role } from '@shotlog/shared';
+import { can } from '@/lib/perms';
 import { createDrillLog, useShotDrilling } from '@/hooks/useDrillLogs';
 import { materializeDrillPlan, parseDiagram } from '@/lib/shotDiagram';
 import { getSessionUser } from '@/lib/session';
@@ -176,7 +177,7 @@ export function DrillingSection({
   const navigate = useNavigate();
   const role = (getSessionUser()?.role ?? 'blaster') as Role;
   const drilling = useShotDrilling(shot.id);
-  const canRequest = canPerformOp('drillLogs', 'PUT', role);
+  const canRequest = can('drillLogs', 'PUT');
   const [showSend, setShowSend] = useState(false);
   const assignedUserIds = new Set((drilling?.logs ?? []).map((l) => l.drillerUserId).filter(Boolean));
 

@@ -5,29 +5,35 @@
 import { NavLink, Navigate, Outlet } from 'react-router-dom';
 import { WifiOff } from 'lucide-react';
 import { getSessionUser } from '@/lib/session';
+import { hasCap, useRoleDefsSync } from '@/lib/perms';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { cn } from '@/lib/utils';
 
-const TABS: { to: string; label: string; roles: string[] }[] = [
-  { to: '/admin/people', label: 'People', roles: ['admin', 'supervisor'] },
-  { to: '/admin/approvals', label: 'Approvals', roles: ['admin', 'supervisor'] },
-  { to: '/admin/catalog', label: 'Catalog', roles: ['admin'] },
-  { to: '/admin/equipment', label: 'Equipment', roles: ['admin', 'supervisor', 'mechanic'] },
-  { to: '/admin/incidents', label: 'Incidents', roles: ['admin', 'office'] },
-  { to: '/admin/company', label: 'Company', roles: ['admin'] },
+// Tabs follow CAPABILITIES (configurable roles) — a custom role sees
+// exactly the areas its bundle grants. Roles itself is admin-only.
+const TABS: { to: string; label: string; cap: string | null }[] = [
+  { to: '/admin/people', label: 'People', cap: 'manage_people' },
+  { to: '/admin/approvals', label: 'Approvals', cap: 'approve_days' },
+  { to: '/admin/catalog', label: 'Catalog', cap: 'manage_company' },
+  { to: '/admin/equipment', label: 'Equipment', cap: 'manage_equipment' },
+  { to: '/admin/incidents', label: 'Incidents', cap: 'process_incidents' },
+  { to: '/admin/roles', label: 'Roles', cap: null }, // admin only
+  { to: '/admin/company', label: 'Company', cap: 'manage_company' },
 ];
-
-export const ADMIN_ROLES = ['admin', 'supervisor', 'mechanic', 'office'];
 
 export function AdminLayout() {
   const session = getSessionUser();
   const online = useOnlineStatus();
   const role = session?.role ?? '';
+  const defsLoaded = useRoleDefsSync();
 
-  if (!ADMIN_ROLES.includes(role)) {
+  // Custom-role users would be bounced by an empty capability cache on a
+  // fresh page load — wait for the definitions before deciding
+  if (defsLoaded === undefined) return null;
+  if (!hasCap('view_admin_area')) {
     return <Navigate to="/" replace />;
   }
-  const tabs = TABS.filter((t) => t.roles.includes(role));
+  const tabs = TABS.filter((t) => (t.cap === null ? role === 'admin' : hasCap(t.cap)));
 
   return (
     <div className="p-4 max-w-4xl mx-auto">

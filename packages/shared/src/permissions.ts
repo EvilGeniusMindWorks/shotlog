@@ -46,6 +46,10 @@ export const TABLE_PERMISSIONS: Record<string, TableRule> = {
   customers: uniform(ADMIN_ONLY),
   sites: uniform(ADMIN_ONLY),
   companySettings: uniform(ADMIN_ONLY),
+  // Role definitions — the capability bundles themselves (capabilities.ts).
+  // Admin-only BY CODE: no capability grants this table, so even a custom
+  // role holding every capability cannot rewrite the permission system.
+  roleDefinitions: uniform(ADMIN_ONLY),
 
   // Registries. Equipment PATCH is open to field roles on purpose: hour
   // meters and in/out-of-service status come from the people running the

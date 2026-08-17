@@ -1,9 +1,9 @@
 import { useState, type ReactNode } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, FileText, ClipboardList, ChevronDown, ChevronUp, FileBarChart, History, Lock, PhoneCall, Printer } from 'lucide-react';
-import { canEditApproved, canTransitionStatus, type Role } from '@shotlog/shared';
+import { type Role } from '@shotlog/shared';
+import { can, canDayTransition, canEditApprovedDay } from '@/lib/perms';
 import { addBlastLogToDay, useBlastDay } from '@/hooks/useBlastDay';
-import { canPerformOp } from '@shotlog/shared';
 import { db } from '@/db';
 import { authedFetch, getSessionUser } from '@/lib/session';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
@@ -104,7 +104,7 @@ export function BlastDayPage() {
 
   const status = blastDay.status;
   // Filed with the office (submitted) OR approved → frozen for field roles
-  const locked = status !== 'draft' && !canEditApproved(role);
+  const locked = status !== 'draft' && !canEditApprovedDay();
 
   const updateConditions = (field: string, value: string | boolean) => {
     if (locked) return;
@@ -141,7 +141,7 @@ export function BlastDayPage() {
   };
 
   const statusActions: ReactNode[] = [];
-  if (status === 'draft' && canTransitionStatus('draft', 'submitted', role)) {
+  if (status === 'draft' && canDayTransition('draft', 'submitted')) {
     statusActions.push(
       // Files the point-in-time PDFs with the office, then marks submitted
       <Button key="submit" size="sm" variant="secondary"
@@ -151,7 +151,7 @@ export function BlastDayPage() {
     );
   }
   if (status === 'submitted') {
-    if (canTransitionStatus('submitted', 'approved', role)) {
+    if (canDayTransition('submitted', 'approved')) {
       statusActions.push(
         <Button key="approve" size="sm" className="bg-green-600 hover:bg-green-700 text-white"
           disabled={!online || statusBusy}
@@ -166,7 +166,7 @@ export function BlastDayPage() {
           Send Back
         </Button>,
       );
-    } else if (canTransitionStatus('submitted', 'draft', role)) {
+    } else if (canDayTransition('submitted', 'draft')) {
       // Supervisory unlock, offline-capable (send-back above needs REST)
       statusActions.push(
         <Button key="withdraw" size="sm" variant="secondary" onClick={() => submitViaSync('draft')}>
@@ -175,7 +175,7 @@ export function BlastDayPage() {
       );
     }
   }
-  if (status === 'approved' && canEditApproved(role)) {
+  if (status === 'approved' && canEditApprovedDay()) {
     statusActions.push(
       <Button key="reopen" size="sm" variant="secondary" disabled={!online || statusBusy}
         title={online ? undefined : 'Reopening needs a connection'}
@@ -405,7 +405,7 @@ export function BlastDayPage() {
                 {WORK_TYPE_OPTIONS.find((o) => o.value === blastDay.typeOfWork)?.label} day —
                 daily report only.
               </span>
-              {!locked && canPerformOp('blastLogs', 'PUT', role) && (
+              {!locked && can('blastLogs', 'PUT') && (
                 <Button size="sm" variant="secondary"
                   onClick={() => {
                     void addBlastLogToDay(blastDay.id).then(() => setActiveTab('blast-log'));

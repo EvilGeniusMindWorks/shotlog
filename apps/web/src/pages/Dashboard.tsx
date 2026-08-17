@@ -15,6 +15,7 @@ import { NewBlastDayDialog } from '@/components/forms/NewBlastDayDialog';
 import { AdminHome, DrillerHome, DrillingReviewCard, MechanicHome, TodayCard } from '@/components/dashboard/RoleCards';
 import { StartGrid } from '@/components/dashboard/StartGrid';
 import { getSessionUser } from '@/lib/session';
+import { myHomeDashboard } from '@/lib/perms';
 import type { WorkType } from '@/db/schema';
 
 interface DaySummary {
@@ -145,19 +146,19 @@ function useKpis() {
 type SortKey = 'date' | 'job' | 'status' | 'shots' | 'holes' | 'totalLbs' | 'pf';
 
 export function Dashboard() {
-  // Role-switched home (approved mockup): drillers, mechanics, and
-  // admin/office each get their own front page; blasters/supervisors get
-  // the field dashboard below with today + drilling-review cards on top.
-  const role = getSessionUser()?.role;
-  if (role === 'driller')
+  // Role-switched home: each role definition PICKS its front page
+  // (configurable roles) — built-ins keep the approved-mockup routing:
+  // driller/mechanic/office homes, field dashboard for blaster/supervisor.
+  const home = myHomeDashboard();
+  if (home === 'driller')
     return (
       <>
         <DrillerHome />
         <NewWorkDayFab defaultTypeOfWork="drill_only" />
       </>
     );
-  if (role === 'mechanic') return <MechanicHome />;
-  if (role === 'admin' || role === 'office') return <AdminHome />;
+  if (home === 'mechanic') return <MechanicHome />;
+  if (home === 'office') return <AdminHome />;
   return <BlasterDashboard />;
 }
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { canPerformOp, type Role } from '@shotlog/shared';
+import { type Role } from '@shotlog/shared';
+import { can } from '@/lib/perms';
 import { useLiveQuery, db } from '@/db';
 import { getJobViews } from '@/lib/jobContext';
 import { CustomerSitePicker, emptyPick, pickReady, type CustomerSitePick } from '@/components/forms/CustomerSitePicker';
@@ -57,7 +58,7 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork }: Prop
   const jobs = useLiveQuery(async () => getJobViews(await db.jobs.filter((j) => j.isActive).toArray())) ?? [];
   // Jobs are admin-managed reference data — for field roles the server would
   // silently discard the write, so don't offer the inline create at all
-  const canCreateJob = canPerformOp('jobs', 'PUT', (getSessionUser()?.role ?? 'blaster') as Role);
+  const canCreateJob = can('jobs', 'PUT');
   const [selectedJobId, setSelectedJobId] = useState('');
   const [date, setDate] = useState(todayISO());
   const [typeOfWork, setTypeOfWork] = useState<WorkType>(defaultTypeOfWork ?? 'drill_to_blast');

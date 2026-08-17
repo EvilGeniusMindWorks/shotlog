@@ -5,7 +5,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronRight, Drill, Send } from 'lucide-react';
-import { canPerformOp, type Role } from '@shotlog/shared';
+import { type Role } from '@shotlog/shared';
+import { can } from '@/lib/perms';
 import { useShotDrilling, getShotPlan } from '@/hooks/useDrillLogs';
 import { SendToDrillersModal } from './DrillingSection';
 import { getSessionUser } from '@/lib/session';
@@ -94,7 +95,7 @@ function ShotPlanRow({
 }) {
   const navigate = useNavigate();
   const role = (getSessionUser()?.role ?? 'blaster') as Role;
-  const canSend = !locked && canPerformOp('drillLogs', 'PUT', role);
+  const canSend = !locked && can('drillLogs', 'PUT');
   const drilling = useShotDrilling(shot.id);
   const plan = getShotPlan(shot);
   const [showSend, setShowSend] = useState(false);

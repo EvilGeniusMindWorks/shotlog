@@ -5,13 +5,23 @@ import { z } from 'zod';
 import type { Prisma } from '@prisma/client';
 import { prisma } from './db.js';
 import { requireAuth, requireAdmin, type AuthedRequest } from './auth.js';
+import { BUILT_IN_ROLE_KEYS, buildRoleDefsLookup } from '@shotlog/shared';
 import { parsePayloadSafe, upsertRecord } from './records.js';
 import { resolveActor, writeAudit } from './auditWrite.js';
 
 export const usersRouter = Router();
 usersRouter.use(requireAuth, requireAdmin);
 
-const ROLES = ['admin', 'supervisor', 'blaster', 'driller', 'mechanic', 'office'] as const;
+/** A role is valid when it's a built-in OR one of this company's custom
+ *  role definitions (the configurable-roles capability layer). */
+async function isAssignableRole(cid: string, role: string): Promise<boolean> {
+  if (BUILT_IN_ROLE_KEYS.has(role)) return true;
+  const defRows = await prisma.record.findMany({
+    where: { companyId: cid, tableName: 'roleDefinitions' },
+    select: { payload: true },
+  });
+  return buildRoleDefsLookup(defRows.map((r) => parsePayloadSafe(r.payload))).has(role);
+}
 
 // ── People model: every login IS a roster person ────────────────────────────
 // The synced crewMembers record is the person; a User account is the person's
@@ -118,7 +128,7 @@ usersRouter.get('/', async (req: AuthedRequest, res: Response) => {
 const createSchema = z.object({
   email: z.string().email(),
   name: z.string().min(1),
-  role: z.enum(ROLES),
+  role: z.string().min(1),
   tempPassword: z.string().min(8),
   /** Existing roster person this login belongs to (People page row action) */
   crewMemberId: z.string().min(1).optional(),
@@ -132,6 +142,10 @@ usersRouter.post('/', async (req: AuthedRequest, res: Response) => {
     return;
   }
   const { email, name, role, tempPassword, crewMemberId } = parsed.data;
+  if (!(await isAssignableRole(req.companyId!, role))) {
+    res.status(400).json({ error: 'unknown role' });
+    return;
+  }
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     res.status(409).json({ error: 'a user with that email already exists' });
@@ -159,7 +173,7 @@ const patchSchema = z
   .object({
     name: z.string().min(1).optional(),
     email: z.string().email().optional(),
-    role: z.enum(ROLES).optional(),
+    role: z.string().min(1).optional(),
   })
   .refine((v) => v.name !== undefined || v.email !== undefined || v.role !== undefined, {
     message: 'nothing to update',
@@ -179,6 +193,10 @@ usersRouter.patch('/:id', async (req: AuthedRequest, res: Response) => {
     return;
   }
   const { name, email, role } = parsed.data;
+  if (role !== undefined && !(await isAssignableRole(req.companyId!, role))) {
+    res.status(400).json({ error: 'unknown role' });
+    return;
+  }
   if (role !== undefined && rawId === req.userId && role !== 'admin') {
     res.status(400).json({ error: "you can't remove your own admin role" });
     return;

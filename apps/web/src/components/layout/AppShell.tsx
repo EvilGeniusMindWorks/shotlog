@@ -17,6 +17,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { useReconnectWatchdog } from '@/hooks/useReconnectWatchdog';
 import { startFileUploader } from '@/lib/fileUploader';
 import { getSessionUser, getRealSessionUser, getViewRole, setViewRole } from '@/lib/session';
+import { hasCap, useRoleDefsSync } from '@/lib/perms';
 import { FirstSyncStrip, SessionExpiredBanner, SyncChip, UpdateChip } from './SyncChip';
 import { Tour } from './Tour';
 
@@ -28,8 +29,10 @@ const baseNavItems = [
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 
-function navItemsForRole(role: string | undefined) {
-  return role === 'admin' || role === 'supervisor' || role === 'mechanic' || role === 'office'
+function navItemsForRole() {
+  // Capability-resolved (configurable roles): custom roles see Admin when
+  // their bundle grants it
+  return hasCap('view_admin_area')
     ? [...baseNavItems, { to: '/admin', icon: ShieldCheck, label: 'Admin' }]
     : baseNavItems;
 }
@@ -139,6 +142,7 @@ function Wordmark({ compact }: { compact?: boolean }) {
 
 export function AppShell() {
   useReconnectWatchdog();
+  useRoleDefsSync(); // keeps the capability cache live; re-renders nav on change
   useEffect(() => startFileUploader(), []);
   const { theme, toggle } = useTheme();
   const [touring, setTouring] = useState(false);
@@ -146,7 +150,7 @@ export function AppShell() {
   const profile = useLiveQuery(() => db.blasterProfiles.filter((b) => b.isCurrentUser).first());
   const session = getSessionUser();
   const realAdmin = getRealSessionUser()?.role === 'admin';
-  const navItems = navItemsForRole(session?.role);
+  const navItems = navItemsForRole();
   const displayName = session?.name || profile?.name || '';
   const displaySub = session
     ? `${session.role.charAt(0).toUpperCase()}${session.role.slice(1)} · ${session.company}`

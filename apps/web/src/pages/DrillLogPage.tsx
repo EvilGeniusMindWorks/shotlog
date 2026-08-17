@@ -5,7 +5,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Check, Droplets, Printer, Trash2 } from 'lucide-react';
-import { canEditAcceptedDrillLog, canTransitionDrillLog, type Role } from '@shotlog/shared';
+import { type Role } from '@shotlog/shared';
+import { canDrillLogTransition, canEditAcceptedLog } from '@/lib/perms';
 import { useLiveQuery, db } from '@/db';
 import { addHole, aggregateDrilling, drilledHoleNumbers, getShotPlan, nextHoleNumber } from '@/hooks/useDrillLogs';
 import { getPlanHoles, planDrilledHoleNumbers, planToDiagram } from '@/hooks/useDrillPlans';
@@ -155,7 +156,7 @@ export function DrillLogPage() {
 
   const designDepth = shot?.totals.avgDrillDepth || log.faceHeight || 0;
   const designSubdrill = shot?.drillParams.subDrill ?? 0;
-  const locked = log.status === 'accepted' && !canEditAcceptedDrillLog(role);
+  const locked = log.status === 'accepted' && !canEditAcceptedLog();
   const editable = !locked && log.status !== 'accepted';
   const footage = holes.reduce((s, h) => s + h.actualDepth, 0);
   const planHole = plan?.find((p) => String(p.n) === holeNumber.trim());
@@ -238,19 +239,19 @@ export function DrillLogPage() {
             </p>
           </div>
           <Badge variant={STATUS_BADGE[log.status]}>{log.status}</Badge>
-          {log.status === 'open' && canTransitionDrillLog('open', 'complete', role) && (
+          {log.status === 'open' && canDrillLogTransition('open', 'complete') && (
             <Button size="sm" variant="secondary" disabled={holes.length === 0}
               onClick={() => { setNoteText(''); setNotePrompt('complete'); }}>
               Mark Complete
             </Button>
           )}
-          {log.status === 'complete' && canTransitionDrillLog('complete', 'accepted', role) && (
+          {log.status === 'complete' && canDrillLogTransition('complete', 'accepted') && (
             <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white"
               onClick={() => navigate(`${logBase}/submit`)}>
               <Check className="h-4 w-4 mr-1" /> Accept &amp; File
             </Button>
           )}
-          {log.status === 'complete' && canTransitionDrillLog('complete', 'open', role) && (
+          {log.status === 'complete' && canDrillLogTransition('complete', 'open') && (
             <Button size="sm" variant="secondary"
               onClick={() => { setNoteText(''); setNotePrompt('reopen'); }}>
               Reopen
@@ -259,14 +260,14 @@ export function DrillLogPage() {
           {log.status === 'accepted' &&
             filedCopies !== undefined &&
             filedCopies.length === 0 &&
-            canTransitionDrillLog('complete', 'accepted', role) && (
+            canDrillLogTransition('complete', 'accepted') && (
               // Backfill: accepted before the archive existed → no office copy
               <Button size="sm" variant="secondary"
                 onClick={() => navigate(`${logBase}/submit`)}>
                 File to office
               </Button>
             )}
-          {log.status === 'accepted' && canTransitionDrillLog('accepted', 'complete', role) && (
+          {log.status === 'accepted' && canDrillLogTransition('accepted', 'complete') && (
             <Button size="sm" variant="secondary" onClick={() => void update({ status: 'complete' })}>
               Un-accept
             </Button>
