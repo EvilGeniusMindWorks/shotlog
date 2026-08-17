@@ -1,6 +1,6 @@
 # Blaster
 
-Status: **DRAFT — workflow validated with Matthew 2026-08-17, implications pending his confirmation**
+Status: **WORKFLOW + SCREEN DESIGN APPROVED (Matthew, 2026-08-17)** — design study: claude.ai/code/artifact/9bfdcfb9-f864-4d03-a78d-df4c919b7fc5
 Real people: Mark; other licensed blasters on larger jobs
 
 ## Who they are
@@ -110,3 +110,6 @@ page · customer/site/job create (new) · contacts · My Records · reference
 - Multi-blaster model (a): one log per day, each SHOT carries its responsible
   blaster + signature
 - No job-lead designation — per-shot responsibility covers it
+- Screen design approved: phase spine, needs-attention home (no KPIs for now),
+  days-are-nouns language, time-card entry for no-login people allowed but
+  discouraged (prefer self-service logins)

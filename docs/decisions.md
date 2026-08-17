@@ -34,6 +34,8 @@ information; amend with a dated entry when one changes.
 
 | 2026-08-17 | Days are NOUNS, never verbs: no "start/resume a day" anywhere — verbs act on work and jobs ("Continue — loading Shot 2", "Start work at another job"); the day record assembles itself and appears only with a date on it. Structure unchanged | Matthew |
 
+| 2026-08-17 | Blaster screen study APPROVED (artifact 9bfdcfb9): phase spine confirmed; KPIs dropped from home (specific KPIs may return later); blaster MAY enter a no-login person's time card but ideally shouldn't have to — push toward self-service logins | Matthew |
+
 ## Open (waiting on Mark / Matthew)
 
 - Permits-on-site placement + job status names (quoted/active/on_hold/complete) — provisional
