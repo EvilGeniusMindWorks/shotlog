@@ -1,6 +1,6 @@
 # Driller
 
-Status: **DRAFT — workflow validated with Matthew 2026-08-17; screens not yet designed**
+Status: **WORKFLOW + SCREEN DESIGN APPROVED (Matthew, 2026-08-17)** — design study: claude.ai/code/artifact/cab6eae6-a462-4b24-beb9-c59963687be4
 Real people: Dinis; other drillers
 
 ## Who they are
@@ -94,3 +94,5 @@ report (solo submit) · My Records · jobs list
 - Drill-from-plan is the model; no-plan path retires
 - Daily trio: hours, log, checklist
 - Driller may submit a daily report without a blaster when necessary
+- Screens approved: trio home, grid-select batch logging ("as planned" /
+  "with changes"), 50-hour clock stays ADVISORY (amber, never blocking)

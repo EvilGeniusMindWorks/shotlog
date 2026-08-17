@@ -40,9 +40,11 @@ information; amend with a dated entry when one changes.
 
 | 2026-08-17 | Driller can submit a daily report WITHOUT a blaster when necessary — drill-only days never require blast-side involvement | Matthew |
 
+| 2026-08-17 | Driller screen study APPROVED (artifact cab6eae6): trio home, grid-select batch logging, 50-hour clock advisory-only | Matthew |
+
 ## Open (waiting on Mark / Matthew)
 
 - Permits-on-site placement + job status names (quoted/active/on_hold/complete) — provisional
 - Owner: quote structure; who may see dollars (`view_financials`); does Owner write or only read
 - Deletion pattern approval + its open questions (Remove vs archive-only for hierarchy; ATF retention lock; button wording)
-- Persona charters: blaster APPROVED; other six awaiting Matthew's pass
+- Persona charters: blaster + driller APPROVED; other five awaiting Matthew's pass
