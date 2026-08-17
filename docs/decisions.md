@@ -36,9 +36,12 @@ information; amend with a dated entry when one changes.
 
 | 2026-08-17 | Blaster screen study APPROVED (artifact 9bfdcfb9): phase spine confirmed; KPIs dropped from home (specific KPIs may return later); blaster MAY enter a no-login person's time card but ideally shouldn't have to — push toward self-service logins | Matthew |
 
+| 2026-08-17 | Driller workflow validated (see personas/driller.md): grid split stays fluid (no assignment); rig checklist is a STANDALONE daily artifact per rig (paper form Rev.2 mirrored; 50-hr due-state to be computed from hours), drill log only selects the rig; plan general notes suffice; batch hole entry + plan deviations are STANDARD operation (app records the collars physically placed); drill-from-plan is THE model, no-plan path retires; driller daily trio = hours + log + checklist | Mark via Matthew |
+
 ## Open (waiting on Mark / Matthew)
 
 - Permits-on-site placement + job status names (quoted/active/on_hold/complete) — provisional
 - Owner: quote structure; who may see dollars (`view_financials`); does Owner write or only read
 - Deletion pattern approval + its open questions (Remove vs archive-only for hierarchy; ATF retention lock; button wording)
-- Persona charters: all seven awaiting Matthew's approval pass
+- Drill-only days: beyond the trio, who owns the day's report (materials, subs)?
+- Persona charters: blaster APPROVED; other six awaiting Matthew's pass

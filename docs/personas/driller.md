@@ -1,54 +1,94 @@
 # Driller
 
-Status: **DRAFT — awaiting Matthew**
+Status: **DRAFT — workflow validated with Matthew 2026-08-17; screens not yet designed**
 Real people: Dinis; other drillers
 
 ## Who they are
 
 Runs the drill ahead of the blast — sometimes days ahead, sometimes on
-drill-only jobs with no blast at all. Works gloved, outdoors, on a
-tablet/phone. Their drill logs are the handoff document the blaster loads
-from.
+drill-only jobs. Works gloved, outdoors, phone/tablet. Their drill logs
+are the handoff the blaster loads from. **The pattern on the ground is
+the truth**: drillers physically flag every hole with collars/stakes —
+the app records what was physically placed.
 
-## Their day
+## The workflow, as validated (2026-08-17)
 
-See which plan they're drilling → start today's log against it → per-hole
-entry in big type (depth, kick ft + direction, conditions) → note hazards
-at depth (water, voids) with notes → sign the log complete → rig checklist
-→ file drill-only work days when there's no blast.
+### Days before
+- The plan arrives (blaster-authored). Multiple drillers split the grid
+  **fluidly** — they agree among themselves, mechanism unknown and
+  unimportant. **No claim/assignment feature.** Every driller sees every
+  plan; dispatch stays a future optional planning feature.
+
+### The morning
+- **The rig checklist is a SEPARATE artifact, never attached to the drill
+  log.** One per rig per day, mirroring the paper form (Rev.2 5/9/17):
+  asset #, starting hours, daily checks (oils, fluids, hoses-while-
+  drilling, grease, horn/alarm/e-stop…), the **every-50-hours-OR-weekly**
+  section (air filters, extinguishers, rollers), free-text repairs,
+  driller signature. Repairs feed the shop's ticket queue (already true).
+  Refinement: compute the 50-hour due state from starting hours instead
+  of trusting memory (ties to Shop PM round).
+- The drill log SELECTS the rig used (field exists) — that's the only
+  link between log and machine.
+- No "before you drill here" briefing needed: blaster and drillers walk
+  the ground together. **General notes on the drill plan** are enough.
+
+### Drilling
+- Rhythm is BOTH: hole-by-hole as they go, or **many at once** — batch
+  recording must be effortless ("holes 12–18, all as planned" = a
+  two-tap gesture, not seven identical entries).
+- **Deviations from plan are STANDARD OPERATION** — skip, add, move
+  holes must be first-class, not awkward. The app mirrors the collars
+  actually placed in the ground.
+- Conditions at depth (water, voids, seams) + notes — feeds the
+  blaster's readiness review (see blaster charter).
+
+### End of day
+- **Drill-from-plan is THE model** — every drilled hole lives under a
+  plan, even a trivial one. The legacy no-plan path gets retired.
+- The driller's daily trio: **their hours (time card) · the drill log ·
+  the rig checklist.** Sign the log complete; blaster accepts later
+  (acceptance locks holes).
+- ❓ Drill-only days: beyond the trio, who owns the day's report
+  (materials, subs)? Matthew's answer listed only the trio — confirm
+  whether the drill-only daily report shrinks or shifts.
 
 ## Jobs to be done
 
-1. ✅ Focused home: today's log one tap away (2.5 screens — the app's model citizen)
+1. ✅ Focused home; today's work one tap away (language fix pending: no "start a log" verbs)
 2. ✅ Plan-driven logging: big-type hole panel, derived angle/length from kick
 3. ✅ Hazard capture at depth + notes
-4. ✅ Rig checklists that feed the shop's repair queue
-5. ✅ Drill-only work days + daily report + submit
-6. 🟡 Finding *their* plan: plans are job-scoped and every driller sees every
-   plan — fine at 2 drillers, noisy at 6
-7. 🔜 **Dispatch/planning** ("where am I drilling tomorrow"): crews
-   self-organize today (Mark, 2026-08-17), and that stays the default —
-   but planned-ahead dispatch is wanted as a PLANNING feature, not a
-   requirement of the daily flow. Design it so self-organizing crews never
-   have to touch it.
+4. ✅ Standalone daily rig checklist per machine, repairs → tickets
+5. ✅ Rig selection on the log
+6. 🟡 Batch hole entry ("12–18 as planned") — not effortless today
+7. 🟡 Deviations (skip/add/move holes) — possible but awkward; must be standard
+8. 🟡 50-hour/weekly section: tracked, but due-state not computed from hours
+9. ❌ Own daily time card (confirmed model)
+10. 🔜 Dispatch — future optional planning feature, never blocking
 
 ## Sore points (audit 2026-08)
 
-/days full-history browse (12.9 screens) when looking past today; Jobs
-list noise (53 rows, no search).
+/days full-history browse (12.9 screens); Jobs list noise (53 rows, no search).
 
 ## Screens they touch
 
-Driller home · drill plan (read) · drill log + hole panel · checklist ·
-work day (drill-only) · daily report · submit/file · My Records · jobs list
+Driller home · drill plan (read + general notes) · drill log + hole
+panel (batch + deviations) · rig checklist · time card · drill-only day
+report (pending ❓ above) · My Records · jobs list
 
 ## Never make them…
 
 - type with precision — big targets, big type, gloves on
+- enter seven identical holes seven times
+- treat an off-plan hole as an exception to apologize for
 - care about the blast side's paperwork
-- fill in what the plan already specifies
+- attach a checklist to a log — separate artifacts
 
-## Design considerations for the screen phase
+## Settled (2026-08-17)
 
-- Dispatch, when it comes, likely lives on the PLAN (assign drillers/days)
-  and surfaces on DrillerHome as "you're on X tomorrow" — optional, never blocking
+- Grid split stays fluid; no assignment feature
+- Checklist = standalone daily artifact per rig; log selects the rig
+- Plan general notes suffice; no pre-drill briefing card
+- Batch entry + deviations-as-standard are design requirements
+- Drill-from-plan is the model; no-plan path retires
+- Daily trio: hours, log, checklist
