@@ -42,9 +42,12 @@ information; amend with a dated entry when one changes.
 
 | 2026-08-17 | Driller screen study APPROVED (artifact cab6eae6): trio home, grid-select batch logging, 50-hour clock advisory-only | Matthew |
 
+| 2026-08-17 | Shop validated: DEDICATED shop; hours become a sourced LEDGER (field entries + shop CORRECTION override — append-only, both values kept, audited); Where's-my-equipment screen derived from filed paperwork (last record → job → site) + manual "at the yard" gesture, no GPS; PM designed on FLAGGED ASSUMPTIONS pending shop-crew verification | Matthew |
+
 ## Open (waiting on Mark / Matthew)
 
 - Permits-on-site placement + job status names (quoted/active/on_hold/complete) — provisional
 - Owner: quote structure; who may see dollars (`view_financials`); does Owner write or only read
 - Deletion pattern approval + its open questions (Remove vs archive-only for hierarchy; ATF retention lock; button wording)
+- Shop-crew verification: triage/severity, real PM intervals + shop paper artifacts, parts capture, bench-vs-truck
 - Persona charters: blaster + driller APPROVED; other five awaiting Matthew's pass
