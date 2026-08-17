@@ -32,6 +32,8 @@ information; amend with a dated entry when one changes.
 | 2026-08-17 | Multi-blaster model = (a): ONE log per day, each SHOT carries a responsible blaster + their signature | Matthew |
 | 2026-08-17 | No job-lead designation — per-shot responsibility covers it | Matthew |
 
+| 2026-08-17 | Days are NOUNS, never verbs: no "start/resume a day" anywhere — verbs act on work and jobs ("Continue — loading Shot 2", "Start work at another job"); the day record assembles itself and appears only with a date on it. Structure unchanged | Matthew |
+
 ## Open (waiting on Mark / Matthew)
 
 - Permits-on-site placement + job status names (quoted/active/on_hold/complete) — provisional
