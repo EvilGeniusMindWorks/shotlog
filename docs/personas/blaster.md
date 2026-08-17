@@ -104,9 +104,9 @@ page · customer/site/job create (new) · contacts · My Records · reference
 - transcribe another person's hours
 - puzzle over an unexplained compliance flag
 
-## Open questions
+## Settled (2026-08-17)
 
-- ❓ "Job lead" designation on multi-blaster jobs — needed for
-  approvals/sign-off routing, or does per-shot responsibility cover it?
-- ❓ Per-shot log model (a) vs per-blaster logs (b) — Mark picks
-- ❓ Time-card confirmation: who approves — the day, the cards, or both?
+- Per-person time cards confirmed; Evette approves BOTH the day and the cards
+- Multi-blaster model (a): one log per day, each SHOT carries its responsible
+  blaster + signature
+- No job-lead designation — per-shot responsibility covers it
