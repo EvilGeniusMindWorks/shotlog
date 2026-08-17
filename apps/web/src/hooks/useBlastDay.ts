@@ -13,7 +13,7 @@ import type {
 import { isBlastingWork } from '@/db/schema';
 import { generateId, nowISO, todayISO } from '@/lib/utils';
 import { getSessionUser } from '@/lib/session';
-import { ensureCustomerAndSite, getJobContext, getJobView, getJobViews } from '@/lib/jobContext';
+import { ensureCustomerAndSite, getJobContext, getJobView, getJobViews, nextJobNumber } from '@/lib/jobContext';
 
 export function useBlastDays() {
   const blastDays = useLiveQuery(() =>
@@ -409,6 +409,9 @@ export async function createJob(data: Partial<Job> & { name: string; customer: s
   const job: Job = {
     id,
     name: data.name,
+    jobNumber: data.jobNumber?.trim() || (await nextJobNumber()),
+    ...(data.customerPO?.trim() ? { customerPO: data.customerPO.trim() } : {}),
+    jobStatus: data.jobStatus ?? 'active',
     customerId,
     siteId,
     operation: data.operation ?? 'construction',

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, MapPin } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { getPowerSync } from '@/db/powersync/client';
-import { cn, formatDate } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
+import { RecordShell } from '@/components/layout/RecordShell';
 import { useDraftRecord } from '@/hooks/useDraftRecord';
 import { getSessionUser } from '@/lib/session';
 import { JobContactsCard } from '@/components/forms/JobContactsCard';
@@ -21,11 +21,11 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 
 export function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [view, setView] = useState<'details' | 'activity'>('details');
   const job = useLiveQuery(() => (id ? db.jobs.get(id) : undefined), [id]);
   const ctx = useJobContext(id);
 
@@ -35,6 +35,9 @@ export function JobDetailPage() {
       const days = await db.blastDays.where('jobId').equals(id).sortBy('date');
       return days.reverse();
     }, [id]) ?? [];
+
+  const planCount =
+    useLiveQuery(() => (id ? db.drillPlans.where('jobId').equals(id).count() : 0), [id]) ?? 0;
 
   // Aggregate shots + explosives across the job's history for the stats bar
   const stats = useLiveQuery(async () => {
@@ -60,89 +63,117 @@ export function JobDetailPage() {
   }
 
   const avgPF = stats.totalYards > 0 ? powderFactor(stats.totalLbs, stats.totalYards) : 0;
+  const isAdmin = getSessionUser()?.role === 'admin';
+  const status = job.jobStatus ?? (job.isActive ? 'active' : 'complete');
 
   return (
-    <div className="max-w-2xl mx-auto">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/jobs')}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex-1 min-w-0">
-          <h2 className="font-bold text-lg truncate">{job.name}</h2>
-          <p className="text-sm text-gray-500 flex items-center gap-1">
-            <MapPin className="h-3.5 w-3.5 shrink-0" />
-            {[job.address, job.city, job.state].filter(Boolean).join(', ') || 'No address'}
-          </p>
-        </div>
-        <Badge variant={job.isActive ? 'compliant' : 'draft'}>
-          {job.isActive ? 'Active' : 'Inactive'}
-        </Badge>
-      </div>
-
-      {/* Details = config; Activity = who/what/documents across the job */}
-      <div className="px-4 pt-3 flex gap-2">
-        {(['details', 'activity'] as const).map((v) => (
-          <button
-            key={v}
-            className={cn(
-              'min-h-[38px] px-4 rounded-full border text-sm font-medium capitalize',
-              view === v ? 'bg-navy text-white border-navy' : 'bg-white text-gray-600 border-gray-300',
-            )}
-            onClick={() => setView(v)}
-          >
-            {v}
-          </button>
-        ))}
-      </div>
-
-      {view === 'details' ? (
-      <div className="p-4 space-y-4">
-        {/* Stats bar */}
-        <div className="grid grid-cols-4 gap-2">
-          <StatBox label="Blast Days" value={String(blastDays.length)} />
-          <StatBox label="Total Shots" value={String(stats.shots)} />
-          <StatBox label="Site K" value={String(ctx?.kFactor ?? job.kFactor)} />
-          <StatBox label="Avg PF" value={avgPF > 0 ? avgPF.toFixed(2) : '—'} />
-        </div>
-
-        <CustomerSiteCard job={job} ctx={ctx} />
-        <JobContactsCard job={ctx?.site ? { ...job, contacts: ctx.contacts, contactNotes: ctx.contactNotes } : job} siteId={job.siteId} readOnly={getSessionUser()?.role !== 'admin'} />
-        <JobConfigCard job={job} />
-        <SiteKCard job={job} />
-        <DrillPlansCard jobId={job.id} />
-
-        {/* Blast day history */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Blast Day History</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {blastDays.length === 0 && (
-              <p className="text-sm text-gray-400 text-center py-2">No blast days yet.</p>
-            )}
-            {blastDays.map((day) => (
-              <button
-                key={day.id}
-                className="w-full flex items-center justify-between border border-gray-200 rounded-lg p-3 text-left hover:bg-gray-50 active:bg-gray-100 min-h-[44px]"
-                onClick={() => navigate(`/blast-day/${day.id}`)}
-              >
-                <span className="text-sm font-medium">
-                  {day.name ? `${day.name} · ` : ''}
-                  {formatDate(day.date)}
-                </span>
-                <Badge variant={day.status as 'draft' | 'submitted' | 'approved'}>
-                  {day.status}
-                </Badge>
-              </button>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-      ) : (
-        <JobActivity jobId={job.id} lbs={stats.totalLbs} />
-      )}
-    </div>
+    <RecordShell
+      breadcrumb={[
+        { label: 'Jobs', to: '/jobs' },
+        ...(ctx?.customer ? [{ label: ctx.customerName, to: `/customers/${ctx.customer.id}` }] : []),
+        ...(ctx?.site ? [{ label: ctx.siteName, to: `/sites/${ctx.site.id}` }] : []),
+      ]}
+      title={`${job.jobNumber ? `${job.jobNumber} · ` : ''}${job.name}`}
+      badge={<Badge variant={status === 'active' ? 'compliant' : 'draft'}>{status}</Badge>}
+      subline={
+        [ctx?.address, ctx?.city, ctx?.state].filter(Boolean).join(', ') || 'No address'
+      }
+      stats={[
+        { label: 'Blast Days', value: String(blastDays.length) },
+        { label: 'Total Shots', value: String(stats.shots) },
+        { label: 'Site K', value: String(ctx?.kFactor ?? job.kFactor ?? '—') },
+        { label: 'Avg PF', value: avgPF > 0 ? avgPF.toFixed(2) : '—' },
+      ]}
+      sections={[
+        {
+          id: 'setup',
+          label: 'Setup',
+          summary: [job.jobNumber, ctx?.customerName, job.operation].filter(Boolean).join(' · '),
+          render: () => (
+            <div className="space-y-4">
+              <CustomerSiteCard job={job} ctx={ctx} />
+              <JobConfigCard job={job} />
+            </div>
+          ),
+        },
+        {
+          id: 'contacts',
+          label: 'Contacts',
+          count: ctx?.contacts.length || undefined,
+          summary: ctx?.contacts[0]
+            ? `${ctx.contacts[0].name}${ctx.contacts[0].phone ? ` · ${ctx.contacts[0].phone}` : ''}`
+            : 'none yet',
+          render: () => (
+            <JobContactsCard
+              job={ctx?.site ? { ...job, contacts: ctx.contacts, contactNotes: ctx.contactNotes } : job}
+              siteId={job.siteId}
+              readOnly={!isAdmin}
+            />
+          ),
+        },
+        {
+          id: 'site-k',
+          label: 'Site K calibration',
+          summary: `current K ${ctx?.kFactor ?? job.kFactor ?? '—'}`,
+          defaultOpen: false,
+          preview: () => (
+            <p className="text-sm text-gray-500">
+              Back-calculates K from this job's measured seismo readings. Current site default:{' '}
+              <b>{ctx?.kFactor ?? job.kFactor ?? '—'}</b>.
+            </p>
+          ),
+          render: () => <SiteKCard job={job} />,
+        },
+        {
+          id: 'drill-plans',
+          label: 'Drill plans',
+          count: planCount || undefined,
+          summary: planCount ? `${planCount} plan${planCount === 1 ? '' : 's'}` : 'none yet',
+          render: () => <DrillPlansCard jobId={job.id} />,
+        },
+        {
+          id: 'work-days',
+          label: 'Work days',
+          count: blastDays.length,
+          summary: blastDays[0] ? `latest ${formatDate(blastDays[0].date)}` : 'none yet',
+          render: () => (
+            <div className="space-y-2">
+              {blastDays.length === 0 && (
+                <p className="text-sm text-gray-400 text-center py-2">No blast days yet.</p>
+              )}
+              {blastDays.map((day) => (
+                <button
+                  key={day.id}
+                  className="w-full flex items-center justify-between border border-gray-200 rounded-lg p-3 text-left hover:bg-gray-50 active:bg-gray-100 min-h-[44px]"
+                  onClick={() => navigate(`/blast-day/${day.id}`)}
+                >
+                  <span className="text-sm font-medium">
+                    {day.name ? `${day.name} · ` : ''}
+                    {formatDate(day.date)}
+                  </span>
+                  <Badge variant={day.status as 'draft' | 'submitted' | 'approved'}>
+                    {day.status}
+                  </Badge>
+                </button>
+              ))}
+            </div>
+          ),
+        },
+        {
+          id: 'activity',
+          label: 'Activity',
+          summary: 'crew, equipment, documents',
+          defaultOpen: false,
+          preview: () => (
+            <p className="text-sm text-gray-500">
+              Who worked this job, the equipment used, and every document — open for the full
+              rollup.
+            </p>
+          ),
+          render: () => <JobActivity jobId={job.id} lbs={stats.totalLbs} />,
+        },
+      ]}
+    />
   );
 }
 
@@ -233,7 +264,7 @@ function JobActivity({ jobId, lbs }: { jobId: string; lbs: number }) {
   );
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="space-y-4">
       <div className="grid grid-cols-4 gap-2">
         <StatBox label={`Days${typeLine ? ` (${typeLine})` : ''}`} value={String(activity?.days ?? '—')} />
         <StatBox label="Ft Drilled" value={activity ? activity.footage.toFixed(0) : '—'} />
@@ -540,6 +571,13 @@ function StatBox({ label, value }: { label: string; value: string }) {
   );
 }
 
+const JOB_STATUS_OPTIONS = [
+  { value: 'quoted', label: 'Quoted' },
+  { value: 'active', label: 'Active' },
+  { value: 'on_hold', label: 'On hold' },
+  { value: 'complete', label: 'Complete' },
+];
+
 function JobConfigCard({ job }: { job: Job }) {
   const { draft, setField } = useDraftRecord(db.jobs, job);
   // Jobs are admin-managed (spec §A3) — everyone else sees them read-only
@@ -566,6 +604,70 @@ function JobConfigCard({ job }: { job: Job }) {
         <div>
           <Label className="text-xs">Job Name</Label>
           <Input value={draft.name} onChange={(e) => setField('name', e.target.value)} />
+        </div>
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <Label className="text-xs">
+              Job #<span className="text-gray-400 font-normal"> — auto, editable</span>
+            </Label>
+            <Input
+              value={draft.jobNumber ?? ''}
+              placeholder="26-041"
+              onChange={(e) => setField('jobNumber', e.target.value)}
+            />
+          </div>
+          <div className="flex-1">
+            <Label className="text-xs">Customer PO</Label>
+            <Input
+              value={draft.customerPO ?? ''}
+              onChange={(e) => setField('customerPO', e.target.value)}
+            />
+          </div>
+        </div>
+        <div>
+          <Label className="text-xs">Status</Label>
+          <Select
+            value={draft.jobStatus ?? (draft.isActive ? 'active' : 'complete')}
+            onChange={(e) => {
+              const status = e.target.value as NonNullable<Job['jobStatus']>;
+              setField('jobStatus', status);
+              // isActive stays the legacy mirror every list/picker filters on
+              setField('isActive', status === 'active' || status === 'quoted');
+            }}
+            options={JOB_STATUS_OPTIONS}
+          />
+        </div>
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <Label className="text-xs">Start</Label>
+            <Input
+              type="date"
+              value={draft.startDate ?? ''}
+              onChange={(e) => setField('startDate', e.target.value || undefined)}
+            />
+          </div>
+          <div className="flex-1">
+            <Label className="text-xs">Target end</Label>
+            <Input
+              type="date"
+              value={draft.targetDate ?? ''}
+              onChange={(e) => setField('targetDate', e.target.value || undefined)}
+            />
+          </div>
+        </div>
+        <div>
+          <Label className="text-xs">Quote ref</Label>
+          <Input
+            value={draft.quoteRef ?? ''}
+            onChange={(e) => setField('quoteRef', e.target.value)}
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Engineer of record</Label>
+          <Input
+            value={draft.engineerOfRecord ?? ''}
+            onChange={(e) => setField('engineerOfRecord', e.target.value)}
+          />
         </div>
         <div>
           <Label className="text-xs">Type of Rock</Label>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   CircleHelp,
   FolderArchive,
@@ -35,6 +35,51 @@ function navItemsForRole(role: string | undefined) {
 }
 
 const VIEWABLE_ROLES = ['admin', 'supervisor', 'blaster', 'driller', 'mechanic', 'office'];
+
+// Jobs-section sub-items (nav decision: lenses one level deep in the
+// sidebar, never individual records). Shown while the user is anywhere
+// inside the section — the lens lists or a customer/site/job record.
+const JOBS_SUBITEMS = [
+  { to: '/jobs', label: 'All jobs', lens: null },
+  { to: '/jobs?lens=customers', label: 'Customers', lens: 'customers' },
+  { to: '/jobs?lens=sites', label: 'Sites', lens: 'sites' },
+];
+
+function JobsSubNav() {
+  const location = useLocation();
+  const inSection =
+    location.pathname.startsWith('/jobs') ||
+    location.pathname.startsWith('/customers') ||
+    location.pathname.startsWith('/sites');
+  if (!inSection) return null;
+  const lens = new URLSearchParams(location.search).get('lens');
+  const activeLens =
+    location.pathname === '/jobs'
+      ? lens
+      : location.pathname.startsWith('/customers')
+        ? 'customers'
+        : location.pathname.startsWith('/sites')
+          ? 'sites'
+          : null;
+  return (
+    <div className="ml-9 space-y-0.5 pb-1">
+      {JOBS_SUBITEMS.map((s) => (
+        <NavLink
+          key={s.label}
+          to={s.to}
+          className={cn(
+            'block px-3 py-1.5 rounded-md text-[13px] transition-colors',
+            activeLens === s.lens
+              ? 'text-white bg-white/10 font-medium'
+              : 'text-navy-200 hover:text-white hover:bg-white/5',
+          )}
+        >
+          {s.label}
+        </NavLink>
+      ))}
+    </div>
+  );
+}
 
 /** Admin-only role impersonation banner — sticky so the exit is always reachable */
 function ViewAsBanner() {
@@ -124,19 +169,21 @@ export function AppShell() {
         </div>
         <nav className="flex-1 px-2 space-y-1">
           {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                  isActive ? 'bg-white/10 text-white' : 'text-navy-200 hover:text-white hover:bg-white/5',
-                )
-              }
-            >
-              <item.icon className="h-5 w-5" />
-              {item.label}
-            </NavLink>
+            <div key={item.to}>
+              <NavLink
+                to={item.to}
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                    isActive ? 'bg-white/10 text-white' : 'text-navy-200 hover:text-white hover:bg-white/5',
+                  )
+                }
+              >
+                <item.icon className="h-5 w-5" />
+                {item.label}
+              </NavLink>
+              {item.to === '/jobs' && <JobsSubNav />}
+            </div>
           ))}
           <button
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-navy-200 hover:text-white hover:bg-white/5 transition-colors"

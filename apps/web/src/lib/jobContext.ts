@@ -35,7 +35,7 @@ export function resolveJobContext(
     site,
     customerName: customer?.name ?? job.customer ?? '',
     siteName: site?.name ?? [job.address, job.city].filter(Boolean).join(', '),
-    address: site?.address ?? job.address ?? '',
+    address: site ? [site.address, site.street2].filter(Boolean).join(', ') : job.address ?? '',
     city: site?.city ?? job.city ?? '',
     state: site?.state ?? job.state ?? '',
     kFactor: site?.kFactor ?? job.kFactor ?? 180,
@@ -74,7 +74,7 @@ export function overlayJob(job: Job, site?: Site, customer?: Customer): Job {
   return {
     ...job,
     customer: customer?.name ?? job.customer,
-    address: site?.address ?? job.address,
+    address: site ? [site.address, site.street2].filter(Boolean).join(', ') : job.address,
     city: site?.city ?? job.city,
     state: site?.state ?? job.state,
     kFactor: site?.kFactor ?? job.kFactor,
@@ -107,13 +107,31 @@ export async function getJobViews(jobs: Job[]): Promise<Job[]> {
 
 const norm = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim();
 
+/**
+ * Next per-year job number: "26-041" = 2026's 41st job. Computed from the
+ * local max — jobs are created by the office (usually online), so a rare
+ * offline collision is acceptable and the number stays editable.
+ */
+export async function nextJobNumber(): Promise<string> {
+  const yy = String(new Date().getFullYear()).slice(2);
+  const re = new RegExp(`^${yy}-(\\d+)$`);
+  let max = 0;
+  for (const j of await db.jobs.toArray()) {
+    const m = j.jobNumber?.match(re);
+    if (m) max = Math.max(max, parseInt(m[1], 10));
+  }
+  return `${yy}-${String(max + 1).padStart(3, '0')}`;
+}
+
 /** Direct customer creation (Customers screen) — dedupes by name. */
-export async function createCustomer(data: {
-  name: string;
-  phone?: string;
-  billingAddress?: string;
-  notes?: string;
-}): Promise<string> {
+export async function createCustomer(
+  data: {
+    name: string;
+    phone?: string;
+    billingAddress?: string;
+    notes?: string;
+  } & Partial<Customer>,
+): Promise<string> {
   const existing = (await db.customers.toArray()).find(
     (c) => norm(c.name) === norm(data.name),
   );
@@ -121,11 +139,13 @@ export async function createCustomer(data: {
   const now = nowISO();
   const id = generateId();
   await db.customers.add({
+    ...data,
     id,
     name: data.name.trim(),
     ...(data.phone?.trim() ? { phone: data.phone.trim() } : {}),
     ...(data.billingAddress?.trim() ? { billingAddress: data.billingAddress.trim() } : {}),
     ...(data.notes?.trim() ? { notes: data.notes.trim() } : {}),
+    status: data.status ?? 'active',
     isActive: true,
     createdAt: now,
     updatedAt: now,
@@ -145,7 +165,7 @@ export async function createSite(
     kFactor?: number;
     localRegName?: string;
     localPPVLimit?: number;
-  },
+  } & Partial<Omit<Site, 'name'>>,
 ): Promise<string> {
   const key = norm(data.address || data.name || '');
   const existing = (await db.sites.where('customerId').equals(customerId).toArray()).find(
@@ -155,6 +175,7 @@ export async function createSite(
   const now = nowISO();
   const id = generateId();
   await db.sites.add({
+    ...data,
     id,
     customerId,
     name: data.name?.trim() || [data.address, data.city].filter(Boolean).join(', ') || 'Site',
@@ -169,7 +190,7 @@ export async function createSite(
     createdAt: now,
     updatedAt: now,
     syncStatus: 'local',
-  });
+  } as Site);
   return id;
 }
 

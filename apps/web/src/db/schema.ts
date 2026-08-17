@@ -35,35 +35,119 @@ export interface KFactorHistoryEntry {
 // keeps only engagement facts.
 // ══════════════════════════════════════════════════════
 
+/** Full postal address — every address in the app is a field SET, never
+ *  one line (Matthew's call in the screen-studies review). */
+export interface PostalAddress {
+  street1: string;
+  street2?: string;
+  city: string;
+  state: string; // 2-letter
+  zip: string;
+}
+
+export type CustomerType = 'gc' | 'quarry' | 'developer' | 'municipality' | 'homeowner' | 'other';
+export type CustomerStatus = 'prospect' | 'active' | 'inactive';
+
+/** Named person at a customer (billing / scheduling / PM / exec…) */
+export interface CustomerContact {
+  id: string;
+  name: string;
+  role: string;
+  phone?: string;
+  email?: string;
+  isPrimary?: boolean;
+}
+
 export interface Customer extends BaseRecord {
   name: string;
-  billingAddress?: string;
+  customerType?: CustomerType;
+  status?: CustomerStatus; // absent = active (pre-expansion records)
+  website?: string;
   phone?: string;
+  billing?: PostalAddress;
+  paymentTerms?: string; // "Net 30"…
+  poRequired?: boolean;
+  taxExempt?: boolean;
+  taxCertNote?: string;
+  rateNotes?: string;
+  /** Certificate of insurance on file — expiry drives office warnings */
+  coiExpires?: string; // ISO date
+  w9OnFile?: boolean;
+  prequalNotes?: string;
+  customerContacts?: CustomerContact[];
   notes?: string;
   isActive: boolean;
+  // LEGACY single-line billing address (pre-expansion records)
+  billingAddress?: string;
+}
+
+/** A permit held at a site — number + expiry drive renewal countdowns */
+export interface SitePermit {
+  id: string;
+  name: string; // "Blasting permit"
+  number: string;
+  authority?: string;
+  expiresAt?: string; // ISO date
+  notes?: string;
+}
+
+/** A structure of concern near the site (house, well, gas main…) */
+export interface NearbyStructure {
+  id: string;
+  label: string;
+  distanceFt?: number;
+  direction?: string;
+  notes?: string;
 }
 
 export interface Site extends BaseRecord {
   customerId: string;
   /** Display label — defaults to the address when not named */
   name: string;
-  address: string;
+  address: string; // street 1
+  street2?: string;
   city: string;
   state: string; // 2-letter — drives license auto-pick + state regs
+  zip?: string;
   gps?: string;
+  /** Gate codes, haul road, where to park the magazine truck… */
+  accessNotes?: string;
+  parcelOwner?: string;
   kFactor: number;
   kFactorHistory: KFactorHistoryEntry[];
+  rockType?: string;
+  overburden?: string;
+  waterConditions?: string;
   // Local/municipal PPV override (Spec §16.1, e.g. Whately Bylaw 1.0 in/s)
   localRegName?: string;
   localPPVLimit?: number;
+  /** Authority having jurisdiction (town/city + who issues permits) */
+  jurisdiction?: string;
+  permits?: SitePermit[];
+  /** "FD 24 h notice · abutters 500 ft" — how this town wants noticing */
+  notificationRules?: string;
+  nearbyStructures?: NearbyStructure[];
+  utilityNotes?: string;
+  standingHazards?: string;
   /** Site contact sheet — office-maintained, field-critical OFFLINE */
   contacts?: JobContact[];
   contactNotes?: string;
   isActive: boolean;
 }
 
+export type JobStatus = 'quoted' | 'active' | 'on_hold' | 'complete';
+
 export interface Job extends BaseRecord {
   name: string;
+  /** Auto-assigned per-year sequence ("26-041"), editable override */
+  jobNumber?: string;
+  /** The customer's PO — their identifier, separate from ours */
+  customerPO?: string;
+  jobStatus?: JobStatus; // absent = active (pre-expansion records)
+  startDate?: string; // ISO date
+  targetDate?: string;
+  quoteRef?: string;
+  engineerOfRecord?: string;
   /** Hierarchy links — set on every new job; backfilled on legacy jobs */
   customerId?: string;
   siteId?: string;
