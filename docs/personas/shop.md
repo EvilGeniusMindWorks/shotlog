@@ -13,8 +13,12 @@ to life and keep the meters honest.
 
 ### The queue
 - Dedicated shop → MechanicHome is a real daily home.
-- Triage: ASSUMED out-of-service jumps the line, no severity field —
-  **verify with shop**.
+- Home = the SHOP TRIO (Down · Tickets · Due soon) over ONE merged
+  worklist (tickets + due services).
+- **Prioritization: sensible DEFAULT (downs first, then oldest), but the
+  shop REORDERS it** — they know what the app can't: downtime cost of a
+  machine, criticality of the job waiting on it. Drag to reorder,
+  reset-to-default available.
 
 ### Hours & the fleet
 - **Keep an accurate running LOG of hours on the drills** — every meter
@@ -30,6 +34,11 @@ to life and keep the meters honest.
   checklist / drill log / equipment-hour entry → job → site. Shows
   staleness ("last seen 12 days ago"). Manual "at the shop/yard" gesture
   covers the haul-back gap. No GPS hardware involved.
+- **Map view required**: pins from site coordinates (one-time address
+  geocode saved to the site, offline after). List+map split on wide;
+  list with map toggle on phone.
+- **Form factor: shop is primarily landscape tablet / computer** —
+  phone is the compact fallback (inverse of the field personas).
 
 ### Preventive maintenance
 - Real-world practice UNKNOWN — Matthew will verify with the shop crew.

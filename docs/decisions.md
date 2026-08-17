@@ -44,10 +44,12 @@ information; amend with a dated entry when one changes.
 
 | 2026-08-17 | Shop validated: DEDICATED shop; hours become a sourced LEDGER (field entries + shop CORRECTION override — append-only, both values kept, audited); Where's-my-equipment screen derived from filed paperwork (last record → job → site) + manual "at the yard" gesture, no GPS; PM designed on FLAGGED ASSUMPTIONS pending shop-crew verification | Matthew |
 
+| 2026-08-17 | Shop screens revised per Matthew: shop TRIO tiles (Down/Tickets/Due) over one merged worklist; queue order = editable by shop (default downs-first-oldest; drag to reorder — downtime cost / job criticality are shop knowledge); where's-my-equipment gets a MAP (site coords, one-time geocode, offline after; list+map on wide, toggle on phone); shop form factor = landscape tablet/computer first; ledger + PM sections approved as designed | Matthew |
+
 ## Open (waiting on Mark / Matthew)
 
 - Permits-on-site placement + job status names (quoted/active/on_hold/complete) — provisional
 - Owner: quote structure; who may see dollars (`view_financials`); does Owner write or only read
 - Deletion pattern approval + its open questions (Remove vs archive-only for hierarchy; ATF retention lock; button wording)
-- Shop-crew verification: triage/severity, real PM intervals + shop paper artifacts, parts capture, bench-vs-truck
+- Shop-crew verification (held for later): real PM intervals + shop paper artifacts, parts capture, bench-vs-truck
 - Persona charters: blaster + driller APPROVED; other five awaiting Matthew's pass
