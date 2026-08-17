@@ -1,64 +1,112 @@
 # Blaster
 
-Status: **DRAFT — awaiting Matthew**
+Status: **DRAFT — workflow validated with Matthew 2026-08-17, implications pending his confirmation**
 Real people: Mark; other licensed blasters on larger jobs
 
-## Who they are (updated from Mark, 2026-08-17)
+## Who they are
 
-A blaster is **essentially a supervisory role**. They act in a senior
-capacity on every job — but a blaster is **not always the job lead**:
-large jobs may run several blasters at once. Licensed in multiple states;
-the license drives what they may sign.
+A blaster is **essentially a supervisory role** (Mark). Senior capacity on
+every job, **sees everything** — but not always the job lead: large jobs
+run several blasters at once. Licensed in multiple states; the license
+drives what they may sign.
 
-**They should be able to see everything.** (Mark's words.) Visibility is
-not the same as write access — the permission matrix still governs writes —
-but no company data should be hidden from a blaster's view.
+## The workflow, as validated (2026-08-17)
 
-## Their day
+### Days before the blast
+- Customer/site/job may be set up by the Owner or Admin, may already
+  exist, **or the blaster sets them up personally** — especially on small
+  jobs. → Blasters need CREATE/EDIT on customers/sites/jobs (capability
+  grant; archive/lifecycle stays supervisory).
+- Mark has a **rough shot design in mind when he lays the drill plan**,
+  then **confirms/adjusts after drilling completes** — hazards, imprecise
+  holes, surprises all move the design. → New step in the flow: a **shot
+  readiness review** between drilling-complete and the blasting log:
+  plan intent vs drilling actuals, adjust, then flow into the log.
 
-Arrive on site → open/create today's work day → review drilling (accept
-the drillers' pattern) → design the shot (K, scaled distance, delays) →
-load top-down by product totals → shoot → capture seismo printouts →
-sign → submit the day to the office before leaving.
+### The morning of
+- Entry happens **before / during / after, depending on the shot**.
+  Design principle: *the simpler and more genuinely useful for planning
+  the form is, the earlier it gets filled.* The form should BE his
+  planning tool, not an end-of-day chore.
+- Pre-blast ritual (notifications, surveys, guarding): nothing requested,
+  but include a **placeholder checklist slot with editable language** for
+  future inclusion.
+
+### Reviewing the drilling
+- **He loads differently based on hazards** — what, which hole, what
+  depth. That detail must be easily at hand while making loading
+  decisions (the decision logic stays in Mark's head; the app's job is
+  the information).
+- Multiple drillers file multiple logs against one plan. Mark needs the
+  **full completed plan, merged, with per-hole attribution**: who drilled
+  each hole, when, actual depth, conditions/hazards, notes.
+
+### Designing the shot
+- Timing is either/or (planned ahead or decided on site) — support both.
+- **Compliance flags must explain themselves**: which rule, which numbers,
+  why it trips ("predicted PPV 2.3 in/s exceeds Whately bylaw 1.0 at
+  120 ft"). Never a bare warning.
+
+### Loading and the shot
+- Multiple shots per day, each potentially different.
+- **Seismo data is point-in-time, tied to the specific blast's moment.**
+  The unit records the shot; data gets attached then or later depending
+  on when he does the form. Late attachment is NORMAL — link readings to
+  the shot's time, never nag about missing readings mid-day.
+
+### End of day
+- Mark fills **his own** daily report: his hours, who worked with him,
+  equipment used. **He expects every other crew member — drillers, other
+  blasters — to file their own daily time card.** → Model shift: per-person
+  time cards, aggregated into the day, replacing one-person-transcribes-all.
+  (Touches every field persona + the office approval flow — confirm.)
+
+### Multi-blaster days
+- **The log is filled by the blaster responsible for the shot.** Two
+  candidate models to put before Mark:
+  (a) one log per day, each SHOT carries a responsible blaster + their
+  signature (smaller change); (b) multiple logs per day, one per blaster.
+  Today's one-log-per-day constraint must bend either way.
 
 ## Jobs to be done
 
 1. ✅ Start/resume today's day in seconds, offline
 2. ✅ Author the blasting log: shots, drill params, top-down explosive entry
 3. ✅ Design plan: map sketch, structure distances, auto SD / PPV / compliance
-4. ✅ Import the standalone drill plan; coverage verification against drilled holes
-5. ✅ Accept drill patterns (locks hole rows)
-6. ✅ Seismo printouts by camera; compliance computed
-7. ✅ File the day: searchable PDF office copy, offline-capable, versioned
-8. ✅ Tap-to-call site contacts offline
-9. ✅ See all crews' days (confirmed correct — supervisory visibility)
-10. 🟡 See what still needs finishing — today is covered (TodayCard); an
-    older unfinished draft or a sent-back day is buried in history
-11. ❌ A "my week" surface: which sites, which days unsubmitted, what came back
+4. 🟡 Compliance shows status but doesn't EXPLAIN the why (validated need)
+5. 🟡 Drill plan → shot: import exists; the readiness-review step does not
+6. 🟡 Merged completed-plan view with per-hole driller attribution — partial
+   (coverage badge only)
+7. 🟡 Hazards visible in drill logs but not surfaced at loading time
+8. ❌ Create customer/site/job himself (admin-only today)
+9. ❌ Own time card (today he'd transcribe everyone's hours)
+10. ❌ Per-shot responsible blaster / signature on multi-blaster days
+11. ❌ Pre-blast checklist placeholder
+12. 🟡 Older unfinished drafts / sent-back days buried in history (audit)
 
 ## Sore points (audit 2026-08)
 
-Field dashboard = 13.5 screens of scroll (25.9 on phone) — full history
-inline. My Records = 11.5 screens, no time window. Jobs list = 53
-unfiltered rows, no search.
+Field dashboard 13.5 screens (25.9 phone) — full history inline. My
+Records 11.5 screens. Jobs list 53 rows, no search.
 
 ## Screens they touch
 
-Field dashboard · work day (blast log, daily report) · shot form · design
-plan/map · explosive usage · seismo · submit/file · drill plan (author +
-accept) · job page · contacts · My Records · reference tables · equipment
-hours/checklist · incident filing
+Field dashboard · work day (blast log, daily report, time card) · shot
+form · shot readiness review (new) · design plan/map · explosive usage ·
+seismo · submit/file · drill plan (author + merged review + accept) · job
+page · customer/site/job create (new) · contacts · My Records · reference
 
 ## Never make them…
 
 - re-enter anything the job/site already knows
 - scroll past history to find today's work
 - need signal to author or file anything
+- transcribe another person's hours
+- puzzle over an unexplained compliance flag
 
-## Design considerations for the screen phase
+## Open questions
 
-- Supervisory visibility: the blaster home should read like a *site
-  lead's* view — all crews' activity, drilling status, what's blocking
-- ❓ "Job lead" as a designation: multiple blasters on a big job — does one
-  of them need to be marked lead on a day/job (approvals routing, sign-off
-  order)? Ask Mark before the screen phase locks the day header.
+- ❓ "Job lead" designation on multi-blaster jobs — needed for
+  approvals/sign-off routing, or does per-shot responsibility cover it?
+- ❓ Per-shot log model (a) vs per-blaster logs (b) — Mark picks
+- ❓ Time-card confirmation: who approves — the day, the cards, or both?

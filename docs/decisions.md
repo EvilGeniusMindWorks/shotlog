@@ -28,6 +28,8 @@ information; amend with a dated entry when one changes.
 | 2026-08-17 | Office = Evette; compliance and ATF-audit response are her core jobs — audit-response export elevated in her charter | Matthew |
 | 2026-08-17 | Record lifecycle must be a consistent, intuitive pattern; deletes are LOGICAL, preserving a full record of all activity — see deletion-pattern.md (proposal pending approval) | Matthew |
 
+| 2026-08-17 | Blaster workflow validated (see personas/blaster.md): blasters may set up customer/site/job themselves; drill plan carries design intent with a readiness-review/adjust step after drilling; per-hole hazards must inform loading; merged completed-plan view with driller attribution; compliance flags must explain why; seismo readings are point-in-time tied to the blast moment, late attachment normal; each crew member files their OWN daily time card; multi-blaster days = log per responsible blaster (model TBD) | Mark via Matthew |
+
 ## Open (waiting on Mark / Matthew)
 
 - Permits-on-site placement + job status names (quoted/active/on_hold/complete) — provisional
