@@ -19,11 +19,19 @@ information; amend with a dated entry when one changes.
 | 2026-08-16 | Roles are CONFIGURABLE capability bundles; six built-ins seeded to exact legacy behavior; Admin protected by code | Matthew: stop hard-coding permissions |
 | 2026-08-17 | Persona-first process: charters + audit in docs/ govern rounds; spec amended before code | Matthew: stop vibe-coding drift |
 | 2026-08-17 | No list renders unbounded history; "needs me now" before archives (smart-list pattern) | Matthew: infinite scroll unacceptable |
+| 2026-08-17 | Personas split one-per-file (docs/personas/); Matthew approves and amends each as real-people input arrives | Matthew's review workflow |
+| 2026-08-17 | Owner = the blasting company's owner(s); full and total access | Matthew |
+| 2026-08-17 | Platform Admin is a NEW, SEPARATE persona: Matthew/the vendor, app-level administration above company roles; platform roles must not live in the per-company roles engine | Matthew — future multi-tenant |
+| 2026-08-17 | Blaster is a supervisory role (Mark): senior capacity, sees everything, but not always the job lead — big jobs run multiple blasters | Mark via Matthew |
+| 2026-08-17 | Blaster default view = ALL crews' days (supervisory visibility confirmed) | follows from the above |
+| 2026-08-17 | Driller dispatch: crews self-organize today; dispatch is a wanted PLANNING feature, optional and never blocking the daily flow | Mark via Matthew |
+| 2026-08-17 | Office = Evette; compliance and ATF-audit response are her core jobs — audit-response export elevated in her charter | Matthew |
+| 2026-08-17 | Record lifecycle must be a consistent, intuitive pattern; deletes are LOGICAL, preserving a full record of all activity — see deletion-pattern.md (proposal pending approval) | Matthew |
 
 ## Open (waiting on Mark / Matthew)
 
 - Permits-on-site placement + job status names (quoted/active/on_hold/complete) — provisional
-- Blaster default view: own days vs all crews' days
-- Driller assignment/dispatch: needed or not?
-- Owner: who is it; quote structure; who may see dollars (`view_financials`)
-- Office: who plays the role at Baystate today
+- Owner: quote structure; who may see dollars (`view_financials`); does Owner write or only read
+- Blaster "job lead" designation on multi-blaster jobs — needed?
+- Deletion pattern approval + its open questions (Remove vs archive-only for hierarchy; ATF retention lock; button wording)
+- Persona charters: all seven awaiting Matthew's approval pass
