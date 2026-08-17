@@ -16,8 +16,8 @@
 // Enforcement paths call the *As variants with the company's role
 // definitions; built-in fallback keeps old behavior when none exist.
 
-import type { Role, WriteOp } from './permissions';
-import { TABLE_PERMISSIONS } from './permissions';
+import type { Role, WriteOp } from './permissions.js';
+import { TABLE_PERMISSIONS } from './permissions.js';
 
 // ── Capability registry ────────────────────────────────────────────────────
 
