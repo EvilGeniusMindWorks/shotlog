@@ -49,9 +49,9 @@ the app records what was physically placed.
 - The driller's daily trio: **their hours (time card) · the drill log ·
   the rig checklist.** Sign the log complete; blaster accepts later
   (acceptance locks holes).
-- ❓ Drill-only days: beyond the trio, who owns the day's report
-  (materials, subs)? Matthew's answer listed only the trio — confirm
-  whether the drill-only daily report shrinks or shifts.
+- Drill-only days: **the driller can submit the daily report without a
+  blaster when necessary** (Matthew 2026-08-17) — the trio plus a slim
+  report-and-file path that never requires blast-side involvement.
 
 ## Jobs to be done
 
@@ -62,6 +62,7 @@ the app records what was physically placed.
 5. ✅ Rig selection on the log
 6. 🟡 Batch hole entry ("12–18 as planned") — not effortless today
 7. 🟡 Deviations (skip/add/move holes) — possible but awkward; must be standard
+7b. ✅ Submit a drill-only day without a blaster (permission exists; keep the path slim)
 8. 🟡 50-hour/weekly section: tracked, but due-state not computed from hours
 9. ❌ Own daily time card (confirmed model)
 10. 🔜 Dispatch — future optional planning feature, never blocking
@@ -74,7 +75,7 @@ the app records what was physically placed.
 
 Driller home · drill plan (read + general notes) · drill log + hole
 panel (batch + deviations) · rig checklist · time card · drill-only day
-report (pending ❓ above) · My Records · jobs list
+report (solo submit) · My Records · jobs list
 
 ## Never make them…
 
@@ -92,3 +93,4 @@ report (pending ❓ above) · My Records · jobs list
 - Batch entry + deviations-as-standard are design requirements
 - Drill-from-plan is the model; no-plan path retires
 - Daily trio: hours, log, checklist
+- Driller may submit a daily report without a blaster when necessary
