@@ -1,4 +1,4 @@
-# Record Lifecycle: Archive & Remove (PROPOSAL — awaiting Matthew)
+# Record Lifecycle: Archive & Delete (APPROVED — Matthew, 2026-08-17)
 
 Matthew, 2026-08-17: *"we have no mechanism for deleting existing records…
 This absolutely needs a consistent UI/UX pattern and it should be
@@ -28,7 +28,7 @@ customers, retired sites, old plans.
 - History stays intact everywhere: an archived job's filed PDFs, work
   days, and rollups are untouched.
 
-### Remove — the created-in-error verb (rare, guarded, still logical)
+### Delete — the created-in-error verb (rare, guarded, still logical)
 
 For records that should never have existed: duplicate day, test entry,
 mis-tap.
@@ -55,7 +55,7 @@ mis-tap.
 
 ## Per-entity semantics
 
-| Entity | Archive | Remove (draft-only) | Notes |
+| Entity | Archive | Delete (draft-only) | Notes |
 |---|---|---|---|
 | Customer | yes — hides it + its sites/jobs from pickers; children NOT auto-archived | only if no jobs ever | warn listing live children first |
 | Site | yes — same | only if no jobs ever | |
@@ -74,11 +74,13 @@ Archive/restore rides the existing DELETE grant per table (so
 engine). Remove requires the same grant AND the draft-only conditions;
 consider admin-only for hierarchy records (customer/site/job).
 
-## Open questions for Matthew
+## Resolved (Matthew, 2026-08-17)
 
-- ❓ Should Remove exist at all for hierarchy records, or is Archive enough
-  there? (Strictest reading of "preserve a full record" says archive-only.)
-- ❓ Retention: does an ATF-relevant record class need archive to be
-  time-locked (no remove ever, e.g. anything touching explosive quantities)?
-- ❓ Word choice on the buttons: Archive/Remove vs Archive/Delete — Evette
-  and Mark should find them unambiguous.
+- **Hierarchy records (customer/site/job): Delete only if NEVER used** — zero
+  children/activity ever (typo'd duplicate). Anything that ever had a child
+  is archive-only.
+- **No extra ATF retention lock** — standard rules suffice: filed submissions
+  immutable, Delete is draft-only, and even Deleted records keep their full
+  audit diff history server-side forever.
+- **Button wording: Archive / Delete** — Delete is the word the crew knows;
+  the red consequence sheet carries the explanation.
