@@ -78,9 +78,12 @@ drives what they may sign.
 6. 🟡 Merged completed-plan view with per-hole driller attribution — partial
    (coverage badge only)
 7. 🟡 Hazards visible in drill logs but not surfaced at loading time
-8. ❌ Create customer/site/job himself (admin-only today)
-9. ❌ Own time card (today he'd transcribe everyone's hours)
-10. ❌ Per-shot responsible blaster / signature on multi-blaster days
+8. ✅ Create customer/site/job himself (Round 1: `setup_jobs` capability —
+   create/edit; archive/delete stays supervisory)
+9. ✅ Own time card (Round 1: per-person `timeCards`, filed from the day's
+   daily tab; ownership + approval server-enforced)
+10. ✅ Per-shot responsible blaster / signature (Round 1: model (a) shipped —
+    sign-off guarded to the responsible blaster at the choke point)
 11. ❌ Pre-blast checklist placeholder
 12. 🟡 Older unfinished drafts / sent-back days buried in history (audit)
 

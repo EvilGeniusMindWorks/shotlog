@@ -9,30 +9,37 @@ Design sources: blaster study (artifact 9bfdcfb9), driller study
 (cab6eae6), shop study (82425527), deletion-pattern.md,
 walkthrough-audit-2026-08.md. Charters: docs/personas/.
 
-## Round 1 — Foundations (cross-persona data model)
+## Round 1 — Foundations (cross-persona data model) — ✅ SHIPPED 2026-08-17
 
 Everything later rounds stand on. No new screens except where a pattern
-demands a first consumer.
+demands a first consumer. Verified by harness31 (21/21); commit 0fb2d10.
 
-1. **Time cards** — new synced record: person, day/job, hours (ST/OT or
-   in/out), signature, status (filed → approved), entered-by (self vs
-   entered-for). Permissions: everyone writes their OWN; entering for a
-   no-login roster person is allowed, attributed, discouraged. Feeds:
-   daily-report aggregation, Evette's future card approvals.
-2. **Record lifecycle (Archive/Remove)** — per deletion-pattern.md.
-   ⚠ NEEDS Matthew's approval of the proposal + its three open questions
-   (remove vs archive-only for hierarchy; ATF retention lock; wording)
-   BEFORE this ships. UI shape: ⋯ menu + consequence sheet + undo toast +
-   Active/Archived/All filters.
-3. **Hour ledger** — meter readings become sourced entries (checklist
-   start, day's use, shop correction — append-only, audited); current
-   hours derived. Shop correction gesture is the first consumer.
-4. **Capability updates** — blaster gains customer/site/job CREATE/EDIT
-   (archive stays supervisory); no other role changes.
-5. **Per-shot responsible blaster + signature** — shot model change
-   (model (a)); server guard: shot sign-off by its responsible blaster.
-6. **Language pass** — days are nouns app-wide: audit every button/title
-   that verbs a day ("start/resume a day", "Start today's log") and fix.
+1. ✅ **Time cards** — `timeCards` synced record (person, day/job, ST/OT +
+   optional in/out, signature, draft→filed→approved, entered-by). Server
+   enforces: own-card ownership (login subjects write their own; no-login
+   roster entry allowed + attributed), attribution on create, approval =
+   `approve_days`, approved freeze, draft-only delete. First consumer:
+   TimeCardsCard on the day's daily tab. Feeds daily-report aggregation
+   (Round 2) and Evette's card approvals (Office round).
+2. ✅ **Record lifecycle (Archive/Delete)** — per deletion-pattern.md
+   (approved). ⋯ menu + consequence sheet + 10s undo toast + Active/
+   Archived/All filters (Jobs/Customers/Sites lenses; drill-plan card).
+   Choke point: archivedAt flip rides the DELETE grant; never-used rule
+   for customers/sites/jobs/drill plans/equipment/people
+   (LIFECYCLE_CHILDREN in shared); days delete draft-only with nothing
+   filed; accepted drill logs never.
+3. ✅ **Hour ledger** — lib/hourLedger.ts derives current hours from
+   sourced entries (checklist start, daily-report readings, shop
+   corrections). `hourCorrections` append-only (`correct_hours`:
+   mechanic/supervisor; PATCH/DELETE admin escape hatch; attributed).
+   HourLedgerCard + Correct-hours gesture on the equipment page.
+4. ✅ **Capability updates** — `setup_jobs` grants blaster customer/site/
+   job CREATE/EDIT; archive stays supervisory; no other role changes.
+5. ✅ **Per-shot responsible blaster + signature** — model (a) fields on
+   Shot + ShotSignoff row; server guard: sign-off only by the responsible
+   blaster (supervisors excepted).
+6. ✅ **Language pass** — days are nouns: FAB/dialog/tour/empty states
+   re-worded to verb the work or the job.
 
 ## Round 2 — The Blaster experience
 

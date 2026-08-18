@@ -48,6 +48,8 @@ information; amend with a dated entry when one changes.
 
 | 2026-08-17 | Deletion pattern APPROVED: verbs = Archive / Delete; hierarchy records deletable only if NEVER used (else archive-only); no extra ATF lock (immutable filings + draft-only delete + permanent server-side audit history suffice) | Matthew |
 
+| 2026-08-17 | Round 1 shipped (0fb2d10, harness31 21/21). Implementation calls made in-round: time-card approval rides `approve_days` (one grant approves the day AND its cards); a FILED card freezes like a filed day — the owner pulls it back (filed→draft) to fix, approved cards freeze entirely, delete is draft-only; NON-approvers may enter cards only for NO-LOGIN roster people (server-enforced — "discouraged" is a hard rule below supervisor); hour corrections are append-only (`correct_hours`: mechanic+supervisor) and stamp equipment.hourMeter as the cached current value; the per-shot guard protects signing AS someone else — any blaster may still claim responsibility for an unsigned shot | follows from approved designs; recorded for future rounds |
+
 ## Open (waiting on Mark / Matthew)
 
 - Permits-on-site placement + job status names (quoted/active/on_hold/complete) — provisional

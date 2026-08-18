@@ -52,9 +52,11 @@ to life and keep the meters honest.
 1. ✅ Repair queue home; resolve/reopen capability-gated
 2. ✅ Checklist repairs feed tickets automatically
 3. ✅ Fleet registry; retire gated to supervision
-4. 🟡 Hour METERS exist; the hour LEDGER (sourced entries + shop
-   correction) does not
-5. ❌ Shop hour override / correction gesture
+4. ✅ Hour LEDGER (Round 1: sourced entries — checklist starting hours,
+   daily-report readings, shop corrections — current hours derived;
+   HourLedgerCard on the equipment page)
+5. ✅ Shop hour correction gesture (Round 1: `correct_hours` capability,
+   append-only `hourCorrections` keeping both values, attributed + audited)
 6. ❌ Where's-my-equipment screen
 7. ❌ PM intervals + due queue (assumptions pending shop input)
 8. ❓ Parts/cost capture on repairs — verify with shop (feeds Owner

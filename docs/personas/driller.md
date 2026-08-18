@@ -64,7 +64,8 @@ the app records what was physically placed.
 7. 🟡 Deviations (skip/add/move holes) — possible but awkward; must be standard
 7b. ✅ Submit a drill-only day without a blaster (permission exists; keep the path slim)
 8. 🟡 50-hour/weekly section: tracked, but due-state not computed from hours
-9. ❌ Own daily time card (confirmed model)
+9. ✅ Own daily time card (Round 1: per-person `timeCards` on the day's daily
+   tab; everyone files their own, server-enforced)
 10. 🔜 Dispatch — future optional planning feature, never blocking
 
 ## Sore points (audit 2026-08)
