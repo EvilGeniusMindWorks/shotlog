@@ -145,6 +145,8 @@ export interface Site extends BaseRecord, Archivable {
   state: string; // 2-letter — drives license auto-pick + state regs
   zip?: string;
   gps?: string;
+  /** One-time address geocode (Round 4 locator) — pins work offline after */
+  geo?: { lat: number; lng: number };
   /** Gate codes, haul road, where to park the magazine truck… */
   accessNotes?: string;
   parcelOwner?: string;
@@ -665,6 +667,25 @@ export interface Equipment extends BaseRecord {
   /** Login account of the usual operator, when linked */
   assignedUserId?: string;
   notes?: string;
+  // ── Round 4 (shop): the manual "at the yard" gesture — covers the
+  // haul-back gap in the passive locator. A field record NEWER than this
+  // timestamp wins (the machine went back out). ──
+  atYardAt?: string; // ISO datetime
+  atYardByName?: string;
+  /** PM history (Round 4): services logged done, on the asset itself —
+   *  due-states derive from the hour ledger vs the last entry per type */
+  services?: EquipmentService[];
+}
+
+/** One completed service (engine, compressor, …) on an asset */
+export interface EquipmentService {
+  id: string;
+  /** Matches an ASSUMED_PM_INTERVALS key ('engine', 'compressor', …) */
+  type: string;
+  atHours: number;
+  date: string; // ISO date
+  byName: string;
+  note?: string;
 }
 
 // ══════════════════════════════════════════════════════

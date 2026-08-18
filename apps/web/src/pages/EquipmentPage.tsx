@@ -17,6 +17,7 @@ import { getSessionUser } from '@/lib/session';
 import { cn, formatDate, nowISO } from '@/lib/utils';
 import { buildEquipmentTimeline, type EquipmentEvent } from '@/lib/equipmentHistory';
 import { HourLedgerCard } from '@/components/records/HourLedgerCard';
+import { AssetPMCard } from '@/components/shop/AssetPMCard';
 import type { EquipmentStatus } from '@/db/schema';
 import { Badge } from '@/components/ui/badge';
 
@@ -142,6 +143,9 @@ export function EquipmentPage() {
 
       {/* Hour ledger: sourced readings + shop corrections, current derived */}
       <HourLedgerCard equip={equip} />
+
+      {/* PM schedule on flagged assumptions (Round 4) — advisory only */}
+      <AssetPMCard equip={equip} />
 
       {/* History timeline */}
       <div className="rounded-xl border border-gray-200 bg-white p-3">

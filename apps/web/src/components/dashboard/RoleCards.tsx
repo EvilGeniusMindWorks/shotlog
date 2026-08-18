@@ -3,7 +3,7 @@
 // Driller: checklist nudge + my open drill logs + my work days
 // Mechanic: repair queue + due dates
 // Admin/Office: job costing + compliance monitor + attention + week pulse
-import { useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, ClipboardCheck, Wrench, X } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
@@ -23,6 +23,24 @@ import { LAST_RIG_KEY, RigPickerModal } from './RigPickerModal';
 import { ConsequenceSheet } from '@/components/records/LifecycleMenu';
 import { TimeCardRow } from '@/components/forms/TimeCardsCard';
 import { canEditCard, createStandaloneTimeCard } from '@/hooks/useTimeCards';
+import { buildDueServices } from '@/lib/pm';
+import {
+  applyOrder,
+  clearSavedOrder,
+  readSavedOrder,
+  saveOrder,
+  type WorklistItem,
+} from '@/lib/shopQueue';
+import { LocatorMap, useLocatorData } from '@/pages/EquipmentLocatorPage';
+
+function FleetNowRow({ label, n }: { label: string; n: number | string }) {
+  return (
+    <div className="flex items-center gap-2 py-1 border-t border-gray-100 first:border-t-0 text-sm">
+      <span className="flex-1 text-gray-600">{label}</span>
+      <span className="font-mono font-bold">{n}</span>
+    </div>
+  );
+}
 
 const STATUS_BADGE = { open: 'draft', complete: 'submitted', accepted: 'approved' } as const;
 
@@ -655,6 +673,15 @@ function MyHoursSheet({
 
 // ── Mechanic home ──────────────────────────────────────────────────────────
 
+interface ShopWorkItem extends WorklistItem {
+  kind: 'ticket' | 'service';
+  equipmentId: string;
+  asset: string;
+  title: string;
+  sub: string;
+  chip: { text: string; cls: string };
+}
+
 export function MechanicHome() {
   const navigate = useNavigate();
   const tickets = useOpenTickets();
@@ -664,6 +691,73 @@ export function MechanicHome() {
     const dates = [e.dotInspectionDue, e.calibrationDue].filter(Boolean) as string[];
     return dates.some((d) => (new Date(d).getTime() - Date.now()) / 86_400_000 <= 30);
   });
+
+  // ── Round 4: the trio + ONE merged worklist the shop owns ──────────────
+  const dueServices = useLiveQuery(buildDueServices, [equipment.map((e) => e.id + e.updatedAt).join(',')]);
+  const { locations, pinned } = useLocatorData();
+  const [orderTick, setOrderTick] = useState(0);
+  const dragFrom = useRef<number | null>(null);
+
+  const worklist = useMemo(() => {
+    const items: ShopWorkItem[] = tickets.map((t) => ({
+      key: `ticket:${t.id}`,
+      kind: 'ticket',
+      down: t.outOfService,
+      date: t.createdAt.slice(0, 10),
+      equipmentId: t.equipmentId,
+      asset: assetOf(t.equipmentId)?.assetNumber ?? '?',
+      title: t.description,
+      sub: `${t.sourceType === 'drill_checklist' ? 'checklist' : 'manual'} · ${t.openedByName} · ${formatDate(t.createdAt.slice(0, 10))}`,
+      chip: t.outOfService
+        ? { text: 'down', cls: 'bg-red-100 text-red-700' }
+        : { text: 'open', cls: 'bg-amber-100 text-amber-700' },
+    }));
+    for (const { equipment: eq, due } of dueServices ?? []) {
+      items.push({
+        key: `service:${eq.id}:${due.interval.type}`,
+        kind: 'service',
+        down: false,
+        date: todayISO(),
+        equipmentId: eq.id,
+        asset: eq.assetNumber,
+        title: due.interval.label,
+        sub: 'assumed interval — advisory',
+        chip: {
+          text: `${Math.round(due.sinceHours ?? 0)}/${due.interval.intervalHours}`,
+          cls: due.state === 'due' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700',
+        },
+      });
+    }
+    return applyOrder(items, readSavedOrder());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tickets, dueServices, equipment, orderTick]);
+
+  const downCount = new Set([
+    ...tickets.filter((t) => t.outOfService).map((t) => t.equipmentId),
+    ...equipment.filter((e) => e.isActive && e.status === 'in_shop').map((e) => e.id),
+  ]).size;
+  const fleetNow = {
+    inService: equipment.filter((e) => e.isActive && (e.status ?? 'active') === 'active').length,
+    inShop: equipment.filter((e) => e.isActive && e.status === 'in_shop').length,
+    atYard: (locations ?? []).filter((l) => l.kind === 'yard').length,
+  };
+  const checklistsToday = useLiveQuery(async () => {
+    const rigs = equipment.filter(
+      (e) => e.isActive && e.status !== 'retired' && (e.category === 'rock_drill' || e.category === 'equip_drill'),
+    );
+    const filed = new Set(
+      (await db.drillChecklists.filter((c) => c.date === todayISO()).toArray()).map((c) => c.equipmentId),
+    );
+    return { filed: rigs.filter((r) => filed.has(r.id)).length, total: rigs.length };
+  }, [equipment.map((e) => e.id).join(',')]);
+
+  const reorder = (from: number, to: number) => {
+    const keys = worklist.map((w) => w.key);
+    const [moved] = keys.splice(from, 1);
+    keys.splice(to, 0, moved);
+    saveOrder(keys);
+    setOrderTick((t) => t + 1);
+  };
   // What came in from the field: newest checklists across the whole fleet
   const checklists = useLiveQuery(async () =>
     (await db.drillChecklists.toArray())
@@ -680,26 +774,106 @@ export function MechanicHome() {
     });
 
   return (
-    <div className="p-4 max-w-2xl mx-auto space-y-3">
+    <div className="p-4 max-w-4xl mx-auto space-y-3">
       <h2 className="text-xl font-bold text-gray-900">My Shop</h2>
 
-      <div className="rounded-xl border-l-4 border border-gray-200 border-l-safety-orange bg-white p-3">
-        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
-          Repair queue · {tickets.length}
-        </p>
-        {tickets.map((t) => (
-          <button key={t.id}
-            className="w-full flex items-center gap-2 py-1.5 text-left hover:bg-gray-50 rounded-lg"
-            onClick={() => navigate(`/equipment/${t.equipmentId}`)}>
-            <span className="font-mono text-sm text-navy">{assetOf(t.equipmentId)?.assetNumber ?? '?'}</span>
-            <p className="text-sm flex-1 min-w-0 truncate">“{t.description}”</p>
-            {t.outOfService && <Badge variant="violation">out of service</Badge>}
+      {/* The shop trio (Round 4): Down · Tickets · Due soon */}
+      <div className="flex gap-2 max-w-md">
+        <div className="flex-1 bg-white border border-red-200 rounded-xl px-2 py-2.5 text-center">
+          <p className="font-mono text-2xl font-extrabold text-red-600">{downCount}</p>
+          <p className="text-[11px] font-semibold text-gray-500">Down</p>
+        </div>
+        <div className="flex-1 bg-white border border-gray-200 rounded-xl px-2 py-2.5 text-center">
+          <p className="font-mono text-2xl font-extrabold text-navy">{tickets.length}</p>
+          <p className="text-[11px] font-semibold text-gray-500">Tickets</p>
+        </div>
+        <div className="flex-1 bg-white border border-amber-200 rounded-xl px-2 py-2.5 text-center">
+          <p className="font-mono text-2xl font-extrabold text-amber-600">
+            {(dueServices ?? []).length}
+          </p>
+          <p className="text-[11px] font-semibold text-gray-500">Due soon</p>
+        </div>
+      </div>
+
+      {/* Wide-first: worklist beside the fleet's live state + locator map */}
+      <div className="lg:grid lg:grid-cols-[1.5fr_1fr] lg:gap-3 space-y-3 lg:space-y-0 items-start">
+        <div className="rounded-xl border-l-4 border border-gray-200 border-l-safety-orange bg-white p-3">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+              Worklist · your order
+            </p>
+            <button
+              className="text-xs text-navy underline underline-offset-2"
+              onClick={() => {
+                clearSavedOrder();
+                setOrderTick((t) => t + 1);
+              }}
+            >
+              reset to default
+            </button>
+          </div>
+          {worklist.map((item, i) => (
+            <div
+              key={item.key}
+              draggable
+              onDragStart={() => (dragFrom.current = i)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => {
+                if (dragFrom.current !== null && dragFrom.current !== i)
+                  reorder(dragFrom.current, i);
+                dragFrom.current = null;
+              }}
+              className="flex items-center gap-2 py-1.5 border-t border-gray-100 first:border-t-0"
+            >
+              <span className="text-gray-300 cursor-grab select-none" title="Drag to reorder">
+                ⠿
+              </span>
+              <button
+                className="flex-1 min-w-0 flex items-center gap-2 text-left hover:bg-gray-50 rounded-lg py-0.5"
+                onClick={() => navigate(`/equipment/${item.equipmentId}`)}
+              >
+                <span className="font-mono font-bold text-xs bg-blue-50 text-navy rounded-lg px-2 py-0.5 shrink-0">
+                  {item.asset}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm truncate">{item.title}</p>
+                  <p className="text-xs text-gray-400 truncate">{item.sub}</p>
+                </div>
+                <span className={`text-[10.5px] font-bold rounded-full px-2 py-0.5 shrink-0 ${item.chip.cls}`}>
+                  {item.chip.text}
+                </span>
+              </button>
+            </div>
+          ))}
+          {worklist.length === 0 && <p className="text-sm text-gray-400 py-1">Queue's clear.</p>}
+        </div>
+
+        <div className="space-y-3">
+          <div className="rounded-xl border border-gray-200 bg-white p-3">
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
+              Fleet now
+            </p>
+            <FleetNowRow label="In service" n={fleetNow.inService} />
+            <FleetNowRow label="In shop" n={fleetNow.inShop} />
+            <FleetNowRow label="At the yard" n={fleetNow.atYard} />
+            <FleetNowRow
+              label="Checklists filed today"
+              n={checklistsToday ? `${checklistsToday.filed}/${checklistsToday.total}` : '—'}
+            />
+          </div>
+          <button
+            className="w-full rounded-xl border border-gray-200 bg-white p-3 text-left hover:bg-gray-50"
+            onClick={() => navigate('/equipment-locator')}
+          >
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
+              Where's my equipment
+            </p>
+            <div className="hidden lg:block h-44 pointer-events-none">
+              <LocatorMap pinned={pinned} compact />
+            </div>
+            <p className="text-xs text-navy mt-1">Open the locator ›</p>
           </button>
-        ))}
-        {tickets.length === 0 && <p className="text-sm text-gray-400 py-1">Queue's clear.</p>}
-        <Button size="sm" className="mt-2" onClick={() => navigate('/admin/equipment')}>
-          Resolve in registry
-        </Button>
+        </div>
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white p-3">
