@@ -65,15 +65,27 @@ Per the approved study (artifact 9bfdcfb9). Verified by harness32
 - ✅ Pre-blast checklist placeholder; language in Admin › Company.
 - ✅ Seismo late-attach never nagged (verified: no missing-reading gate).
 
-## Round 3 — The Driller experience
+## Round 3 — The Driller experience — ✅ SHIPPED 2026-08-17
 
-Per the approved study: trio home (checklist · log · hours + "yesterday
-needs you"); hole panel rebuilt batch-first (grid select → "log N as
-planned" / "log with changes"; add/skip/move as ordinary actions);
-checklist presented as its own daily artifact with the ADVISORY 50-hour
-clock from the ledger; solo drill-only report & file (trio flows in,
-extras optional); **retire the no-plan drill-log path** (small jobs get
-trivial plans).
+Per the approved study (artifact cab6eae6). Verified by harness33
+(16/16); commit aeb5c74.
+
+- ✅ Trio home: Checklist · Drill log · My hours tiles + "Yesterday needs
+  you" strip (unsigned prior logs) + "Drilling today" card with
+  all-driller progress and Continue. My-hours opens a STANDALONE card
+  (cards bind to job + date; the work-day record attaches later).
+- ✅ Batch-first hole panel: tap-to-select plan grid → "Log N as planned"
+  one-tap batch / "Log with changes…" into the big-type single-hole
+  panel; "Mark skipped ⊘" = first-class `DrillLogHole.skipped` marker,
+  excluded from counts/footage everywhere, dashed in the blaster's
+  merged review. Off-plan holes: type any number — ordinary entry.
+- ✅ Advisory 50-hour clock (serviceClock.ts, from the hour ledger vs the
+  last weeklyDone checklist) on the checklist page — amber ≤10 h
+  remaining, never blocking. Feeds Round 4's PM queue.
+- ✅ Solo drill-only report & file: slim "File the day" card (trio flows
+  in; extras never block) on non-blasting days.
+- ✅ No-plan drill-log path RETIRED: driller StartGrid tile removed;
+  drilling starts from a plan (empty state points at trivial plans).
 
 ## Round 4 — The Shop experience
 

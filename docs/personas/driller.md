@@ -55,15 +55,19 @@ the app records what was physically placed.
 
 ## Jobs to be done
 
-1. ✅ Focused home; today's work one tap away (language fix pending: no "start a log" verbs)
+1. ✅ Trio home (Round 3): checklist · log · hours tiles + yesterday-needs-you
+   strip + drilling-today progress; day-verb language fixed in Round 1
 2. ✅ Plan-driven logging: big-type hole panel, derived angle/length from kick
 3. ✅ Hazard capture at depth + notes
 4. ✅ Standalone daily rig checklist per machine, repairs → tickets
 5. ✅ Rig selection on the log
-6. 🟡 Batch hole entry ("12–18 as planned") — not effortless today
-7. 🟡 Deviations (skip/add/move holes) — possible but awkward; must be standard
-7b. ✅ Submit a drill-only day without a blaster (permission exists; keep the path slim)
-8. 🟡 50-hour/weekly section: tracked, but due-state not computed from hours
+6. ✅ Batch hole entry (Round 3: grid select → "Log N as planned" = two taps)
+7. ✅ Deviations standard (Round 3: "Mark skipped ⊘" first-class marker;
+   off-plan holes are ordinary entries; the no-plan path retired)
+7b. ✅ Submit a drill-only day without a blaster (Round 3: slim "File the
+   day" card — trio flows in, extras never block)
+8. ✅ 50-hour/weekly due-state computed from the hour ledger (Round 3:
+   advisory amber clock on the checklist, feeds the Shop PM round)
 9. ✅ Own daily time card (Round 1: per-person `timeCards` on the day's daily
    tab; everyone files their own, server-enforced)
 10. 🔜 Dispatch — future optional planning feature, never blocking

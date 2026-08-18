@@ -52,6 +52,8 @@ information; amend with a dated entry when one changes.
 
 | 2026-08-17 | Round 2 shipped (64d6618, harness32 20/20). In-round calls: office send-back now carries a REASON (`blastDay.sendBackNote`, stamped by the status route, cleared on any forward transition/resubmit — the needs-attention strip shows it inline and ranks sent-back above everything); readiness review stored ON the blast log (`readinessReview` object, no new table) and its max-lbs/delay seeds shots that haven't overridden; seismo phase chip is "later ok" — late attach stays policy, not warning; hub is a view of the existing day page (?view= deep-links), not a new route | follows from approved study; recorded for future rounds |
 
+| 2026-08-17 | Round 3 shipped (aeb5c74, harness33 16/16). In-round calls: SKIPPED plan holes are a first-class marker (`DrillLogHole.skipped`) — intent, not drilling: excluded from counts/footage/deviations, shown dashed in the blaster's merged review, and a skipped position is not "undrilled"; the driller's time card can exist BEFORE any work day (cards bind to job+date; the day attaches later); the 50-hour clock reads the HOUR LEDGER (not the bare registry number) against the last weeklyDone checklist; drilling-today prefers the most-active log so stale zero-hole logs can't shadow the live pattern; driller StartGrid drill-log tile removed (it silently created a planless day+shot+log) | follows from approved study; recorded for future rounds |
+
 ## Open (waiting on Mark / Matthew)
 
 - Permits-on-site placement + job status names (quoted/active/on_hold/complete) — provisional
