@@ -87,15 +87,23 @@ Per the approved study (artifact cab6eae6). Verified by harness33
 - ✅ No-plan drill-log path RETIRED: driller StartGrid tile removed;
   drilling starts from a plan (empty state points at trivial plans).
 
-## Round 4 — The Shop experience
+## Round 4 — The Shop experience — ✅ SHIPPED 2026-08-17
 
-Per the approved study (wide-first, phone fallback): trio home (Down ·
-Tickets · Due soon) over ONE merged worklist with shop-editable order
-(drag, reset-to-default); **where's-my-equipment** (last-record → job →
-site; one-time geocode saved to site; list+map split wide, toggle on
-phone; "at the yard" gesture; staleness chips); PM section with FLAGGED
-ASSUMPTION intervals (advisory only) — real intervals swap in when the
-shop crew answers.
+Per the approved study (artifact 82425527, wide-first). Verified by
+harness34 (15/15); commit caaba3d.
+
+- ✅ Trio home (Down · Tickets · Due soon) over ONE merged worklist
+  (tickets + due services), drag-ordered by the shop with reset-to-
+  default (order lives on the bench device); fleet-now card + mini map.
+- ✅ Where's-my-equipment (/equipment-locator): passive last-record →
+  job → site derivation, staleness chips, "mark at the yard" gesture
+  (`equipment.atYardAt`, newer field records win), list+map split wide /
+  toggle phone; pins from one-time site geocodes (`Site.geo` + device
+  cache), yard = company address, one pin.
+- ✅ PM on FLAGGED ASSUMPTIONS (amber band, per-class placeholder
+  intervals, due from the hour ledger vs `equipment.services[]`,
+  "Log a service done" restarts the clock). Advisory only — real
+  intervals swap in when the shop crew answers (held questions stand).
 
 ## Round 5 — Smart-list remnants + polish
 

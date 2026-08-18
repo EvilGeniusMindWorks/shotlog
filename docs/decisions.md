@@ -54,6 +54,8 @@ information; amend with a dated entry when one changes.
 
 | 2026-08-17 | Round 3 shipped (aeb5c74, harness33 16/16). In-round calls: SKIPPED plan holes are a first-class marker (`DrillLogHole.skipped`) — intent, not drilling: excluded from counts/footage/deviations, shown dashed in the blaster's merged review, and a skipped position is not "undrilled"; the driller's time card can exist BEFORE any work day (cards bind to job+date; the day attaches later); the 50-hour clock reads the HOUR LEDGER (not the bare registry number) against the last weeklyDone checklist; drilling-today prefers the most-active log so stale zero-hole logs can't shadow the live pattern; driller StartGrid drill-log tile removed (it silently created a planless day+shot+log) | follows from approved study; recorded for future rounds |
 
+| 2026-08-17 | Round 4 shipped (caaba3d, harness34 15/15). In-round calls: the shop's worklist ORDER lives on the bench device (localStorage), not synced — one shop, one screen; revisit if the shop multi-devices. Site geocodes save to `Site.geo` only from devices holding sites-PATCH (admin/blaster) and cache locally everywhere else — mechanics get offline pins without widening write grants. PM history lives ON the equipment record (`services[]`, PATCH open to shop) — no new table, no server change. "At the yard" = `equipment.atYardAt`; any field record dated on/after it wins. The whole round is web-only (no shared/server changes) | follows from approved study; recorded for future rounds |
+
 ## Open (waiting on Mark / Matthew)
 
 - Permits-on-site placement + job status names (quoted/active/on_hold/complete) — provisional

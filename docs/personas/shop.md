@@ -49,7 +49,8 @@ to life and keep the meters honest.
 
 ## Jobs to be done
 
-1. ✅ Repair queue home; resolve/reopen capability-gated
+1. ✅ Shop trio home over ONE merged worklist, shop-ordered (Round 4);
+   resolve/reopen capability-gated
 2. ✅ Checklist repairs feed tickets automatically
 3. ✅ Fleet registry; retire gated to supervision
 4. ✅ Hour LEDGER (Round 1: sourced entries — checklist starting hours,
@@ -57,8 +58,11 @@ to life and keep the meters honest.
    HourLedgerCard on the equipment page)
 5. ✅ Shop hour correction gesture (Round 1: `correct_hours` capability,
    append-only `hourCorrections` keeping both values, attributed + audited)
-6. ❌ Where's-my-equipment screen
-7. ❌ PM intervals + due queue (assumptions pending shop input)
+6. ✅ Where's-my-equipment screen (Round 4: passive derivation, geocoded
+   pins, at-the-yard gesture, staleness chips)
+7. ✅ PM intervals + due queue on FLAGGED ASSUMPTIONS (Round 4: amber
+   band, advisory due-states, log-a-service; real intervals still
+   pending shop input)
 8. ❓ Parts/cost capture on repairs — verify with shop (feeds Owner
    profitability later)
 9. ❓ Bench vs field: do machines come to the shop or does the shop
