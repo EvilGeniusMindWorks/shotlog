@@ -17,12 +17,15 @@ app.use(express.json({ limit: '30mb' }));
 
 app.get('/health', (_req, res) => {
   // `tables` surfaces the permission matrix size — a cheap deploy marker
-  // proving which @shotlog/shared build this server is running.
+  // proving which @shotlog/shared build this server is running. `commit`
+  // (Railway-injected) pins the exact build even when the matrix is
+  // unchanged — rounds that touch only route code verify against it.
   res.json({
     ok: true,
     service: 'shotlog-sync',
     time: new Date().toISOString(),
     tables: Object.keys(TABLE_PERMISSIONS).length,
+    commit: process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 7) ?? null,
   });
 });
 
