@@ -41,17 +41,29 @@ demands a first consumer. Verified by harness31 (21/21); commit 0fb2d10.
 6. ✅ **Language pass** — days are nouns: FAB/dialog/tour/empty states
    re-worded to verb the work or the job.
 
-## Round 2 — The Blaster experience
+## Round 2 — The Blaster experience — ✅ SHIPPED 2026-08-17
 
-Per the approved study: home (needs-attention strip · today · months
-collapsed — replaces the 13-screen dashboard); the day as a phase spine
-(map not gate, Continue targets current phase); merged drilling review
-with per-hole driller attribution; **shot readiness review** (new step:
-plan intent vs as-drilled + hazard questions → adjustments seed shots);
-hazard rail during loading; **compliance explainer** (rule + math +
-what-would-pass, incl. seismo results); time-card phase (mine + crew
-status); pre-blast checklist placeholder; seismo late-attach without
-nagging.
+Per the approved study (artifact 9bfdcfb9). Verified by harness32
+(20/20); commit 64d6618 (+d4ef80b health marker).
+
+- ✅ Home: needs-attention strip (sent-back w/ office reason inline ·
+  patterns awaiting review · stale drafts — ranked, capped after ranking)
+  · today + Continue · months collapsed w/ search. KPIs off home.
+  NEW: `blastDay.sendBackNote` — the approvals send-back prompts for a
+  reason; server stamps it, clears on any forward transition.
+- ✅ The day as a phase spine (BlastDayPage default view on blasting
+  days): Drilling → Readiness → Shots → Seismo ("later ok") → Time cards
+  → Report & file; map not gate; Continue targets the current phase.
+- ✅ Merged drilling review with per-driller color attribution + hazard
+  rows; Accept flows into readiness.
+- ✅ Shot readiness review (blastLog.readinessReview): planned vs
+  as-drilled, hazards as questions, max-lbs/delay seeds every shot.
+- ✅ Hazard rail during loading (ShotHazardRail in the shot card).
+- ✅ Compliance explainer (ComplianceSheet): rule + math + what-would-
+  pass; wired to design badges, seismo chips, readiness.
+- ✅ Time-card phase (mine + crew status via the Round 1 card).
+- ✅ Pre-blast checklist placeholder; language in Admin › Company.
+- ✅ Seismo late-attach never nagged (verified: no missing-reading gate).
 
 ## Round 3 — The Driller experience
 

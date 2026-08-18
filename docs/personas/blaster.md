@@ -73,19 +73,23 @@ drives what they may sign.
 1. ✅ Start/resume today's day in seconds, offline
 2. ✅ Author the blasting log: shots, drill params, top-down explosive entry
 3. ✅ Design plan: map sketch, structure distances, auto SD / PPV / compliance
-4. 🟡 Compliance shows status but doesn't EXPLAIN the why (validated need)
-5. 🟡 Drill plan → shot: import exists; the readiness-review step does not
-6. 🟡 Merged completed-plan view with per-hole driller attribution — partial
-   (coverage badge only)
-7. 🟡 Hazards visible in drill logs but not surfaced at loading time
+4. ✅ Compliance EXPLAINS the why (Round 2: ComplianceSheet — rule, math,
+   what-would-pass, on design badges + seismo results)
+5. ✅ Shot readiness review (Round 2: new step between drilling-complete
+   and loading; adjustments seed shots)
+6. ✅ Merged completed-plan view with per-hole driller attribution
+   (Round 2: color-chipped merged drilling review)
+7. ✅ Hazards surfaced at loading time (Round 2: hazard rail in the shot)
 8. ✅ Create customer/site/job himself (Round 1: `setup_jobs` capability —
    create/edit; archive/delete stays supervisory)
 9. ✅ Own time card (Round 1: per-person `timeCards`, filed from the day's
    daily tab; ownership + approval server-enforced)
 10. ✅ Per-shot responsible blaster / signature (Round 1: model (a) shipped —
     sign-off guarded to the responsible blaster at the choke point)
-11. ❌ Pre-blast checklist placeholder
-12. 🟡 Older unfinished drafts / sent-back days buried in history (audit)
+11. ✅ Pre-blast checklist placeholder (Round 2: hub card, language
+    editable in Admin › Company, nothing recorded/enforced)
+12. ✅ Drafts / sent-back days surface on the needs-attention strip
+    (Round 2: sent-back leads with the office's reason inline)
 
 ## Sore points (audit 2026-08)
 
