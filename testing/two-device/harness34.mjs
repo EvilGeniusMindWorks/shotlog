@@ -38,7 +38,8 @@ async (page) => {
       const m = users.find((u) => u.email.includes('mechanic@'));
       await authedFetch(`/users/${m.id}/reset-password`, {
         method: 'POST',
-        body: JSON.stringify({ tempPassword: 'mech-pass-123' }),
+        // canonical dev password — audit-sweep.mjs and harness36 expect it
+        body: JSON.stringify({ tempPassword: 'mech-pass-1234' }),
       });
     });
 
@@ -116,7 +117,7 @@ async (page) => {
 
     ctxM = await mkCtx();
     M = await ctxM.newPage();
-    await login(M, 'mechanic@test.local', 'mech-pass-123');
+    await login(M, 'mechanic@test.local', 'mech-pass-1234');
     await M.waitForTimeout(2500);
 
     // ── (1) Trio + merged worklist in default order ─────────────────────

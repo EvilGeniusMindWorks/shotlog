@@ -1,15 +1,21 @@
 import { useEffect, useState } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
+  CalendarDays,
   CircleHelp,
+  CheckCircle2,
+  Drill,
   FolderArchive,
   LayoutDashboard,
   BookOpen,
   Briefcase,
+  MapPin,
   Moon,
   Settings,
   ShieldCheck,
   Sun,
+  AlertTriangle,
+  Wrench,
 } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { cn } from '@/lib/utils';
@@ -17,7 +23,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { useReconnectWatchdog } from '@/hooks/useReconnectWatchdog';
 import { startFileUploader } from '@/lib/fileUploader';
 import { getSessionUser, getRealSessionUser, getViewRole, setViewRole } from '@/lib/session';
-import { hasCap, useRoleDefsSync } from '@/lib/perms';
+import { hasCap, myHomeDashboard, useRoleDefsSync } from '@/lib/perms';
 import { FirstSyncStrip, SessionExpiredBanner, SyncChip, UpdateChip } from './SyncChip';
 import { Tour } from './Tour';
 
@@ -29,12 +35,64 @@ const baseNavItems = [
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 
+/** Role-specific rails (nav study, approved 2026-08-18): the rail names
+ *  the role's NOUNS on one shared rhythm — home on top, work nouns, then
+ *  Settings pinned. Keyed by homeDashboard bucket so custom roles inherit
+ *  sensibly; admins keep the classic rail until the Admin round's
+ *  fold-in. Nothing loses reachability — demoted items live behind the
+ *  home or the routes they always had. */
 function navItemsForRole() {
-  // Capability-resolved (configurable roles): custom roles see Admin when
-  // their bundle grants it
-  return hasCap('view_admin_area')
-    ? [...baseNavItems, { to: '/admin', icon: ShieldCheck, label: 'Admin' }]
-    : baseNavItems;
+  const role = getSessionUser()?.role ?? '';
+  const admin = hasCap('view_admin_area');
+  const adminItem = { to: '/admin', icon: ShieldCheck, label: 'Admin' };
+  if (role === 'admin') return [...baseNavItems, adminItem];
+
+  const home = myHomeDashboard();
+  const settings = { to: '/settings', icon: Settings, label: 'Settings' };
+
+  if (home === 'driller')
+    return [
+      { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+      { to: '/drilling', icon: Drill, label: 'Drilling' },
+      { to: '/days', icon: CalendarDays, label: 'Work days' },
+      { to: '/records', icon: FolderArchive, label: 'My records' },
+      settings,
+      ...(admin ? [adminItem] : []),
+    ];
+
+  if (home === 'mechanic')
+    return [
+      // Fleet is the registry promoted OUT of Admin — with it on the rail,
+      // the mechanic's Admin door retires (its only tab moved here)
+      { to: '/', icon: Wrench, label: 'Shop' },
+      { to: '/admin/equipment', icon: Briefcase, label: 'Fleet' },
+      { to: '/equipment-locator', icon: MapPin, label: 'Locator' },
+      { to: '/records', icon: FolderArchive, label: 'Records' },
+      settings,
+    ];
+
+  if (home === 'office')
+    // Provisional (pending Evette's walkthrough): Incidents promoted, the
+    // Admin door retires with it
+    return [
+      { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+      { to: '/records', icon: FolderArchive, label: 'Records' },
+      { to: '/jobs', icon: Briefcase, label: 'Jobs' },
+      { to: '/admin/incidents', icon: AlertTriangle, label: 'Incidents' },
+      settings,
+    ];
+
+  // Field (blaster / supervisor / custom field-home roles)
+  return [
+    { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/days', icon: CalendarDays, label: 'Work days' },
+    { to: '/jobs', icon: Briefcase, label: 'Jobs' },
+    { to: '/records', icon: FolderArchive, label: hasCap('approve_days') ? 'Records' : 'My records' },
+    ...(hasCap('approve_days') ? [{ to: '/admin/approvals', icon: CheckCircle2, label: 'Approvals' }] : []),
+    { to: '/reference', icon: BookOpen, label: 'Reference' },
+    settings,
+    ...(admin ? [adminItem] : []),
+  ];
 }
 
 const VIEWABLE_ROLES = ['admin', 'supervisor', 'blaster', 'driller', 'mechanic', 'office'];
@@ -318,13 +376,17 @@ export function AppShell() {
 
       {touring && <Tour onEnd={() => setTouring(false)} />}
 
-      {/* Mobile bottom navigation */}
+      {/* Mobile bottom navigation — each rail's top four, then Settings
+          (the phone mirrors the rail, decision 2026-08-18) */}
       <nav
         data-tour="nav"
         className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-bottom z-50"
       >
         <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
-          {navItems.map((item) => (
+          {[
+            ...navItems.slice(0, 4),
+            ...navItems.filter((i) => i.to === '/settings' || i.to === '/admin'),
+          ].map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

@@ -42,6 +42,7 @@ import { hasCap } from '@/lib/perms';
 import { AdminRolesPage } from '@/pages/admin/AdminRolesPage';
 import { UndoToastHost } from '@/components/ui/undo-toast';
 import { EquipmentLocatorPage } from '@/pages/EquipmentLocatorPage';
+import { DrillingPage } from '@/pages/DrillingPage';
 
 function AdminIndexRedirect() {
   const role = getSessionUser()?.role;
@@ -109,6 +110,7 @@ export function App() {
           <Route path="/drill-logs" element={<MyRecordsPage />} />
           <Route path="/equipment/:id" element={<EquipmentPage />} />
           <Route path="/equipment-locator" element={<EquipmentLocatorPage />} />
+          <Route path="/drilling" element={<DrillingPage />} />
           <Route path="/crew/:id" element={<CrewPage />} />
           <Route path="/drill-checklist/:equipmentId" element={<DrillChecklistPage />} />
           <Route path="/incident/:incidentId" element={<IncidentPage />} />

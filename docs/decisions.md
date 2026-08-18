@@ -56,6 +56,8 @@ information; amend with a dated entry when one changes.
 
 | 2026-08-17 | Round 4 shipped (caaba3d, harness34 15/15). In-round calls: the shop's worklist ORDER lives on the bench device (localStorage), not synced — one shop, one screen; revisit if the shop multi-devices. Site geocodes save to `Site.geo` only from devices holding sites-PATCH (admin/blaster) and cache locally everywhere else — mechanics get offline pins without widening write grants. PM history lives ON the equipment record (`services[]`, PATCH open to shop) — no new table, no server change. "At the yard" = `equipment.atYardAt`; any field record dated on/after it wins. The whole round is web-only (no shared/server changes) | follows from approved study; recorded for future rounds |
 
+| 2026-08-18 | Role-specific navigation APPROVED (study artifact 5f52a919): one rail rhythm, per-persona nouns. Matthew's calls: the home stays **"Dashboard"** (NOT "Today" — the home carries more than today); field & shop rails re-cut NOW, the admin console fold-in DEFERRED to the Admin round; driller gets a thin **Drilling** page (open plans · assigned · ready-to-drill). Shop rail = Shop · Fleet (equipment registry promoted out of Admin — mechanic's Admin tab retires) · Locator · Records. Office rail provisional (Dashboard · Records · Jobs · Incidents) pending Evette's walkthrough. Rails keyed by homeDashboard bucket so custom roles inherit sensibly; phone tab bar mirrors each rail's top four | Matthew, nav study reaction |
+
 ## Open (waiting on Mark / Matthew)
 
 - **Test-user cleanup (Round 5 decision point):** prod has only Matthew's real

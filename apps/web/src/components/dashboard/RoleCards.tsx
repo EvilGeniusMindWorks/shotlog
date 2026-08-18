@@ -233,6 +233,219 @@ async function projectDrillLogs(): Promise<ProjectedLog[]> {
   }));
 }
 
+/** Everything a driller could drill, one place (nav round, 2026-08-18):
+ *  fresh dispatches · open plans · ready-to-drill shots. Rendered on the
+ *  trio home AND as the thin /drilling page — same content, one tap from
+ *  the rail without scrolling home. */
+export function DrillingWork() {
+  const navigate = useNavigate();
+  const me = getSessionUser();
+
+  // Fresh dispatches: the blaster sent me a plan and I haven't started
+  const assigned = useLiveQuery(async () => {
+    const counts = await holeCountsByLog();
+    const logs = (await projectDrillLogs()).filter(
+      (l) =>
+        l.status === 'open' &&
+        l.assignedBy &&
+        (counts.get(l.id) ?? 0) === 0 &&
+        (!me?.id || l.drillerUserId === me.id || !l.drillerUserId),
+    );
+    const out = [];
+    for (const log of logs) {
+      const job = await db.jobs.get(log.jobId);
+      const shot = log.shotId ? await db.shots.get(log.shotId) : undefined;
+      const plan = log.drillPlanId ? await db.drillPlans.get(log.drillPlanId) : undefined;
+      out.push({
+        log,
+        context: plan ? plan.name : `Shot ${shot?.shotNumber ?? '?'} · ${job?.name ?? '—'}`,
+        designed: plan
+          ? (getPlanHoles(plan)?.length ?? 0)
+          : (getShotPlan(shot)?.length ?? shot?.totals.numHoles ?? 0),
+      });
+    }
+    return out;
+  }, [me?.id]);
+
+  const openPlans = useLiveQuery(async () => {
+    const plans = await db.drillPlans.filter((p) => p.status === 'open' && !p.archivedAt).toArray();
+    const allLogs = await projectDrillLogs();
+    const counts = await holeCountsByLog();
+    const out = [];
+    for (const plan of plans) {
+      const holes = getPlanHoles(plan);
+      if (!holes || holes.length === 0) continue;
+      const logs = allLogs.filter((l) => l.drillPlanId === plan.id);
+      let drilled = 0;
+      let mineOpenToday = false;
+      for (const dl of logs) {
+        drilled += counts.get(dl.id) ?? 0;
+        if (dl.status === 'open' && dl.drillerUserId === me?.id && dl.date === todayISO())
+          mineOpenToday = true;
+      }
+      if (drilled >= holes.length || mineOpenToday) continue;
+      const jobName = (await db.jobs.get(plan.jobId))?.name;
+      out.push({ plan, jobName, target: holes.length, drilled });
+    }
+    return out;
+  }, [me?.id]);
+
+  const readyToDrill = useLiveQuery(async () => {
+    const days = (await db.blastDays.filter((d) => d.status !== 'approved').toArray())
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 15);
+    const blastLogIds = new Map(
+      (await projectTable<{ blastDayId: string | null }>('blastLogs', { blastDayId: 'blastDayId' })).map(
+        (l) => [l.blastDayId ?? '', l.id],
+      ),
+    );
+    const shotRows = await projectTable<{
+      blastLogId: string | null;
+      shotNumber: number | null;
+      numHoles: number | null;
+      diagram: string | null;
+    }>('shots', {
+      blastLogId: 'blastLogId',
+      shotNumber: 'shotNumber',
+      numHoles: 'totals.numHoles',
+      diagram: 'designPlan.shotDiagramData',
+    });
+    const allLogs = await projectDrillLogs();
+    const counts = await holeCountsByLog();
+    const out = [];
+    for (const day of days) {
+      const logId = blastLogIds.get(day.id);
+      if (!logId) continue;
+      const shots = shotRows.filter((s) => s.blastLogId === logId);
+      const jobName = (await db.jobs.get(day.jobId))?.name;
+      for (const shot of shots) {
+        const planHoles = getShotPlan({
+          designPlan: { shotDiagramData: shot.diagram },
+        } as never);
+        const target = planHoles?.length ?? shot.numHoles ?? 0;
+        if (!target) continue;
+        const shotLogs = allLogs.filter((l) => l.shotId === shot.id);
+        let drilled = 0;
+        let mineOpen = false;
+        for (const dl of shotLogs) {
+          drilled += counts.get(dl.id) ?? 0;
+          if (dl.status === 'open' && (!me?.id || dl.drillerUserId === me.id || !dl.drillerUserId))
+            mineOpen = true;
+        }
+        if (drilled >= target || mineOpen) continue;
+        out.push({
+          day,
+          jobName,
+          shot: { id: shot.id, shotNumber: shot.shotNumber ?? 0 },
+          target,
+          drilled,
+          joining: shotLogs.length > 0,
+        });
+      }
+    }
+    return out;
+  });
+
+  return (
+    <>
+      {(assigned ?? []).length > 0 && (
+        <div className="rounded-xl border-2 border-navy bg-navy-50 p-3">
+          <p className="text-[11px] font-semibold text-navy uppercase tracking-wider mb-1">
+            📋 Assigned to you
+          </p>
+          {(assigned ?? []).map(({ log, context, designed }) => (
+            <button
+              key={log.id}
+              className="w-full flex items-center gap-2 py-2 text-left hover:bg-white/60 rounded-lg"
+              onClick={() => navigate(drillLogRoute(log))}
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold truncate">{context}</p>
+                <p className="text-xs text-gray-500">
+                  {designed ? `${designed} holes planned · ` : ''}sent by {log.assignedBy}
+                </p>
+              </div>
+              <span className="text-sm text-navy font-semibold shrink-0">Open ›</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {(openPlans ?? []).length > 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white p-3">
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
+            Open drill plans
+          </p>
+          {(openPlans ?? []).map(({ plan, jobName, target, drilled }) => (
+            <button
+              key={plan.id}
+              className="w-full flex items-center gap-2 py-2 text-left hover:bg-gray-50 rounded-lg"
+              onClick={() => {
+                void createDrillPlanLog(plan).then((logId) =>
+                  navigate(`/jobs/${plan.jobId}/drill-plan/${plan.id}/log/${logId}`),
+                );
+              }}
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold truncate">{plan.name} · {jobName ?? '—'}</p>
+                <p className="text-xs text-gray-400">
+                  {drilled} of {target} holes drilled
+                </p>
+              </div>
+              <span className="text-sm text-safety-orange font-semibold shrink-0">
+                Today's log ›
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {(readyToDrill ?? []).length > 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white p-3">
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
+            Ready to drill
+          </p>
+          {(readyToDrill ?? []).map(({ day, jobName, shot, target, drilled, joining }) => (
+            <button
+              key={shot.id}
+              className="w-full flex items-center gap-2 py-2 text-left hover:bg-gray-50 rounded-lg"
+              onClick={async () => {
+                const full = await db.shots.get(shot.id);
+                if (!full) return;
+                const logId = await createDrillLog(full, day.id, day.jobId);
+                navigate(`/blast-day/${day.id}/drill-log/${logId}`);
+              }}
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold truncate">
+                  Shot {shot.shotNumber} · {day.name || jobName || formatDate(day.date)}
+                </p>
+                <p className="text-xs text-gray-400">
+                  {drilled} of {target} holes drilled · {formatDate(day.date)}
+                </p>
+              </div>
+              <span className="text-sm text-safety-orange font-semibold shrink-0">
+                {joining ? 'Join' : 'Start'} ›
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {(assigned ?? []).length === 0 && (openPlans ?? []).length === 0 &&
+        (readyToDrill ?? []).length === 0 && assigned !== undefined && (
+        <div className="rounded-xl border border-gray-200 bg-white p-3">
+          <p className="text-sm text-gray-400">
+            No open drill plans. Drilling starts from a plan — the blaster
+            makes one on the job page in seconds, even for a small job, or
+            sends you one directly.
+          </p>
+        </div>
+      )}
+    </>
+  );
+}
+
 export function DrillerHome() {
   const navigate = useNavigate();
   const me = getSessionUser();
@@ -322,92 +535,6 @@ export function DrillerHome() {
     }
     return { ...first, others, total };
   }, [myLogs?.map((x) => x.log.id + x.holes).join(',')]);
-
-  // Open standalone drill plans where I have no open log TODAY — the
-  // per-driller-per-day model: each day on a plan is its own log
-  const openPlans = useLiveQuery(async () => {
-    const plans = await db.drillPlans.filter((p) => p.status === 'open' && !p.archivedAt).toArray();
-    // Shared blob-free sweeps: one log projection + one grouped hole count
-    const allLogs = await projectDrillLogs();
-    const counts = await holeCountsByLog();
-    const out = [];
-    for (const plan of plans) {
-      const holes = getPlanHoles(plan);
-      if (!holes || holes.length === 0) continue;
-      const logs = allLogs.filter((l) => l.drillPlanId === plan.id);
-      let drilled = 0;
-      let mineOpenToday = false;
-      for (const dl of logs) {
-        drilled += counts.get(dl.id) ?? 0;
-        if (dl.status === 'open' && dl.drillerUserId === me?.id && dl.date === todayISO())
-          mineOpenToday = true;
-      }
-      if (drilled >= holes.length || mineOpenToday) continue;
-      const jobName = (await db.jobs.get(plan.jobId))?.name;
-      out.push({ plan, jobName, target: holes.length, drilled });
-    }
-    return out;
-  }, [me?.id]);
-
-  // Shots with designed holes still to drill where I have no open log —
-  // the driller-initiated path (blaster still accepts at the end)
-  const readyToDrill = useLiveQuery(async () => {
-    const days = (await db.blastDays.filter((d) => d.status !== 'approved').toArray())
-      .sort((a, b) => b.date.localeCompare(a.date))
-      .slice(0, 15);
-    // Blob-free sweeps: shots carry up to three inline images each — this
-    // list only needs numbers and the diagram JSON (text)
-    const blastLogIds = new Map(
-      (await projectTable<{ blastDayId: string | null }>('blastLogs', { blastDayId: 'blastDayId' })).map(
-        (l) => [l.blastDayId ?? '', l.id],
-      ),
-    );
-    const shotRows = await projectTable<{
-      blastLogId: string | null;
-      shotNumber: number | null;
-      numHoles: number | null;
-      diagram: string | null;
-    }>('shots', {
-      blastLogId: 'blastLogId',
-      shotNumber: 'shotNumber',
-      numHoles: 'totals.numHoles',
-      diagram: 'designPlan.shotDiagramData',
-    });
-    const allLogs = await projectDrillLogs();
-    const counts = await holeCountsByLog();
-    const out = [];
-    for (const day of days) {
-      const logId = blastLogIds.get(day.id);
-      if (!logId) continue;
-      const shots = shotRows.filter((s) => s.blastLogId === logId);
-      const jobName = (await db.jobs.get(day.jobId))?.name;
-      for (const shot of shots) {
-        const planHoles = getShotPlan({
-          designPlan: { shotDiagramData: shot.diagram },
-        } as never);
-        const target = planHoles?.length ?? shot.numHoles ?? 0;
-        if (!target) continue;
-        const shotLogs = allLogs.filter((l) => l.shotId === shot.id);
-        let drilled = 0;
-        let mineOpen = false;
-        for (const dl of shotLogs) {
-          drilled += counts.get(dl.id) ?? 0;
-          if (dl.status === 'open' && (!me?.id || dl.drillerUserId === me.id || !dl.drillerUserId))
-            mineOpen = true; // already in "My open drill logs"
-        }
-        if (drilled >= target || mineOpen) continue;
-        out.push({
-          day,
-          jobName,
-          shot: { id: shot.id, shotNumber: shot.shotNumber ?? 0 },
-          target,
-          drilled,
-          joining: shotLogs.length > 0,
-        });
-      }
-    }
-    return out;
-  });
 
   const holesTodayTotal = todayLogs.reduce((s, x) => s + x.holesToday, 0);
   return (
@@ -502,29 +629,6 @@ export function DrillerHome() {
         </div>
       )}
 
-      {assignedNew.length > 0 && (
-        <div className="rounded-xl border-2 border-navy bg-navy-50 p-3">
-          <p className="text-[11px] font-semibold text-navy uppercase tracking-wider mb-1">
-            📋 Assigned to you
-          </p>
-          {assignedNew.map(({ log, context, designed }) => (
-            <button
-              key={log.id}
-              className="w-full flex items-center gap-2 py-2 text-left hover:bg-white/60 rounded-lg"
-              onClick={() => navigate(drillLogRoute(log))}
-            >
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold truncate">{context}</p>
-                <p className="text-xs text-gray-500">
-                  {designed ? `${designed} holes planned · ` : ''}sent by {log.assignedBy}
-                </p>
-              </div>
-              <span className="text-sm text-navy font-semibold shrink-0">Open ›</span>
-            </button>
-          ))}
-        </div>
-      )}
-
       {/* More than one log open today — the rest live here */}
       {todayLogs.length > 1 && (
         <div className="rounded-xl border border-gray-200 bg-white p-3">
@@ -547,68 +651,8 @@ export function DrillerHome() {
         </div>
       )}
 
-      {(openPlans ?? []).length > 0 && (
-        <div className="rounded-xl border border-gray-200 bg-white p-3">
-          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
-            Open drill plans
-          </p>
-          {(openPlans ?? []).map(({ plan, jobName, target, drilled }) => (
-            <button
-              key={plan.id}
-              className="w-full flex items-center gap-2 py-2 text-left hover:bg-gray-50 rounded-lg"
-              onClick={() => {
-                void createDrillPlanLog(plan).then((logId) =>
-                  navigate(`/jobs/${plan.jobId}/drill-plan/${plan.id}/log/${logId}`),
-                );
-              }}
-            >
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold truncate">{plan.name} · {jobName ?? '—'}</p>
-                <p className="text-xs text-gray-400">
-                  {drilled} of {target} holes drilled
-                </p>
-              </div>
-              <span className="text-sm text-safety-orange font-semibold shrink-0">
-                Today's log ›
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {(readyToDrill ?? []).length > 0 && (
-        <div className="rounded-xl border border-gray-200 bg-white p-3">
-          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
-            Ready to drill
-          </p>
-          {(readyToDrill ?? []).map(({ day, jobName, shot, target, drilled, joining }) => (
-            <button
-              key={shot.id}
-              className="w-full flex items-center gap-2 py-2 text-left hover:bg-gray-50 rounded-lg"
-              onClick={async () => {
-                // Single-record get — the full shot (with design params for
-                // the log header) loads only when the driller commits
-                const full = await db.shots.get(shot.id);
-                if (!full) return;
-                const logId = await createDrillLog(full, day.id, day.jobId);
-                navigate(`/blast-day/${day.id}/drill-log/${logId}`);
-              }}
-            >
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold truncate">
-                  Shot {shot.shotNumber} · {day.name || jobName || formatDate(day.date)}
-                </p>
-                <p className="text-xs text-gray-400">
-                  {drilled} of {target} holes drilled · {formatDate(day.date)}
-                </p>
-              </div>
-              <span className="text-sm text-safety-orange font-semibold shrink-0">
-                {joining ? 'Join' : 'Start'} ›
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Assigned · open plans · ready to drill — shared with /drilling */}
+      <DrillingWork />
 
       {tickets.length > 0 && (
         <button
@@ -619,19 +663,6 @@ export function DrillerHome() {
             <Wrench className="h-4 w-4" /> {rig?.assetNumber}: “{tickets[0].description}” — with the shop ›
           </p>
         </button>
-      )}
-
-      {/* No work anywhere: every hole lives under a plan (Round 3 —
-          the no-plan path is retired; small jobs get trivial plans) */}
-      {!drillingToday && assignedNew.length === 0 && (openPlans ?? []).length === 0 &&
-        (readyToDrill ?? []).length === 0 && myLogs !== undefined && (
-        <div className="rounded-xl border border-gray-200 bg-white p-3">
-          <p className="text-sm text-gray-400">
-            No open drill plans. Drilling starts from a plan — the blaster
-            makes one on the job page in seconds, even for a small job, or
-            sends you one directly.
-          </p>
-        </div>
       )}
 
       <div className="rounded-xl border border-gray-200 bg-white p-3">
