@@ -14,6 +14,7 @@ import { cn, formatDate } from '@/lib/utils';
 import { NewBlastDayDialog } from '@/components/forms/NewBlastDayDialog';
 import { AdminHome, DrillerHome, MechanicHome } from '@/components/dashboard/RoleCards';
 import { BlasterHome } from '@/components/dashboard/BlasterHome';
+import { MonthDayList } from '@/components/dashboard/MonthDayList';
 import { getSessionUser } from '@/lib/session';
 import { myHomeDashboard } from '@/lib/perms';
 import type { WorkType } from '@/db/schema';
@@ -191,12 +192,15 @@ function NewWorkDayFab({ defaultTypeOfWork }: { defaultTypeOfWork?: WorkType }) 
   );
 }
 
-/** Full work-day list as its own page (route /days) — every role can browse */
+/** /days — the month-grouped list (Round 5): current month open, older
+ *  collapsed to counts, search across everything. Every role can browse. */
 export function WorkDaysPage() {
   const role = getSessionUser()?.role;
+  const summaries = useDaySummaries();
   return (
     <div className="p-4 max-w-3xl mx-auto pb-24">
-      <WorkDayList />
+      <h2 className="text-xl font-bold text-gray-900 mb-3">Work days</h2>
+      <MonthDayList summaries={summaries} includeToday title="All days" />
       {role !== 'office' && (
         <NewWorkDayFab defaultTypeOfWork={role === 'driller' ? 'drill_only' : undefined} />
       )}

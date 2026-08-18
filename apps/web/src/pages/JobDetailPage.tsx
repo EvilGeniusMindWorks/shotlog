@@ -28,6 +28,7 @@ import { Select } from '@/components/ui/select';
 export function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [showAllDays, setShowAllDays] = useState(false);
   const job = useLiveQuery(() => (id ? db.jobs.get(id) : undefined), [id]);
   const ctx = useJobContext(id);
 
@@ -155,9 +156,10 @@ export function JobDetailPage() {
           render: () => (
             <div className="space-y-2">
               {blastDays.length === 0 && (
-                <p className="text-sm text-gray-400 text-center py-2">No blast days yet.</p>
+                <p className="text-sm text-gray-400 text-center py-2">No work days yet.</p>
               )}
-              {blastDays.map((day) => (
+              {/* Windowed (Round 5): recent days up front, history behind one tap */}
+              {(showAllDays ? blastDays : blastDays.slice(0, 8)).map((day) => (
                 <button
                   key={day.id}
                   className="w-full flex items-center justify-between border border-gray-200 rounded-lg p-3 text-left hover:bg-gray-50 active:bg-gray-100 min-h-[44px]"
@@ -172,6 +174,14 @@ export function JobDetailPage() {
                   </Badge>
                 </button>
               ))}
+              {!showAllDays && blastDays.length > 8 && (
+                <button
+                  className="text-xs text-gray-400 underline underline-offset-2"
+                  onClick={() => setShowAllDays(true)}
+                >
+                  Show all {blastDays.length} days
+                </button>
+              )}
             </div>
           ),
         },

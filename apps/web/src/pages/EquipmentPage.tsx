@@ -2,6 +2,7 @@
 // logs, daily reports), its checklists and repairs — plus the status control
 // (Active / In shop / Retired). Reachable from the shop board, the admin
 // registry, and anywhere a rig is named.
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -39,6 +40,7 @@ const KIND_ICON: Record<EquipmentEvent['kind'], typeof Wrench> = {
 export function EquipmentPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [showAllHistory, setShowAllHistory] = useState(false);
   const role = getSessionUser()?.role ?? '';
   const canSetStatus = role === 'mechanic' || role === 'supervisor' || role === 'admin';
 
@@ -147,12 +149,13 @@ export function EquipmentPage() {
       {/* PM schedule on flagged assumptions (Round 4) — advisory only */}
       <AssetPMCard equip={equip} />
 
-      {/* History timeline */}
+      {/* History timeline — windowed (Round 5): recent first, rest behind
+          one tap; never an unbounded scroll */}
       <div className="rounded-xl border border-gray-200 bg-white p-3">
         <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
           History
         </p>
-        {(timeline ?? []).map((ev) => {
+        {(showAllHistory ? (timeline ?? []) : (timeline ?? []).slice(0, 10)).map((ev) => {
           const Icon = KIND_ICON[ev.kind];
           const inner = (
             <>
@@ -182,6 +185,14 @@ export function EquipmentPage() {
         })}
         {timeline !== undefined && timeline.length === 0 && (
           <p className="text-sm text-gray-400 py-1">No history yet for this asset.</p>
+        )}
+        {!showAllHistory && (timeline ?? []).length > 10 && (
+          <button
+            className="text-xs text-gray-400 underline underline-offset-2 mt-1"
+            onClick={() => setShowAllHistory(true)}
+          >
+            Show all {timeline!.length} events
+          </button>
         )}
       </div>
 

@@ -46,6 +46,8 @@ export function JobsPage() {
   // Blasters set up jobs too (2026-08-17) — capability, not role
   const isAdmin = can('jobs', 'PUT');
   const [lifecycle, setLifecycle] = useState<LifecycleFilterValue>('active');
+  const [search, setSearch] = useState('');
+  const [showAllJobs, setShowAllJobs] = useState(false);
   // Heal pre-hierarchy jobs: server links customer/site records (idempotent)
   useEffect(() => {
     if (getSessionUser()?.role === 'admin' && navigator.onLine) {
@@ -54,7 +56,14 @@ export function JobsPage() {
   }, []);
   // undefined = still hydrating from the local DB — skeleton, never "No jobs yet"
   const jobsQuery = useLiveQuery(async () => getJobViews(await db.jobs.orderBy('updatedAt').reverse().toArray()));
-  const jobs = applyLifecycle(jobsQuery ?? [], lifecycle);
+  const q = search.trim().toLowerCase();
+  const jobs = applyLifecycle(jobsQuery ?? [], lifecycle).filter(
+    (j) =>
+      !q ||
+      [j.name, j.jobNumber, j.customer, j.city, j.state]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(q)),
+  );
   const [showNew, setShowNew] = useState(false);
   const [peek, setPeek] = useState<Job | undefined>();
   const [form, setForm] = useState({
@@ -109,7 +118,13 @@ export function JobsPage() {
       </div>
 
       {lens === 'jobs' && (
-        <div className="flex justify-end mb-2">
+        <div className="flex items-center justify-end gap-2 mb-2">
+          <Input
+            className="h-8 max-w-[180px] text-sm"
+            placeholder="Search jobs…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
           <LifecycleFilter value={lifecycle} onChange={setLifecycle} />
         </div>
       )}
@@ -140,7 +155,7 @@ export function JobsPage() {
 
       {lens === 'jobs' && (
       <div className="space-y-2">
-        {jobs.map((job) => (
+        {(showAllJobs || q ? jobs : jobs.slice(0, 15)).map((job) => (
           <Card
             key={job.id}
             className="cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors"
@@ -180,6 +195,14 @@ export function JobsPage() {
             </CardContent>
           </Card>
         ))}
+        {!showAllJobs && !q && jobs.length > 15 && (
+          <button
+            className="w-full text-left px-3 py-2.5 text-xs text-gray-400 hover:text-navy"
+            onClick={() => setShowAllJobs(true)}
+          >
+            Show all {jobs.length} jobs ▸
+          </button>
+        )}
         {jobsQuery === undefined && <ListSkeleton rows={3} />}
         {jobsQuery !== undefined && jobs.length === 0 && (
           <p className="text-center py-8 text-gray-400">
@@ -220,13 +243,15 @@ function CustomersLens() {
   const isAdmin = can('customers', 'PUT');
   const [adding, setAdding] = useState(false);
   const [lifecycle, setLifecycle] = useState<LifecycleFilterValue>('active');
+  const [search, setSearch] = useState('');
   const [cust, setCust] = useState({ name: '', phone: '', billing: emptyAddress(), notes: '' });
+  const q = search.trim().toLowerCase();
   const customers = applyLifecycle(
     useLiveQuery(async () =>
       (await db.customers.toArray()).sort((a, b) => a.name.localeCompare(b.name)),
     ) ?? [],
     lifecycle,
-  );
+  ).filter((c) => !q || c.name.toLowerCase().includes(q));
   const counts = useLiveQuery(async () => {
     const sites = await db.sites.toArray();
     const jobs = await db.jobs.toArray();
@@ -239,6 +264,12 @@ function CustomersLens() {
   return (
     <div className="space-y-2">
       <div className="flex justify-end items-center gap-2">
+        <Input
+          className="h-8 max-w-[160px] text-sm"
+          placeholder="Search…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
         <LifecycleFilter value={lifecycle} onChange={setLifecycle} />
         {isAdmin && (
           <Button size="sm" variant="outline" onClick={() => setAdding(!adding)}>
@@ -309,12 +340,17 @@ function SitesLens() {
   const isAdmin = can('sites', 'PUT');
   const [adding, setAdding] = useState(false);
   const [lifecycle, setLifecycle] = useState<LifecycleFilterValue>('active');
+  const [search, setSearch] = useState('');
+  const [showAllSites, setShowAllSites] = useState(false);
   const [form, setForm] = useState({ customerId: '', name: '', addr: emptyAddress(), kFactor: 180 });
+  const q = search.trim().toLowerCase();
   const sites = applyLifecycle(
     useLiveQuery(async () =>
       (await db.sites.toArray()).sort((a, b) => a.name.localeCompare(b.name)),
     ) ?? [],
     lifecycle,
+  ).filter(
+    (s) => !q || [s.name, s.city, s.address].filter(Boolean).some((v) => v!.toLowerCase().includes(q)),
   );
   const customers =
     useLiveQuery(async () =>
@@ -330,6 +366,12 @@ function SitesLens() {
   return (
     <div className="space-y-2">
       <div className="flex justify-end items-center gap-2">
+        <Input
+          className="h-8 max-w-[160px] text-sm"
+          placeholder="Search…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
         <LifecycleFilter value={lifecycle} onChange={setLifecycle} />
         {isAdmin && (
           <Button size="sm" variant="outline" onClick={() => setAdding(!adding)}>
@@ -387,7 +429,7 @@ function SitesLens() {
           </CardContent>
         </Card>
       )}
-      {sites.map((s) => (
+      {(showAllSites || q ? sites : sites.slice(0, 15)).map((s) => (
         <Card
           key={s.id}
           className="cursor-pointer hover:bg-gray-50 transition-colors"
@@ -406,6 +448,14 @@ function SitesLens() {
           </CardContent>
         </Card>
       ))}
+      {!showAllSites && !q && sites.length > 15 && (
+        <button
+          className="w-full text-left px-3 py-2.5 text-xs text-gray-400 hover:text-navy"
+          onClick={() => setShowAllSites(true)}
+        >
+          Show all {sites.length} sites ▸
+        </button>
+      )}
       {sites.length === 0 && (
         <p className="text-center py-8 text-gray-400">
           No sites yet — they're created automatically with jobs.

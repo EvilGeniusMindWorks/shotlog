@@ -39,6 +39,11 @@ export function DocList({
     return map;
   }, [submissions]);
 
+  // Windowed (Round 5): recent documents up front, the rest behind one
+  // tap — no list renders unbounded history. Searching shows everything.
+  const WINDOW = 15;
+  const [showAllState, setShowAll] = useState(false);
+  const showAll = showAllState || Boolean(search) || kindFilter !== 'all';
   const filtered = useMemo(() => {
     let list = rows ?? [];
     if (kindFilter !== 'all') list = list.filter((r) => r.kind === kindFilter);
@@ -88,7 +93,7 @@ export function DocList({
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white divide-y divide-gray-100">
-        {filtered.map((r) => {
+        {(showAll ? filtered : filtered.slice(0, WINDOW)).map((r) => {
           const filed = filedBySource.get(r.sourceId) ?? [];
           const needsFiling =
             showFileAction && r.kind === 'drill_log' && r.status === 'accepted' && filed.length === 0;
@@ -134,6 +139,14 @@ export function DocList({
           <p className="p-4 text-sm text-gray-400">
             {search || kindFilter !== 'all' ? 'Nothing matches.' : 'Nothing here yet.'}
           </p>
+        )}
+        {!showAll && filtered.length > WINDOW && (
+          <button
+            className="w-full text-left px-3 py-2.5 text-xs text-gray-400 hover:text-navy"
+            onClick={() => setShowAll(true)}
+          >
+            Show all {filtered.length} documents ▸
+          </button>
         )}
       </div>
     </div>

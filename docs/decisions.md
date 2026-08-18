@@ -58,6 +58,12 @@ information; amend with a dated entry when one changes.
 
 ## Open (waiting on Mark / Matthew)
 
+- **Test-user cleanup (Round 5 decision point):** prod has only Matthew's real
+  admin; the LOCAL dev DB carries test logins (blaster@/mechanic@/office@/
+  dinis@test.local + stray foreman accounts) and harness residue. Decide
+  before real crew onboarding: wipe the dev company data, or keep it as the
+  permanent test bed and never point a real device at it.
+
 - Permits-on-site placement + job status names (quoted/active/on_hold/complete) — provisional
 - Owner: quote structure; who may see dollars (`view_financials`); does Owner write or only read
 - Shop-crew verification (held for later): real PM intervals + shop paper artifacts, parts capture, bench-vs-truck
