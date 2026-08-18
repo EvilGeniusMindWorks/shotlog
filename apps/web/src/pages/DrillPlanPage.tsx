@@ -7,6 +7,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Send, X } from 'lucide-react';
 import { type Role } from '@shotlog/shared';
 import { can } from '@/lib/perms';
+import { LifecycleMenu } from '@/components/records/LifecycleMenu';
 import { useLiveQuery, db } from '@/db';
 import {
   createDrillPlanLog,
@@ -171,6 +172,14 @@ export function DrillPlanPage() {
               Reopen
             </Button>
           )}
+          <LifecycleMenu
+            table="drillPlans"
+            record={plan}
+            label={plan.name}
+            kind="drill plan"
+            onDeleted={() => navigate(`/jobs/${plan.jobId}`)}
+            buttonClassName="h-10 w-10 rounded-lg bg-white/10 flex items-center justify-center text-white hover:bg-white/20"
+          />
         </div>
       </div>
 

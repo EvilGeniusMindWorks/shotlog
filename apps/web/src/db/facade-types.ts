@@ -33,6 +33,8 @@ import type {
   Equipment,
   ProductCatalogItem,
   Attachment,
+  TimeCard,
+  HourCorrection,
 } from './schema';
 
 export interface FacadeCollection<T> {
@@ -93,6 +95,8 @@ export interface ShotLogDataAccess {
   incidents: FacadeTable<Incident>;
   submissions: FacadeTable<Submission>;
   roleDefinitions: FacadeTable<RoleDefinitionRecord>;
+  timeCards: FacadeTable<TimeCard>;
+  hourCorrections: FacadeTable<HourCorrection>;
   tombstones: FacadeTable<Tombstone>;
 
   table(name: string): FacadeTable<Record<string, unknown> & { id: string }>;

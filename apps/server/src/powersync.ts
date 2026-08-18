@@ -18,7 +18,9 @@ import {
   canTransitionStatusAs,
   diffPayloads,
   APPROVAL_LOCKED_TABLES,
+  LIFECYCLE_CHILDREN,
   LOCKED_DAY_STATUSES,
+  NEVER_USED_DELETE_TABLES,
   PARENT_CHAIN,
   type RoleDefsLookup,
 } from '@shotlog/shared';
@@ -244,6 +246,75 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
           }
         }
 
+        // 1a2. lifecycle — archive/restore rides the table's DELETE grant
+        // (docs/deletion-pattern.md): flipping archivedAt in either
+        // direction is the supervisory act, whatever op carries it
+        if (op.op !== 'DELETE') {
+          const wasArchived = Boolean(stored?.payload.archivedAt);
+          const willBeArchived = Boolean(effective.archivedAt);
+          if (
+            wasArchived !== willBeArchived &&
+            !canPerformOpAs(tableName, 'DELETE', role, roleDefs)
+          ) {
+            discard(op, tableName, 'archive/restore requires the delete grant');
+            continue;
+          }
+        }
+
+        // 1a3. lifecycle — Delete is the created-in-error verb. Hierarchy
+        // and registry records go only if NEVER used (zero children ever);
+        // anything with history is archive-only. Same-batch children are
+        // visible here: upserts landed in this transaction.
+        if (op.op === 'DELETE' && NEVER_USED_DELETE_TABLES.has(tableName)) {
+          let used: string | null = null;
+          for (const child of LIFECYCLE_CHILDREN[tableName]) {
+            const rows = await tx.$queryRaw<{ id: string }[]>`
+              SELECT "id" FROM "records"
+              WHERE "company_id" = ${cid} AND "table_name" = ${child.table}
+                AND ("payload"::jsonb ->> ${child.field}) = ${op.id}
+              LIMIT 1`;
+            if (rows.length > 0) {
+              used = child.table;
+              break;
+            }
+          }
+          if (used) {
+            discard(op, tableName, `record has history (${used}) — archive instead`);
+            continue;
+          }
+        }
+
+        // 1a4. lifecycle — a work day deletes only while it's a DRAFT with
+        // nothing filed from it ("this day never happened"). Submitted or
+        // approved days unlock first via the normal transitions.
+        if (tableName === 'blastDays' && op.op === 'DELETE') {
+          const status = (stored?.payload.status as string | undefined) ?? 'draft';
+          if (status !== 'draft') {
+            discard(op, tableName, `only draft days can be deleted (day is ${status})`);
+            continue;
+          }
+          const filed = await tx.$queryRaw<{ id: string }[]>`
+            SELECT "id" FROM "records"
+            WHERE "company_id" = ${cid} AND "table_name" = 'submissions'
+              AND ("payload"::jsonb ->> 'blastDayId') = ${op.id}
+            LIMIT 1`;
+          if (filed.length > 0) {
+            discard(op, tableName, 'day has filed documents — archive-only history');
+            continue;
+          }
+        }
+
+        // 1a5. lifecycle — an ACCEPTED drill log never deletes (the blast
+        // side took the pattern); un-accept first if it was a mistake
+        if (
+          tableName === 'drillLogs' &&
+          op.op === 'DELETE' &&
+          (stored?.payload.status as string | undefined) === 'accepted'
+        ) {
+          discard(op, tableName, 'accepted drill logs cannot be deleted');
+          continue;
+        }
+
         // 1b. submissions are write-once: the DOCUMENT (pdf checksum, assets,
         // facts) can never change after filing — corrections come as NEW
         // submissions (vN+1). The ONE permitted post-file change is the
@@ -341,6 +412,77 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
           if (!canTransitionRecordStatusAs(tableName, from, to, role, roleDefs)) {
             discard(op, tableName, `forbidden ${tableName} transition ${from}->${to}`);
             continue;
+          }
+        }
+
+        // 2b3. time cards: everyone writes their OWN. A card whose subject
+        // holds a login may only be written by that login; no-login roster
+        // people are the attributed exception. Approvers (approve_days)
+        // bypass — they fix and approve cards. Approved cards freeze;
+        // delete is draft-only ("created in error").
+        if (tableName === 'timeCards' && !canEditApprovedAs(role, roleDefs)) {
+          const from = (stored?.payload.status as string | undefined) ?? 'draft';
+          const to =
+            op.op === 'DELETE' ? from : ((effective.status as string | undefined) ?? from);
+          if (from === 'approved') {
+            discard(op, tableName, 'time card approved (locked)');
+            continue;
+          }
+          if (op.op === 'DELETE' && from !== 'draft') {
+            discard(op, tableName, 'only draft time cards can be deleted');
+            continue;
+          }
+          // A filed card is with the office — pull it back (filed→draft)
+          // before editing; same-status edits are frozen like filed days
+          if (from === 'filed' && to === 'filed') {
+            discard(op, tableName, 'time card filed (locked)');
+            continue;
+          }
+          let subjectUserId = (effective.userId ?? stored?.payload.userId) as string | undefined;
+          if (!subjectUserId) {
+            const cmId = (effective.crewMemberId ?? stored?.payload.crewMemberId) as
+              | string
+              | undefined;
+            if (cmId) {
+              subjectUserId = (await batch.get(cmId))?.payload.userId as string | undefined;
+            }
+          }
+          if (subjectUserId && subjectUserId !== actorId) {
+            discard(op, tableName, 'not your time card');
+            continue;
+          }
+          if (op.op === 'PUT' && !stored && effective.enteredByUserId !== actorId) {
+            discard(op, tableName, 'entered-by must be the signed-in user');
+            continue;
+          }
+        }
+
+        // 2b4. hour corrections are attributed to whoever files them —
+        // the ledger's audit story depends on it
+        if (
+          tableName === 'hourCorrections' &&
+          op.op === 'PUT' &&
+          !stored &&
+          role !== 'admin' &&
+          effective.correctedByUserId !== actorId
+        ) {
+          discard(op, tableName, 'correction must be attributed to the signed-in user');
+          continue;
+        }
+
+        // 2b5. per-shot sign-off (multi-blaster model (a)): only the shot's
+        // responsible blaster signs it — supervisors excepted
+        if (tableName === 'shots' && op.op !== 'DELETE' && !canEditApprovedAs(role, roleDefs)) {
+          const signChanged = diffPayloads(stored?.payload ?? null, effective).some(
+            (c) => c.field === 'signatureImage' || c.field === 'signedAt',
+          );
+          if (signChanged) {
+            const resp = (effective.responsibleBlasterUserId ??
+              stored?.payload.responsibleBlasterUserId) as string | undefined;
+            if (resp && resp !== actorId) {
+              discard(op, tableName, 'shot sign-off belongs to its responsible blaster');
+              continue;
+            }
           }
         }
 

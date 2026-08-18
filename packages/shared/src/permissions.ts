@@ -37,14 +37,20 @@ const uniform = (roles: readonly Role[]): TableRule => ({ PUT: roles, PATCH: rol
  * `office` is read-only everywhere: sync still delivers all company data
  * for viewing/reporting, but every write is denied.
  */
+/** Blasters set up their own customers/sites/jobs on small jobs (Mark's
+ *  validated workflow, 2026-08-17). Archive/delete stays supervisory —
+ *  DELETE is also the archive gate (see docs/deletion-pattern.md). */
+const HIERARCHY_SETUP: readonly Role[] = ['admin', 'blaster'];
+const HIERARCHY_RULE: TableRule = { PUT: HIERARCHY_SETUP, PATCH: HIERARCHY_SETUP, DELETE: ADMIN_ONLY };
+
 export const TABLE_PERMISSIONS: Record<string, TableRule> = {
   // Admin-managed reference data
   productCatalog: uniform(ADMIN_ONLY),
   manufacturers: uniform(ADMIN_ONLY),
-  jobs: uniform(ADMIN_ONLY),
-  // Customer → Site → Job hierarchy: reference data, office-managed
-  customers: uniform(ADMIN_ONLY),
-  sites: uniform(ADMIN_ONLY),
+  jobs: HIERARCHY_RULE,
+  // Customer → Site → Job hierarchy
+  customers: HIERARCHY_RULE,
+  sites: HIERARCHY_RULE,
   companySettings: uniform(ADMIN_ONLY),
   // Role definitions — the capability bundles themselves (capabilities.ts).
   // Admin-only BY CODE: no capability grants this table, so even a custom
@@ -102,6 +108,17 @@ export const TABLE_PERMISSIONS: Record<string, TableRule> = {
   // role files them; NOBODY edits — write-once (the server additionally
   // discards re-PUTs of an existing submission id). Delete is admin-only.
   submissions: { PUT: EQUIPMENT_ENTRIES, PATCH: ADMIN_ONLY, DELETE: ADMIN_ONLY },
+
+  // Per-person time cards: every field role files their OWN (ownership is
+  // enforced at the sync choke point — a card whose subject holds a login
+  // may only be written by that login; no-login roster people are the
+  // attributed exception). Approval transitions are guarded below.
+  timeCards: uniform(EQUIPMENT_ENTRIES),
+
+  // Hour-meter corrections: append-only shop entries in the hour ledger.
+  // Nobody edits or removes a correction — both values (shown + observed)
+  // are kept forever; PATCH/DELETE stay admin-only escape hatches.
+  hourCorrections: { PUT: EQUIPMENT_REGISTRY, PATCH: ADMIN_ONLY, DELETE: ADMIN_ONLY },
 
   // Legacy local profile table — field-writable until deprecated
   blasterProfiles: uniform(BLAST_FAMILY),
@@ -203,6 +220,15 @@ const SENSITIVE_STATUS_TRANSITIONS: Record<
     open: { complete: BLAST_FAMILY as Role[] },
     complete: { open: BLAST_FAMILY as Role[] },
   },
+  // Time cards: filing your own card is open; APPROVING one (or pulling an
+  // approved card back) is the same supervisory act as approving the day.
+  // filed→draft stays open so a person can pull their own card back before
+  // approval (ownership still applies at the choke point).
+  timeCards: {
+    draft: { approved: REGISTRY as Role[] },
+    filed: { approved: REGISTRY as Role[] },
+    approved: { filed: REGISTRY as Role[], draft: REGISTRY as Role[] },
+  },
 };
 
 /** True when a status change on `tableName` is allowed for `role`.
@@ -220,6 +246,48 @@ export function canTransitionRecordStatus(
 
 /** Tables the sync choke point runs canTransitionRecordStatus against */
 export const STATUS_GUARDED_TABLES = new Set(Object.keys(SENSITIVE_STATUS_TRANSITIONS));
+
+// ── Record lifecycle (docs/deletion-pattern.md) ────────────────────────────
+// Two verbs, one shape: ARCHIVE (logical, reversible, rides the table's
+// DELETE grant) and DELETE (created-in-error only). A record listed here is
+// deletable only if NEVER used — zero children ever. The server checks this
+// map at the sync choke point; the client uses it for consequence sheets
+// and to decide whether to offer Delete at all.
+
+export const LIFECYCLE_CHILDREN: Record<string, readonly { table: string; field: string }[]> = {
+  customers: [
+    { table: 'sites', field: 'customerId' },
+    { table: 'jobs', field: 'customerId' },
+  ],
+  sites: [{ table: 'jobs', field: 'siteId' }],
+  jobs: [
+    { table: 'blastDays', field: 'jobId' },
+    { table: 'drillPlans', field: 'jobId' },
+    { table: 'drillLogs', field: 'jobId' },
+    { table: 'drillChecklists', field: 'jobId' },
+    { table: 'submissions', field: 'jobId' },
+    { table: 'incidents', field: 'jobId' },
+    { table: 'timeCards', field: 'jobId' },
+  ],
+  drillPlans: [{ table: 'drillLogs', field: 'drillPlanId' }],
+  equipment: [
+    { table: 'drillChecklists', field: 'equipmentId' },
+    { table: 'repairTickets', field: 'equipmentId' },
+    { table: 'drillLogs', field: 'drillRigEquipmentId' },
+    { table: 'equipmentEntries', field: 'equipmentId' },
+    { table: 'hourCorrections', field: 'equipmentId' },
+    { table: 'incidents', field: 'equipmentId' },
+  ],
+  crewMembers: [
+    { table: 'workForceEntries', field: 'crewMemberId' },
+    { table: 'timeCards', field: 'crewMemberId' },
+  ],
+};
+
+/** Tables whose DELETE the choke point runs the never-used check against */
+export const NEVER_USED_DELETE_TABLES: ReadonlySet<string> = new Set(
+  Object.keys(LIFECYCLE_CHILDREN),
+);
 
 // ── Approval lock ──────────────────────────────────────────────────────────
 

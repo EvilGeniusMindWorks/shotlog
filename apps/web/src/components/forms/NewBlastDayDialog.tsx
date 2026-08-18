@@ -122,7 +122,7 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork }: Prop
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
       <Card className="w-full sm:max-w-lg max-h-[90vh] overflow-auto rounded-t-xl sm:rounded-xl">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>New Work Day</CardTitle>
+          <CardTitle>Start Work at a Job</CardTitle>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>
@@ -192,7 +192,7 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork }: Prop
                   <Select
                     value={copySourceId}
                     onChange={(e) => setCopySourceId(e.target.value)}
-                    placeholder="Start blank"
+                    placeholder="Blank — no copy"
                     options={previousDays.slice(0, 10).map((d) => ({
                       value: d.id,
                       label: `${d.date} — ${d.status.replace('_', ' ')}`,
@@ -258,7 +258,7 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork }: Prop
         <CardFooter className="flex justify-end gap-2 pb-6">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button variant="safety" disabled={!canCreate} onClick={handleCreate}>
-            Create Work Day
+            Start Work
           </Button>
         </CardFooter>
       </Card>

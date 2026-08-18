@@ -5,8 +5,9 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { Plus, Trash2 } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
-import { getSessionUser } from '@/lib/session';
+import { can } from '@/lib/perms';
 import { useDraftRecord } from '@/hooks/useDraftRecord';
+import { LifecycleMenu } from '@/components/records/LifecycleMenu';
 import { formatDate, generateId, nowISO } from '@/lib/utils';
 import type { Job, NearbyStructure, Site, SitePermit } from '@/db/schema';
 import { JobContactsCard } from '@/components/forms/JobContactsCard';
@@ -20,7 +21,8 @@ import { Label } from '@/components/ui/label';
 export function SitePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const isAdmin = getSessionUser()?.role === 'admin';
+  // Blasters set up customers/sites/jobs too (2026-08-17)
+  const isAdmin = can('sites', 'PATCH');
   const site = useLiveQuery(() => (id ? db.sites.get(id) : undefined), [id]);
   const customer = useLiveQuery(
     () => (site?.customerId ? db.customers.get(site.customerId) : undefined),
@@ -59,9 +61,18 @@ export function SitePage() {
       ]}
       title={site.name}
       badge={
-        <Badge variant={site.isActive ? 'compliant' : 'draft'}>
-          {site.isActive ? 'Active' : 'Inactive'}
+        <Badge variant={site.archivedAt ? 'draft' : site.isActive ? 'compliant' : 'draft'}>
+          {site.archivedAt ? 'Archived' : site.isActive ? 'Active' : 'Inactive'}
         </Badge>
+      }
+      actions={
+        <LifecycleMenu
+          table="sites"
+          record={site}
+          label={site.name}
+          kind="site"
+          onDeleted={() => navigate('/jobs?lens=sites')}
+        />
       }
       subline={[customer?.name, [site.city, site.state].filter(Boolean).join(', ')]
         .filter(Boolean)

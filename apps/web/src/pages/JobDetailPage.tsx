@@ -13,6 +13,7 @@ import { buildDocRows } from '@/lib/docRows';
 import { DocList } from '@/components/records/DocList';
 import { derivedKFactor, fitKFactor, powderFactor, scaledDistance } from '@shotlog/shared';
 import { can } from '@/lib/perms';
+import { LifecycleMenu } from '@/components/records/LifecycleMenu';
 import { createDrillPlan, getPlanHoles } from '@/hooks/useDrillPlans';
 import { useJobContext, type JobContext } from '@/lib/jobContext';
 import { nowISO } from '@/lib/utils';
@@ -64,7 +65,8 @@ export function JobDetailPage() {
   }
 
   const avgPF = stats.totalYards > 0 ? powderFactor(stats.totalLbs, stats.totalYards) : 0;
-  const isAdmin = getSessionUser()?.role === 'admin';
+  // Blasters set up customers/sites/jobs too (2026-08-17)
+  const isAdmin = can('jobs', 'PATCH');
   const status = job.jobStatus ?? (job.isActive ? 'active' : 'complete');
 
   return (
@@ -75,7 +77,20 @@ export function JobDetailPage() {
         ...(ctx?.site ? [{ label: ctx.siteName, to: `/sites/${ctx.site.id}` }] : []),
       ]}
       title={`${job.jobNumber ? `${job.jobNumber} · ` : ''}${job.name}`}
-      badge={<Badge variant={status === 'active' ? 'compliant' : 'draft'}>{status}</Badge>}
+      badge={
+        <Badge variant={job.archivedAt ? 'draft' : status === 'active' ? 'compliant' : 'draft'}>
+          {job.archivedAt ? 'Archived' : status}
+        </Badge>
+      }
+      actions={
+        <LifecycleMenu
+          table="jobs"
+          record={job}
+          label={job.name}
+          kind="job"
+          onDeleted={() => navigate('/jobs')}
+        />
+      }
       subline={
         [ctx?.address, ctx?.city, ctx?.state].filter(Boolean).join(', ') || 'No address'
       }
@@ -356,13 +371,16 @@ function JobActivity({ jobId, lbs }: { jobId: string; lbs: number }) {
 function DrillPlansCard({ jobId }: { jobId: string }) {
   const navigate = useNavigate();
   const canCreate = can('drillPlans', 'PUT');
-  const plans = useLiveQuery(
+  const [showArchived, setShowArchived] = useState(false);
+  const allPlans = useLiveQuery(
     async () =>
       (await db.drillPlans.where('jobId').equals(jobId).toArray()).sort((a, b) =>
         b.createdAt.localeCompare(a.createdAt),
       ),
     [jobId],
   );
+  const archivedCount = (allPlans ?? []).filter((p) => p.archivedAt).length;
+  const plans = showArchived ? allPlans : allPlans?.filter((p) => !p.archivedAt);
   const rows = useLiveQuery(async () => {
     const out = [];
     for (const plan of (plans ?? []).slice(0, 5)) {
@@ -401,7 +419,9 @@ function DrillPlansCard({ jobId }: { jobId: string }) {
                 {drilled} of {holes} holes drilled · {formatDate(plan.createdAt.slice(0, 10))}
               </p>
             </div>
-            <Badge variant={plan.status === 'complete' ? 'approved' : 'draft'}>{plan.status}</Badge>
+            <Badge variant={plan.status === 'complete' ? 'approved' : 'draft'}>
+              {plan.archivedAt ? 'archived' : plan.status}
+            </Badge>
           </button>
         ))}
         {(rows ?? []).length === 0 && (
@@ -410,6 +430,14 @@ function DrillPlansCard({ jobId }: { jobId: string }) {
             your drillers.
           </p>
         )}
+        {archivedCount > 0 && (
+          <button
+            className="text-xs text-gray-400 underline underline-offset-2"
+            onClick={() => setShowArchived(!showArchived)}
+          >
+            {showArchived ? 'Hide archived' : `Show ${archivedCount} archived`}
+          </button>
+        )}
       </CardContent>
     </Card>
   );
@@ -417,7 +445,7 @@ function DrillPlansCard({ jobId }: { jobId: string }) {
 
 function SiteKCard({ job }: { job: Job }) {
   const site = useLiveQuery(() => (job.siteId ? db.sites.get(job.siteId) : undefined), [job.siteId]);
-  const isAdmin = getSessionUser()?.role === 'admin';
+  const isAdmin = can('sites', 'PATCH');
   // Re-run once after mount: on a fresh page load, live queries can resolve
   // empty before local hydration finishes and never re-fire on their own
   const [tick, setTick] = useState(0);
@@ -580,8 +608,8 @@ const JOB_STATUS_OPTIONS = [
 
 function JobConfigCard({ job }: { job: Job }) {
   const { draft, setField } = useDraftRecord(db.jobs, job);
-  // Jobs are admin-managed (spec §A3) — everyone else sees them read-only
-  const readOnly = getSessionUser()?.role !== 'admin';
+  // Blasters set up and edit jobs too (2026-08-17) — capability-gated
+  const readOnly = !can('jobs', 'PATCH');
   return (
     <Card>
       <CardHeader>

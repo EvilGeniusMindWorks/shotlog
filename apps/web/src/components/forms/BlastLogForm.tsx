@@ -18,6 +18,7 @@ import { getSessionUser } from '@/lib/session';
 import { dataUrlToBlob } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { ShotForm } from './ShotForm';
+import { ShotSignoff } from './ShotSignoff';
 import { ExplosiveUsageForm } from './ExplosiveUsageForm';
 import { useLiveQuery } from '@/db';
 import { getShotPlan } from '@/hooks/useDrillLogs';
@@ -294,6 +295,7 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
                 kFactor={jobCtx?.kFactor ?? 180}
                 blastDayId={blastDay.id}
               />
+              <ShotSignoff shot={shot} />
             </CardContent>
           )}
         </Card>

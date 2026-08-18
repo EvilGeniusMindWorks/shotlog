@@ -19,8 +19,8 @@ const STEPS: TourStep[] = [
   },
   {
     selector: '[data-tour="fab"]',
-    title: 'Start a Blast Day',
-    body: 'One tap starts a new day — and you can copy everything forward from a previous day: blast info, drill params, explosives, crew.',
+    title: 'Start Work at a Job',
+    body: 'One tap opens work at a job — and you can copy everything forward from a previous day: blast info, drill params, explosives, crew.',
   },
   {
     selector: '[data-tour="nav"]',

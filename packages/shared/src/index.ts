@@ -60,6 +60,8 @@ export {
   PARENT_CHAIN,
   APPROVAL_LOCKED_TABLES,
   LOCKED_DAY_STATUSES,
+  LIFECYCLE_CHILDREN,
+  NEVER_USED_DELETE_TABLES,
   canPerformOp,
   canTransitionStatus,
   canTransitionDrillLog,

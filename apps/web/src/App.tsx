@@ -40,6 +40,7 @@ import { Navigate } from 'react-router-dom';
 import { getSessionUser } from '@/lib/session';
 import { hasCap } from '@/lib/perms';
 import { AdminRolesPage } from '@/pages/admin/AdminRolesPage';
+import { UndoToastHost } from '@/components/ui/undo-toast';
 
 function AdminIndexRedirect() {
   const role = getSessionUser()?.role;
@@ -84,6 +85,7 @@ export function App() {
   }
   return (
     <AuthGate>
+    <UndoToastHost />
     <BrowserRouter>
       <Routes>
         <Route element={<AppShell />}>

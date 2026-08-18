@@ -4,7 +4,10 @@ import { ArrowLeft, FileText, ClipboardList, ChevronDown, ChevronUp, FileBarChar
 import { type Role } from '@shotlog/shared';
 import { can, canDayTransition, canEditApprovedDay } from '@/lib/perms';
 import { addBlastLogToDay, useBlastDay } from '@/hooks/useBlastDay';
-import { db } from '@/db';
+import { db, useLiveQuery } from '@/db';
+import { deleteDayCascade } from '@/lib/lifecycle';
+import { LifecycleMenu } from '@/components/records/LifecycleMenu';
+import { TimeCardsCard } from '@/components/forms/TimeCardsCard';
 import { authedFetch, getSessionUser } from '@/lib/session';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { nowISO, formatDate, dayOfWeek } from '@/lib/utils';
@@ -93,6 +96,13 @@ export function BlastDayPage() {
   const [statusError, setStatusError] = useState<string | null>(null);
   const online = useOnlineStatus();
   const role = (getSessionUser()?.role ?? 'blaster') as Role;
+  // Delete is draft-only AND nothing-filed (deletion pattern) — the server
+  // re-checks both; this just decides whether to offer the menu item
+  const filedCount =
+    useLiveQuery(
+      () => (id ? db.submissions.filter((s) => s.blastDayId === id).count() : 0),
+      [id],
+    ) ?? 0;
 
   if (!blastDay) {
     return (
@@ -248,6 +258,18 @@ export function BlastDayPage() {
           >
             <Printer className="h-5 w-5" />
           </button>
+          <LifecycleMenu
+            table="blastDays"
+            record={blastDay}
+            label={blastDay.name || `${formatDate(blastDay.date)} at ${job?.name ?? 'this job'}`}
+            kind="work day"
+            allowArchive={false}
+            canDeleteOverride={status === 'draft' && filedCount === 0}
+            deleteFn={() => deleteDayCascade(blastDay)}
+            deleteDescription="This day never happened: its log, report, entries, and draft time cards go with it. The server keeps a permanent audit record."
+            onDeleted={() => navigate('/')}
+            buttonClassName="h-10 w-10 rounded-lg bg-white/10 flex items-center justify-center text-white hover:bg-white/20"
+          />
         </div>
       </div>
 
@@ -470,7 +492,8 @@ export function BlastDayPage() {
           />
         )}
         {tab === 'daily-report' && dailyReport && blastDay && (
-          <div className="mb-4">
+          <div className="mb-4 space-y-4">
+            <TimeCardsCard blastDay={blastDay} />
             <AttachmentsCard parentId={blastDay.id} parentType="blast_day" title="Day attachments" />
           </div>
         )}

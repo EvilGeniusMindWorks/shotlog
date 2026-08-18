@@ -82,6 +82,7 @@ describe('built-in bundles match the legacy matrix (no definitions)', () => {
       ['incidents', ['open', 'office_review', 'closed']],
       ['equipment', ['active', 'in_shop', 'retired']],
       ['drillPlans', ['open', 'complete']],
+      ['timeCards', ['draft', 'filed', 'approved']],
     ];
     for (const [table, statuses] of cases)
       for (const from of statuses)

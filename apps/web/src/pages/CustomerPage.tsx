@@ -6,8 +6,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { createSite } from '@/lib/jobContext';
 import { MapPin, Plus, Trash2 } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
-import { getSessionUser } from '@/lib/session';
+import { can } from '@/lib/perms';
 import { useDraftRecord } from '@/hooks/useDraftRecord';
+import { LifecycleMenu } from '@/components/records/LifecycleMenu';
 import { formatDate, generateId, nowISO } from '@/lib/utils';
 import type { Customer, CustomerContact, CustomerStatus } from '@/db/schema';
 import { AddressFields, emptyAddress } from '@/components/forms/AddressFields';
@@ -61,7 +62,9 @@ export function ExpiryPill({ date, label }: { date?: string; label?: string }) {
 export function CustomerPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const isAdmin = getSessionUser()?.role === 'admin';
+  // Blasters set up customers/sites/jobs too (2026-08-17) — gate on the
+  // capability, not the admin role
+  const isAdmin = can('customers', 'PATCH');
   const customer = useLiveQuery(() => (id ? db.customers.get(id) : undefined), [id]);
   const sites =
     useLiveQuery(
@@ -95,9 +98,22 @@ export function CustomerPage() {
       ]}
       title={customer.name}
       badge={
-        <Badge variant={status === 'active' ? 'compliant' : status === 'prospect' ? 'secondary' : 'draft'}>
-          {status}
-        </Badge>
+        customer.archivedAt ? (
+          <Badge variant="draft">Archived</Badge>
+        ) : (
+          <Badge variant={status === 'active' ? 'compliant' : status === 'prospect' ? 'secondary' : 'draft'}>
+            {status}
+          </Badge>
+        )
+      }
+      actions={
+        <LifecycleMenu
+          table="customers"
+          record={customer}
+          label={customer.name}
+          kind="customer"
+          onDeleted={() => navigate('/jobs?lens=customers')}
+        />
       }
       subline={[
         TYPE_OPTIONS.find((t) => t.value === customer.customerType)?.label,

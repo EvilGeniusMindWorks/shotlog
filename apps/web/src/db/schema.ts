@@ -33,6 +33,24 @@ export interface BaseRecord {
 }
 
 // ══════════════════════════════════════════════════════
+// RECORD LIFECYCLE (docs/deletion-pattern.md). Archive is the everyday
+// verb: logical, reversible, nothing destroyed. Archived records leave
+// default lists/pickers; every list gets an Archived filter. Setting these
+// fields rides the table's DELETE grant (server-enforced).
+// ══════════════════════════════════════════════════════
+
+export interface Archivable {
+  archivedAt?: string; // ISO datetime — set = archived
+  archivedBy?: string; // userId
+  archivedByName?: string;
+}
+
+/** Not archived (fresh records and restored ones both pass) */
+export function isLive(r: Archivable): boolean {
+  return !r.archivedAt;
+}
+
+// ══════════════════════════════════════════════════════
 // JOB (enriched per Addendum 1 §A1.1)
 // ══════════════════════════════════════════════════════
 
@@ -75,7 +93,7 @@ export interface CustomerContact {
   isPrimary?: boolean;
 }
 
-export interface Customer extends BaseRecord {
+export interface Customer extends BaseRecord, Archivable {
   name: string;
   customerType?: CustomerType;
   status?: CustomerStatus; // absent = active (pre-expansion records)
@@ -117,7 +135,7 @@ export interface NearbyStructure {
   notes?: string;
 }
 
-export interface Site extends BaseRecord {
+export interface Site extends BaseRecord, Archivable {
   customerId: string;
   /** Display label — defaults to the address when not named */
   name: string;
@@ -154,7 +172,7 @@ export interface Site extends BaseRecord {
 
 export type JobStatus = 'quoted' | 'active' | 'on_hold' | 'complete';
 
-export interface Job extends BaseRecord {
+export interface Job extends BaseRecord, Archivable {
   name: string;
   /** Auto-assigned per-year sequence ("26-041"), editable override */
   jobNumber?: string;
@@ -346,6 +364,15 @@ export interface Shot extends BaseRecord {
   designPlan: DesignPlan;
   /** Standalone drill plan this shot was imported from (totals + grid) */
   drillPlanId?: string;
+  // ── Multi-blaster model (a), 2026-08-17: ONE log per day, each shot
+  // carries the blaster responsible for it + their signature. The server
+  // guards the sign-off: only the responsible blaster signs their shot. ──
+  responsibleBlasterUserId?: string;
+  responsibleBlasterName?: string;
+  responsibleLicenseNumber?: string;
+  responsibleLicenseState?: string;
+  signatureImage?: Blob | null;
+  signedAt?: string; // ISO datetime
 }
 
 // ══════════════════════════════════════════════════════
@@ -482,6 +509,61 @@ export interface SubcontractorEntry extends BaseRecord {
 }
 
 // ══════════════════════════════════════════════════════
+// TIME CARDS — per-person daily cards (confirmed 2026-08-17): every crew
+// member files their OWN hours; the day aggregates them. Entering a card
+// for a no-login roster person is allowed, attributed, and discouraged.
+// Ownership + approval are enforced server-side at the sync choke point.
+// ══════════════════════════════════════════════════════
+
+export type TimeCardStatus = 'draft' | 'filed' | 'approved';
+
+export interface TimeCard extends BaseRecord {
+  date: string; // ISO date
+  jobId: string;
+  /** The work day this card belongs to, when one exists */
+  blastDayId?: string;
+  // ── Whose hours these are ──
+  personName: string; // denormalized display name
+  crewMemberId?: string; // roster link
+  /** The person's LOGIN, when they have one — the ownership anchor: a card
+   *  with a userId may only be written by that login (server-enforced) */
+  userId?: string;
+  // ── The hours (in/out preferred; ST/OT always present) ──
+  timeIn?: string; // HH:mm
+  timeOut?: string;
+  straightTime: number; // hours
+  overtime: number;
+  notes?: string;
+  signatureImage: Blob | null;
+  status: TimeCardStatus;
+  filedAt?: string;
+  approvedAt?: string;
+  approvedByUserId?: string;
+  approvedByName?: string;
+  // ── Attribution: who actually typed it (self vs entered-for) ──
+  enteredByUserId: string;
+  enteredByName: string;
+}
+
+// ══════════════════════════════════════════════════════
+// HOUR CORRECTIONS — the shop's append-only entries in the equipment hour
+// ledger (2026-08-17): when the physical meter disagrees with the app, the
+// correction records BOTH values forever. Never edited, never deleted;
+// current hours derive from the ledger (lib/hourLedger.ts).
+// ══════════════════════════════════════════════════════
+
+export interface HourCorrection extends BaseRecord {
+  equipmentId: string;
+  /** What the physical meter reads — the authoritative value */
+  observedHours: number;
+  /** What the app showed at correction time — kept for the audit story */
+  previousHours: number | null;
+  note?: string;
+  correctedByUserId: string;
+  correctedByName: string;
+}
+
+// ══════════════════════════════════════════════════════
 // CREW & EQUIPMENT REGISTRY
 // ══════════════════════════════════════════════════════
 
@@ -605,7 +687,7 @@ export interface DrillPlanHoleOverride {
   noHole?: boolean;
 }
 
-export interface DrillPlanRecord extends BaseRecord {
+export interface DrillPlanRecord extends BaseRecord, Archivable {
   jobId: string;
   name: string;
   status: 'open' | 'complete';

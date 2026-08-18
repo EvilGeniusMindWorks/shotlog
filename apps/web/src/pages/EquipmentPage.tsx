@@ -16,6 +16,7 @@ import { useLiveQuery, db } from '@/db';
 import { getSessionUser } from '@/lib/session';
 import { cn, formatDate, nowISO } from '@/lib/utils';
 import { buildEquipmentTimeline, type EquipmentEvent } from '@/lib/equipmentHistory';
+import { HourLedgerCard } from '@/components/records/HourLedgerCard';
 import type { EquipmentStatus } from '@/db/schema';
 import { Badge } from '@/components/ui/badge';
 
@@ -138,6 +139,9 @@ export function EquipmentPage() {
         </div>
         {equip.notes && <p className="text-xs text-gray-400">{equip.notes}</p>}
       </div>
+
+      {/* Hour ledger: sourced readings + shop corrections, current derived */}
+      <HourLedgerCard equip={equip} />
 
       {/* History timeline */}
       <div className="rounded-xl border border-gray-200 bg-white p-3">

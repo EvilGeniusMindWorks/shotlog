@@ -10,6 +10,12 @@ import { createJob } from '@/hooks/useBlastDay';
 import { authedFetch, getSessionUser } from '@/lib/session';
 import { AddressFields, emptyAddress } from '@/components/forms/AddressFields';
 import { PeekSheet } from '@/components/layout/PeekSheet';
+import { can } from '@/lib/perms';
+import {
+  LifecycleFilter,
+  applyLifecycle,
+  type LifecycleFilterValue,
+} from '@/components/records/LifecycleFilter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,7 +43,9 @@ export function JobsPage() {
   const raw = params.get('lens');
   const lens: Lens = raw === 'customers' || raw === 'sites' ? raw : 'jobs';
   const setLens = (l: Lens) => setParams(l === 'jobs' ? {} : { lens: l }, { replace: true });
-  const isAdmin = getSessionUser()?.role === 'admin';
+  // Blasters set up jobs too (2026-08-17) — capability, not role
+  const isAdmin = can('jobs', 'PUT');
+  const [lifecycle, setLifecycle] = useState<LifecycleFilterValue>('active');
   // Heal pre-hierarchy jobs: server links customer/site records (idempotent)
   useEffect(() => {
     if (getSessionUser()?.role === 'admin' && navigator.onLine) {
@@ -46,7 +54,7 @@ export function JobsPage() {
   }, []);
   // undefined = still hydrating from the local DB — skeleton, never "No jobs yet"
   const jobsQuery = useLiveQuery(async () => getJobViews(await db.jobs.orderBy('updatedAt').reverse().toArray()));
-  const jobs = jobsQuery ?? [];
+  const jobs = applyLifecycle(jobsQuery ?? [], lifecycle);
   const [showNew, setShowNew] = useState(false);
   const [peek, setPeek] = useState<Job | undefined>();
   const [form, setForm] = useState({
@@ -100,6 +108,12 @@ export function JobsPage() {
         )}
       </div>
 
+      {lens === 'jobs' && (
+        <div className="flex justify-end mb-2">
+          <LifecycleFilter value={lifecycle} onChange={setLifecycle} />
+        </div>
+      )}
+
       {lens === 'customers' && <CustomersLens />}
       {lens === 'sites' && <SitesLens />}
 
@@ -149,8 +163,8 @@ export function JobsPage() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <Badge variant="secondary">{job.operation}</Badge>
-                  <Badge variant={job.isActive ? 'compliant' : 'draft'}>
-                    {job.jobStatus ?? (job.isActive ? 'active' : 'inactive')}
+                  <Badge variant={job.archivedAt ? 'draft' : job.isActive ? 'compliant' : 'draft'}>
+                    {job.archivedAt ? 'archived' : (job.jobStatus ?? (job.isActive ? 'active' : 'inactive'))}
                   </Badge>
                   <button
                     className="h-9 w-9 rounded-lg flex items-center justify-center text-gray-400 hover:text-navy hover:bg-gray-100"
@@ -168,7 +182,9 @@ export function JobsPage() {
         ))}
         {jobsQuery === undefined && <ListSkeleton rows={3} />}
         {jobsQuery !== undefined && jobs.length === 0 && (
-          <p className="text-center py-8 text-gray-400">No jobs yet. Create one to get started.</p>
+          <p className="text-center py-8 text-gray-400">
+            {lifecycle === 'archived' ? 'No archived jobs.' : 'No jobs yet. Create one to get started.'}
+          </p>
         )}
       </div>
       )}
@@ -201,13 +217,16 @@ export function JobsPage() {
 /** Customer → sites → jobs browse (the office lens; field flow stays flat) */
 function CustomersLens() {
   const navigate = useNavigate();
-  const isAdmin = getSessionUser()?.role === 'admin';
+  const isAdmin = can('customers', 'PUT');
   const [adding, setAdding] = useState(false);
+  const [lifecycle, setLifecycle] = useState<LifecycleFilterValue>('active');
   const [cust, setCust] = useState({ name: '', phone: '', billing: emptyAddress(), notes: '' });
-  const customers =
+  const customers = applyLifecycle(
     useLiveQuery(async () =>
       (await db.customers.toArray()).sort((a, b) => a.name.localeCompare(b.name)),
-    ) ?? [];
+    ) ?? [],
+    lifecycle,
+  );
   const counts = useLiveQuery(async () => {
     const sites = await db.sites.toArray();
     const jobs = await db.jobs.toArray();
@@ -219,13 +238,14 @@ function CustomersLens() {
   });
   return (
     <div className="space-y-2">
-      {isAdmin && (
-        <div className="flex justify-end">
+      <div className="flex justify-end items-center gap-2">
+        <LifecycleFilter value={lifecycle} onChange={setLifecycle} />
+        {isAdmin && (
           <Button size="sm" variant="outline" onClick={() => setAdding(!adding)}>
             <Plus className="h-4 w-4 mr-1" /> New Customer
           </Button>
-        </div>
-      )}
+        )}
+      </div>
       {adding && (
         <Card>
           <CardHeader><CardTitle className="text-base">New Customer</CardTitle></CardHeader>
@@ -268,8 +288,8 @@ function CustomersLens() {
                 {counts?.byJob.get(c.id) ?? 0} job{(counts?.byJob.get(c.id) ?? 0) === 1 ? '' : 's'}
               </p>
             </div>
-            <Badge variant={c.isActive ? 'compliant' : 'draft'}>
-              {c.status ?? (c.isActive ? 'active' : 'inactive')}
+            <Badge variant={c.archivedAt ? 'draft' : c.isActive ? 'compliant' : 'draft'}>
+              {c.archivedAt ? 'archived' : (c.status ?? (c.isActive ? 'active' : 'inactive'))}
             </Badge>
           </CardContent>
         </Card>
@@ -286,13 +306,16 @@ function CustomersLens() {
 /** Every site across customers — the place-first lens */
 function SitesLens() {
   const navigate = useNavigate();
-  const isAdmin = getSessionUser()?.role === 'admin';
+  const isAdmin = can('sites', 'PUT');
   const [adding, setAdding] = useState(false);
+  const [lifecycle, setLifecycle] = useState<LifecycleFilterValue>('active');
   const [form, setForm] = useState({ customerId: '', name: '', addr: emptyAddress(), kFactor: 180 });
-  const sites =
+  const sites = applyLifecycle(
     useLiveQuery(async () =>
       (await db.sites.toArray()).sort((a, b) => a.name.localeCompare(b.name)),
-    ) ?? [];
+    ) ?? [],
+    lifecycle,
+  );
   const customers =
     useLiveQuery(async () =>
       (await db.customers.toArray()).sort((a, b) => a.name.localeCompare(b.name)),
@@ -306,13 +329,14 @@ function SitesLens() {
   const customerName = (cid: string) => customers.find((c) => c.id === cid)?.name ?? '—';
   return (
     <div className="space-y-2">
-      {isAdmin && (
-        <div className="flex justify-end">
+      <div className="flex justify-end items-center gap-2">
+        <LifecycleFilter value={lifecycle} onChange={setLifecycle} />
+        {isAdmin && (
           <Button size="sm" variant="outline" onClick={() => setAdding(!adding)}>
             <Plus className="h-4 w-4 mr-1" /> New Site
           </Button>
-        </div>
-      )}
+        )}
+      </div>
       {adding && (
         <Card>
           <CardHeader><CardTitle className="text-base">New Site</CardTitle></CardHeader>

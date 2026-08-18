@@ -90,6 +90,22 @@ export const CAPABILITIES: readonly CapabilityDef[] = [
     tableGrants: { incidents: ['PUT', 'PATCH'] },
   },
   {
+    key: 'file_time_cards',
+    label: 'File time cards',
+    description:
+      'File your own daily time card (hours, signature). Entering a card for a roster person without a login is allowed and attributed.',
+    group: 'records',
+    tableGrants: { timeCards: ['PUT', 'PATCH', 'DELETE'] },
+  },
+  {
+    key: 'correct_hours',
+    label: 'Correct hour meters',
+    description:
+      "Enter an authoritative hour-meter correction when the physical meter disagrees with the app. Corrections are append-only — both values are kept.",
+    group: 'records',
+    tableGrants: { hourCorrections: ['PUT'] },
+  },
+  {
     key: 'file_office_copies',
     label: 'File office copies',
     description: 'Submit the frozen PDF office copies of completed documents.',
@@ -120,7 +136,7 @@ export const CAPABILITIES: readonly CapabilityDef[] = [
     key: 'approve_days',
     label: 'Approve & unlock work days',
     description:
-      'Approve submitted days, send them back for fixes, reopen approved days, and edit locked records.',
+      'Approve submitted days and filed time cards, send them back for fixes, reopen approved ones, and edit locked records.',
     group: 'workflow',
   },
   {
@@ -177,9 +193,21 @@ export const CAPABILITIES: readonly CapabilityDef[] = [
     tableGrants: { equipment: ['PUT', 'DELETE'] },
   },
   {
+    key: 'setup_jobs',
+    label: 'Set up customers, sites & jobs',
+    description:
+      'Create and edit customers, sites, and jobs — the small-job field setup. Archiving and deleting stay supervisory.',
+    group: 'management',
+    tableGrants: {
+      jobs: ['PUT', 'PATCH'],
+      customers: ['PUT', 'PATCH'],
+      sites: ['PUT', 'PATCH'],
+    },
+  },
+  {
     key: 'manage_jobs',
     label: 'Manage jobs & customers',
-    description: 'Create and edit customers, sites, and jobs.',
+    description: 'Create, edit, archive, and delete customers, sites, and jobs.',
     group: 'management',
     tableGrants: {
       jobs: ['PUT', 'PATCH', 'DELETE'],
@@ -240,7 +268,8 @@ export const BUILT_IN_ROLES: readonly RoleDefinitionData[] = [
     name: 'Supervisor',
     capabilities: [
       'author_field_reports', 'author_blast_records', 'log_equipment', 'file_incidents',
-      'file_office_copies', 'delete_field_records', 'submit_days', 'approve_days',
+      'file_time_cards', 'correct_hours', 'file_office_copies', 'delete_field_records',
+      'submit_days', 'approve_days',
       'complete_drill_logs', 'accept_drill_patterns', 'complete_drill_plans',
       'resolve_repairs', 'retire_equipment', 'manage_people', 'manage_equipment',
       'view_admin_area',
@@ -252,8 +281,8 @@ export const BUILT_IN_ROLES: readonly RoleDefinitionData[] = [
     name: 'Blaster',
     capabilities: [
       'author_field_reports', 'author_blast_records', 'log_equipment', 'file_incidents',
-      'file_office_copies', 'submit_days', 'complete_drill_logs', 'accept_drill_patterns',
-      'complete_drill_plans',
+      'file_time_cards', 'file_office_copies', 'submit_days', 'complete_drill_logs',
+      'accept_drill_patterns', 'complete_drill_plans', 'setup_jobs',
     ],
     homeDashboard: 'field',
   },
@@ -261,8 +290,8 @@ export const BUILT_IN_ROLES: readonly RoleDefinitionData[] = [
     key: 'driller',
     name: 'Driller',
     capabilities: [
-      'author_field_reports', 'log_equipment', 'file_incidents', 'file_office_copies',
-      'submit_days', 'complete_drill_logs',
+      'author_field_reports', 'log_equipment', 'file_incidents', 'file_time_cards',
+      'file_office_copies', 'submit_days', 'complete_drill_logs',
     ],
     homeDashboard: 'driller',
   },
@@ -270,8 +299,8 @@ export const BUILT_IN_ROLES: readonly RoleDefinitionData[] = [
     key: 'mechanic',
     name: 'Mechanic',
     capabilities: [
-      'log_equipment', 'manage_equipment', 'file_incidents', 'file_office_copies',
-      'resolve_repairs', 'view_admin_area',
+      'log_equipment', 'manage_equipment', 'file_incidents', 'file_time_cards',
+      'correct_hours', 'file_office_copies', 'resolve_repairs', 'view_admin_area',
     ],
     homeDashboard: 'mechanic',
   },
@@ -418,6 +447,13 @@ const SENSITIVE_TRANSITION_CAPS: Record<string, Record<string, Record<string, st
   drillPlans: {
     open: { complete: 'complete_drill_plans' },
     complete: { open: 'complete_drill_plans' },
+  },
+  // Approving a time card (or pulling an approved one back) is the same
+  // supervisory act as approving the day — one grant covers both
+  timeCards: {
+    draft: { approved: 'approve_days' },
+    filed: { approved: 'approve_days' },
+    approved: { filed: 'approve_days', draft: 'approve_days' },
   },
 };
 

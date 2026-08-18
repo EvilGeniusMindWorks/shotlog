@@ -6,6 +6,7 @@ import {
   TABLE_PERMISSIONS,
   canEditApproved,
   canPerformOp,
+  canTransitionRecordStatus,
   canTransitionStatus,
 } from './permissions';
 
@@ -31,11 +32,50 @@ describe('table permissions', () => {
     expect(canPerformOp('blastDays', 'PUT', 'blaster')).toBe(true);
     expect(canPerformOp('shots', 'PATCH', 'blaster')).toBe(true);
     expect(canPerformOp('productCatalog', 'PUT', 'blaster')).toBe(false);
-    expect(canPerformOp('jobs', 'PATCH', 'blaster')).toBe(false);
     expect(canPerformOp('companySettings', 'PUT', 'blaster')).toBe(false);
     expect(canPerformOp('crewMembers', 'PUT', 'blaster')).toBe(false);
     // blastDay deletion is registry-level, not blaster
     expect(canPerformOp('blastDays', 'DELETE', 'blaster')).toBe(false);
+  });
+
+  it('blaster sets up customers/sites/jobs; archive/delete stays supervisory (2026-08-17)', () => {
+    for (const table of ['jobs', 'customers', 'sites']) {
+      expect(canPerformOp(table, 'PUT', 'blaster'), table).toBe(true);
+      expect(canPerformOp(table, 'PATCH', 'blaster'), table).toBe(true);
+      expect(canPerformOp(table, 'DELETE', 'blaster'), table).toBe(false);
+      expect(canPerformOp(table, 'PUT', 'driller'), table).toBe(false);
+      expect(canPerformOp(table, 'PUT', 'supervisor'), table).toBe(false);
+    }
+  });
+
+  it('time cards: every field role files; office does not', () => {
+    for (const role of ['blaster', 'driller', 'mechanic', 'supervisor', 'admin'] as const) {
+      expect(canPerformOp('timeCards', 'PUT', role), role).toBe(true);
+      expect(canPerformOp('timeCards', 'PATCH', role), role).toBe(true);
+    }
+    expect(canPerformOp('timeCards', 'PUT', 'office')).toBe(false);
+  });
+
+  it('time card approval is supervisory from every prior status', () => {
+    expect(canTransitionRecordStatus('timeCards', 'draft', 'filed', 'driller')).toBe(true);
+    expect(canTransitionRecordStatus('timeCards', 'filed', 'draft', 'driller')).toBe(true);
+    expect(canTransitionRecordStatus('timeCards', 'filed', 'approved', 'driller')).toBe(false);
+    expect(canTransitionRecordStatus('timeCards', 'draft', 'approved', 'blaster')).toBe(false);
+    expect(canTransitionRecordStatus('timeCards', 'filed', 'approved', 'supervisor')).toBe(true);
+    expect(canTransitionRecordStatus('timeCards', 'approved', 'filed', 'supervisor')).toBe(true);
+    expect(canTransitionRecordStatus('timeCards', 'approved', 'draft', 'mechanic')).toBe(false);
+  });
+
+  it('hour corrections are append-only: shop writes, nobody edits', () => {
+    for (const role of ['mechanic', 'supervisor', 'admin'] as const) {
+      expect(canPerformOp('hourCorrections', 'PUT', role), role).toBe(true);
+    }
+    expect(canPerformOp('hourCorrections', 'PUT', 'driller')).toBe(false);
+    expect(canPerformOp('hourCorrections', 'PUT', 'blaster')).toBe(false);
+    for (const role of ROLES) {
+      expect(canPerformOp('hourCorrections', 'PATCH', role), role).toBe(role === 'admin');
+      expect(canPerformOp('hourCorrections', 'DELETE', role), role).toBe(role === 'admin');
+    }
   });
 
   it('driller owns work days + daily reports but never blasting records', () => {

@@ -71,7 +71,7 @@ export function TodayCard() {
       </p>
       {data.length === 0 && (
         <div className="flex items-center gap-2">
-          <p className="text-sm text-gray-500 flex-1">No work day started yet.</p>
+          <p className="text-sm text-gray-500 flex-1">No work recorded today yet.</p>
         </div>
       )}
       {data.map(({ day, jobName, needsSignature, reportEmpty, unsentPlans }) => (
@@ -247,7 +247,7 @@ export function DrillerHome() {
   // Open standalone drill plans where I have no open log TODAY — the
   // per-driller-per-day model: each day on a plan is its own log
   const openPlans = useLiveQuery(async () => {
-    const plans = await db.drillPlans.filter((p) => p.status === 'open').toArray();
+    const plans = await db.drillPlans.filter((p) => p.status === 'open' && !p.archivedAt).toArray();
     const out = [];
     for (const plan of plans) {
       const holes = getPlanHoles(plan);
@@ -377,7 +377,7 @@ export function DrillerHome() {
         ))}
         {activeLogs.length === 0 && (
           <p className="text-sm text-gray-400 py-1">
-            Nothing open — start one from “Ready to drill” below, or the blaster
+            Nothing open — open one from “Ready to drill” below, or the blaster
             can send you a plan.
           </p>
         )}
@@ -405,7 +405,7 @@ export function DrillerHome() {
                 </p>
               </div>
               <span className="text-sm text-safety-orange font-semibold shrink-0">
-                Start today's log ›
+                Today's log ›
               </span>
             </button>
           ))}
@@ -497,7 +497,7 @@ export function DrillerHome() {
         ))}
         {(myDays ?? []).length === 0 && (
           <p className="text-sm text-gray-400 py-1">
-            No drill-only days yet — tap + to start one.
+            No drill-only days yet — tap + to log drilling at a job.
           </p>
         )}
         <Button variant="outline" size="sm" className="mt-2" onClick={() => navigate('/days')}>

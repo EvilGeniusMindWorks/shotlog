@@ -341,9 +341,9 @@ function ImportFromDrillPlan({ shot }: { shot: Shot }) {
   }, [shot.blastLogId]);
   const candidates = useLiveQuery(async () => {
     if (!job) return [];
-    const plans = (await db.drillPlans.where('jobId').equals(job.id).toArray()).sort((a, b) =>
-      b.updatedAt.localeCompare(a.updatedAt),
-    );
+    const plans = (await db.drillPlans.where('jobId').equals(job.id).toArray())
+      .filter((p) => !p.archivedAt)
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     const out = [];
     for (const plan of plans) {
       const logs = await db.drillLogs.filter((l) => l.drillPlanId === plan.id).toArray();

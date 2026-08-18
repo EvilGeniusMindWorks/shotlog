@@ -31,15 +31,16 @@ describe('materializeDrillPlan', () => {
       withPlan({ defaultDepth: 16, overrides: { 0: { depth: 18.5, angle: 15 } } }),
       0,
     );
-    expect(holes[0]).toEqual({ n: 1, idx: 0, depth: 18.5, angle: 15 });
-    expect(holes[1]).toEqual({ n: 2, idx: 1, depth: 16, angle: 0 });
-    expect(holes[5]).toEqual({ n: 6, idx: 5, depth: 16, angle: 0 });
+    // toMatchObject: kick-aware fields (holeLength, kick, kickDir) ride along
+    expect(holes[0]).toMatchObject({ n: 1, idx: 0, depth: 18.5, angle: 15 });
+    expect(holes[1]).toMatchObject({ n: 2, idx: 1, depth: 16, angle: 0 });
+    expect(holes[5]).toMatchObject({ n: 6, idx: 5, depth: 16, angle: 0 });
   });
 
   it('falls back to the design depth when no default is set', () => {
     const holes = materializeDrillPlan(withPlan({ overrides: { 2: { angle: 10 } } }), 14);
     expect(holes[0].depth).toBe(14);
-    expect(holes[2]).toEqual({ n: 3, idx: 2, depth: 14, angle: 10 });
+    expect(holes[2]).toMatchObject({ n: 3, idx: 2, depth: 14, angle: 10 });
   });
 
   it('an angle-only override keeps the inherited depth', () => {
@@ -47,7 +48,7 @@ describe('materializeDrillPlan', () => {
       withPlan({ defaultDepth: 20, overrides: { 1: { angle: 15 } } }),
       0,
     );
-    expect(holes[1]).toEqual({ n: 2, idx: 1, depth: 20, angle: 15 });
+    expect(holes[1]).toMatchObject({ n: 2, idx: 1, depth: 20, angle: 15 });
   });
 
   it('holes without any depth are UNUSED — excluded, not zero-depth plan holes', () => {
