@@ -52,4 +52,4 @@ information; amend with a dated entry when one changes.
 - Owner: quote structure; who may see dollars (`view_financials`); does Owner write or only read
 - Deletion pattern approval + its open questions (Remove vs archive-only for hierarchy; ATF retention lock; button wording)
 - Shop-crew verification (held for later): real PM intervals + shop paper artifacts, parts capture, bench-vs-truck
-- Persona charters: blaster + driller APPROVED; other five awaiting Matthew's pass
+- Persona charters: blaster + driller + shop APPROVED (shop pending crew verification); office/owner/admin/platform-admin awaiting

@@ -1,6 +1,6 @@
 # Shop (Mechanic)
 
-Status: **DRAFT — workflow validated with Matthew 2026-08-17 (several items to verify with the shop crew); screens in design**
+Status: **WORKFLOW + SCREENS APPROVED-FOR-NOW (Matthew, 2026-08-17; PM intervals + held questions pending shop-crew verification)** — design study: claude.ai/code/artifact/82425527-870f-4d41-8710-2cc9a5d4909f (both formats, wide-first)
 Real people: Baystate's **dedicated shop** (confirmed — not a part-time hat)
 
 ## Who they are
