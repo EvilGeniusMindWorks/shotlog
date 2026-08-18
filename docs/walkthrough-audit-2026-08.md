@@ -1,5 +1,13 @@
 # Walkthrough Audit — August 2026
 
+> **RESOLVED 2026-08-17 (Rounds 1–5, commit 1820988).** Re-run after
+> Round 5: every field/shop persona screen ≤2.2 screens. Field dashboard
+> 13.5→1.6 (25.9→1.7 @430px), /days 12.9→1.2, My Records 11.5→1.2,
+> /jobs 4.9→1.6 (54→17 rows, search on every lens), sites lens 4.3→1.4,
+> equipment detail 4.8→1.2, busiest job page 1.9. Remaining >4 —
+> office/admin home (4.3) and Admin›People (4.2–4.4) — belong to the
+> pending Office/Admin rounds. Original findings below kept for the record.
+
 Every persona walked through their day on the app as built (local stack,
 87 work days / 52 jobs / 27 customers of accumulated test data — a fair
 proxy for months of real Baystate use). Instrumented sweep:

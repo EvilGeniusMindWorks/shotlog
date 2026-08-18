@@ -105,13 +105,23 @@ harness34 (15/15); commit caaba3d.
   "Log a service done" restarts the clock). Advisory only — real
   intervals swap in when the shop crew answers (held questions stand).
 
-## Round 5 — Smart-list remnants + polish
+## Round 5 — Smart-list remnants + polish — ✅ SHIPPED 2026-08-17
 
-What the new homes don't already fix (from the audit): My Records
-windowing; Jobs lenses search + Active-default filter; equipment-detail
-history windowing; job-detail work-day list windowing; /days becomes the
-month-grouped list. Plus: View-as lists custom roles; test-user cleanup
-decision point.
+Verified by harness35 (9/9) + the audit-sweep re-run; commit 1820988.
+
+- ✅ My Records + company book windowed (DocList: 15 + Show-all; search
+  shows everything). ✅ Jobs lenses: search on all three + windowing
+  (15 + Show-all); Active default was Round 1's lifecycle filter.
+- ✅ Equipment-detail history windowed (10 + Show-all). ✅ Job-detail
+  work-day list windowed (8 + Show-all). ✅ /days = the month-grouped
+  list (MonthDayList, shared with the blaster home).
+- ✅ View-as lists custom roles (roleDefinitions merged into the picker).
+- Test-user cleanup recorded as an OPEN decision (decisions.md).
+
+**Audit gate met** (was: field dashboard 13.5/25.9 screens): every
+field/shop persona screen ≤2.2 screens — home 1.6 (1.7 phone), /days
+1.2, /records 1.2, /jobs 1.6, equipment 1.2. Still >4 and deferred to
+the pending rounds: admin/office home 4.3, Admin›People 4.2–4.4.
 
 ## Runs alongside (not gated on rounds)
 
