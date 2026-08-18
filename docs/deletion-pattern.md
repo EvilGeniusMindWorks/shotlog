@@ -43,13 +43,13 @@ mis-tap.
 ## One UI shape everywhere
 
 - **Record pages**: an overflow menu (⋯) in the RecordShell header →
-  "Archive…" (and "Remove…" only when eligible).
+  "Archive…" (and "Delete…" only when eligible).
 - **List rows**: same ⋯ via the row's overflow/long-press.
 - Both open a **consequence sheet** that says exactly what happens in
   plain words: *"Archive Ledgeville Quarry? It disappears from lists and
   pickers. Its 29 work days and 14 filed documents are untouched. Restore
   it anytime from Archived."* Archive confirms with a normal button;
-  Remove is red and repeats the record's name.
+  Delete is red and repeats the record's name.
 - After archiving: an **Undo toast** (10s) before it settles.
 - Every list's filter row gains `Active / Archived / All`.
 
@@ -60,7 +60,7 @@ mis-tap.
 | Customer | yes — hides it + its sites/jobs from pickers; children NOT auto-archived | only if no jobs ever | warn listing live children first |
 | Site | yes — same | only if no jobs ever | |
 | Job | yes — leaves Jobs default list; history/rollups intact | only if no work days | replaces today's bare `isActive` in the UI |
-| Work day | — (days are history, not clutter) | yes, cascades children | remove = "this day never happened" |
+| Work day | — (days are history, not clutter) | yes, cascades children | delete = "this day never happened" |
 | Blast log / daily report / drill log | — | via their day, or individually while draft | accepted/filed = never |
 | Drill plan | yes (plans complete → archive) | yes if no logs against it | |
 | Equipment | retired ≈ archived already — unify wording | only if no history | |
@@ -71,7 +71,7 @@ mis-tap.
 
 Archive/restore rides the existing DELETE grant per table (so
 `delete_field_records`, `manage_jobs`, etc. — already in the roles
-engine). Remove requires the same grant AND the draft-only conditions;
+engine). Delete requires the same grant AND the draft-only conditions;
 consider admin-only for hierarchy records (customer/site/job).
 
 ## Resolved (Matthew, 2026-08-17)
