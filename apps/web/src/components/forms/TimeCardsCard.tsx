@@ -132,7 +132,7 @@ const STATUS_BADGE: Record<TimeCard['status'], { label: string; variant: 'draft'
   approved: { label: 'Approved', variant: 'compliant' },
 };
 
-function TimeCardRow({ card, editable }: { card: TimeCard; editable: boolean }) {
+export function TimeCardRow({ card, editable }: { card: TimeCard; editable: boolean }) {
   const me = getSessionUser();
   const supervisory = canEditApprovedDay();
   const isMine = Boolean(me && card.userId === me.id);

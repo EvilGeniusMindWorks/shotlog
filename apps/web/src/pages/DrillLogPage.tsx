@@ -19,6 +19,7 @@ import { getSessionUser } from '@/lib/session';
 import { nowISO, formatDate } from '@/lib/utils';
 import type { HoleCondition, HoleConditionCode } from '@/db/schema';
 import { Badge } from '@/components/ui/badge';
+import { showToast } from '@/components/ui/undo-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -105,6 +106,8 @@ export function DrillLogPage() {
 
   // Quick-entry state
   const [holeNumber, setHoleNumber] = useState('');
+  // Round 3 batch-first: grid selection → "Log N as planned" in one tap
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [depth, setDepth] = useState('');
   const [conditions, setConditions] = useState<HoleConditionCode[]>([]);
   // Per-condition hazard detail: at-depth (ft) + free note — optional,
@@ -210,6 +213,70 @@ export function DrillLogPage() {
     setConditions([]);
     setCondDetail({});
     setComment('');
+  };
+
+  // ── Batch actions (Round 3): the normal case is "holes 12–18, all as
+  // planned" — two taps, never seven identical entries ──────────────────
+  const sortedSelection = () =>
+    [...selected].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+  const planValues = (n: string) => {
+    const p = plan?.find((x) => String(x.n) === n);
+    if (!p) return null;
+    const t = +(p.holeLength || p.depth).toFixed(1);
+    return {
+      target: t,
+      angle: p.angle !== undefined ? +p.angle.toFixed(1) : 0,
+      kick: p.kick,
+      kickDir: p.kickDir,
+    };
+  };
+
+  const logSelectedAsPlanned = async () => {
+    const picks = sortedSelection();
+    for (const n of picks) {
+      const v = planValues(n);
+      if (!v) continue;
+      await addHole(log, {
+        holeNumber: n,
+        actualDepth: v.target,
+        angle: v.angle,
+        subdrill: designSubdrill,
+        conditions: [],
+        comment: '',
+        plannedDepth: v.target,
+        plannedAngle: v.angle || undefined,
+        plannedKick: v.kick,
+        plannedKickDir: v.kickDir,
+      });
+    }
+    setSelected(new Set());
+    showToast(`Logged ${picks.length} hole${picks.length === 1 ? '' : 's'} as planned`);
+  };
+
+  const markSelectedSkipped = async () => {
+    const picks = sortedSelection();
+    for (const n of picks) {
+      const v = planValues(n);
+      await addHole(log, {
+        holeNumber: n,
+        actualDepth: 0,
+        angle: 0,
+        subdrill: 0,
+        conditions: [],
+        comment: '',
+        plannedDepth: v?.target,
+        skipped: true,
+      });
+    }
+    setSelected(new Set());
+    showToast(`Marked ${picks.length} hole${picks.length === 1 ? '' : 's'} skipped`);
+  };
+
+  const logWithChanges = () => {
+    const first = sortedSelection()[0];
+    if (first) setHoleNumber(first);
+    setSelected(new Set());
   };
 
   return (
@@ -400,7 +467,12 @@ export function DrillLogPage() {
               <div>
                 <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
                   <span>
-                    Pattern: <b>{plan.length - remaining.length}</b> of {plan.length} holes drilled
+                    {/* Skipped markers claim a grid position but are NOT
+                        drilled holes — the count says so */}
+                    Pattern:{' '}
+                    <b>{plan.length - remaining.length - (drilling?.skipped.length ?? 0)}</b> of{' '}
+                    {plan.length} holes drilled
+                    {(drilling?.skipped.length ?? 0) > 0 && ` · ${drilling!.skipped.length} skipped`}
                     {remaining.length === 0 && ' — plan complete ✓'}
                   </span>
                   {planHole && (
@@ -418,30 +490,100 @@ export function DrillLogPage() {
                     }}
                   />
                 </div>
+                {/* Round 3: the batch-first grid — tap to select open holes,
+                    then one tap logs them all to plan. Deviations are
+                    ordinary: skip and add-off-plan sit right beside it. */}
                 {remaining.length > 0 && (
-                  <div className="flex gap-1 overflow-x-auto pb-1">
-                    {remaining.slice(0, 40).map((p) => (
-                      <button
-                        key={p.n}
-                        type="button"
-                        className={`shrink-0 min-w-[36px] h-8 px-1.5 rounded-md border text-xs font-mono font-semibold ${
-                          String(p.n) === holeNumber.trim()
-                            ? 'bg-navy text-white border-navy'
-                            : 'bg-white text-gray-600 border-gray-300'
-                        }`}
-                        title={`plan ${+(p.holeLength || p.depth).toFixed(1)} ft${p.angle ? ` · ${p.angle.toFixed(1)}°` : ''}`}
-                        onClick={() => setHoleNumber(String(p.n))}
-                      >
-                        {p.n}
-                      </button>
-                    ))}
-                    {remaining.length > 40 && (
-                      <span className="text-xs text-gray-400 self-center">
-                        +{remaining.length - 40}
-                      </span>
-                    )}
-                  </div>
+                  <>
+                    <div className="grid grid-cols-10 gap-1.5 mb-1">
+                      {plan!.map((p) => {
+                        const n = String(p.n);
+                        const isSkipped = (drilling?.skipped ?? []).includes(n);
+                        const isOpen = remaining.some((r) => String(r.n) === n);
+                        const isSel = selected.has(n);
+                        const hasHazard = holes.some(
+                          (h) => h.holeNumber.trim() === n && h.conditions.length > 0,
+                        );
+                        return (
+                          <button
+                            key={p.n}
+                            type="button"
+                            title={`H-${n} · plan ${+(p.holeLength || p.depth).toFixed(1)} ft${isSkipped ? ' — skipped' : ''}`}
+                            className={
+                              'aspect-square rounded-full min-h-[28px] text-[10px] font-mono font-bold ' +
+                              (isSkipped
+                                ? 'border-2 border-dashed border-gray-400 text-gray-400'
+                                : isSel
+                                  ? 'bg-safety-orange text-white ring-2 ring-orange-200'
+                                  : isOpen
+                                    ? 'bg-gray-200 text-gray-500'
+                                    : hasHazard
+                                      ? 'bg-safety-orange/90 text-white'
+                                      : 'bg-navy text-white')
+                            }
+                            onClick={() => {
+                              if (!isOpen || isSkipped) return;
+                              setSelected((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(n)) next.delete(n);
+                                else next.add(n);
+                                return next;
+                              });
+                            }}
+                          >
+                            {p.n}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-[11px] text-gray-400 mb-1">
+                      ● drilled · <span className="text-safety-orange">● hazard</span> · ○ open —
+                      tap open holes to select{selected.size > 0 && ` · ${selected.size} selected`}.
+                      Off-plan hole? Type any number below — ordinary entry.
+                    </p>
+                  </>
                 )}
+
+                {selected.size > 0 && (() => {
+                  const picks = sortedSelection();
+                  const v = planValues(picks[0]);
+                  return (
+                    <div className="rounded-xl border border-gray-200 p-3 mb-1">
+                      <p className="text-sm">
+                        <b>
+                          H-{picks[0]}
+                          {picks.length > 1 && <> … H-{picks[picks.length - 1]}</>}
+                        </b>{' '}
+                        · plan calls for
+                      </p>
+                      <p className="text-xs text-gray-400 mb-2">
+                        {v ? `${v.target} ft` : '—'}
+                        {v?.kick ? ` · kick ${v.kick} ft ${v.kickDir ?? ''}` : ''} ·{' '}
+                        {log.holeDiameter}" bit
+                      </p>
+                      <button
+                        className="w-full bg-safety-orange text-white rounded-xl py-2.5 font-bold text-sm hover:bg-orange-600"
+                        onClick={() => void logSelectedAsPlanned()}
+                      >
+                        Log {picks.length} as planned
+                      </button>
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          className="flex-1 bg-white border border-gray-300 text-navy rounded-xl py-2 font-semibold text-sm hover:bg-gray-50"
+                          onClick={logWithChanges}
+                        >
+                          Log with changes…
+                        </button>
+                        <button
+                          className="flex-1 bg-white border border-gray-300 text-gray-600 rounded-xl py-2 font-semibold text-sm hover:bg-gray-50"
+                          onClick={() => void markSelectedSkipped()}
+                        >
+                          Mark skipped ⊘
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
             {/* THE hole card — what the driller needs at the controls, big */}

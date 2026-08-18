@@ -782,6 +782,10 @@ export interface DrillLogHole extends BaseRecord {
   subdrill: number;
   conditions: HoleCondition[];
   comment: string;
+  /** Round 3: the driller deliberately did NOT drill this plan position —
+   *  a first-class deviation, excluded from drilled counts/footage but
+   *  visible to the blaster's review as intent (never an apology). */
+  skipped?: boolean;
   // Snapshot of the blaster's plan at entry time (plan-vs-actual review
   // stays truthful even if the plan is edited later)
   plannedDepth?: number;

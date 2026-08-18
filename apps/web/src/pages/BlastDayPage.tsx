@@ -13,6 +13,7 @@ import { PhaseSpine } from '@/components/day/PhaseSpine';
 import { MergedDrillingView } from '@/components/day/MergedDrillingView';
 import { ReadinessView } from '@/components/day/ReadinessView';
 import { PreBlastCard } from '@/components/day/PreBlastCard';
+import { DrillOnlyFileCard } from '@/components/day/DrillOnlyFileCard';
 import { authedFetch, getSessionUser } from '@/lib/session';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { nowISO, formatDate, dayOfWeek } from '@/lib/utils';
@@ -540,6 +541,7 @@ export function BlastDayPage() {
         )}
         {tab === 'daily-report' && dailyReport && blastDay && (
           <div className="mb-4 space-y-4">
+            {!blastLog && <DrillOnlyFileCard day={blastDay} />}
             <TimeCardsCard blastDay={blastDay} />
             <AttachmentsCard parentId={blastDay.id} parentType="blast_day" title="Day attachments" />
           </div>

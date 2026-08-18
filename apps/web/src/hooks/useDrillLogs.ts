@@ -92,6 +92,8 @@ export async function addHole(
     plannedAngle?: number;
     plannedKick?: number;
     plannedKickDir?: KickDirection;
+    /** Round 3: deliberately NOT drilled — a first-class deviation */
+    skipped?: boolean;
   },
 ): Promise<string> {
   const now = nowISO();
@@ -110,6 +112,7 @@ export async function addHole(
     plannedAngle: values.plannedAngle,
     plannedKick: values.plannedKick,
     plannedKickDir: values.plannedKickDir,
+    skipped: values.skipped,
     createdAt: now,
     updatedAt: now,
     syncStatus: 'local',
@@ -135,8 +138,10 @@ export interface ShotDrilling {
   duplicateNumbers: string[];
   /** Plan hole count, or null when the shot has no per-hole plan */
   planned: number | null;
-  /** Plan hole numbers nobody has drilled yet */
+  /** Plan hole numbers nobody has drilled yet (skipped ones excluded) */
   undrilled: string[];
+  /** Plan positions a driller deliberately marked skipped (Round 3) */
+  skipped: string[];
   /** Drilled hole numbers that aren't in the plan */
   extras: string[];
   /** Holes drilled off-plan (≥1 ft depth or angle change) */
@@ -153,13 +158,20 @@ export async function aggregateDrilling(
   const seen = new Map<string, number>();
   const flagged: FlaggedHole[] = [];
   const extras: string[] = [];
+  const skippedSet = new Set<string>();
   let totalHoles = 0;
   let totalFootage = 0;
   let wetHoles = 0;
   let voidHoles = 0;
   const enriched = [];
   for (const log of [...logs].sort((a, b) => a.createdAt.localeCompare(b.createdAt))) {
-    const holes = await db.drillLogHoles.where('drillLogId').equals(log.id).toArray();
+    const allRows = await db.drillLogHoles.where('drillLogId').equals(log.id).toArray();
+    // Skipped markers are INTENT, not drilling — they never count as holes,
+    // footage, or deviations, and a skipped plan position isn't "undrilled"
+    const holes = allRows.filter((h) => {
+      if (h.skipped) skippedSet.add(h.holeNumber.trim());
+      return !h.skipped;
+    });
     let footage = 0;
     let wet = 0;
     let deviations = 0;
@@ -202,7 +214,12 @@ export async function aggregateDrilling(
     voidHoles,
     duplicateNumbers: [...seen.entries()].filter(([, n]) => n > 1).map(([k]) => k),
     planned: plan ? plan.length : null,
-    undrilled: plan ? plan.filter((p) => !seen.has(String(p.n))).map((p) => String(p.n)) : [],
+    undrilled: plan
+      ? plan
+          .filter((p) => !seen.has(String(p.n)) && !skippedSet.has(String(p.n)))
+          .map((p) => String(p.n))
+      : [],
+    skipped: [...skippedSet],
     extras,
     flagged,
   };

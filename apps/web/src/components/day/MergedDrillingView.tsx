@@ -71,7 +71,9 @@ export function MergedDrillingView({
 
   if (!data) return <p className="text-sm text-gray-400 p-4 text-center">Loading…</p>;
   const { logs, drillers, merged } = data;
-  const hazards = merged.filter((m) => m.hole.conditions.length > 0);
+  const drilledCount = merged.filter((m) => !m.hole.skipped).length;
+  const skippedCount = merged.length - drilledCount;
+  const hazards = merged.filter((m) => m.hole.conditions.length > 0 && !m.hole.skipped);
   const completable = logs.filter(
     (l) => l.status === 'complete' && canDrillLogTransition('complete', 'accepted'),
   );
@@ -102,23 +104,30 @@ export function MergedDrillingView({
     <div className="space-y-3">
       <div className="bg-white border border-gray-200 rounded-xl p-3">
         <p className="text-[10px] font-bold tracking-widest text-gray-400 uppercase mb-2">
-          {merged.length} holes · {drillers.length} driller{drillers.length === 1 ? '' : 's'}
+          {drilledCount} holes · {drillers.length} driller{drillers.length === 1 ? '' : 's'}
           {hazards.length > 0 && (
             <span className="text-safety-orange"> · {hazards.length} hazards</span>
           )}
+          {skippedCount > 0 && <span> · {skippedCount} skipped</span>}
         </p>
         <div className="grid grid-cols-10 gap-1.5 mb-2">
           {merged.map((m) => (
             <button
               key={m.hole.id}
-              title={`H-${m.hole.holeNumber}`}
+              title={`H-${m.hole.holeNumber}${m.hole.skipped ? ' — skipped' : ''}`}
               className={
                 'aspect-square rounded-full min-h-[24px] ' +
+                (m.hole.skipped ? 'border-2 border-dashed border-gray-400 ' : '') +
                 (selected?.hole.id === m.hole.id ? 'ring-2 ring-navy ring-offset-1' : '')
               }
               style={{
-                background: m.hole.conditions.length > 0 ? '#dd6b20' : m.color,
-                boxShadow: m.hole.conditions.length > 0 ? '0 0 0 2px #fdebd9' : undefined,
+                background: m.hole.skipped
+                  ? 'transparent'
+                  : m.hole.conditions.length > 0
+                    ? '#dd6b20'
+                    : m.color,
+                boxShadow:
+                  !m.hole.skipped && m.hole.conditions.length > 0 ? '0 0 0 2px #fdebd9' : undefined,
               }}
               onClick={() => setSelected(selected?.hole.id === m.hole.id ? null : m)}
             />
@@ -145,15 +154,21 @@ export function MergedDrillingView({
             Hole H-{selected.hole.holeNumber} · {selected.log.drillerName} ·{' '}
             {formatDate(selected.hole.date)}
           </p>
-          <p className="text-sm">
-            {selected.hole.plannedDepth != null && (
-              <>
-                Planned <b className="font-mono">{selected.hole.plannedDepth.toFixed(1)} ft</b> →{' '}
-              </>
-            )}
-            drilled <b className="font-mono">{selected.hole.actualDepth.toFixed(1)} ft</b>
-            {selected.hole.angle > 0 && <> · angle {selected.hole.angle}°</>}
-          </p>
+          {selected.hole.skipped ? (
+            <p className="text-sm text-gray-500">
+              Skipped by the driller — plan position deliberately not drilled.
+            </p>
+          ) : (
+            <p className="text-sm">
+              {selected.hole.plannedDepth != null && (
+                <>
+                  Planned <b className="font-mono">{selected.hole.plannedDepth.toFixed(1)} ft</b> →{' '}
+                </>
+              )}
+              drilled <b className="font-mono">{selected.hole.actualDepth.toFixed(1)} ft</b>
+              {selected.hole.angle > 0 && <> · angle {selected.hole.angle}°</>}
+            </p>
+          )}
           {selected.hole.conditions.length > 0 && (
             <p className="text-sm text-safety-orange mt-1">{conditionText(selected.hole)}</p>
           )}

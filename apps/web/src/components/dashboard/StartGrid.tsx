@@ -66,7 +66,9 @@ const TILES: Record<string, Tile> = {
 const ROLE_TILES: Record<string, (keyof typeof TILES)[]> = {
   blaster: ['blast_day', 'drill_plan', 'daily_report', 'checklist', 'incident'],
   supervisor: ['blast_day', 'drill_plan', 'daily_report', 'checklist', 'incident'],
-  driller: ['drill_log', 'checklist', 'daily_report', 'incident'],
+  // Round 3: the driller's no-plan drill-log tile is RETIRED — drilling
+  // starts from a plan (trio home), even a trivial one on small jobs
+  driller: ['checklist', 'daily_report', 'incident'],
 };
 
 export function StartGrid({ role }: { role: string }) {

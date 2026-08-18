@@ -13,6 +13,49 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SignatureField } from '@/components/ui/signature-field';
+import { buildServiceClock } from '@/lib/serviceClock';
+import { formatDate as fmtDate } from '@/lib/utils';
+import type { Equipment } from '@/db/schema';
+
+/** The paper form's "every 50 hours or 1 time per week" made honest: the
+ *  app knows starting hours daily, so it computes hours-since-last-service
+ *  instead of trusting memory. ADVISORY only — amber, never blocking. */
+function ServiceClockCard({ rig }: { rig: Equipment }) {
+  const clock = useLiveQuery(() => buildServiceClock(rig), [rig.id, rig.hourMeter]);
+  if (!clock || clock.state === 'unknown') return null;
+  const tone =
+    clock.state === 'ok'
+      ? 'border-l-green-500'
+      : 'border-l-amber-500';
+  return (
+    <div className={`rounded-xl border border-gray-200 border-l-4 ${tone} bg-white p-4`}>
+      <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
+        Every 50 hours or weekly ·{' '}
+        <span className={clock.state === 'ok' ? 'text-green-700' : 'text-amber-600'}>
+          {clock.label}
+        </span>
+      </p>
+      <div className="flex items-center gap-2 text-sm">
+        <div className="flex-1 min-w-0">
+          <p>
+            Last done {clock.lastDoneDate ? fmtDate(clock.lastDoneDate) : '—'} at{' '}
+            <b className="font-mono">{clock.lastDoneHours?.toLocaleString() ?? '—'} h</b> · now{' '}
+            <b className="font-mono">{clock.currentHours?.toLocaleString() ?? '—'} h</b>
+          </p>
+          <p className="text-xs text-gray-400">air filters · extinguishers · rollers</p>
+        </div>
+        <span
+          className={
+            'text-[10.5px] font-bold rounded-full px-2 py-0.5 ' +
+            (clock.state === 'ok' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700')
+          }
+        >
+          {clock.sinceHours != null ? `${Math.round(clock.sinceHours)}/50` : '—'}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 const NEXT_STATE: Record<CheckState, CheckState> = { ok: 'na', na: 'skip', skip: 'ok' };
 const STATE_STYLE: Record<CheckState, string> = {
@@ -132,6 +175,8 @@ export function DrillChecklistPage() {
                 </p>
               </div>
             </div>
+
+            {rig && <ServiceClockCard rig={rig} />}
 
             <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-2">
               <p className="text-sm font-semibold">

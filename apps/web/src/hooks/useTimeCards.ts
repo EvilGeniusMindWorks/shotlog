@@ -6,7 +6,7 @@ import { db, useLiveQuery } from '@/db';
 import type { BlastDay, CrewMember, TimeCard } from '@/db/schema';
 import { canEditApprovedDay } from '@/lib/perms';
 import { getSessionUser } from '@/lib/session';
-import { generateId, nowISO } from '@/lib/utils';
+import { generateId, nowISO, todayISO } from '@/lib/utils';
 
 export function useDayTimeCards(blastDayId: string): TimeCard[] {
   return (
@@ -40,6 +40,32 @@ export interface CardSubject {
   name: string;
   crewMemberId?: string;
   userId?: string;
+}
+
+/** A card with no work day yet (Round 3: driller hours while drilling a
+ *  plan — the day record may not exist; cards only need a job + date). */
+export async function createStandaloneTimeCard(jobId: string, subject: CardSubject): Promise<string> {
+  const me = getSessionUser();
+  const now = nowISO();
+  const id = generateId();
+  await db.timeCards.add({
+    id,
+    date: todayISO(),
+    jobId,
+    personName: subject.name,
+    crewMemberId: subject.crewMemberId,
+    userId: subject.userId,
+    straightTime: 0,
+    overtime: 0,
+    signatureImage: null,
+    status: 'draft',
+    enteredByUserId: me?.id ?? '',
+    enteredByName: me?.name ?? '',
+    createdAt: now,
+    updatedAt: now,
+    syncStatus: 'local',
+  });
+  return id;
 }
 
 export async function createTimeCard(day: BlastDay, subject: CardSubject): Promise<string> {
