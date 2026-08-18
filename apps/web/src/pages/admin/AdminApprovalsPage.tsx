@@ -32,12 +32,19 @@ export function AdminApprovalsPage() {
   const jobName = (jobId: string) => jobs.find((j) => j.id === jobId)?.name ?? 'Unknown job';
 
   const act = async (id: string, to: 'approved' | 'draft') => {
+    // The reason rides to the blaster's needs-attention strip — worth asking
+    let note: string | undefined;
+    if (to === 'draft') {
+      const answer = prompt('What needs fixing? (shown to the blaster)');
+      if (answer === null) return; // cancelled
+      note = answer.trim() || undefined;
+    }
     setBusyId(id);
     setError(null);
     try {
       const res = await authedFetch(`/admin/blast-days/${id}/status`, {
         method: 'POST',
-        body: JSON.stringify({ to }),
+        body: JSON.stringify({ to, note }),
       });
       const body = (await res.json().catch(() => null)) as { error?: string } | null;
       if (!res.ok) throw new Error(body?.error ?? 'action failed');

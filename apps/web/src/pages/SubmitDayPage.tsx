@@ -100,7 +100,12 @@ export function SubmitDayPage() {
           attachments: hasLog ? [] : await collectDayAttachments(day.id),
           meta: { jobName: job?.name },
         });
-        await db.blastDays.update(day.id, { status: 'submitted', updatedAt: nowISO() });
+        // Resubmitting answers the office's send-back — clear the reason
+        await db.blastDays.update(day.id, {
+          status: 'submitted',
+          sendBackNote: undefined,
+          updatedAt: nowISO(),
+        });
         if (!cancelled) navigate(`/blast-day/${day.id}`, { replace: true });
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'filing failed');

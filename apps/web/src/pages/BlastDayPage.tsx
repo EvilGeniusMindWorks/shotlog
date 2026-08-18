@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, FileText, ClipboardList, ChevronDown, ChevronUp, FileBarChart, History, Lock, PhoneCall, Printer } from 'lucide-react';
+import { ArrowLeft, CalendarCheck, FileText, ClipboardList, ChevronDown, ChevronUp, FileBarChart, History, Lock, PhoneCall, Printer } from 'lucide-react';
 import { type Role } from '@shotlog/shared';
 import { can, canDayTransition, canEditApprovedDay } from '@/lib/perms';
 import { addBlastLogToDay, useBlastDay } from '@/hooks/useBlastDay';
@@ -8,6 +8,11 @@ import { db, useLiveQuery } from '@/db';
 import { deleteDayCascade } from '@/lib/lifecycle';
 import { LifecycleMenu } from '@/components/records/LifecycleMenu';
 import { TimeCardsCard } from '@/components/forms/TimeCardsCard';
+import { useDayPhases } from '@/hooks/useDayPhases';
+import { PhaseSpine } from '@/components/day/PhaseSpine';
+import { MergedDrillingView } from '@/components/day/MergedDrillingView';
+import { ReadinessView } from '@/components/day/ReadinessView';
+import { PreBlastCard } from '@/components/day/PreBlastCard';
 import { authedFetch, getSessionUser } from '@/lib/session';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { nowISO, formatDate, dayOfWeek } from '@/lib/utils';
@@ -63,6 +68,7 @@ const WIND_OPTIONS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'].map((d) => ({
 }));
 
 type Tab = 'blast-log' | 'daily-report';
+type DayView = 'hub' | 'blast-log' | 'daily-report' | 'drilling' | 'readiness';
 
 function CondChip({ children, accent }: { children: ReactNode; accent?: boolean }) {
   return (
@@ -83,12 +89,20 @@ export function BlastDayPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { blastDay, job, blastLog, dailyReport, shots, explosiveUsage } = useBlastDay(id);
-  // ?tab=daily lets the dashboard launcher land straight on the daily report
-  const [activeTab, setActiveTab] = useState<Tab>(
-    searchParams.get('tab') === 'daily' ? 'daily-report' : 'blast-log',
-  );
+  // Round 2: the day is a PHASE SPINE (hub) — the default view on blasting
+  // days. ?view= deep-links a phase; legacy ?tab=daily still lands on the
+  // daily report.
+  const [viewState, setViewState] = useState<DayView | null>(() => {
+    const v = searchParams.get('view');
+    if (v === 'hub' || v === 'blast-log' || v === 'daily-report' || v === 'drilling' || v === 'readiness')
+      return v;
+    return searchParams.get('tab') === 'daily' ? 'daily-report' : null;
+  });
   // Non-blasting days have no blast log — the daily report is the whole day
-  const tab: Tab = blastLog ? activeTab : 'daily-report';
+  const view: DayView = blastLog ? (viewState ?? 'hub') : 'daily-report';
+  const setView = (v: string) => setViewState(v as DayView);
+  const tab: Tab = view === 'daily-report' ? 'daily-report' : 'blast-log';
+  const phaseModel = useDayPhases(blastDay, blastLog, shots);
   const [showConditions, setShowConditions] = useState(false);
   const [showContacts, setShowContacts] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -403,23 +417,28 @@ export function BlastDayPage() {
             <div className="flex bg-gray-100 rounded-lg p-1">
               {(
                 [
+                  ['hub', 'Day', CalendarCheck],
                   ['blast-log', 'Blast Log', FileText],
                   ['daily-report', 'Daily Report', ClipboardList],
                 ] as const
-              ).map(([key, label, Icon]) => (
+              ).map(([key, label, Icon]) => {
+                const active =
+                  key === 'hub' ? view === 'hub' || view === 'drilling' || view === 'readiness' : view === key;
+                return (
                 <button
                   key={key}
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-md transition-all min-h-[44px] ${
-                    activeTab === key
+                    active
                       ? 'bg-white text-gray-900 shadow-sm'
                       : 'text-gray-500 hover:text-gray-700'
                   }`}
-                  onClick={() => setActiveTab(key)}
+                  onClick={() => setView(key)}
                 >
                   <Icon className="h-4 w-4" />
                   {label}
                 </button>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2">
@@ -430,7 +449,7 @@ export function BlastDayPage() {
               {!locked && can('blastLogs', 'PUT') && (
                 <Button size="sm" variant="secondary"
                   onClick={() => {
-                    void addBlastLogToDay(blastDay.id).then(() => setActiveTab('blast-log'));
+                    void addBlastLogToDay(blastDay.id).then(() => setView('blast-log'));
                   }}>
                   <FileText className="h-4 w-4 mr-1" /> Add Blasting Log
                 </Button>
@@ -469,9 +488,26 @@ export function BlastDayPage() {
         </div>
       )}
 
+      {/* The day hub — phases in order, a map not a gate. Stays tappable on
+          locked days (it's navigation, not editing). */}
+      {view === 'hub' && blastLog && phaseModel && (
+        <div className="p-4 max-w-5xl mx-auto space-y-3">
+          <PhaseSpine model={phaseModel} onOpen={setView} />
+          <PreBlastCard />
+        </div>
+      )}
+
+      {(view === 'drilling' || view === 'readiness') && blastLog && (
+        <div className="max-w-5xl mx-auto px-4 pt-3">
+          <button className="text-xs text-gray-400 hover:text-navy" onClick={() => setView('hub')}>
+            ‹ Back to the day
+          </button>
+        </div>
+      )}
+
       {/* Drill plan at-a-glance — the plan's home, above the fold. Outside the
           locked wrapper so accepted-log rows stay tappable on locked days. */}
-      {tab === 'blast-log' && blastLog && blastDay && (
+      {view === 'blast-log' && blastLog && blastDay && (
         <div className="max-w-5xl mx-auto px-4 pt-3">
           <DrillPlanCard shots={shots} blastDayId={blastDay.id} jobId={blastDay.jobId} locked={locked} />
         </div>
@@ -482,7 +518,18 @@ export function BlastDayPage() {
         className={locked ? 'p-4 max-w-5xl mx-auto pointer-events-none select-none opacity-70' : 'p-4 max-w-5xl mx-auto'}
         aria-disabled={locked || undefined}
       >
-        {tab === 'blast-log' && blastLog && (
+        {view === 'drilling' && blastLog && (
+          <MergedDrillingView day={blastDay} shots={shots} onAccepted={() => setView('readiness')} />
+        )}
+        {view === 'readiness' && blastLog && (
+          <ReadinessView
+            day={blastDay}
+            blastLog={blastLog}
+            shots={shots}
+            onConfirmed={() => setView('blast-log')}
+          />
+        )}
+        {view === 'blast-log' && blastLog && (
           <BlastLogForm
             blastDay={blastDay}
             blastLog={blastLog}

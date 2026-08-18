@@ -29,6 +29,7 @@ import { IconChip } from '@/components/ui/section-card';
 import { ShotDiagramEditor } from '@/components/design/ShotDiagramEditor';
 import { TypicalColumnBuilder } from '@/components/design/TypicalColumnBuilder';
 import { SiteDiagramEditor } from '@/components/design/SiteDiagramEditor';
+import { ComplianceSheet } from '@/components/records/ComplianceSheet';
 
 export function DesignPlanPage() {
   const { id, shotId } = useParams<{ id: string; shotId: string }>();
@@ -77,6 +78,7 @@ function DesignPlanInner({
     () => db.explosiveUsages.where('blastLogId').equals(shot.blastLogId).first(),
     [shot.blastLogId],
   );
+  const [showWhy, setShowWhy] = useState(false);
   const [diagram, setDiagram] = useState<ShotDiagram>(() =>
     parseDiagram(shot.designPlan.shotDiagramData),
   );
@@ -259,7 +261,8 @@ function DesignPlanInner({
       <div className="px-4 py-2 bg-gray-50">
         <div className="max-w-6xl mx-auto flex flex-wrap gap-2">
           {sd > 0 ? (
-            <>
+            // Round 2: every flag opens the explainer — rule, math, to-pass
+            <button className="flex flex-wrap gap-2" onClick={() => setShowWhy(true)}>
               <Badge variant={ppv <= usbmLimit ? 'compliant' : 'violation'}>
                 {ppv <= usbmLimit ? '✓' : '✗'} USBM RI8507
               </Badge>
@@ -268,9 +271,26 @@ function DesignPlanInner({
               </Badge>
               <Badge variant="compliant">✓ SD = {sd.toFixed(1)}</Badge>
               <Badge variant="compliant">✓ PPV = {ppv.toFixed(2)} in/s</Badge>
-            </>
+              <Badge variant="secondary">why?</Badge>
+            </button>
           ) : (
             <Badge variant="draft">Enter structure distance + max lbs/delay for compliance</Badge>
+          )}
+          {showWhy && sd > 0 && (
+            <ComplianceSheet
+              facts={{
+                kind: 'predicted',
+                ppv,
+                kFactor: dp.kFactor || (ctx?.kFactor ?? 180),
+                distanceFt: dp.closestStructureDistance,
+                chargeLbs: dp.maxPoundsPerDelay,
+                localReg:
+                  ctx?.localPPVLimit != null
+                    ? { name: ctx.localRegName || 'local limit', limit: ctx.localPPVLimit }
+                    : undefined,
+              }}
+              onClose={() => setShowWhy(false)}
+            />
           )}
           {maxHoles > 0 && (
             <Badge variant="secondary">

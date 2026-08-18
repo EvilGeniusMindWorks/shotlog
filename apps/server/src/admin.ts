@@ -14,7 +14,11 @@ import { resolveActor, writeAudit } from './auditWrite.js';
 export const adminRouter = Router();
 adminRouter.use(requireAuth);
 
-const statusSchema = z.object({ to: z.enum(['draft', 'submitted', 'approved']) });
+const statusSchema = z.object({
+  to: z.enum(['draft', 'submitted', 'approved']),
+  /** Send-back reason — shown inline on the field home's needs-attention strip */
+  note: z.string().max(500).optional(),
+});
 
 const productSchema = z.object({
   manufacturer: z.string().min(1),
@@ -355,9 +359,14 @@ adminRouter.post(
         if (!canTransitionStatus(from, to, role)) {
           return { code: 409 as const, error: `can't go from ${from} to ${to}` };
         }
+        // Send-back carries the reason to the field home; any other
+        // transition clears it (the day is moving forward again)
+        const sendBackNote =
+          to === 'draft' && parsed.data.note?.trim() ? parsed.data.note.trim() : undefined;
         const payload = JSON.stringify({
           ...stored.payload,
           status: to,
+          sendBackNote,
           updatedAt: new Date().toISOString(),
         });
         await upsertRecord(tx, cid, id, 'blastDays', payload, new Date().toISOString());
@@ -368,7 +377,10 @@ adminRouter.post(
           recordId: id,
           op: 'PATCH',
           actor: await resolveActor(req.userId, role),
-          changes: [{ field: 'status', old: from, new: to }],
+          changes: [
+            { field: 'status', old: from, new: to },
+            ...(sendBackNote ? [{ field: 'sendBackNote', old: null, new: sendBackNote }] : []),
+          ],
           reason: 'office status change',
         });
         return { code: 200 as const, status: to };

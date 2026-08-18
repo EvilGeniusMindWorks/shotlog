@@ -290,6 +290,10 @@ export interface BlastDay extends BaseRecord {
   /** Optional quick label from the blaster, e.g. "North face lift 2" */
   name?: string;
   status: 'draft' | 'submitted' | 'approved';
+  /** Office send-back reason (Round 2) — set when the office returns the
+   *  day for fixes, shown inline on the needs-attention strip; cleared on
+   *  the next submit (server clears it on any forward transition too) */
+  sendBackNote?: string;
   conditions: BlastDayConditions;
   typeOfWork: WorkType;
   fireDetail: boolean;
@@ -299,8 +303,24 @@ export interface BlastDay extends BaseRecord {
 // BLAST LOG (1:1 with BlastDay)
 // ══════════════════════════════════════════════════════
 
+/** The blaster's confirm-or-adjust moment between drilling-complete and
+ *  loading (Round 2): plan intent vs as-drilled, hazard questions, and the
+ *  design numbers that seed every shot (any shot can still override). */
+export interface ReadinessReview {
+  confirmedAt: string; // ISO datetime
+  confirmedBy: string; // userId
+  confirmedByName: string;
+  /** Adjusted design ceiling that seeds each shot's designPlan */
+  maxPoundsPerDelay?: number;
+  /** Free-text answers to the hazard questions ("wet product below 12 ft") */
+  hazardNotes?: string;
+  notes?: string;
+}
+
 export interface BlastLog extends BaseRecord {
   blastDayId: string;
+  /** Round 2: set when the blaster confirms the shot design after drilling */
+  readinessReview?: ReadinessReview;
   operation: 'construction' | 'quarry' | 'trench' | 'open';
   typeOfRock: string;
   typeOfTerrain: string;
@@ -881,6 +901,9 @@ export interface CompanySettings extends BaseRecord {
   officeContacts?: { id: string; label: string; name: string; phone: string }[];
   /** Company-defined attachment types, merged into the built-in picker */
   attachmentTypes?: string[];
+  /** Pre-blast ritual placeholder (Round 2): editable language, one item
+   *  per line. Nothing enforced — a checklist slot for future inclusion. */
+  preBlastChecklist?: string[];
 }
 
 /** Explosive manufacturer — first-class, admin-managed (id: mfr-<slug>) */

@@ -12,13 +12,13 @@ import { Badge } from '@/components/ui/badge';
 import { ListSkeleton } from '@/components/ui/skeleton';
 import { cn, formatDate } from '@/lib/utils';
 import { NewBlastDayDialog } from '@/components/forms/NewBlastDayDialog';
-import { AdminHome, DrillerHome, DrillingReviewCard, MechanicHome, TodayCard } from '@/components/dashboard/RoleCards';
-import { StartGrid } from '@/components/dashboard/StartGrid';
+import { AdminHome, DrillerHome, MechanicHome } from '@/components/dashboard/RoleCards';
+import { BlasterHome } from '@/components/dashboard/BlasterHome';
 import { getSessionUser } from '@/lib/session';
 import { myHomeDashboard } from '@/lib/perms';
 import type { WorkType } from '@/db/schema';
 
-interface DaySummary {
+export interface DaySummary {
   day: BlastDay;
   job: Job | undefined;
   shots: number;
@@ -29,7 +29,7 @@ interface DaySummary {
 }
 
 /** Assemble per-day stats + the site-map snapshot for the hero image */
-function useDaySummaries(): DaySummary[] | undefined {
+export function useDaySummaries(): DaySummary[] | undefined {
   return useLiveQuery(async () => {
     const days = await db.blastDays.orderBy('date').reverse().toArray();
     const jobs = new Map((await db.jobs.toArray()).map((j) => [j.id, j]));
@@ -205,28 +205,12 @@ export function WorkDaysPage() {
 }
 
 function BlasterDashboard() {
-  const kpis = useKpis();
-
+  // Round 2 (approved study): three bands — needs attention · today ·
+  // months collapsed. KPIs dropped from the home (they return on job
+  // pages, where they have context); the full list still lives at /days.
   return (
     <div className="p-4 max-w-3xl mx-auto pb-24">
-      {/* KPI stats bar */}
-      <div data-tour="kpis" className="grid grid-cols-4 gap-2 mb-4">
-        <Kpi label="Active Jobs" value={kpis ? String(kpis.activeJobs) : '—'} />
-        <Kpi label="Shots / Month" value={kpis ? String(kpis.shotsThisMonth) : '—'} />
-        <Kpi label="YTD Total (lbs)" value={kpis ? kpis.ytdLbs.toLocaleString() : '—'} />
-        {/* role cards inserted below the stats — see next sibling */}
-        <Kpi
-          label="Compliance"
-          value={kpis?.compliancePct !== null && kpis ? `${kpis.compliancePct}%` : '—'}
-        />
-      </div>
-
-      <TodayCard />
-      <StartGrid role={getSessionUser()?.role ?? 'blaster'} />
-      <DrillingReviewCard />
-
-      <WorkDayList />
-
+      <BlasterHome />
       <NewWorkDayFab />
     </div>
   );

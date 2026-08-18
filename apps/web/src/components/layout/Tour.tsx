@@ -13,11 +13,6 @@ const STEPS: TourStep[] = [
     body: 'Your blasting log and daily report, digitized. This quick tour shows the essentials.',
   },
   {
-    selector: '[data-tour="kpis"]',
-    title: 'Your Numbers',
-    body: 'Active jobs, shots this month, year-to-date pounds, and compliance rate — always current.',
-  },
-  {
     selector: '[data-tour="fab"]',
     title: 'Start Work at a Job',
     body: 'One tap opens work at a job — and you can copy everything forward from a previous day: blast info, drill params, explosives, crew.',

@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { ChipSelect } from '@/components/ui/chip-select';
 import { IconChip, SubSection } from '@/components/ui/section-card';
 import { AttachmentsCard } from './AttachmentsCard';
+import { ShotHazardRail } from './ShotHazardRail';
 
 interface Props {
   shot: Shot;
@@ -184,6 +185,10 @@ export function ShotForm({ shot, allShots, explosiveUsage, kFactor: _kFactor, bl
           <TotalsCell label="Yards Shot" value={t.totalYardsShot > 0 ? String(Math.round(t.totalYardsShot)) : '—'} />
         </div>
       </SubSection>
+
+      {/* Hazard rail (Round 2): the drill's findings one glance away while
+          loading — renders nothing on clean patterns */}
+      <ShotHazardRail shot={shot} />
 
       {/* Explosives (this shot) — auto-distributed */}
       <SubSection

@@ -135,6 +135,40 @@ function OfficeContactsSection({
   );
 }
 
+/** Pre-blast ritual placeholder language (Round 2) — one item per line,
+ *  shown on the day hub's placeholder card. Nothing enforced. */
+function PreBlastChecklistSection({
+  settings,
+}: {
+  settings: { preBlastChecklist?: string[] } | undefined;
+}) {
+  const [text, setText] = useState<string | null>(null);
+  const value = text ?? (settings?.preBlastChecklist ?? []).join('\n');
+  return (
+    <section className="rounded-xl border border-gray-200 bg-white p-4 space-y-3">
+      <p className="font-medium text-sm">Pre-blast checklist (placeholder)</p>
+      <p className="text-xs text-gray-400">
+        One item per line — shown on every blasting day's hub as a reference list. Nothing is
+        recorded or enforced yet; leave empty for the built-in default language.
+      </p>
+      <textarea
+        className="w-full rounded-md border border-gray-300 p-2 text-sm min-h-[90px]"
+        value={value}
+        placeholder={'Notifications made (FD / abutters per site rules)\nPre-blast surveys current…'}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={() => {
+          if (text === null) return;
+          const items = text.split('\n').map((s) => s.trim()).filter(Boolean);
+          void db.companySettings.update(SINGLETON, {
+            preBlastChecklist: items.length > 0 ? items : undefined,
+            updatedAt: nowISO(),
+          });
+        }}
+      />
+    </section>
+  );
+}
+
 export function AdminCompanyPage() {
   const { online } = useOutletContext<{ online: boolean }>();
   const settings = useLiveQuery(() => db.companySettings.get(SINGLETON));
@@ -230,6 +264,7 @@ export function AdminCompanyPage() {
 
       <OfficeContactsSection settings={settings} online={online} />
       <AttachmentTypesSection settings={settings} />
+      <PreBlastChecklistSection settings={settings} />
     </div>
   );
 }

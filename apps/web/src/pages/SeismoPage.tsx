@@ -10,7 +10,9 @@ import {
   type InstantelReading,
 } from '@shotlog/shared';
 import { scanSeismoPrintout } from '@/lib/seismoScan';
-import type { SeismoReading } from '@/db/schema';
+import { useJobContext } from '@/lib/jobContext';
+import { ComplianceSheet } from '@/components/records/ComplianceSheet';
+import type { SeismoReading, Shot } from '@/db/schema';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -76,7 +78,7 @@ export function SeismoPage() {
 
       <div className="p-4 space-y-3">
         {readings.map((reading) => (
-          <ReadingCard key={reading.id} reading={reading} />
+          <ReadingCard key={reading.id} reading={reading} shot={shot} />
         ))}
 
         {readings.length === 0 && !adding && (
@@ -103,8 +105,16 @@ export function SeismoPage() {
   );
 }
 
-function ReadingCard({ reading }: { reading: SeismoReading }) {
+function ReadingCard({ reading, shot }: { reading: SeismoReading; shot: Shot }) {
   const [imgUrl, setImgUrl] = useState<string | null>(null);
+  const [showWhy, setShowWhy] = useState(false);
+  // The local bylaw, when the site has one — the explainer leads with it
+  const ctx = useJobContext(
+    useLiveQuery(async () => {
+      const log = await db.blastLogs.get(shot.blastLogId);
+      return log ? (await db.blastDays.get(log.blastDayId))?.jobId : undefined;
+    }, [shot.blastLogId]),
+  );
   useEffect(() => {
     if (!reading.printoutImage) {
       setImgUrl(null);
@@ -138,9 +148,12 @@ function ReadingCard({ reading }: { reading: SeismoReading }) {
               {reading.seismographId && (
                 <span className="text-xs text-gray-500">{reading.seismographId}</span>
               )}
-              <Badge variant={STATUS_VARIANT[reading.complianceStatus]} className="ml-auto">
-                {reading.complianceStatus}
-              </Badge>
+              {/* Compliance explains itself — tap the flag for the why */}
+              <button className="ml-auto" onClick={() => setShowWhy(true)}>
+                <Badge variant={STATUS_VARIANT[reading.complianceStatus]}>
+                  {reading.complianceStatus}
+                </Badge>
+              </button>
             </div>
             <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-sm">
               <Metric label="PPV max" value={`${maxPPV.toFixed(3)} in/s`} strong />
@@ -167,6 +180,23 @@ function ReadingCard({ reading }: { reading: SeismoReading }) {
           </Button>
         </div>
       </CardContent>
+      {showWhy && (
+        <ComplianceSheet
+          facts={{
+            kind: 'measured',
+            ppv: maxPPV,
+            kFactor: shot.designPlan.kFactor || (ctx?.kFactor ?? 180),
+            distanceFt: shot.designPlan.closestStructureDistance,
+            chargeLbs: shot.designPlan.maxPoundsPerDelay,
+            frequencyHz: reading.frequency,
+            localReg:
+              ctx?.localPPVLimit != null
+                ? { name: ctx.localRegName || 'local limit', limit: ctx.localPPVLimit }
+                : undefined,
+          }}
+          onClose={() => setShowWhy(false)}
+        />
+      )}
     </Card>
   );
 }
