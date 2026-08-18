@@ -6,6 +6,7 @@
 // geocode saved to the site (plus a device cache for roles that can't
 // write sites) — offline afterward.
 import { db } from '@/db';
+import { projectTable } from '@/db/projections';
 import type { Equipment, Site } from '@/db/schema';
 import { matchesAsset } from '@/lib/equipmentHistory';
 import { resolveJobContext } from '@/lib/jobContext';
@@ -51,9 +52,35 @@ export async function buildAssetLocations(): Promise<AssetLocation[]> {
   const days = new Map((await db.blastDays.toArray()).map((d) => [d.id, d]));
   const reports = new Map((await db.dailyReports.toArray()).map((r) => [r.id, r.blastDayId]));
 
-  const checklists = await db.drillChecklists.toArray();
-  const drillLogs = await db.drillLogs.toArray();
-  const entries = await db.equipmentEntries.toArray();
+  // Blob-free projections: checklists and drill logs carry signature
+  // images — the locator only needs ids, dates, and the job link
+  const checklists = await projectTable<{
+    equipmentId: string;
+    jobId: string | null;
+    date: string;
+  }>('drillChecklists', { equipmentId: 'equipmentId', jobId: 'jobId', date: 'date' });
+  const drillLogs = await projectTable<{
+    drillRigEquipmentId: string | null;
+    jobId: string;
+    blastDayId: string | null;
+    date: string | null;
+    createdAt: string;
+  }>('drillLogs', {
+    drillRigEquipmentId: 'drillRigEquipmentId',
+    jobId: 'jobId',
+    blastDayId: 'blastDayId',
+    date: 'date',
+    createdAt: 'createdAt',
+  });
+  const entries = await projectTable<{
+    equipmentId: string | null;
+    assetNumber: string | null;
+    dailyReportId: string;
+  }>('equipmentEntries', {
+    equipmentId: 'equipmentId',
+    assetNumber: 'assetNumber',
+    dailyReportId: 'dailyReportId',
+  });
   const openOOS = new Set(
     (await db.repairTickets.filter((t) => t.status === 'open' && t.outOfService).toArray()).map(
       (t) => t.equipmentId,
@@ -72,14 +99,14 @@ export async function buildAssetLocations(): Promise<AssetLocation[]> {
       if (!best || date > best.date) best = { date, jobId, source };
     };
     for (const c of checklists)
-      if (c.equipmentId === equip.id) consider(c.date, c.jobId, 'checklist');
+      if (c.equipmentId === equip.id) consider(c.date, c.jobId ?? undefined, 'checklist');
     for (const l of drillLogs)
       if (l.drillRigEquipmentId === equip.id) {
         const day = l.blastDayId ? days.get(l.blastDayId) : undefined;
         consider(l.date ?? day?.date ?? l.createdAt.slice(0, 10), day?.jobId ?? l.jobId, 'drill log');
       }
     for (const e of entries)
-      if (matchesAsset(e, equip)) {
+      if (matchesAsset({ equipmentId: e.equipmentId ?? undefined, assetNumber: e.assetNumber ?? '' }, equip)) {
         const day = days.get(reports.get(e.dailyReportId) ?? '');
         if (day) consider(day.date, day.jobId, 'equip hours');
       }

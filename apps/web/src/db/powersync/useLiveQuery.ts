@@ -16,7 +16,14 @@ export function useLiveQuery<T>(
   useEffect(() => {
     let alive = true;
     let seq = 0;
+    let dirtyWhileHidden = false;
     const run = () => {
+      // Background tabs go quiet (Safari's energy heuristic reloads tabs
+      // that keep computing while hidden) — mark dirty, catch up on return
+      if (document.hidden) {
+        dirtyWhileHidden = true;
+        return;
+      }
       const mine = ++seq;
       Promise.resolve()
         .then(querier)
@@ -30,13 +37,23 @@ export function useLiveQuery<T>(
         });
     };
     run();
+    // 300ms coalescing: a sync checkpoint applying dozens of rows triggers
+    // ONE recomputation per mounted query, not dozens (was 50ms)
     const dispose = getPowerSync().onChangeWithCallback(
       { onChange: run },
-      { tables: ['records'], throttleMs: 50 },
+      { tables: ['records'], throttleMs: 300 },
     );
+    const onVisible = () => {
+      if (!document.hidden && dirtyWhileHidden) {
+        dirtyWhileHidden = false;
+        run();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
     return () => {
       alive = false;
       dispose();
+      document.removeEventListener('visibilitychange', onVisible);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- caller-supplied deps, Dexie-style
   }, deps);

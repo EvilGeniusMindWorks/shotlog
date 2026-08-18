@@ -24,6 +24,7 @@ import { ConsequenceSheet } from '@/components/records/LifecycleMenu';
 import { TimeCardRow } from '@/components/forms/TimeCardsCard';
 import { canEditCard, createStandaloneTimeCard } from '@/hooks/useTimeCards';
 import { buildDueServices } from '@/lib/pm';
+import { holeCountsByLog, projectTable } from '@/db/projections';
 import {
   applyOrder,
   clearSavedOrder,
@@ -181,14 +182,65 @@ export function DrillingReviewCard() {
 
 /** Pick-your-rig modal → checklist. Remembers the choice for the nudge. */
 
+/** Blob-free projection of every drill log — the driller home's queries
+ *  share it instead of reviving signature images table-wide (perf slice) */
+interface ProjectedLog {
+  id: string;
+  status: string;
+  drillerUserId?: string;
+  drillerName: string;
+  assignedBy?: string;
+  reopenNote?: string;
+  drillPlanId?: string;
+  jobId: string;
+  blastDayId?: string;
+  shotId?: string;
+  date?: string;
+  createdAt: string;
+  drillRigEquipmentId?: string;
+}
+
+async function projectDrillLogs(): Promise<ProjectedLog[]> {
+  const rows = await projectTable<Record<string, string | null>>('drillLogs', {
+    status: 'status',
+    drillerUserId: 'drillerUserId',
+    drillerName: 'drillerName',
+    assignedBy: 'assignedBy',
+    reopenNote: 'reopenNote',
+    drillPlanId: 'drillPlanId',
+    jobId: 'jobId',
+    blastDayId: 'blastDayId',
+    shotId: 'shotId',
+    date: 'date',
+    createdAt: 'createdAt',
+    drillRigEquipmentId: 'drillRigEquipmentId',
+  });
+  // SQL NULLs → undefined so the rows satisfy the app's optional fields
+  return rows.map((r) => ({
+    id: r.id as string,
+    status: r.status ?? 'open',
+    drillerUserId: r.drillerUserId ?? undefined,
+    drillerName: r.drillerName ?? '',
+    assignedBy: r.assignedBy ?? undefined,
+    reopenNote: r.reopenNote ?? undefined,
+    drillPlanId: r.drillPlanId ?? undefined,
+    jobId: r.jobId ?? '',
+    blastDayId: r.blastDayId ?? undefined,
+    shotId: r.shotId ?? undefined,
+    date: r.date ?? undefined,
+    createdAt: r.createdAt ?? '',
+    drillRigEquipmentId: r.drillRigEquipmentId ?? undefined,
+  }));
+}
+
 export function DrillerHome() {
   const navigate = useNavigate();
   const me = getSessionUser();
   const [showRigPicker, setShowRigPicker] = useState(false);
   const myLogs = useLiveQuery(async () => {
-    const logs = await db.drillLogs
-      .filter((l) => l.status === 'open' && (!me?.id || l.drillerUserId === me.id || !l.drillerUserId))
-      .toArray();
+    const logs = (await projectDrillLogs()).filter(
+      (l) => l.status === 'open' && (!me?.id || l.drillerUserId === me.id || !l.drillerUserId),
+    );
     const out = [];
     for (const log of logs) {
       const job = await db.jobs.get(log.jobId);
@@ -262,13 +314,11 @@ export function DrillerHome() {
     let others = 0;
     let total = first.designed;
     if (first.log.drillPlanId) {
-      const siblings = await db.drillLogs
-        .filter((l) => l.drillPlanId === first.log.drillPlanId && l.id !== first.log.id)
-        .toArray();
-      for (const s of siblings)
-        others += (await db.drillLogHoles.where('drillLogId').equals(s.id).toArray()).filter(
-          (h) => !h.skipped,
-        ).length;
+      const siblings = (await projectDrillLogs()).filter(
+        (l) => l.drillPlanId === first.log.drillPlanId && l.id !== first.log.id,
+      );
+      const counts = await holeCountsByLog();
+      for (const s of siblings) others += counts.get(s.id) ?? 0;
     }
     return { ...first, others, total };
   }, [myLogs?.map((x) => x.log.id + x.holes).join(',')]);
@@ -277,15 +327,18 @@ export function DrillerHome() {
   // per-driller-per-day model: each day on a plan is its own log
   const openPlans = useLiveQuery(async () => {
     const plans = await db.drillPlans.filter((p) => p.status === 'open' && !p.archivedAt).toArray();
+    // Shared blob-free sweeps: one log projection + one grouped hole count
+    const allLogs = await projectDrillLogs();
+    const counts = await holeCountsByLog();
     const out = [];
     for (const plan of plans) {
       const holes = getPlanHoles(plan);
       if (!holes || holes.length === 0) continue;
-      const logs = await db.drillLogs.filter((l) => l.drillPlanId === plan.id).toArray();
+      const logs = allLogs.filter((l) => l.drillPlanId === plan.id);
       let drilled = 0;
       let mineOpenToday = false;
       for (const dl of logs) {
-        drilled += await db.drillLogHoles.where('drillLogId').equals(dl.id).count();
+        drilled += counts.get(dl.id) ?? 0;
         if (dl.status === 'open' && dl.drillerUserId === me?.id && dl.date === todayISO())
           mineOpenToday = true;
       }
@@ -302,25 +355,55 @@ export function DrillerHome() {
     const days = (await db.blastDays.filter((d) => d.status !== 'approved').toArray())
       .sort((a, b) => b.date.localeCompare(a.date))
       .slice(0, 15);
+    // Blob-free sweeps: shots carry up to three inline images each — this
+    // list only needs numbers and the diagram JSON (text)
+    const blastLogIds = new Map(
+      (await projectTable<{ blastDayId: string | null }>('blastLogs', { blastDayId: 'blastDayId' })).map(
+        (l) => [l.blastDayId ?? '', l.id],
+      ),
+    );
+    const shotRows = await projectTable<{
+      blastLogId: string | null;
+      shotNumber: number | null;
+      numHoles: number | null;
+      diagram: string | null;
+    }>('shots', {
+      blastLogId: 'blastLogId',
+      shotNumber: 'shotNumber',
+      numHoles: 'totals.numHoles',
+      diagram: 'designPlan.shotDiagramData',
+    });
+    const allLogs = await projectDrillLogs();
+    const counts = await holeCountsByLog();
     const out = [];
     for (const day of days) {
-      const blastLog = await db.blastLogs.where('blastDayId').equals(day.id).first();
-      if (!blastLog) continue;
-      const shots = await db.shots.where('blastLogId').equals(blastLog.id).toArray();
+      const logId = blastLogIds.get(day.id);
+      if (!logId) continue;
+      const shots = shotRows.filter((s) => s.blastLogId === logId);
       const jobName = (await db.jobs.get(day.jobId))?.name;
       for (const shot of shots) {
-        const target = getShotPlan(shot)?.length ?? shot.totals?.numHoles ?? 0;
+        const planHoles = getShotPlan({
+          designPlan: { shotDiagramData: shot.diagram },
+        } as never);
+        const target = planHoles?.length ?? shot.numHoles ?? 0;
         if (!target) continue;
-        const shotLogs = await db.drillLogs.where('shotId').equals(shot.id).toArray();
+        const shotLogs = allLogs.filter((l) => l.shotId === shot.id);
         let drilled = 0;
         let mineOpen = false;
         for (const dl of shotLogs) {
-          drilled += await db.drillLogHoles.where('drillLogId').equals(dl.id).count();
+          drilled += counts.get(dl.id) ?? 0;
           if (dl.status === 'open' && (!me?.id || dl.drillerUserId === me.id || !dl.drillerUserId))
             mineOpen = true; // already in "My open drill logs"
         }
         if (drilled >= target || mineOpen) continue;
-        out.push({ day, jobName, shot, target, drilled, joining: shotLogs.length > 0 });
+        out.push({
+          day,
+          jobName,
+          shot: { id: shot.id, shotNumber: shot.shotNumber ?? 0 },
+          target,
+          drilled,
+          joining: shotLogs.length > 0,
+        });
       }
     }
     return out;
@@ -503,7 +586,11 @@ export function DrillerHome() {
               key={shot.id}
               className="w-full flex items-center gap-2 py-2 text-left hover:bg-gray-50 rounded-lg"
               onClick={async () => {
-                const logId = await createDrillLog(shot, day.id, day.jobId);
+                // Single-record get — the full shot (with design params for
+                // the log header) loads only when the driller commits
+                const full = await db.shots.get(shot.id);
+                if (!full) return;
+                const logId = await createDrillLog(full, day.id, day.jobId);
                 navigate(`/blast-day/${day.id}/drill-log/${logId}`);
               }}
             >
@@ -759,8 +846,26 @@ export function MechanicHome() {
     setOrderTick((t) => t + 1);
   };
   // What came in from the field: newest checklists across the whole fleet
+  // (projected — checklist rows carry signature images)
   const checklists = useLiveQuery(async () =>
-    (await db.drillChecklists.toArray())
+    (
+      await projectTable<{
+        equipmentId: string;
+        drillerName: string | null;
+        date: string;
+        createdAt: string;
+        outOfService: number | null;
+        repairsNote: string | null;
+      }>('drillChecklists', {
+        equipmentId: 'equipmentId',
+        drillerName: 'drillerName',
+        date: 'date',
+        createdAt: 'createdAt',
+        outOfService: 'outOfService',
+        repairsNote: 'repairsNote',
+      })
+    )
+      .map((c) => ({ ...c, repairsNote: c.repairsNote ?? '', outOfService: Boolean(c.outOfService) }))
       .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt))
       .slice(0, 15),
   );
