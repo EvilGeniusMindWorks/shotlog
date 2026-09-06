@@ -121,6 +121,48 @@ export function inviteMail(opts: {
   };
 }
 
+/** A user's in-app feedback / crash report, forwarded to the platform admin */
+export function feedbackMail(opts: {
+  to: string;
+  id: string;
+  kind: string;
+  message: string;
+  name: string;
+  email: string;
+  role: string;
+  company: string;
+  route: string;
+  buildId: string;
+  online: boolean;
+}): Mail {
+  const kindLabel =
+    opts.kind === 'crash' ? 'Crash report' : opts.kind === 'bug' ? 'Bug' : opts.kind === 'idea' ? 'Idea' : 'Question';
+  const link = `${APP_URL}/admin/feedback?id=${encodeURIComponent(opts.id)}`;
+  const snippet = opts.message.replace(/\s+/g, ' ').trim().slice(0, 70);
+  const where = [
+    `Who: ${opts.name} (${opts.role}, ${opts.company}) — ${opts.email}`,
+    `Where: ${opts.route || '/'}${opts.online ? '' : ' — sent from an offline queue'}`,
+    `Build: ${opts.buildId || 'unknown'}`,
+  ];
+  const text =
+    `${kindLabel} from ${opts.name}:\n\n${opts.message}\n\n` +
+    where.join('\n') +
+    `\n\nOpen in ShotLog: ${link}`;
+  return {
+    to: opts.to,
+    subject: `ShotLog ${kindLabel.toLowerCase()} — ${opts.name}: ${snippet}${opts.message.length > 70 ? '…' : ''}`,
+    text,
+    html: layout({
+      company: opts.company,
+      title: `${kindLabel} from ${esc(opts.name)}`,
+      intro: `<span style="display:block;white-space:pre-wrap;border-left:3px solid #E8772E;padding:6px 12px;color:#172338">${esc(opts.message)}</span>`,
+      steps: where.map(esc),
+      cta: { label: 'Open in ShotLog', url: link },
+      footer: 'Sent by ShotLog when a user files feedback or the app catches an error. Reply notes live in Admin › Feedback.',
+    }),
+  };
+}
+
 export function resetMail(opts: { to: string; name: string; company: string; link: string; ttlMinutes: number }): Mail {
   const first = opts.name.split(' ')[0] || opts.name;
   const text =

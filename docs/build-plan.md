@@ -126,8 +126,12 @@ the pending rounds: admin/office home 4.3, Admin›People 4.2–4.4.
 ## Soft-launch rounds (S1–S5) — proposed 2026-09-06
 
 See [soft-launch-plan.md](soft-launch-plan.md): onboarding & access →
-feedback & diagnostics → guidance → clutter sweep → launch gates. DRAFT
-until Matthew answers its open questions.
+feedback & diagnostics → guidance → clutter sweep → launch gates.
+APPROVED 2026-09-06. S1 ✅ shipped 62cbdbe (harness37 24/24). S3 ✅
+shipped 2026-09-06 (harness38 38/38) with its design amended first
+(feedback = server table + offline outbox, platform-admin-only triage —
+see decisions.md). Next: S2 guidance → S4 clutter (+ records manager
+R-A) → S5 gates.
 
 ## Runs alongside (not gated on rounds)
 

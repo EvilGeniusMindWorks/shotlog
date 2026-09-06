@@ -42,6 +42,8 @@ import { getSessionUser } from '@/lib/session';
 import { hasCap } from '@/lib/perms';
 import { AdminRolesPage } from '@/pages/admin/AdminRolesPage';
 import { UndoToastHost } from '@/components/ui/undo-toast';
+import { FeedbackHost } from '@/components/feedback/FeedbackComposer';
+import { AdminFeedbackPage } from '@/pages/admin/AdminFeedbackPage';
 import { EquipmentLocatorPage } from '@/pages/EquipmentLocatorPage';
 import { DrillingPage } from '@/pages/DrillingPage';
 
@@ -92,6 +94,7 @@ export function App() {
   return (
     <AuthGate>
     <UndoToastHost />
+    <FeedbackHost />
     <BrowserRouter>
       <Routes>
         <Route element={<AppShell />}>
@@ -128,6 +131,7 @@ export function App() {
             <Route path="incidents" element={<AdminIncidentsPage />} />
             <Route path="roles" element={<AdminRolesPage />} />
             <Route path="company" element={<AdminCompanyPage />} />
+            <Route path="feedback" element={<AdminFeedbackPage />} />
           </Route>
         </Route>
         <Route path="/blast-day/:id/submit" element={<SubmitDayPage />} />

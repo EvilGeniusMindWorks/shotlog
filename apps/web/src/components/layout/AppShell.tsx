@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   CalendarDays,
-  CircleHelp,
   CheckCircle2,
   Drill,
   FolderArchive,
@@ -26,6 +25,18 @@ import { getSessionUser, getRealSessionUser, getViewRole, setViewRole } from '@/
 import { hasCap, myHomeDashboard, useRoleDefsSync } from '@/lib/perms';
 import { FirstSyncStrip, SessionExpiredBanner, SyncChip, UpdateChip } from './SyncChip';
 import { Tour } from './Tour';
+import { HelpMenu } from '@/components/feedback/HelpMenu';
+
+/** Dev-only: `window.shotlogCrash()` throws during render so the harness
+ *  can prove the root error boundary catches it (never shipped in prod) */
+function CrashProbe() {
+  const [boom, setBoom] = useState(false);
+  useEffect(() => {
+    (window as unknown as Record<string, unknown>).shotlogCrash = () => setBoom(true);
+  }, []);
+  if (boom) throw new Error('Harness-triggered render crash');
+  return null;
+}
 
 const baseNavItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -282,16 +293,13 @@ export function AppShell() {
               {item.to === '/jobs' && <JobsSubNav />}
             </div>
           ))}
-          <button
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-navy-200 hover:text-white hover:bg-white/5 transition-colors"
-            onClick={() => {
+          <HelpMenu
+            variant="sidebar"
+            onWalkthrough={() => {
               navigate('/');
               setTouring(true);
             }}
-          >
-            <CircleHelp className="h-5 w-5" />
-            Walkthrough
-          </button>
+          />
         </nav>
         <div className="px-2 pb-4 space-y-1 border-t border-white/10 pt-3 mx-2">
           {realAdmin && !getViewRole() && <ViewAsSelect />}
@@ -340,16 +348,13 @@ export function AppShell() {
         <header className="lg:hidden bg-navy text-white px-4 py-3 shadow-md flex items-center justify-between shrink-0">
           <Wordmark compact />
           <div className="flex items-center gap-1">
-            <button
-              className="h-10 w-10 rounded-lg flex items-center justify-center text-navy-200"
-              title="Walkthrough"
-              onClick={() => {
+            <HelpMenu
+              variant="header"
+              onWalkthrough={() => {
                 navigate('/');
                 setTouring(true);
               }}
-            >
-              <CircleHelp className="h-5 w-5" />
-            </button>
+            />
             <button
               className="h-10 w-10 rounded-lg flex items-center justify-center text-navy-200"
               title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
@@ -375,6 +380,7 @@ export function AppShell() {
       </div>
 
       {touring && <Tour onEnd={() => setTouring(false)} />}
+      {import.meta.env.DEV && <CrashProbe />}
 
       {/* Mobile bottom navigation — each rail's top four, then Settings
           (the phone mirrors the rail, decision 2026-08-18) */}

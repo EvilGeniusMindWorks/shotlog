@@ -33,3 +33,10 @@ Company) · customers/sites/jobs setup · everything else read
 
 - fix data by asking a developer
 - wonder who changed what (audit trail answers it)
+
+## Explicitly NOT theirs (2026-09-06)
+
+- **User feedback and crash reports** go to the platform admin (Matthew),
+  not the company admin — Matthew's Q2 call in the soft-launch review.
+  Mark sees no Feedback tab; the server refuses him the routes. Revisit if
+  Baystate wants its own in-app suggestion box later.

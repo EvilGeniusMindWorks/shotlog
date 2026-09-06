@@ -3,11 +3,30 @@ import ReactDOM from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import { App } from './App';
 import { captureInstallPrompt } from './lib/install';
+import { installGlobalErrorCapture } from './lib/diagnostics';
+import { startFeedbackOutbox } from './lib/feedback';
+import { showToast } from './components/ui/undo-toast';
+import { openFeedbackComposer } from './components/feedback/FeedbackComposer';
+import { ErrorBoundary } from './components/feedback/ErrorBoundary';
 import './index.css';
 
 // Chrome fires beforeinstallprompt once, early — grab it before React mounts
 // so the Install card can replay it later
 captureInstallPrompt();
+
+// Diagnostics (Round S3): uncaught errors + unhandled rejections go to the
+// rolling error log and surface as ONE toast per minute with a Report action
+// (never a modal); queued feedback drains on online/foreground/timer.
+installGlobalErrorCapture((entry) =>
+  showToast('Something went wrong on this screen.', {
+    ms: 8000,
+    action: {
+      label: 'Report',
+      onClick: () => openFeedbackComposer({ kind: 'bug', message: `Error: ${entry.msg}\n\nWhat I was doing: ` }),
+    },
+  }),
+);
+startFeedbackOutbox();
 
 // Explicit SW registration with an hourly update check. Without this, a
 // long-lived installed PWA only checks for new versions on the browser's
@@ -64,6 +83,10 @@ if (import.meta.env.DEV) {
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <App />
+    {/* Outside the auth gate on purpose: a crash anywhere — gate included —
+        lands on the "Something broke" screen, never a white page */}
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </React.StrictMode>,
 );

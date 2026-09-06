@@ -9,6 +9,7 @@ import { powersyncRouter } from './powersync.js';
 import { filesRouter } from './files.js';
 import { auditRouter } from './audit.js';
 import { usersRouter } from './users.js';
+import { feedbackRouter } from './feedback.js';
 import { emailEnabled } from './email.js';
 
 const app = express();
@@ -41,6 +42,7 @@ app.use('/powersync', powersyncRouter);
 app.use('/files', filesRouter);
 app.use('/audit', auditRouter);
 app.use('/users', usersRouter);
+app.use('/feedback', feedbackRouter);
 
 const port = Number(process.env.PORT ?? 4000);
 

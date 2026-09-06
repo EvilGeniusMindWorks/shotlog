@@ -3,23 +3,33 @@
 // a module-level queue + one host mounted in App.tsx.
 import { useEffect, useState } from 'react';
 
+interface ToastAction {
+  label: string;
+  onClick: () => void | Promise<void>;
+}
+
 interface ToastItem {
   id: number;
   message: string;
-  onUndo?: () => void | Promise<void>;
+  action?: ToastAction;
   ms: number;
 }
 
 let nextId = 1;
 let pushFn: ((t: ToastItem) => void) | null = null;
 
-/** Show a toast. With `onUndo` it lingers 10s and offers an Undo button. */
-export function showToast(message: string, opts?: { onUndo?: () => void | Promise<void>; ms?: number }) {
+/** Show a toast. With `onUndo` it lingers 10s and offers an Undo button;
+ *  `action` is the generic form (e.g. "Report" on an error toast). */
+export function showToast(
+  message: string,
+  opts?: { onUndo?: () => void | Promise<void>; action?: ToastAction; ms?: number },
+) {
+  const action = opts?.action ?? (opts?.onUndo ? { label: 'Undo', onClick: opts.onUndo } : undefined);
   pushFn?.({
     id: nextId++,
     message,
-    onUndo: opts?.onUndo,
-    ms: opts?.ms ?? (opts?.onUndo ? 10_000 : 4_000),
+    action,
+    ms: opts?.ms ?? (action ? 10_000 : 4_000),
   });
 }
 
@@ -45,15 +55,15 @@ export function UndoToastHost() {
           className="pointer-events-auto flex items-center gap-3 bg-gray-900 text-white rounded-xl shadow-lg px-4 py-3 text-sm"
         >
           <span className="flex-1">{t.message}</span>
-          {t.onUndo && (
+          {t.action && (
             <button
               className="font-semibold text-orange-300 hover:text-orange-200 min-h-[32px] px-2"
               onClick={() => {
-                void t.onUndo?.();
+                void t.action?.onClick();
                 setToasts((prev) => prev.filter((x) => x.id !== t.id));
               }}
             >
-              Undo
+              {t.action.label}
             </button>
           )}
         </div>

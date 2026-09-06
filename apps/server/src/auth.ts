@@ -20,6 +20,46 @@ const RESET_TTL_MINUTES = 60;
 // so the flow can be exercised without a mailbox. Never set in production.
 const DEBUG_LINKS = process.env.AUTH_DEBUG_LINKS === '1';
 
+/**
+ * Platform admins — the software vendor (Matthew), NOT a company role.
+ * Accounts whose email is listed in PLATFORM_ADMIN_EMAILS (comma-separated),
+ * falling back to the bootstrap ADMIN_EMAIL. Deliberately env-based and
+ * OUTSIDE the company roles/capability engine (docs/personas/platform-admin.md):
+ * "admin" is the top of a company, not of the platform. First consumer:
+ * feedback triage (Round S3).
+ */
+const PLATFORM_ADMIN_EMAILS: ReadonlySet<string> = new Set(
+  (process.env.PLATFORM_ADMIN_EMAILS ?? process.env.ADMIN_EMAIL ?? '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean),
+);
+
+export function isPlatformAdminEmail(email: string): boolean {
+  return PLATFORM_ADMIN_EMAILS.has(email.trim().toLowerCase());
+}
+
+export function platformAdminEmails(): string[] {
+  return [...PLATFORM_ADMIN_EMAILS];
+}
+
+/** Route guard: signed-in user must be a platform admin (use after requireAuth) */
+export async function requirePlatformAdmin(
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { id: req.userId ?? '' },
+    select: { email: true, isActive: true },
+  });
+  if (!user || !user.isActive || !isPlatformAdminEmail(user.email)) {
+    res.status(403).json({ error: 'platform admin only' });
+    return;
+  }
+  next();
+}
+
 export interface AuthedRequest extends Request {
   userId?: string;
   companyId?: string;
@@ -81,6 +121,8 @@ function publicUser(user: SessionUserRow) {
     pinHash: user.pinHash,
     mustChangePassword: user.mustChangePassword,
     onboardedAt: user.onboardedAt?.toISOString() ?? null,
+    // Vendor-level marker (feedback triage) — never a company role
+    platformAdmin: isPlatformAdminEmail(user.email),
   };
 }
 

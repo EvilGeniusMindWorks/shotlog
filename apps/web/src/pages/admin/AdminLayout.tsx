@@ -4,14 +4,16 @@
 // give immediate success/error feedback instead of offline queue-and-hope.
 import { NavLink, Navigate, Outlet } from 'react-router-dom';
 import { WifiOff } from 'lucide-react';
-import { getSessionUser } from '@/lib/session';
+import { getRealSessionUser, getSessionUser } from '@/lib/session';
 import { hasCap, useRoleDefsSync } from '@/lib/perms';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { cn } from '@/lib/utils';
 
 // Tabs follow CAPABILITIES (configurable roles) — a custom role sees
 // exactly the areas its bundle grants. Roles itself is admin-only.
-const TABS: { to: string; label: string; cap: string | null }[] = [
+// Feedback is PLATFORM-admin only (the vendor's marker, not a company
+// capability — docs/personas/platform-admin.md).
+const TABS: { to: string; label: string; cap: string | null; platform?: boolean }[] = [
   { to: '/admin/people', label: 'People', cap: 'manage_people' },
   { to: '/admin/approvals', label: 'Approvals', cap: 'approve_days' },
   { to: '/admin/catalog', label: 'Catalog', cap: 'manage_company' },
@@ -19,6 +21,7 @@ const TABS: { to: string; label: string; cap: string | null }[] = [
   { to: '/admin/incidents', label: 'Incidents', cap: 'process_incidents' },
   { to: '/admin/roles', label: 'Roles', cap: null }, // admin only
   { to: '/admin/company', label: 'Company', cap: 'manage_company' },
+  { to: '/admin/feedback', label: 'Feedback', cap: null, platform: true },
 ];
 
 export function AdminLayout() {
@@ -33,7 +36,10 @@ export function AdminLayout() {
   if (!hasCap('view_admin_area')) {
     return <Navigate to="/" replace />;
   }
-  const tabs = TABS.filter((t) => (t.cap === null ? role === 'admin' : hasCap(t.cap)));
+  const platformAdmin = Boolean(getRealSessionUser()?.platformAdmin);
+  const tabs = TABS.filter((t) =>
+    t.platform ? platformAdmin : t.cap === null ? role === 'admin' : hasCap(t.cap),
+  );
 
   return (
     <div className="p-4 max-w-4xl mx-auto">

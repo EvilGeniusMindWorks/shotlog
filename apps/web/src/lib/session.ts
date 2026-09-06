@@ -51,6 +51,9 @@ export interface SessionUser {
   mustChangePassword?: boolean;
   /** First-run welcome acknowledged (per account, not per device) */
   onboardedAt?: string | null;
+  /** Vendor-level marker (Matthew): sees Admin › Feedback. Server-decided
+   *  from PLATFORM_ADMIN_EMAILS — never a company role or capability */
+  platformAdmin?: boolean;
 }
 
 /** What every sign-in path returns: login, enrollment, password reset */

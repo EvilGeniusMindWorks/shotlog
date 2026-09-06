@@ -159,30 +159,64 @@ install-card visibility per UA, profile-completion nag clears.
 5. Settings gains a **Help** section: Walkthrough · Send feedback ·
    Reference · "Text Matthew" (until in-app feedback exists).
 
-### S3 — Feedback & diagnostics (shared + server + web)
+### S3 — Feedback & diagnostics (server + web)
 
-1. **`feedback` synced table**, append-only (template: `hourCorrections`):
-   `{kind: bug|idea|question, message, route, role, buildId, userAgent,
-   online, syncLogTail[], screenshotMediaId?, status: new|seen|done,
-   replyNote?}`. PUT = every role; PATCH/DELETE = admin-only. Works
-   offline — that is the point on a jobsite.
-2. **Composer**: header "?" menu → "Send feedback" (also in Settings and
-   in the coach sheet). One textarea + kind chips + "include a screenshot"
-   (html-to-image of `main`, via localMedia → R2 like attachments).
-   Toast "Sent — thanks" via undo-toast.
-3. **Error boundary** at the App root + `window.onerror`/`unhandledrejection`
-   capture: shows "Something broke — send a report?" prefilled with the
-   stack, route, and sync log; a Reload button. Never a white screen.
-4. **Triage**: Admin › Feedback tab (capability `process_feedback`, on the
-   admin bundle only) — list, status, reply note. Server hook at the
-   choke point: on each new `feedback` row, email Matthew (Resend) with
-   the message + a deep link. Platform Admin cross-tenant view is a
-   later round; single tenant is fine for the soft launch.
-5. `/health` and the Settings build line already expose the build id —
-   stamp it on every feedback row.
+**Amended 2026-09-06 before build.** The original draft made `feedback`
+a synced table with an admin capability. That contradicts Matthew's Q2
+call ("feedback to Matthew only — not visible to the company admin"):
+a synced table replicates to every device in the company by
+construction, and a capability puts the triage screen inside the
+company roles engine, which the Platform Admin charter says platform
+data must stay out of. Reconciled design, same user-facing behaviour:
 
-Harness: offline feedback queues and lands; error boundary catches a
-thrown render; admin sees + closes; email hook fires.
+1. **Server-side `Feedback` table** (Prisma model, NOT in `records`, so
+   it never syncs down to any device): `{id (client uuid → idempotent
+   retries), companyId, userId, userName, userEmail, role, kind:
+   bug|idea|question|crash, message, route, buildId, userAgent,
+   viewport, online, standalone, syncLogTail, errorLog, screenshot
+   (JPEG, ≤1280px, stored in the row), status: new|seen|done,
+   replyNote, notified: sent|email-off|failed, createdAt, receivedAt}`.
+   `POST /feedback` = every signed-in role. Read/patch/delete = **platform
+   admin only** (see 4).
+2. **Offline outbox** (`lib/feedback.ts`): the composer writes the row to
+   a device-local outbox (metadata in localStorage, screenshot in the
+   local media store) and drains it on online / foreground / interval,
+   the same pattern as the file uploader. Toast is truthful: "Sent —
+   thanks" when the POST landed, "Saved — sends when you're back online"
+   otherwise. Works offline — that is the point on a jobsite.
+3. **Composer**: header "?" becomes a small menu — Walkthrough · Send
+   feedback (also a Help & feedback card in Settings; the S2 coach sheet
+   will link it too). One textarea + kind chips + "include a screenshot"
+   (on by default, Q3; html2canvas of `main`, drawn before the sheet
+   opens so the sheet itself is not in the picture).
+4. **Error boundary** at the root (outside the auth gate, so a gate crash
+   is caught too) + `window.onerror` / `unhandledrejection` capture into a
+   rolling error log (last 20, attached to every report). The boundary
+   shows "Something broke" with Reload + "Send a report" (kind `crash`,
+   stack prefilled). Async errors surface as one toast per minute with a
+   Report action. Never a white screen.
+5. **Triage**: Admin › Feedback tab, visible only to a **platform admin**
+   — an account whose email is in `PLATFORM_ADMIN_EMAILS` (falls back to
+   the bootstrap `ADMIN_EMAIL`, i.e. Matthew in prod, Mark in dev). This
+   is the first concrete platform-actor marker: env-based, above the
+   company roles engine, per platform-admin.md. Mark (company admin) does
+   not see the tab and gets 403 on the routes. List · seen/done · reply
+   note · delete. Cross-tenant listing is trivial later (the routes are
+   already not company-scoped for platform admins).
+6. **Email hook**: `POST /feedback` emails `FEEDBACK_TO` (default: the
+   platform admin list) via Resend with the message, who/where/build, and
+   a deep link to the triage row; the row records `notified` truthfully
+   (`email-off` until the Resend key lands — S1.1 is still Matthew's step).
+7. Build id (`__BUILD_ID__`) + route + role + UA + online/standalone
+   stamped on every row.
+
+Harness (harness38): online send lands with screenshot + build stamp;
+offline send queues, truthful toast, drains once on reconnect (two
+queued, concurrent drain → exactly two rows); render crash → boundary →
+report lands as `crash`; async error → error log + toast; platform admin
+sees the tab, marks done with a note; company admin (non-platform) has
+no tab and gets 403; Settings has the Help card; email hook records
+`email-off` in dev.
 
 ### S4 — Clutter sweep (web only)
 
@@ -303,3 +337,50 @@ docs/resend-setup.md + PDF.
 Also fixed in-round: the People invite panel closed itself on success
 (shared `act()` helper) — the link and email status were never visible.
 Gate order: sign in → forced change → PIN → welcome → open.
+
+## Round S3 — Feedback & diagnostics — ✅ SHIPPED 2026-09-06 (harness38 38/38; harness37 24/24 regression)
+
+Built to the amended S3 design above (server table + offline outbox,
+platform-admin-only triage). Deployed by push to main (Railway runs the
+`Feedback` migration on start; Vercel rebuilds the web).
+
+1. ✅ `Feedback` Prisma model + migration `20260906200000_feedback`;
+   `POST /feedback` (any signed-in role, rate-limited, idempotent on the
+   device-minted id); `GET/PATCH/DELETE /feedback[/:id]` platform-admin
+   only (`requirePlatformAdmin`). Rows carry route · build · role · UA ·
+   viewport · online · installed · sync-log tail · error log · screenshot.
+2. ✅ Offline outbox (`lib/feedback.ts`): localStorage metadata + local
+   media store for the JPEG; single-flight drain on online / foreground /
+   5-min timer; a report that the server will never accept (4xx other than
+   401) is dropped so it can't wedge the queue. Truthful toasts.
+3. ✅ Composer (`components/feedback/FeedbackComposer.tsx`): ? menu
+   (sidebar + phone header, `HelpMenu`) → Walkthrough · Send feedback;
+   Settings › Help & feedback card (+ "N reports waiting for signal" and
+   the build id). Kind chips · textarea · screenshot on by default with a
+   thumbnail and an opt-out box. Screenshot is captured BEFORE the sheet
+   opens; html2canvas is lazy-loaded off the boot path (the prod bundle
+   does not shrink yet — pdf.ts still imports it statically; make that
+   lazy in a perf pass to drop ≈200KB from boot).
+4. ✅ Root `ErrorBoundary` outside the auth gate ("Something broke" ·
+   Reload · Go home · Send a report → kind `crash`, stack in the error
+   log). `installGlobalErrorCapture`: window.onerror + unhandledrejection
+   → rolling 20-entry error log, ONE toast per minute with a Report action.
+5. ✅ Admin › Feedback (`AdminFeedbackPage`) — tab visible only when the
+   session's `platformAdmin` flag is true; Open/All filters, expand for
+   device facts, screenshot, error + connection logs; Mark seen/done,
+   reply note (blur-saves), Delete. Company admins get no tab and a
+   platform-only notice on the direct URL; the routes return 403.
+6. ✅ Email hook: `feedbackMail` to `FEEDBACK_TO` (default: the platform
+   admin list) on first receipt only; `notified` on the row says
+   sent / email-off / failed. Dev shows `email-off` (no Resend key).
+7. ✅ `platformAdmin` in every session payload (login/enroll/reset/me),
+   decided server-side from `PLATFORM_ADMIN_EMAILS` → fallback `ADMIN_EMAIL`.
+
+**Matthew's prod steps:** (a) still the Resend key (S1.1) — until then
+reports land in Admin › Feedback but no email goes out; (b) optionally set
+`PLATFORM_ADMIN_EMAILS` / `FEEDBACK_TO` on Railway — without them the
+bootstrap `ADMIN_EMAIL` account is the platform admin and the recipient;
+(c) sign out/in once on prod so the session carries `platformAdmin`
+(existing cached sessions don't have the flag until the next sign-in).
+Dev-only affordance: `window.shotlogCrash()` (AppShell, DEV builds only)
+throws during render for the harness.

@@ -68,6 +68,45 @@ model PasswordReset {
   @@index([userId])
 }
 
+/// In-app feedback + crash reports (Round S3). PLATFORM-level data: it
+/// lives here, NOT in `records`, so it never syncs down to any company
+/// device; only platform admins (PLATFORM_ADMIN_EMAILS) can read it. The id
+/// is minted on the device so offline retries are idempotent.
+model Feedback {
+  id          String   @id
+  companyId   String
+  userId      String
+  userName    String
+  userEmail   String
+  role        String
+  /// bug | idea | question | crash
+  kind        String
+  message     String
+  route       String   @default("")
+  buildId     String   @default("")
+  userAgent   String   @default("")
+  viewport    String   @default("")
+  online      Boolean  @default(true)
+  standalone  Boolean  @default(false)
+  /// Last sync-log lines from the device at send time
+  syncLogTail Json     @default("[]")
+  /// Rolling window of captured errors (render / onerror / rejection)
+  errorLog    Json     @default("[]")
+  /// JPEG data URL of the screen at send time (≤1280px), when included
+  screenshot  String?
+  /// new | seen | done
+  status      String   @default("new")
+  replyNote   String?
+  /// sent | email-off | failed — whether the platform admin was emailed
+  notified    String   @default("email-off")
+  /// Device clock at send time (informational)
+  createdAt   DateTime
+  receivedAt  DateTime @default(now())
+
+  @@index([companyId, status])
+  @@index([receivedAt])
+}
+
 /// Crew enrollment invite: admin issues, crew member redeems once to
 /// create their own account. Token stored hashed; link carries the raw.
 model InviteToken {

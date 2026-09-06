@@ -12,8 +12,17 @@ Office/Admin role. Today ShotLog is single-tenant (Baystate) and Matthew
 operates through a company admin account; this charter exists so
 architecture decisions account for the separation BEFORE it's urgent.
 
-## Jobs to be done (all future — none built)
+## Jobs to be done
 
+0. 🟡 **Feedback & crash triage (Round S3, 2026-09-06):** every user can
+   send feedback / a crash report from any screen, offline included; it
+   lands in a server-side `Feedback` table that never syncs to devices,
+   emails the platform admin, and is triaged in Admin › Feedback — a tab
+   only a platform admin sees. Platform admin = account email listed in
+   `PLATFORM_ADMIN_EMAILS` (fallback: bootstrap `ADMIN_EMAIL`). This is the
+   first platform-actor marker; it lives in env, not in the company roles
+   engine. Single tenant today; the routes are not company-scoped for
+   platform admins, so cross-tenant listing is a filter away.
 1. ❌ Tenant management: onboard a new blasting company (company record,
    first admin, seeded catalog/roles), suspend, offboard
 2. ❌ Cross-tenant support: see a company's health (sync status, errors,

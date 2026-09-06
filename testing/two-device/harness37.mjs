@@ -59,7 +59,9 @@ async (page) => {
     await P1.locator('input[type="password"]').nth(0).fill('harness-pw-1');
     await P1.locator('input[type="password"]').nth(1).fill('harness-pw-1');
     await P1.getByRole('button', { name: 'Create my account' }).click();
-    await P1.waitForTimeout(2500);
+    // Full-page redirect into the app — wait for the gate screen, not a clock
+    await P1.getByText(/Set a 6-digit PIN|Sign in/).waitFor({ timeout: 15000 });
+    await P1.waitForTimeout(300);
     const body1 = await P1.locator('body').innerText();
     ok('enroll → straight to Set PIN (no second sign-in)', /Set a 6-digit PIN/.test(body1) && !/Sign in/.test(body1));
     for (const d of '123456123456') await P1.getByRole('button', { name: d, exact: true }).click();
@@ -134,7 +136,8 @@ async (page) => {
     await P3.locator('input[type="password"]').nth(0).fill('harness-pw-2');
     await P3.locator('input[type="password"]').nth(1).fill('harness-pw-2');
     await P3.getByRole('button', { name: 'Save and sign in' }).click();
-    await P3.waitForTimeout(2500);
+    await P3.getByText(/Set a 6-digit PIN|Sign in/).waitFor({ timeout: 15000 });
+    await P3.waitForTimeout(300);
     const b3 = await P3.locator('body').innerText();
     ok('reset lands signed in (Set PIN, not Sign in)', /Set a 6-digit PIN/.test(b3));
     const reused = await api(`/auth/reset/${resetToken}`);
