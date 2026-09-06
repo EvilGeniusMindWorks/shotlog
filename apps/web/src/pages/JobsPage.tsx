@@ -206,7 +206,7 @@ export function JobsPage() {
         {jobsQuery === undefined && <ListSkeleton rows={3} />}
         {jobsQuery !== undefined && jobs.length === 0 && (
           <p className="text-center py-8 text-gray-400">
-            {lifecycle === 'archived' ? 'No archived jobs.' : 'No jobs yet. Create one to get started.'}
+            {lifecycle === 'archived' ? 'No archived jobs.' : 'No jobs yet — tap New job. A job carries its customer, site and K factor so days never re-type them.'}
           </p>
         )}
       </div>

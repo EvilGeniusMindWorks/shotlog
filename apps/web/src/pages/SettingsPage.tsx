@@ -3,7 +3,8 @@
 // lives under Admin — one place, no duplicate lists.
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, MessageSquarePlus } from 'lucide-react';
+import { BookOpen, MessageSquarePlus, Route } from 'lucide-react';
+import { startTour } from '@/components/layout/Tour';
 import { AccountSyncCard } from '@/components/forms/AccountSyncCard';
 import { InstallCard } from '@/components/onboarding/InstallCard';
 import { openFeedbackComposer } from '@/components/feedback/FeedbackComposer';
@@ -37,6 +38,9 @@ function HelpCard() {
         <div className="flex flex-wrap gap-2">
           <Button onClick={() => openFeedbackComposer()} data-settings-feedback>
             <MessageSquarePlus className="h-4 w-4 mr-1.5" /> Send feedback
+          </Button>
+          <Button variant="outline" onClick={startTour} data-settings-walkthrough>
+            <Route className="h-4 w-4 mr-1.5" /> Walkthrough
           </Button>
           <Button variant="outline" asChild>
             <Link to="/reference">

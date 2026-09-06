@@ -24,7 +24,7 @@ import { startFileUploader } from '@/lib/fileUploader';
 import { getSessionUser, getRealSessionUser, getViewRole, setViewRole } from '@/lib/session';
 import { hasCap, myHomeDashboard, useRoleDefsSync } from '@/lib/perms';
 import { FirstSyncStrip, SessionExpiredBanner, SyncChip, UpdateChip } from './SyncChip';
-import { Tour } from './Tour';
+import { START_TOUR_EVENT, Tour, shouldAutoRunTour, startTour } from './Tour';
 import { HelpMenu } from '@/components/feedback/HelpMenu';
 
 /** Dev-only: `window.shotlogCrash()` throws during render so the harness
@@ -251,6 +251,17 @@ export function AppShell() {
   const { theme, toggle } = useTheme();
   const [touring, setTouring] = useState(false);
   const navigate = useNavigate();
+  // Walkthrough: anyone can ask for it (startTour from Help/Settings); it
+  // also auto-runs ONCE per account, a beat after the first home render
+  useEffect(() => {
+    const open = () => setTouring(true);
+    window.addEventListener(START_TOUR_EVENT, open);
+    const auto = shouldAutoRunTour() ? window.setTimeout(open, 900) : 0;
+    return () => {
+      window.removeEventListener(START_TOUR_EVENT, open);
+      window.clearTimeout(auto);
+    };
+  }, []);
   const profile = useLiveQuery(() => db.blasterProfiles.filter((b) => b.isCurrentUser).first());
   const session = getSessionUser();
   const realAdmin = getRealSessionUser()?.role === 'admin';
@@ -280,6 +291,7 @@ export function AppShell() {
             <div key={item.to}>
               <NavLink
                 to={item.to}
+                data-tour={`nav-${item.to}`}
                 className={({ isActive }) =>
                   cn(
                     'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
@@ -295,10 +307,7 @@ export function AppShell() {
           ))}
           <HelpMenu
             variant="sidebar"
-            onWalkthrough={() => {
-              navigate('/');
-              setTouring(true);
-            }}
+            onWalkthrough={startTour}
           />
         </nav>
         <div className="px-2 pb-4 space-y-1 border-t border-white/10 pt-3 mx-2">
@@ -350,10 +359,7 @@ export function AppShell() {
           <div className="flex items-center gap-1">
             <HelpMenu
               variant="header"
-              onWalkthrough={() => {
-                navigate('/');
-                setTouring(true);
-              }}
+              onWalkthrough={startTour}
             />
             <button
               className="h-10 w-10 rounded-lg flex items-center justify-center text-navy-200"
@@ -396,6 +402,7 @@ export function AppShell() {
             <NavLink
               key={item.to}
               to={item.to}
+              data-tour={`nav-${item.to}`}
               className={({ isActive }) =>
                 cn(
                   'flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-colors min-w-[64px]',

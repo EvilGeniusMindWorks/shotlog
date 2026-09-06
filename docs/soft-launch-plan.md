@@ -138,14 +138,28 @@ deploy, check-off — same working agreement as the build plan.
 Harness: enroll auto-login, forgot-password round trip, forced change,
 install-card visibility per UA, profile-completion nag clears.
 
-### S2 — Guidance (web only)
+### S2 — Guidance (server field + web) — STARTED 2026-09-06
+
+**Amended before build (2026-09-06):** S2 is "server + web", not web
+only — `tourDoneAt` lives on the User (same shape as `onboardedAt`) so
+the tour follows the account. Design calls taken by default and flagged
+for Matthew at check-off: (a) the tour is rebuilt per role around 3–5
+REAL screens (it navigates between them), not the old 4 static cards —
+G4 relevance, not just role labels; (b) the per-screen coach sheet is
+reachable from the ? menu on EVERY screen ("About this screen") so the
+door is always in the same place, plus an inline link where a screen
+already has a header; (c) the first-week checklist ticks itself from
+real data where it can (license on file, signed once, filed a day…) and
+is dismissible per device; (d) coach and empty-state copy are drafted in
+the DrillingWork voice and are the main thing to review at check-off;
+(e) cohort = everyone, so all five scripts ship together.
 
 1. **Role-aware tour**, auto-run once per account (`tourDoneAt` on the
    user profile so it follows the account, not the device), re-runnable
-   from Settings › Help. Scripts per home bucket (field / driller /
-   mechanic / office / admin), each navigating to 3–5 real screens with
-   anchors that exist on both layouts (add `data-tour` to the sidebar).
-   Rewrite stale copy (I6).
+   from Settings › Help and the ? menu. Scripts per home bucket (field /
+   driller / mechanic / office / admin), each navigating to 3–5 real
+   screens with anchors that exist on both layouts (add `data-tour` to the
+   sidebar). Rewrite stale copy (I6).
 2. **"?" coach sheet per screen**: a small header button opens a bottom
    sheet with 3–5 bullets — what this screen is for, what to do next, who
    to ask. Content lives in one `help/` map keyed by route. First batch:
@@ -384,3 +398,41 @@ bootstrap `ADMIN_EMAIL` account is the platform admin and the recipient;
 (existing cached sessions don't have the flag until the next sign-in).
 Dev-only affordance: `window.shotlogCrash()` (AppShell, DEV builds only)
 throws during render for the harness.
+
+## Round S2 — Guidance — ✅ SHIPPED 2026-09-06 (harness39 34/34; harness38 38/38 + harness37 24/24 regression)
+
+1. ✅ **Role-aware walkthrough** (`components/layout/Tour.tsx` rebuilt +
+   `components/guidance/tourScripts.ts`): five scripts (field · driller ·
+   mechanic · office · admin), each 4–6 steps that NAVIGATE between real
+   screens and spotlight the first visible anchor (`data-tour="home"` on
+   every home root, `data-tour="nav-<route>"` on both rails, the + button,
+   the ? button). Auto-runs once per ACCOUNT (`User.tourDoneAt`,
+   `PUT /auth/me/tour-done`, migration `20260906230000_user_tour_done`);
+   Skip and Done both record it; re-run from the ? menu, Settings › Help,
+   or the first-week card. Stale I6 copy gone. Fixed in-round: a target
+   taller than the viewport pushed the card off screen — it now pins to
+   the bottom edge.
+2. ✅ **"About this screen"** (`components/guidance/coach.ts` +
+   `CoachSheet`): 35 route rules incl. per-view day hub (blast log · daily
+   report · readiness · drilling review) and per-bucket homes; reachable
+   from the ? menu everywhere; "Still stuck — ask" opens the feedback
+   composer as a question. Inline header buttons were NOT added — one door
+   in one place beat 12 hand-rolled headers (there is no shared PageHeader).
+3. ✅ **First-week card** (`components/guidance/FirstWeekCard.tsx`) above
+   every home: per-bucket items; self-ticks from the person's OWN records
+   (license, signature, tour, blast logs/shots/drill logs/time cards/
+   submissions/resolved tickets/services by them) or tap-to-tick;
+   "Hide" per device; disappears when all done.
+4. ✅ **Empty-state sweep**: 19 strings rewritten to say the next action and
+   who to ask (today band, month list, shop queue, checklists band, latest
+   filings, approvals, incidents, records, jobs, job days/hours, drilling
+   review, locator, customer/site jobs, crew days, drill logs on a shot,
+   drill plan logs).
+5. ✅ **Settings › Help & feedback** now has Walkthrough · Send feedback ·
+   Reference (+ queued-report count and build id).
+
+Review at your leisure (Matthew): the coach and tour COPY — it is drafted
+in the DrillingWork voice from the charters, not from crew interviews.
+Harness note: `tourDoneAt` has no unset endpoint on purpose; harness39
+uses a fresh account for the auto-run and resets dinis via SQL (comment in
+the file). Dev users other than blaster/dinis were backfilled done.

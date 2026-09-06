@@ -175,7 +175,7 @@ export function CustomerPage() {
                   </Badge>
                 </button>
               ))}
-              {jobs.length === 0 && <p className="text-sm text-gray-400">No jobs yet.</p>}
+              {jobs.length === 0 && <p className="text-sm text-gray-400">No jobs for this customer yet — add one from Jobs.</p>}
             </div>
           ),
         },

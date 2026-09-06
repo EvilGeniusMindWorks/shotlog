@@ -16,6 +16,7 @@ import { AdminHome, DrillerHome, MechanicHome } from '@/components/dashboard/Rol
 import { BlasterHome } from '@/components/dashboard/BlasterHome';
 import { MonthDayList } from '@/components/dashboard/MonthDayList';
 import { ProfileNagCard } from '@/components/onboarding/ProfileNagCard';
+import { FirstWeekCard } from '@/components/guidance/FirstWeekCard';
 import { getSessionUser } from '@/lib/session';
 import { myHomeDashboard } from '@/lib/perms';
 import type { WorkType } from '@/db/schema';
@@ -152,23 +153,40 @@ export function Dashboard() {
   // (configurable roles) — built-ins keep the approved-mockup routing:
   // driller/mechanic/office homes, field dashboard for blaster/supervisor.
   const home = myHomeDashboard();
+  // Above every home: the profile nag (field/driller) and the first-week
+  // checklist (all roles, Round S2). Both self-suppress; the wrapper
+  // collapses when empty.
+  const strip = (
+    <div className="px-4 pt-4 max-w-3xl mx-auto space-y-3 empty:hidden">
+      {(home === 'field' || home === 'driller') && <ProfileNagCard />}
+      <FirstWeekCard />
+    </div>
+  );
   if (home === 'driller')
     return (
       <>
-        <div className="px-4 pt-4 max-w-3xl mx-auto empty:hidden">
-          <ProfileNagCard />
-        </div>
+        {strip}
         <DrillerHome />
         <NewWorkDayFab defaultTypeOfWork="drill_only" />
       </>
     );
-  if (home === 'mechanic') return <MechanicHome />;
-  if (home === 'office') return <AdminHome />;
+  if (home === 'mechanic')
+    return (
+      <>
+        {strip}
+        <MechanicHome />
+      </>
+    );
+  if (home === 'office')
+    return (
+      <>
+        {strip}
+        <AdminHome />
+      </>
+    );
   return (
     <>
-      <div className="px-4 pt-4 max-w-3xl mx-auto empty:hidden">
-        <ProfileNagCard />
-      </div>
+      {strip}
       <BlasterDashboard />
     </>
   );

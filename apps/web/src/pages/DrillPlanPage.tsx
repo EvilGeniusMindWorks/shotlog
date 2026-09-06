@@ -288,7 +288,7 @@ export function DrillPlanPage() {
             ))}
             {(drilling?.logs ?? []).length === 0 && (
               <p className="text-sm text-gray-400 py-2">
-                No logs yet — send the plan to your drillers.
+                No logs yet — send the plan to your drillers; their logs show here as they drill.
               </p>
             )}
           </div>

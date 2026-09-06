@@ -137,7 +137,7 @@ export function DocList({
         )}
         {rows !== undefined && filtered.length === 0 && (
           <p className="p-4 text-sm text-gray-400">
-            {search || kindFilter !== 'all' ? 'Nothing matches.' : 'Nothing here yet.'}
+            {search || kindFilter !== 'all' ? 'Nothing matches.' : 'Nothing filed yet — file a day, drill log or checklist and it appears here with its PDF.'}
           </p>
         )}
         {!showAll && filtered.length > WINDOW && (

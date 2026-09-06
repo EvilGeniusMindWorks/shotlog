@@ -89,7 +89,7 @@ export function AdminIncidentsPage() {
                 <Badge variant={STATUS_BADGE[i.status]}>{i.status.replace('_', ' ')}</Badge>
               </button>
             ))}
-            {g.items.length === 0 && <p className="p-3 text-sm text-gray-400">None.</p>}
+            {g.items.length === 0 && <p className="p-3 text-sm text-gray-400">None right now.</p>}
           </div>
         </section>
       ))}

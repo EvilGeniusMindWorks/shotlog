@@ -1,10 +1,14 @@
-// The "?" menu (Round S3): Walkthrough · Send feedback. Sidebar row on
-// desktop, icon button in the phone header. S2 adds the per-screen coach
-// sheet to this same menu.
+// The "?" menu: About this screen · Walkthrough · Send feedback. Sidebar row
+// on desktop, icon button in the phone header. "About this screen" appears
+// whenever the coach map knows the current route (Round S2).
 import { useEffect, useRef, useState } from 'react';
-import { CircleHelp, MessageSquarePlus, Route } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { CircleHelp, Info, MessageSquarePlus, Route } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { openFeedbackComposer } from './FeedbackComposer';
+import { coachFor } from '@/components/guidance/coach';
+import { CoachSheet } from '@/components/guidance/CoachSheet';
+import { tourBucket } from '@/components/layout/Tour';
 
 export function HelpMenu({
   variant,
@@ -14,7 +18,10 @@ export function HelpMenu({
   onWalkthrough: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [coaching, setCoaching] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+  const coach = coachFor(location.pathname, location.search, tourBucket());
 
   useEffect(() => {
     if (!open) return;
@@ -32,18 +39,33 @@ export function HelpMenu({
     };
   }, [open]);
 
+  const item = 'w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-gray-50 text-left';
   const items = (
     <div
       role="menu"
       data-help-menu
       className={cn(
-        'absolute z-[60] min-w-[200px] rounded-xl border border-gray-200 bg-white text-gray-800 shadow-lg py-1',
+        'absolute z-[60] min-w-[220px] rounded-xl border border-gray-200 bg-white text-gray-800 shadow-lg py-1',
         variant === 'sidebar' ? 'left-2 right-2 bottom-full mb-1' : 'right-0 top-full mt-1',
       )}
     >
+      {coach && (
+        <button
+          role="menuitem"
+          className={item}
+          data-help-coach
+          onClick={() => {
+            setOpen(false);
+            setCoaching(true);
+          }}
+        >
+          <Info className="h-4 w-4 text-gray-500" /> About this screen
+        </button>
+      )}
       <button
         role="menuitem"
-        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-gray-50 text-left"
+        className={item}
+        data-help-walkthrough
         onClick={() => {
           setOpen(false);
           onWalkthrough();
@@ -53,7 +75,7 @@ export function HelpMenu({
       </button>
       <button
         role="menuitem"
-        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-gray-50 text-left"
+        className={item}
         data-help-feedback
         onClick={() => {
           setOpen(false);
@@ -64,6 +86,8 @@ export function HelpMenu({
       </button>
     </div>
   );
+
+  const sheet = coaching && coach ? <CoachSheet entry={coach} onClose={() => setCoaching(false)} /> : null;
 
   if (variant === 'sidebar')
     return (
@@ -82,6 +106,7 @@ export function HelpMenu({
           Help &amp; feedback
         </button>
         {open && items}
+        {sheet}
       </div>
     );
 
@@ -98,6 +123,7 @@ export function HelpMenu({
         <CircleHelp className="h-5 w-5" />
       </button>
       {open && items}
+      {sheet}
     </div>
   );
 }

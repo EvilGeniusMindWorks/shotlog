@@ -130,8 +130,10 @@ feedback & diagnostics → guidance → clutter sweep → launch gates.
 APPROVED 2026-09-06. S1 ✅ shipped 62cbdbe (harness37 24/24). S3 ✅
 shipped 2026-09-06 (harness38 38/38) with its design amended first
 (feedback = server table + offline outbox, platform-admin-only triage —
-see decisions.md). Next: S2 guidance → S4 clutter (+ records manager
-R-A) → S5 gates.
+see decisions.md). S2 ✅ shipped 2026-09-06 (harness39 34/34): role-aware
+walkthrough per account, "About this screen" coach sheet, first-week
+card, empty-state sweep, Settings Help. Next: S4 clutter (+ records
+manager R-A) → S5 gates.
 
 ## Runs alongside (not gated on rounds)
 

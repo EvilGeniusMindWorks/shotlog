@@ -280,7 +280,7 @@ export function DrillingSection({
         <p className="text-xs text-gray-400">
           {drilling?.planned
             ? '⚠ Plan ready but not sent to a driller yet.'
-            : 'No drill logs yet for this shot.'}
+            : 'No drill logs yet for this shot — send the plan to a driller, or log the holes yourself.'}
         </p>
       )}
 

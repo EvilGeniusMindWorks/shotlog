@@ -147,7 +147,7 @@ export function BlasterHome() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-tour="home">
       {/* Band 1 — needs attention (only exists when non-empty) */}
       {attention && attention.length > 0 && (
         <div className="bg-white border border-gray-200 border-l-4 border-l-safety-orange rounded-xl px-3 py-2">
@@ -180,7 +180,7 @@ export function BlasterHome() {
           <TodayDayRow key={day.id} day={day} jobLabel={jobLabel(day.jobId)} />
         ))}
         {todayDays !== undefined && todayDays.length === 0 && (
-          <p className="text-sm text-gray-400 py-1">No work recorded today yet.</p>
+          <p className="text-sm text-gray-400 py-1">Nothing started today. Tap + to start work at a job, or open a day below to keep going.</p>
         )}
         <button
           className="w-full bg-white border border-gray-300 text-navy rounded-xl py-2.5 font-bold text-sm mt-2 hover:bg-gray-50"

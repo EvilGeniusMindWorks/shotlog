@@ -44,6 +44,9 @@ model User {
   mustChangePassword Boolean  @default(false)
   /// First-run welcome shown (per ACCOUNT, so a second device never repeats it)
   onboardedAt   DateTime?
+  /// Role-aware walkthrough finished or skipped once (per ACCOUNT, Round S2);
+  /// re-runnable any time from Help — this only stops the auto-run
+  tourDoneAt    DateTime?
   companyId     String
   company       Company        @relation(fields: [companyId], references: [id])
   createdAt     DateTime       @default(now())

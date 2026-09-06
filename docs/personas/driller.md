@@ -101,3 +101,10 @@ report (solo submit) · My Records · jobs list
 - Driller may submit a daily report without a blaster when necessary
 - Screens approved: trio home, grid-select batch logging ("as planned" /
   "with changes"), 50-hour clock stays ADVISORY (amber, never blocking)
+
+## Guidance served (Round S2, 2026-09-06)
+
+- ✅ Walkthrough auto-runs once per account: three tiles → Drilling → My records → Help.
+- ✅ "About this screen": My Drilling home, Drilling tab, drill log (shot and plan), rig checklist, my records.
+- ✅ First-week card: sign once · walkthrough · file a rig checklist · log holes · enter hours — ticks itself from the driller's own records.
+- ✅ Empty states name who to ask when there is no plan yet (the blaster) and how to start a drill-only day.

@@ -283,7 +283,7 @@ export function EquipmentLocatorPage() {
                 />
               ))}
               {locations !== undefined && list.length === 0 && (
-                <p className="text-sm text-gray-400 py-2 px-1">No active equipment.</p>
+                <p className="text-sm text-gray-400 py-2 px-1">No active equipment — the shop or office adds machines under Fleet.</p>
               )}
             </div>
           </div>

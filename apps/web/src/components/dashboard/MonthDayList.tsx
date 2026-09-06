@@ -112,7 +112,7 @@ export function MonthDayList({
       })}
       {summaries !== undefined && months.length === 0 && (
         <p className="text-sm text-gray-400 py-2">
-          {search.trim() ? 'No days match.' : 'No days yet.'}
+          {search.trim() ? 'No days match.' : 'No work days yet — tap + to start the first one. Days you file show here by month.'}
         </p>
       )}
     </div>

@@ -66,7 +66,13 @@ information; amend with a dated entry when one changes.
 
 | 2026-09-06 | Round S3 shipped (harness38 38/38; harness37 24/24 regression). In-round calls: html2canvas is lazy-loaded on first composer open (it slowed the dev boot enough to trip S1's fixed-delay checks; the prod bundle only shrinks once pdf.ts stops importing it statically — a perf-pass item); a report the server rejects with a non-401 4xx is DROPPED from the device outbox rather than retried forever; the email fires once per report id (retries are duplicates); the crash screen skips the screenshot (it would only show the crash screen); the `platformAdmin` flag rides the session payload and is refreshed at sign-in, not live — existing prod sessions need one sign-out/in to see the tab | follows from amended S3 design; recorded for future rounds |
 
+| 2026-09-06 | Round S2 started, design amended first (soft-launch-plan.md S2): `tourDoneAt` on the User (per account, mirrors `onboardedAt`) so S2 is Railway-first; tour rebuilt per role bucket around real screens with navigation; coach sheet reachable from the ? menu everywhere ("About this screen"); first-week checklist self-ticks from data, dismissed per device; copy drafted for Matthew's review at check-off. Matthew asked "can you start S2 now" — nothing blocking beyond the Resend key | Matthew (go-ahead) + default calls, flagged |
+
+| 2026-09-06 | Round S2 shipped (harness39 34/34; S1/S3 regressions green). In-round calls: coach sheet lives ONLY behind the ? menu (no per-page header buttons — no shared header exists and one consistent door is easier to teach); the tour auto-run is suppressed by the legacy `shotlog-tour-done` localStorage key too (dev/harness affordance, harmless in prod); Skip counts as done (nagging a skipper is worse than a missed tour — it stays one tap away); first-week manual ticks and Hide are per DEVICE (no server field — cheap to revisit); the walkthrough card pins to the bottom edge when its target is taller than the viewport | follows from amended S2 design; recorded for future rounds |
+
 ## Open (waiting on Mark / Matthew)
+
+- **Tour + coach copy review (S2):** drafted from the charters in the DrillingWork voice, not from crew interviews — read `components/guidance/coach.ts` and `tourScripts.ts` once and mark what rings false.
 
 - **Feedback ownership (S3 in-round reconciliation):** S3 shipped feedback as platform-admin-only per Q2. If Mark should ALSO see a company-level suggestion box, that is a new capability + a company-scoped view — say so and it becomes an S4/S5 item.
 

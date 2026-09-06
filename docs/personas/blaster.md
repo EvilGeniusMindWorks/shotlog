@@ -120,3 +120,10 @@ page · customer/site/job create (new) · contacts · My Records · reference
 - Screen design approved: phase spine, needs-attention home (no KPIs for now),
   days-are-nouns language, time-card entry for no-login people allowed but
   discouraged (prefer self-service logins)
+
+## Guidance served (Round S2, 2026-09-06)
+
+- ✅ Walkthrough auto-runs once per account: Dashboard bands → + button → Jobs → My records → Help. Re-run from ? or Settings.
+- ✅ "About this screen" from the ? menu on every screen the blaster touches: day hub (per view: blast log, daily report, readiness, drilling review), shot designer, seismo, file, drill plan, jobs, records, profile.
+- ✅ First-week card on the home: license · sign once · walkthrough · start a day · file a day — ticks itself from the blaster's own records.
+- ✅ Empty states say the next action (today band, month list, job days, drilling review, drill logs on a shot).

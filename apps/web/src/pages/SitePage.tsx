@@ -161,7 +161,7 @@ export function SitePage() {
                 </button>
               ))}
               {jobs.length === 0 && (
-                <p className="text-sm text-gray-400">No jobs at this site yet.</p>
+                <p className="text-sm text-gray-400">No jobs at this site yet — add one from Jobs and pick this site.</p>
               )}
               <p className="text-xs text-gray-400">
                 Site K calibration (from measured seismo readings) lives on each job's page —

@@ -156,7 +156,7 @@ export function JobDetailPage() {
           render: () => (
             <div className="space-y-2">
               {blastDays.length === 0 && (
-                <p className="text-sm text-gray-400 text-center py-2">No work days yet.</p>
+                <p className="text-sm text-gray-400 text-center py-2">No work days at this job yet — tap + on the Dashboard and pick this job.</p>
               )}
               {/* Windowed (Round 5): recent days up front, history behind one tap */}
               {(showAllDays ? blastDays : blastDays.slice(0, 8)).map((day) => (
@@ -327,7 +327,7 @@ function JobActivity({ jobId, lbs }: { jobId: string; lbs: number }) {
             </button>
           ))}
           {activity !== undefined && activity.crew.length === 0 && (
-            <p className="text-sm text-gray-400 py-1">No logged hours yet.</p>
+            <p className="text-sm text-gray-400 py-1">No hours yet — time cards filed on this job’s days add up here.</p>
           )}
         </CardContent>
       </Card>
@@ -349,7 +349,7 @@ function JobActivity({ jobId, lbs }: { jobId: string; lbs: number }) {
               </button>
             ))}
             {activity !== undefined && activity.assets.length === 0 && (
-              <p className="text-sm text-gray-400">No equipment hours logged yet.</p>
+              <p className="text-sm text-gray-400">No equipment hours yet — daily reports and rig checklists on this job feed them.</p>
             )}
           </div>
         </CardContent>

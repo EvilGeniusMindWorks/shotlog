@@ -106,7 +106,7 @@ export function CrewPage() {
               </button>
             ))}
             {view !== undefined && view.jobs.length === 0 && (
-              <p className="text-sm text-gray-400 py-1">No logged work days yet.</p>
+              <p className="text-sm text-gray-400 py-1">No work days yet — days this person is on a daily report show here.</p>
             )}
           </div>
         </>

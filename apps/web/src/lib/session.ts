@@ -51,6 +51,8 @@ export interface SessionUser {
   mustChangePassword?: boolean;
   /** First-run welcome acknowledged (per account, not per device) */
   onboardedAt?: string | null;
+  /** Walkthrough auto-ran once (per account); re-runnable from Help */
+  tourDoneAt?: string | null;
   /** Vendor-level marker (Matthew): sees Admin › Feedback. Server-decided
    *  from PLATFORM_ADMIN_EMAILS — never a company role or capability */
   platformAdmin?: boolean;
@@ -172,6 +174,18 @@ export async function markOnboarded(): Promise<void> {
   patchCachedUser({ onboardedAt: now });
   try {
     await authedFetch('/auth/me/onboarded', { method: 'PUT' });
+  } catch {
+    /* offline — the cached flag carries this device; /auth/me heals later */
+  }
+}
+
+/** Walkthrough finished or skipped — recorded on the account so no other
+ *  device auto-runs it again (best effort; local flag flips regardless) */
+export async function markTourDone(): Promise<void> {
+  const now = new Date().toISOString();
+  patchCachedUser({ tourDoneAt: now });
+  try {
+    await authedFetch('/auth/me/tour-done', { method: 'PUT' });
   } catch {
     /* offline — the cached flag carries this device; /auth/me heals later */
   }

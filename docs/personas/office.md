@@ -52,3 +52,10 @@ Incidents · People (read) · company/customer/site pages · export surfaces
   missing paperwork, open incidents — each with counts, each one tap deep
 - The ATF-audit export defines what "complete records" means — worth
   walking through a real past audit request with Evette
+
+## Guidance served (Round S2, 2026-09-06)
+
+- ✅ Walkthrough: Company home → Records → Incidents → Help (provisional home copy until the Evette walkthrough resumes).
+- ✅ "About this screen": Company home, Approvals, Records, Incidents, incident page.
+- ✅ First-week card: walkthrough · approve or send back a day · open Records · look at Incidents.
+- ✅ Empty states on Approvals and Records say what lands there and from whom.

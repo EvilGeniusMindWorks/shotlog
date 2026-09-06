@@ -106,6 +106,7 @@ type SessionUserRow = {
   pinHash: string | null;
   mustChangePassword: boolean;
   onboardedAt: Date | null;
+  tourDoneAt: Date | null;
   company: { name: string };
 };
 
@@ -121,6 +122,7 @@ function publicUser(user: SessionUserRow) {
     pinHash: user.pinHash,
     mustChangePassword: user.mustChangePassword,
     onboardedAt: user.onboardedAt?.toISOString() ?? null,
+    tourDoneAt: user.tourDoneAt?.toISOString() ?? null,
     // Vendor-level marker (feedback triage) — never a company role
     platformAdmin: isPlatformAdminEmail(user.email),
   };
@@ -422,6 +424,17 @@ authRouter.put('/me/onboarded', requireAuth, async (req: AuthedRequest, res: Res
     select: { onboardedAt: true },
   });
   res.json({ ok: true, onboardedAt: user.onboardedAt?.toISOString() ?? null });
+});
+
+/** Walkthrough finished/skipped once — per ACCOUNT (Round S2). Only stops
+ *  the auto-run; the tour stays re-runnable from Help. */
+authRouter.put('/me/tour-done', requireAuth, async (req: AuthedRequest, res: Response) => {
+  const user = await prisma.user.update({
+    where: { id: req.userId! },
+    data: { tourDoneAt: new Date() },
+    select: { tourDoneAt: true },
+  });
+  res.json({ ok: true, tourDoneAt: user.tourDoneAt?.toISOString() ?? null });
 });
 
 const licenseSchema = z

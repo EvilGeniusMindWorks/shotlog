@@ -107,7 +107,7 @@ export function AdminApprovalsPage() {
             </div>
           ))}
           {recentApproved.length === 0 && (
-            <p className="p-4 text-sm text-gray-400">No approvals yet.</p>
+            <p className="p-4 text-sm text-gray-400">No approvals yet — days the crews file appear above for review.</p>
           )}
         </div>
       </section>

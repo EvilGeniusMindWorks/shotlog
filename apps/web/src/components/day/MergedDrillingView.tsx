@@ -95,7 +95,7 @@ export function MergedDrillingView({
   if (logs.length === 0) {
     return (
       <p className="text-sm text-gray-400 p-4 text-center">
-        No drilling recorded against this day yet.
+        No drilling recorded against this day yet. Drillers log holes from their Drilling tab; their logs show here as they come in.
       </p>
     );
   }

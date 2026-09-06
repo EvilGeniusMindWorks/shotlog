@@ -88,3 +88,10 @@ Shop home (queue + PM due) · repair ticket · equipment list + detail
 - Where the work happens (shop bench vs site truck)
 - Any paper artifacts in use today (work orders, service stickers, binder)
   — photos wanted, like the Rock Drill Check List
+
+## Guidance served (Round S2, 2026-09-06)
+
+- ✅ Walkthrough (re-runnable; auto-run once for new accounts): Shop queue → Fleet → Locator → Help.
+- ✅ "About this screen": My Shop, Fleet, machine page, Locator.
+- ✅ First-week card: walkthrough · order the worklist · resolve a ticket · log a service · find a machine — mixed self-ticking and tap-to-tick.
+- ✅ Empty states: "Queue's clear" now says where tickets come from; checklists band says who files them.

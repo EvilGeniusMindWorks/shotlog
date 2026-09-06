@@ -40,3 +40,9 @@ Company) · customers/sites/jobs setup · everything else read
   not the company admin — Matthew's Q2 call in the soft-launch review.
   Mark sees no Feedback tab; the server refuses him the routes. Revisit if
   Baystate wants its own in-app suggestion box later.
+
+## Guidance served (Round S2, 2026-09-06)
+
+- ✅ Walkthrough: Company home → People → Roles → Records → Help.
+- ✅ "About this screen": People, Roles, Company home, Feedback (platform admin only), plus everything the other roles get.
+- ✅ First-week card: walkthrough · invite a person · read Roles once · check company details · try View as.

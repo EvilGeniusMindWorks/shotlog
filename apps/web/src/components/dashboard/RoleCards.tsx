@@ -538,7 +538,7 @@ export function DrillerHome() {
 
   const holesTodayTotal = todayLogs.reduce((s, x) => s + x.holesToday, 0);
   return (
-    <div className="p-4 max-w-2xl mx-auto space-y-3">
+    <div className="p-4 max-w-2xl mx-auto space-y-3" data-tour="home">
       <h2 className="text-xl font-bold text-gray-900">My Drilling</h2>
 
       {/* Yesterday needs you — unsigned prior logs, only when non-empty */}
@@ -910,7 +910,7 @@ export function MechanicHome() {
     });
 
   return (
-    <div className="p-4 max-w-4xl mx-auto space-y-3">
+    <div className="p-4 max-w-4xl mx-auto space-y-3" data-tour="home">
       <h2 className="text-xl font-bold text-gray-900">My Shop</h2>
 
       {/* The shop trio (Round 4): Down · Tickets · Due soon */}
@@ -981,7 +981,7 @@ export function MechanicHome() {
               </button>
             </div>
           ))}
-          {worklist.length === 0 && <p className="text-sm text-gray-400 py-1">Queue's clear.</p>}
+          {worklist.length === 0 && <p className="text-sm text-gray-400 py-1">Queue's clear — nothing down, nothing due. Rig checklists filed in the field land here as tickets.</p>}
         </div>
 
         <div className="space-y-3">
@@ -1050,7 +1050,7 @@ export function MechanicHome() {
           );
         })}
         {(checklists ?? []).length === 0 && (
-          <p className="text-sm text-gray-400 py-1">No checklists filed yet.</p>
+          <p className="text-sm text-gray-400 py-1">No rig checklists filed today — drillers file them from their home tile; they show here as they come in.</p>
         )}
       </div>
 
@@ -1194,7 +1194,7 @@ export function AdminHome() {
   );
 
   return (
-    <div className="p-4 max-w-4xl mx-auto space-y-3">
+    <div className="p-4 max-w-4xl mx-auto space-y-3" data-tour="home">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-xl font-bold text-gray-900">Company</h2>
         {getRealSessionUser()?.role === 'admin' && (
@@ -1230,7 +1230,7 @@ export function AdminHome() {
           </button>
         ))}
         {(latestFilings ?? []).length === 0 && (
-          <p className="text-sm text-gray-400">Nothing filed yet — submitted paperwork lands here.</p>
+          <p className="text-sm text-gray-400">Nothing filed yet. When a crew files a day, checklist or incident, it lands here and in Records.</p>
         )}
       </div>
 
