@@ -159,6 +159,8 @@ usersRouter.post('/', async (req: AuthedRequest, res: Response) => {
         role,
         companyId: req.companyId!,
         passwordHash: await bcrypt.hash(tempPassword, 12),
+        // A temp password is a hand-off — the gate forces a change at first sign-in
+        mustChangePassword: true,
       },
       select: { id: true, email: true, name: true, role: true, isActive: true },
     });
@@ -294,7 +296,9 @@ usersRouter.post('/backfill-roster', async (req: AuthedRequest, res: Response) =
   res.json({ ok: true, linked });
 });
 
-const resetSchema = z.object({ tempPassword: z.string().min(8) });
+// requireChange defaults ON (Matthew's call: a temp password is a hand-off).
+// false exists for dev canonicalization by the harnesses — the UI never sends it.
+const resetSchema = z.object({ tempPassword: z.string().min(8), requireChange: z.boolean().default(true) });
 
 /** Admin reset: set a temporary password, revoke sessions */
 usersRouter.post('/:id/reset-password', async (req: AuthedRequest, res: Response) => {
@@ -315,9 +319,14 @@ usersRouter.post('/:id/reset-password', async (req: AuthedRequest, res: Response
     res.status(404).json({ error: 'user not found' });
     return;
   }
+  // A temp password is a hand-off, not a password: the gate forces the
+  // user to pick their own on the next sign-in (S1, finding O7).
   await prisma.user.update({
     where: { id: user.id },
-    data: { passwordHash: await bcrypt.hash(parsed.data.tempPassword, 12) },
+    data: {
+      passwordHash: await bcrypt.hash(parsed.data.tempPassword, 12),
+      mustChangePassword: parsed.data.requireChange,
+    },
   });
   await prisma.refreshToken.updateMany({
     where: { userId: user.id, revokedAt: null },

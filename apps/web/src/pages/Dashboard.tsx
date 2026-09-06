@@ -15,6 +15,7 @@ import { NewBlastDayDialog } from '@/components/forms/NewBlastDayDialog';
 import { AdminHome, DrillerHome, MechanicHome } from '@/components/dashboard/RoleCards';
 import { BlasterHome } from '@/components/dashboard/BlasterHome';
 import { MonthDayList } from '@/components/dashboard/MonthDayList';
+import { ProfileNagCard } from '@/components/onboarding/ProfileNagCard';
 import { getSessionUser } from '@/lib/session';
 import { myHomeDashboard } from '@/lib/perms';
 import type { WorkType } from '@/db/schema';
@@ -154,13 +155,23 @@ export function Dashboard() {
   if (home === 'driller')
     return (
       <>
+        <div className="px-4 pt-4 max-w-3xl mx-auto empty:hidden">
+          <ProfileNagCard />
+        </div>
         <DrillerHome />
         <NewWorkDayFab defaultTypeOfWork="drill_only" />
       </>
     );
   if (home === 'mechanic') return <MechanicHome />;
   if (home === 'office') return <AdminHome />;
-  return <BlasterDashboard />;
+  return (
+    <>
+      <div className="px-4 pt-4 max-w-3xl mx-auto empty:hidden">
+        <ProfileNagCard />
+      </div>
+      <BlasterDashboard />
+    </>
+  );
 }
 
 /** The + button and its dialog — shared by every home that can create work days */

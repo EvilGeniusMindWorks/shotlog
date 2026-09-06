@@ -19,6 +19,8 @@ import { dataUrlToBlob } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { ShotForm } from './ShotForm';
 import { ShotSignoff } from './ShotSignoff';
+import { SigningBlocked } from '@/components/onboarding/SigningBlocked';
+import { signingBlocked } from '@/components/onboarding/profileCompletion';
 import { ExplosiveUsageForm } from './ExplosiveUsageForm';
 import { useLiveQuery } from '@/db';
 import { getShotPlan } from '@/hooks/useDrillLogs';
@@ -428,6 +430,13 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
           </div>
           <div>
             <Label className="text-xs">Blaster Signature</Label>
+            {/* Hard stop (profile completion): a licensed role signs only
+                with a license on file — an already-signed log stays visible */}
+            {!draft.signatureImage && signingBlocked() ? (
+              <div className="mt-1">
+                <SigningBlocked what="this log" />
+              </div>
+            ) : (
             <div className="mt-1 space-y-2">
               {!draft.signatureImage && getSessionUser()?.signature && (
                 <Button
@@ -446,6 +455,7 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
                 onChange={(blob) => setField('signatureImage', blob)}
               />
             </div>
+            )}
           </div>
         </div>
       </SectionCard>

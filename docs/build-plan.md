@@ -123,6 +123,12 @@ field/shop persona screen ≤2.2 screens — home 1.6 (1.7 phone), /days
 1.2, /records 1.2, /jobs 1.6, equipment 1.2. Still >4 and deferred to
 the pending rounds: admin/office home 4.3, Admin›People 4.2–4.4.
 
+## Soft-launch rounds (S1–S5) — proposed 2026-09-06
+
+See [soft-launch-plan.md](soft-launch-plan.md): onboarding & access →
+feedback & diagnostics → guidance → clutter sweep → launch gates. DRAFT
+until Matthew answers its open questions.
+
 ## Runs alongside (not gated on rounds)
 
 - Office/Evette walkthrough (paused mid-conversation — the ATF-audit

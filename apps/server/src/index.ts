@@ -9,6 +9,7 @@ import { powersyncRouter } from './powersync.js';
 import { filesRouter } from './files.js';
 import { auditRouter } from './audit.js';
 import { usersRouter } from './users.js';
+import { emailEnabled } from './email.js';
 
 const app = express();
 app.use(cors());
@@ -26,6 +27,9 @@ app.get('/health', (_req, res) => {
     time: new Date().toISOString(),
     tables: Object.keys(TABLE_PERMISSIONS).length,
     commit: process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 7) ?? null,
+    // Truthful email status — the People page says "share the link" when
+    // this is false instead of pretending an invite was emailed
+    email: emailEnabled(),
   });
 });
 

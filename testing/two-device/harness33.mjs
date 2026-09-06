@@ -39,7 +39,7 @@ async (page) => {
       const d = users.find((u) => u.email.includes('dinis@'));
       await authedFetch(`/users/${d.id}/reset-password`, {
         method: 'POST',
-        body: JSON.stringify({ tempPassword: 'dinis-pass-123' }),
+        body: JSON.stringify({ tempPassword: 'dinis-pass-123', requireChange: false }),
       });
       return d.id;
     });

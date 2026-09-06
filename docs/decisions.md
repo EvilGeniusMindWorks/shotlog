@@ -58,7 +58,15 @@ information; amend with a dated entry when one changes.
 
 | 2026-08-18 | Role-specific navigation APPROVED (study artifact 5f52a919): one rail rhythm, per-persona nouns. Matthew's calls: the home stays **"Dashboard"** (NOT "Today" — the home carries more than today); field & shop rails re-cut NOW, the admin console fold-in DEFERRED to the Admin round; driller gets a thin **Drilling** page (open plans · assigned · ready-to-drill). Shop rail = Shop · Fleet (equipment registry promoted out of Admin — mechanic's Admin tab retires) · Locator · Records. Office rail provisional (Dashboard · Records · Jobs · Incidents) pending Evette's walkthrough. Rails keyed by homeDashboard bucket so custom roles inherit sensibly; phone tab bar mirrors each rail's top four | Matthew, nav study reaction |
 
+| 2026-09-06 | Soft-launch plan APPROVED (docs/soft-launch-plan.md, review artifact 06afbdee): rounds S1 onboarding/access → S3 feedback+diagnostics → S2 guidance → S4 clutter → S5 gates, all 26 items Build. Calls: cohort = **everyone incl. shop**; feedback goes to **Matthew only** (not visible to company admin); feedback **screenshot on by default**; **some iOS** devices in the cohort — install guidance must cover Safari; **everyone gets an email address first** (email is the reset/notify channel; SMS/2FA wanted if feasible — evaluate in S1, not blocking); profile completion = **soft nag, hard stop at signing**; **office queue home built now** (provisional until Evette's walkthrough). Tours must be revisited for relevance and usefulness, not merely made role-aware | Matthew, review artifact |
+
+| 2026-09-06 | Round S1 shipped (harness37 24/24). In-round calls: the first-run welcome is per ACCOUNT (`User.onboardedAt`), not per device; a temp password set by an admin (reset or Create login) always forces a change at the next sign-in; the profile-completion hard stop applies only to LICENSED roles (blaster/supervisor/admin) at the moment of signing — drillers get the signature nag only; install guidance is dismissible for 30 days per device; forgot-password never reveals whether an email has an account, but does say when the server cannot email at all | follows from approved plan; recorded for future rounds |
+
 ## Open (waiting on Mark / Matthew)
+
+- **Jobs-card chips (I4, "talk first"):** which chips stay on the job row under the Active filter — settle before S4.4.
+- **Records density (L6, "talk first"):** no fix proposed for the 2.1-screen Filed lens; Matthew wants to discuss what bothers him there.
+- **SMS or two-factor for password reset (Q5 note):** SMS needs a provider (Twilio) + US A2P registration (weeks, per-message cost); authenticator-app 2FA needs no provider. Decide in S1 whether either is worth the field friction on top of the device PIN.
 
 - **Test-user cleanup (Round 5 decision point):** prod has only Matthew's real
   admin; the LOCAL dev DB carries test logins (blaster@/mechanic@/office@/

@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AccountSyncCard } from '@/components/forms/AccountSyncCard';
+import { InstallCard } from '@/components/onboarding/InstallCard';
 import { getLayoutPref, setLayoutPref, type LayoutPref } from '@/components/layout/RecordShell';
 import { getSessionUser } from '@/lib/session';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -55,6 +56,7 @@ export function SettingsPage() {
     <div className="p-4 max-w-2xl mx-auto space-y-4">
       <h2 className="text-xl font-bold text-gray-900">Settings</h2>
       <AccountSyncCard />
+      <InstallCard always />
       <LayoutCard />
       {MANAGER_ROLES.includes(role) && (
         <p className="text-sm text-gray-500 rounded-lg border border-gray-200 bg-white px-3 py-2">

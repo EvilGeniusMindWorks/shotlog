@@ -1,0 +1,60 @@
+// "Install ShotLog on this device" — the one card that knows the platform.
+// Android/Chrome: replays the captured install prompt. iOS: Share → Add to
+// Home Screen steps (Safari never offers a prompt). Already installed or
+// nothing to offer: renders nothing. `always` ignores a prior "Not now"
+// (the welcome screen wants it once regardless).
+import { Share, SquarePlus, Download } from 'lucide-react';
+import { dismissInstall, promptInstall, useInstallState } from '@/lib/install';
+import { Button } from '@/components/ui/button';
+
+export function InstallCard({ always = false, tone = 'card' }: { always?: boolean; tone?: 'card' | 'plain' }) {
+  const s = useInstallState();
+  if (s.standalone) return null;
+  if (!always && s.dismissed) return null;
+  if (!s.canPrompt && !s.ios) return null;
+
+  const shell =
+    tone === 'card'
+      ? 'rounded-xl border border-orange-200 bg-orange-50 p-4 space-y-2'
+      : 'rounded-xl bg-gray-50 p-4 space-y-2';
+
+  return (
+    <div className={shell} data-install-card>
+      <div className="flex items-start gap-3">
+        <span className="h-9 w-9 rounded-lg bg-safety-orange text-white flex items-center justify-center shrink-0">
+          <Download className="h-5 w-5" />
+        </span>
+        <div className="space-y-1 min-w-0">
+          <p className="font-semibold text-gray-900">Install ShotLog on this device</p>
+          {s.ios ? (
+            <ol className="text-sm text-gray-600 space-y-1 list-none">
+              <li className="flex items-center gap-2">
+                <span className="text-gray-400">1.</span> Tap <Share className="h-4 w-4 inline text-navy" /> <b>Share</b> in Safari
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-gray-400">2.</span> Choose <SquarePlus className="h-4 w-4 inline text-navy" /> <b>Add to Home Screen</b>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-gray-400">3.</span> Open ShotLog from the icon from now on
+              </li>
+            </ol>
+          ) : (
+            <p className="text-sm text-gray-600">
+              Opens like an app, works offline, and keeps you signed in with your PIN.
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="flex items-center gap-2 pl-12">
+        {s.canPrompt && (
+          <Button size="sm" onClick={() => void promptInstall()}>
+            Install
+          </Button>
+        )}
+        <button className="text-xs text-gray-500 underline underline-offset-2" onClick={dismissInstall}>
+          Not now
+        </button>
+      </div>
+    </div>
+  );
+}

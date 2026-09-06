@@ -1,9 +1,10 @@
 // Public enrollment page (outside AuthGate): a crew member opens their
-// invite link, sets a password, and gets a working account. PIN, licenses,
-// and signature happen through the normal first-login flows.
+// invite link, sets a password, and lands SIGNED IN on this device — the
+// server returns a session, so the next screen is Set-PIN, then the
+// welcome. Licenses and signature follow through the profile nag.
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { DEFAULT_SERVER_URL } from '@/lib/session';
+import { DEFAULT_SERVER_URL, storeSession, type SessionPayload } from '@/lib/session';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -56,12 +57,18 @@ export function EnrollPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password, email: email.trim() || undefined }),
       });
-      const body = (await res.json().catch(() => null)) as { error?: string } | null;
+      const body = (await res.json().catch(() => null)) as
+        | (Partial<SessionPayload> & { error?: string; email?: string })
+        | null;
       if (!res.ok) throw new Error(body?.error ?? 'enrollment failed');
       setDone(true);
       localStorage.setItem('shotlog-user-email', email.trim());
+      if (body?.accessToken && body.refreshToken && body.user) {
+        // Signed in right here — no second password entry
+        storeSession(serverUrl(), { accessToken: body.accessToken, refreshToken: body.refreshToken, user: body.user });
+      }
       // Full reload into the gated app — the enroll shell is outside the router
-      window.setTimeout(() => window.location.assign('/'), 2500);
+      window.setTimeout(() => window.location.assign('/'), 900);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'enrollment failed');
     } finally {
@@ -82,9 +89,7 @@ export function EnrollPage() {
           ) : done ? (
             <div className="text-center space-y-2">
               <p className="font-bold text-lg">You're in, {invite?.name?.split(' ')[0]} 👍</p>
-              <p className="text-sm text-gray-500">
-                Taking you to the sign-in screen — use {email.trim()} and your new password.
-              </p>
+              <p className="text-sm text-gray-500">Setting up this device — next you'll pick a quick unlock PIN.</p>
             </div>
           ) : !invite ? (
             <p className="text-sm text-gray-400">Checking your invite…</p>
@@ -124,7 +129,7 @@ export function EnrollPage() {
                 {busy ? 'Setting up…' : 'Create my account'}
               </Button>
               <p className="text-xs text-gray-400 text-center">
-                You'll pick a quick unlock PIN after your first sign-in.
+                You'll be signed in on this device right away, then pick a quick unlock PIN.
               </p>
             </div>
           )}

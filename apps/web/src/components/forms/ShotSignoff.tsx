@@ -12,6 +12,8 @@ import { Select } from '@/components/ui/select';
 import { SignatureField } from '@/components/ui/signature-field';
 import { getSessionUser } from '@/lib/session';
 import { dataUrlToBlob, nowISO } from '@/lib/utils';
+import { SigningBlocked } from '@/components/onboarding/SigningBlocked';
+import { signingBlocked } from '@/components/onboarding/profileCompletion';
 
 const BLASTER_ROLES = new Set(['blaster', 'supervisor', 'admin']);
 
@@ -106,6 +108,8 @@ export function ShotSignoff({ shot }: { shot: Shot }) {
                 </button>
               )}
             </div>
+          ) : iAmResponsible && signingBlocked(me) ? (
+            <SigningBlocked what="this shot" />
           ) : iAmResponsible ? (
             <div className="space-y-2">
               {!showSign && (

@@ -39,12 +39,33 @@ model User {
   signature     String?
   /// Offline unlock PIN (salted SHA-256) — follows the account to any device
   pinHash       String?
+  /// Set by an admin temp-password reset; cleared when the user picks their
+  /// own. The gate forces a change on the next sign-in while it is true.
+  mustChangePassword Boolean  @default(false)
+  /// First-run welcome shown (per ACCOUNT, so a second device never repeats it)
+  onboardedAt   DateTime?
   companyId     String
   company       Company        @relation(fields: [companyId], references: [id])
   createdAt     DateTime       @default(now())
   refreshTokens RefreshToken[]
+  passwordResets PasswordReset[]
 
   @@index([companyId])
+}
+
+/// Self-service password reset: /auth/forgot mints one (hashed at rest,
+/// single-use, 1-hour expiry) and emails the raw link; /auth/reset/:token
+/// redeems it. Mirrors InviteToken on purpose — same threat model.
+model PasswordReset {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }
 
 /// Crew enrollment invite: admin issues, crew member redeems once to

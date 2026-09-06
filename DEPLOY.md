@@ -49,3 +49,17 @@ returns.
   -e POSTGRES_DB=shotlog -p 5433:5432 postgres:16-alpine`, copy
   `.env.example` → `.env`, then `npx prisma migrate dev` and
   `npm run dev -w apps/server`.
+
+## Email + password reset (Round S1, 2026-09-06)
+
+- `RESEND_API_KEY` + `INVITE_FROM` on the Railway server service turn on
+  invite and password-reset email (see docs/resend-setup.md). Without them
+  the app still works: invites fall back to a copyable link and the
+  forgot-password screen tells the user to ask their admin.
+- `/health` reports `email: true|false`.
+- `AUTH_DEBUG_LINKS=1` makes `/auth/forgot` echo the reset link when email
+  is OFF. Dev/harness only — never set it in production.
+- Migration `20260906120000_password_resets` adds `User.mustChangePassword`,
+  `User.onboardedAt`, and the `PasswordReset` table; `migrate deploy` runs
+  it on start. Existing accounts see the one-time welcome on their next
+  sign-in (onboardedAt is null until acknowledged).

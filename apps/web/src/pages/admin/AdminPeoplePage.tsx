@@ -149,6 +149,7 @@ function PersonRow({
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [emailed, setEmailed] = useState(false);
+  const [emailNote, setEmailNote] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   // direct-login state
   const [loginForm, setLoginForm] = useState({ email: '', tempPassword: '' });
@@ -164,11 +165,15 @@ function PersonRow({
     if (!res.ok) throw new Error(body?.error ?? `request failed (${res.status})`);
     return body;
   };
-  const act = (fn: () => Promise<void>) => {
+  // keepPanel: the invite panel must STAY open to show the link + email
+  // status (the default close-on-success hid it — S1 finding O2)
+  const act = (fn: () => Promise<void>, opts: { keepPanel?: boolean } = {}) => {
     setBusy(true);
     setError(null);
     void fn()
-      .then(() => setPanel('none'))
+      .then(() => {
+        if (!opts.keepPanel) setPanel('none');
+      })
       .catch((err) => setError(err instanceof Error ? err.message : 'request failed'))
       .finally(() => setBusy(false));
   };
@@ -212,13 +217,21 @@ function PersonRow({
           crewMemberId: member.id,
           email: inviteEmail.trim() || undefined,
         }),
-      })) as { link?: string; emailed?: boolean };
+      })) as { link?: string; emailed?: boolean; emailConfigured?: boolean };
       setInviteLink(body?.link ?? null);
       setEmailed(Boolean(body?.emailed));
+      // Tell the truth about why it wasn't emailed
+      setEmailNote(
+        inviteEmail.trim() && !body?.emailed
+          ? body?.emailConfigured
+            ? "The email didn't send — share the link instead."
+            : 'Email is not set up on the server yet — share the link instead.'
+          : null,
+      );
       if (!member.role) void db.crewMembers.update(member.id, { role: 'blaster', updatedAt: nowISO() });
       await onDirectory();
       setPanel('invite'); // stay open to show the link
-    });
+    }, { keepPanel: true });
   };
 
   const createLogin = () => {
@@ -321,6 +334,7 @@ function PersonRow({
               <>Invite ready — share this link with {member.name.split(' ')[0]} (text works fine):</>
             )}
           </p>
+          {emailNote && <p className="text-xs text-orange-700">{emailNote}</p>}
           <div className="flex items-center gap-2">
             <Input readOnly value={inviteLink} className="font-mono text-xs" />
             <Button variant="outline" size="sm"

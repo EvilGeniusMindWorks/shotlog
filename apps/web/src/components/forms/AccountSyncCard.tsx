@@ -4,46 +4,17 @@
 // nothing to repair.
 import { useState } from 'react';
 import { Cloud, Download, LogOut } from 'lucide-react';
-import {
-  DEFAULT_SERVER_URL,
-  getSession,
-  login,
-  logout,
-} from '@/lib/session';
+import { getSession, logout } from '@/lib/session';
 import { exportAllData } from '@/lib/export';
-import { connectPowerSync, disconnectAndClearPowerSync } from '@/db/powersync/client';
+import { disconnectAndClearPowerSync } from '@/db/powersync/client';
 import { useSyncStatus } from '@/db/powersync/useSyncStatus';
 import { IconChip, SectionCard } from '@/components/ui/section-card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 
 export function AccountSyncCard() {
   const [session, setSession] = useState(getSession());
-  const [form, setForm] = useState({
-    serverUrl: session.serverUrl || DEFAULT_SERVER_URL,
-    email: session.email,
-    password: '',
-  });
   const [status, setStatus] = useState<string | null>(null);
-  const [working, setWorking] = useState(false);
   const sync = useSyncStatus();
-
-  const handleLogin = async () => {
-    setWorking(true);
-    setStatus('Logging in…');
-    try {
-      await login(form.serverUrl, form.email, form.password);
-      setForm({ ...form, password: '' });
-      await connectPowerSync();
-      setSession(getSession());
-      setStatus(null);
-    } catch (err) {
-      setStatus(err instanceof Error ? err.message : 'login failed');
-    } finally {
-      setWorking(false);
-    }
-  };
 
   const handleLogout = async () => {
     if (
@@ -117,44 +88,13 @@ export function AccountSyncCard() {
           <p className="text-[11px] text-gray-300 font-mono">Build {__BUILD_ID__}</p>
         </div>
       ) : (
+        // Unreachable in practice (AuthGate signs in before any page renders)
+        // — kept minimal on purpose; the sign-in form lives in the gate
         <div className="space-y-3">
-          <div className="grid gap-2 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <Label htmlFor="server-url">Server</Label>
-              <Input
-                id="server-url"
-                value={form.serverUrl}
-                onChange={(e) => setForm({ ...form, serverUrl: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="login-email">Email</Label>
-              <Input
-                id="login-email"
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="login-password">Password</Label>
-              <Input
-                id="login-password"
-                type="password"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                onKeyDown={(e) => e.key === 'Enter' && void handleLogin()}
-              />
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button onClick={handleLogin} disabled={working}>
-              Log in
-            </Button>
-            <Button variant="outline" onClick={handleExport}>
-              <Download className="h-4 w-4 mr-1" /> Export JSON
-            </Button>
-          </div>
+          <p className="text-sm text-gray-500">Signed out. Reload to sign in.</p>
+          <Button variant="outline" onClick={() => window.location.assign('/')}>
+            Go to sign in
+          </Button>
           {status && <p className="text-sm text-gray-500">{status}</p>}
         </div>
       )}

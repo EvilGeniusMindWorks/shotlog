@@ -1,14 +1,20 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Delete, LockKeyhole } from 'lucide-react';
+import { Delete, LockKeyhole, KeyRound, Sparkles } from 'lucide-react';
 import {
   DEFAULT_SERVER_URL,
+  changeMyPassword,
+  forgotPassword,
+  getRealSessionUser,
   getSession,
   getSessionUser,
   login,
   logout,
+  markOnboarded,
   updateMyPin,
 } from '@/lib/session';
 import { connectPowerSync } from '@/db/powersync/client';
+import { myHomeDashboard } from '@/lib/perms';
+import { InstallCard } from '@/components/onboarding/InstallCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,21 +29,38 @@ async function hashPin(pin: string): Promise<string> {
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-type GateState = 'login' | 'set-pin' | 'locked' | 'open';
+type GateState = 'login' | 'forgot' | 'change-password' | 'set-pin' | 'welcome' | 'locked' | 'open';
 
 /**
  * App access control (offline-first):
- * - No session → online login (activates the device)
+ * - No session → online login (activates the device); Forgot password →
+ *   emailed reset link (public /reset/:token page)
+ * - Temp password from an admin → forced change before anything else
  * - Session but no PIN → set one (the offline unlock)
+ * - First sign-in on the ACCOUNT → one welcome screen (role blurb + install)
  * - Session + PIN → locked on launch and after 5 min hidden; PIN unlocks
  *   offline. Forgot PIN = logout → online login required.
  */
 const touchActivity = () => localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
 
+/** Where a signed-in device goes next, in order: forced password change →
+ *  PIN → welcome → open. Read the REAL user: view-as never affects the gate. */
+function nextGateState(): GateState {
+  const user = getRealSessionUser();
+  if (user?.mustChangePassword) return 'change-password';
+  if (!localStorage.getItem(PIN_KEY)) return 'set-pin';
+  if (user && !user.onboardedAt) return 'welcome';
+  return 'open';
+}
+
 export function AuthGate({ children }: { children: ReactNode }) {
+  // The temp password typed at sign-in, kept only long enough to satisfy
+  // "current password" on the forced-change screen (never persisted)
+  const [tempPassword, setTempPassword] = useState<string | null>(null);
   const [state, setState] = useState<GateState>(() => {
     if (!getSession().loggedIn) return 'login';
-    if (!localStorage.getItem(PIN_KEY)) return 'set-pin';
+    const next = nextGateState();
+    if (next !== 'open') return next;
     // A refresh (or an auto-update reload) within the activity window must
     // NOT demand the PIN again — only real absence does
     const last = Number(localStorage.getItem(LAST_ACTIVE_KEY) ?? 0);
@@ -76,15 +99,33 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (state === 'login')
     return (
       <LoginScreen
-        onDone={() => {
+        onForgot={() => setState('forgot')}
+        onDone={(password) => {
           // The PIN follows the account: a fresh login seeds this device
           // with the user's existing PIN instead of demanding a new one
-          const accountPin = getSessionUser()?.pinHash;
+          const accountPin = getRealSessionUser()?.pinHash;
           if (accountPin && !localStorage.getItem(PIN_KEY)) {
             localStorage.setItem(PIN_KEY, accountPin);
           }
+          setTempPassword(password);
           touchActivity();
-          setState(localStorage.getItem(PIN_KEY) ? 'open' : 'set-pin');
+          setState(nextGateState());
+        }}
+      />
+    );
+  if (state === 'forgot') return <ForgotScreen onBack={() => setState('login')} />;
+  if (state === 'change-password')
+    return (
+      <ChangePasswordScreen
+        currentPassword={tempPassword}
+        onDone={() => {
+          setTempPassword(null);
+          touchActivity();
+          setState(nextGateState());
+        }}
+        onSignOut={async () => {
+          await logout();
+          setState('login');
         }}
       />
     );
@@ -93,13 +134,23 @@ export function AuthGate({ children }: { children: ReactNode }) {
       <SetPinScreen
         onDone={() => {
           touchActivity();
+          setState(nextGateState());
+        }}
+      />
+    );
+  if (state === 'welcome')
+    return (
+      <WelcomeScreen
+        onDone={() => {
+          void markOnboarded();
+          touchActivity();
           setState('open');
         }}
       />
     );
   return (
     <PinLockScreen
-      onUnlock={() => setState('open')}
+      onUnlock={() => setState(nextGateState())}
       onForgot={async () => {
         localStorage.removeItem(PIN_KEY);
         await logout();
@@ -138,7 +189,7 @@ function Frame({ children }: { children: ReactNode }) {
   );
 }
 
-function LoginScreen({ onDone }: { onDone: () => void }) {
+function LoginScreen({ onDone, onForgot }: { onDone: (password: string) => void; onForgot: () => void }) {
   const [form, setForm] = useState({
     serverUrl: getSession().serverUrl || DEFAULT_SERVER_URL,
     email: getSession().email,
@@ -157,7 +208,7 @@ function LoginScreen({ onDone }: { onDone: () => void }) {
       await login(form.serverUrl, email, password);
       // Start replication in the background — don't block entry on hydration
       void connectPowerSync().catch(() => undefined);
-      onDone();
+      onDone(password);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'login failed');
       setBusy(false);
@@ -231,10 +282,250 @@ function LoginScreen({ onDone }: { onDone: () => void }) {
         <Button type="submit" className="w-full" size="lg" disabled={busy}>
           {busy ? 'Signing in…' : 'Sign in'}
         </Button>
+        <button
+          type="button"
+          className="w-full text-sm text-navy underline underline-offset-2 text-center"
+          onClick={onForgot}
+        >
+          Forgot password?
+        </button>
         <p className="text-xs text-gray-400 text-center">
           Requires a connection the first time. After that, ShotLog works fully offline.
         </p>
       </form>
+    </Frame>
+  );
+}
+
+/** Forgot password: ask for an emailed reset link. Never reveals whether
+ *  the address has an account; DOES say when the server can't email. */
+function ForgotScreen({ onBack }: { onBack: () => void }) {
+  const [email, setEmail] = useState(getSession().email);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<{ emailConfigured: boolean; debugLink?: string } | null>(null);
+  const serverUrl = getSession().serverUrl || DEFAULT_SERVER_URL;
+
+  return (
+    <Frame>
+      <h2 className="font-bold text-lg mb-1">Reset your password</h2>
+      {result ? (
+        <div className="space-y-3" data-forgot-result>
+          {result.emailConfigured ? (
+            <p className="text-sm text-gray-600">
+              If <span className="font-medium">{email}</span> has a ShotLog account, a reset link is on its way.
+              It works once and expires in an hour. Check spam if it takes more than a minute.
+            </p>
+          ) : (
+            <p className="text-sm text-gray-600">
+              Email isn't set up for your company yet, so we can't send a link. Ask your admin to reset your
+              password — you'll pick a new one at your next sign-in.
+            </p>
+          )}
+          {result.debugLink && (
+            <p className="text-xs text-gray-400 break-all">
+              Dev: <a className="underline" href={result.debugLink}>{result.debugLink}</a>
+            </p>
+          )}
+          <Button variant="outline" className="w-full" onClick={onBack}>
+            Back to sign in
+          </Button>
+        </div>
+      ) : (
+        <form
+          className="space-y-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const value = email.trim();
+            if (!value) {
+              setError('enter your email');
+              return;
+            }
+            setBusy(true);
+            setError(null);
+            forgotPassword(serverUrl, value)
+              .then(setResult)
+              .catch((err: unknown) => setError(err instanceof Error ? err.message : 'request failed'))
+              .finally(() => setBusy(false));
+          }}
+        >
+          <p className="text-sm text-gray-500">
+            Enter the email on your account and we'll send a link to choose a new password.
+          </p>
+          <div>
+            <Label className="text-xs">Email</Label>
+            <Input
+              type="email"
+              name="email"
+              autoComplete="username"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          {error && <p className="text-sm text-violation">{error}</p>}
+          <Button type="submit" className="w-full" size="lg" disabled={busy}>
+            {busy ? 'Sending…' : 'Send reset link'}
+          </Button>
+          <button type="button" className="w-full text-sm text-gray-500 underline underline-offset-2" onClick={onBack}>
+            Back to sign in
+          </button>
+        </form>
+      )}
+    </Frame>
+  );
+}
+
+/** Forced change after an admin temp reset: the temp password is a hand-off,
+ *  not a password. `currentPassword` is the one just typed at sign-in (kept
+ *  in memory only); when unknown (PIN-unlocked device) we ask for it. */
+function ChangePasswordScreen({
+  currentPassword,
+  onDone,
+  onSignOut,
+}: {
+  currentPassword: string | null;
+  onDone: () => void;
+  onSignOut: () => void;
+}) {
+  const [current, setCurrent] = useState(currentPassword ?? '');
+  const [next, setNext] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const user = getRealSessionUser();
+
+  return (
+    <Frame>
+      <div className="text-center mb-4">
+        <KeyRound className="h-6 w-6 mx-auto text-navy mb-2" />
+        <h2 className="font-bold text-lg">Choose your own password</h2>
+        <p className="text-sm text-gray-500">
+          {user?.name ? `${user.name.split(' ')[0]}, the` : 'The'} password you signed in with was a temporary
+          one from your admin. Pick one only you know.
+        </p>
+      </div>
+      <form
+        className="space-y-3"
+        data-change-password
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (next !== confirm) {
+            setError("Passwords don't match");
+            return;
+          }
+          setBusy(true);
+          setError(null);
+          changeMyPassword(current, next)
+            .then(onDone)
+            .catch((err: unknown) => setError(err instanceof Error ? err.message : 'could not change password'))
+            .finally(() => setBusy(false));
+        }}
+      >
+        {currentPassword === null && (
+          <div>
+            <Label className="text-xs">Temporary password</Label>
+            <Input type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} />
+          </div>
+        )}
+        <div>
+          <Label className="text-xs">New password (8+ characters)</Label>
+          <Input type="password" autoComplete="new-password" value={next} onChange={(e) => setNext(e.target.value)} />
+        </div>
+        <div>
+          <Label className="text-xs">Confirm new password</Label>
+          <Input type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+        </div>
+        {error && <p className="text-sm text-violation">{error}</p>}
+        <Button type="submit" className="w-full" size="lg" disabled={busy || next.length < 8 || !confirm || !current}>
+          {busy ? 'Saving…' : 'Save password'}
+        </Button>
+        <button type="button" className="w-full text-xs text-gray-400 underline" onClick={onSignOut}>
+          Sign out instead
+        </button>
+      </form>
+    </Frame>
+  );
+}
+
+/** First-run welcome — once per ACCOUNT. Says what this role does here, the
+ *  three things to do first, and offers the install. */
+const WELCOME: Record<string, { title: string; blurb: string; first: string[] }> = {
+  field: {
+    title: 'Your work days, one screen each',
+    blurb: 'ShotLog is your blasting log and daily report, and it works with no signal.',
+    first: [
+      'Tap + to start work at a job.',
+      'A day runs Drilling → Readiness → Shots → Seismo → File, and Continue always knows the next step.',
+      'Add your license and signature in My Profile so sign-off is one tap.',
+    ],
+  },
+  driller: {
+    title: 'Checklist · Drill log · My hours',
+    blurb: 'Three tiles on your home cover the whole day, and they work with no signal.',
+    first: [
+      'Drilling starts from a plan the blaster made — open it and log holes as planned in one tap.',
+      'Skips and changes are normal; the app records what you actually drilled.',
+      'Sign once in My Profile so the log sign-off is one tap.',
+    ],
+  },
+  mechanic: {
+    title: 'What is down, what is due',
+    blurb: 'Your Shop home is the queue; drag it into the order you want to work it.',
+    first: [
+      'Down · Tickets · Due soon sit at the top; the worklist below is yours to order.',
+      'Locator shows where each machine last worked.',
+      'Log a service on the machine page and the clock restarts.',
+    ],
+  },
+  office: {
+    title: 'Approvals, cards, and the record book',
+    blurb: 'Everything the crews file lands on your Dashboard for review.',
+    first: [
+      'Review a day and approve it, or send it back with a reason — the blaster sees it right away.',
+      'Records holds every filed copy, write-once, with PDFs.',
+      'Incidents and expiring paperwork show up on the same screen.',
+    ],
+  },
+  admin: {
+    title: 'You run the company side',
+    blurb: 'People, roles, catalog and company settings live under Admin.',
+    first: [
+      'Invite the crew from Admin › People — they set their own password and PIN.',
+      'Use View as to see any role’s screens exactly as they do.',
+      'Everything the crews file is in Records.',
+    ],
+  },
+};
+
+function WelcomeScreen({ onDone }: { onDone: () => void }) {
+  const user = getRealSessionUser();
+  const bucket = user?.role === 'admin' ? 'admin' : myHomeDashboard();
+  const w = WELCOME[bucket] ?? WELCOME.field;
+  const first = user?.name?.split(' ')[0];
+  return (
+    <Frame>
+      <div className="space-y-4" data-welcome>
+        <div className="text-center">
+          <Sparkles className="h-6 w-6 mx-auto text-safety-orange mb-2" />
+          <h2 className="font-bold text-lg">{first ? `Welcome, ${first}` : 'Welcome'}</h2>
+          <p className="text-sm text-gray-500">{w.blurb}</p>
+        </div>
+        <div>
+          <p className="text-xs font-semibold tracking-wider uppercase text-gray-400 mb-1">{w.title}</p>
+          <ol className="space-y-2">
+            {w.first.map((t, i) => (
+              <li key={t} className="flex gap-2 text-sm text-gray-700">
+                <span className="text-safety-orange font-bold">{i + 1}.</span>
+                <span>{t}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+        <InstallCard always tone="plain" />
+        <Button className="w-full" size="lg" onClick={onDone}>
+          Let’s go
+        </Button>
+      </div>
     </Frame>
   );
 }

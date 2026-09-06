@@ -5,14 +5,16 @@
 // unauthenticated writes — so: tokens hashed at rest, single-use, 14-day
 // expiry, and a light per-IP rate limit.
 import { createHash, randomBytes } from 'node:crypto';
-import { Router, type Request, type Response, type NextFunction } from 'express';
+import { Router, type Request, type Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { prisma } from './db.js';
-import { requireAuth, requireAdmin, type AuthedRequest } from './auth.js';
+import { issueSession, requireAuth, requireAdmin, type AuthedRequest } from './auth.js';
 import { BUILT_IN_ROLE_KEYS, buildRoleDefsLookup } from '@shotlog/shared';
 import { getRecord, parsePayloadSafe, upsertRecord } from './records.js';
 import { writeAudit } from './auditWrite.js';
+import { APP_URL, emailEnabled, inviteMail, sendEmail } from './email.js';
+import { rateLimit } from './rateLimit.js';
 
 /** Built-in role keys OR this company's custom role definitions */
 async function isAssignableRole(cid: string, role: string): Promise<boolean> {
@@ -24,61 +26,8 @@ async function isAssignableRole(cid: string, role: string): Promise<boolean> {
   return buildRoleDefsLookup(defRows.map((r) => parsePayloadSafe(r.payload))).has(role);
 }
 const INVITE_TTL_DAYS = 14;
-const APP_URL = (process.env.APP_URL ?? 'https://shotlog-app.vercel.app').replace(/\/$/, '');
-const RESEND_API_KEY = process.env.RESEND_API_KEY ?? '';
-const INVITE_FROM = process.env.INVITE_FROM ?? 'ShotLog <onboarding@resend.dev>';
 
 const hash = (t: string) => createHash('sha256').update(t).digest('hex');
-
-// ── Light per-IP rate limit for the public endpoints ───────────────────────
-const hits = new Map<string, { count: number; resetAt: number }>();
-function rateLimit(req: Request, res: Response, next: NextFunction): void {
-  const ip = req.ip ?? 'unknown';
-  const now = Date.now();
-  const entry = hits.get(ip);
-  if (!entry || entry.resetAt < now) {
-    hits.set(ip, { count: 1, resetAt: now + 60_000 });
-    next();
-    return;
-  }
-  if (++entry.count > 20) {
-    res.status(429).json({ error: 'slow down' });
-    return;
-  }
-  next();
-}
-
-async function sendInviteEmail(
-  to: string,
-  name: string,
-  company: string,
-  link: string,
-): Promise<boolean> {
-  if (!RESEND_API_KEY) return false;
-  try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: INVITE_FROM,
-        to: [to],
-        subject: `${company} — set up your ShotLog account`,
-        text:
-          `Hi ${name},\n\n${company} uses ShotLog for blasting logs and daily reports. ` +
-          `Set up your account here:\n\n${link}\n\n` +
-          `The link works once and expires in ${INVITE_TTL_DAYS} days.`,
-      }),
-    });
-    if (!res.ok) console.error('invite email failed:', res.status, await res.text());
-    return res.ok;
-  } catch (err) {
-    console.error('invite email failed:', err);
-    return false;
-  }
-}
 
 // ── Admin side ─────────────────────────────────────────────────────────────
 
@@ -132,11 +81,26 @@ invitesRouter.post('/', async (req: AuthedRequest, res: Response) => {
     },
   });
   const link = `${APP_URL}/enroll/${raw}`;
-  const company = await prisma.company.findUnique({ where: { id: cid } });
+  const [company, inviter] = await Promise.all([
+    prisma.company.findUnique({ where: { id: cid } }),
+    prisma.user.findUnique({ where: { id: req.userId as string }, select: { name: true } }),
+  ]);
   const emailed = email
-    ? await sendInviteEmail(email, name, company?.name ?? 'Your company', link)
+    ? await sendEmail(
+        inviteMail({
+          to: email,
+          name,
+          company: company?.name ?? 'Your company',
+          role,
+          invitedBy: inviter?.name ?? 'Your company admin',
+          link,
+          ttlDays: INVITE_TTL_DAYS,
+        }),
+      )
     : false;
-  res.status(201).json({ ok: true, link, emailed });
+  // emailConfigured lets the People page tell the truth: "email is off —
+  // share the link" vs "the send failed"
+  res.status(201).json({ ok: true, link, emailed, emailConfigured: emailEnabled() });
 });
 
 /** Pending + redeemed invites, for status chips */
@@ -261,7 +225,9 @@ enrollRouter.post('/:token', async (req: Request, res: Response) => {
       }
       return created;
     });
-    res.status(201).json({ ok: true, email: user.email });
+    // Land signed in: the same tokens + profile /auth/login returns, so
+    // the device goes straight to Set-PIN instead of a second password entry
+    res.status(201).json({ ok: true, email: user.email, ...(await issueSession(user.id)) });
   } catch (err) {
     if (err instanceof Error && err.message === 'already used') {
       res.status(410).json({ error: 'This invite was already used — try logging in instead.' });

@@ -22,6 +22,7 @@ import { AdminCatalogPage } from '@/pages/admin/AdminCatalogPage';
 import { AdminCompanyPage } from '@/pages/admin/AdminCompanyPage';
 import { AdminEquipmentPage } from '@/pages/admin/AdminEquipmentPage';
 import { EnrollPage } from '@/pages/EnrollPage';
+import { ResetPage } from '@/pages/ResetPage';
 import { DrillLogPage } from '@/pages/DrillLogPage';
 import { DrillPlanPage } from '@/pages/DrillPlanPage';
 import { MyRecordsPage } from '@/pages/MyRecordsPage';
@@ -73,13 +74,16 @@ function RecordsRouter() {
 }
 
 export function App() {
-  // Public enrollment route — the ONLY page outside the auth gate: a crew
-  // member with an invite link has no account yet by definition
-  if (window.location.pathname.startsWith('/enroll/')) {
+  // Public routes — the ONLY pages outside the auth gate: a crew member with
+  // an invite link has no account yet, and someone resetting a password
+  // has no session by definition
+  const path = window.location.pathname;
+  if (path.startsWith('/enroll/') || path.startsWith('/reset/')) {
     return (
       <BrowserRouter>
         <Routes>
           <Route path="/enroll/:token" element={<EnrollPage />} />
+          <Route path="/reset/:token" element={<ResetPage />} />
           <Route path="*" element={<EnrollPage />} />
         </Routes>
       </BrowserRouter>

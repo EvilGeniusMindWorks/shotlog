@@ -2,7 +2,12 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import { App } from './App';
+import { captureInstallPrompt } from './lib/install';
 import './index.css';
+
+// Chrome fires beforeinstallprompt once, early — grab it before React mounts
+// so the Install card can replay it later
+captureInstallPrompt();
 
 // Explicit SW registration with an hourly update check. Without this, a
 // long-lived installed PWA only checks for new versions on the browser's

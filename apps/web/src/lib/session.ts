@@ -47,6 +47,35 @@ export interface SessionUser {
   signature?: string | null;
   /** Offline unlock PIN (salted SHA-256) — follows the account */
   pinHash?: string | null;
+  /** Admin set a temp password — the gate forces a change before use */
+  mustChangePassword?: boolean;
+  /** First-run welcome acknowledged (per account, not per device) */
+  onboardedAt?: string | null;
+}
+
+/** What every sign-in path returns: login, enrollment, password reset */
+export interface SessionPayload {
+  accessToken: string;
+  refreshToken: string;
+  user: SessionUser;
+}
+
+/** Persist a freshly issued session on this device */
+export function storeSession(serverUrl: string, data: SessionPayload): void {
+  const url = serverUrl.replace(/\/$/, '');
+  localStorage.setItem(LS_KEYS.serverUrl, url);
+  localStorage.setItem(LS_KEYS.userEmail, data.user.email);
+  localStorage.setItem(LS_KEYS.accessToken, data.accessToken);
+  localStorage.setItem(LS_KEYS.refreshToken, data.refreshToken);
+  localStorage.setItem(LS_KEYS.userInfo, JSON.stringify(data.user));
+  setSessionExpired(false);
+}
+
+/** Patch the cached identity — always spreads the REAL user so a view-as
+ *  role never leaks into storage */
+export function patchCachedUser(patch: Partial<SessionUser>): void {
+  const user = getRealSessionUser();
+  if (user) localStorage.setItem(LS_KEYS.userInfo, JSON.stringify({ ...user, ...patch }));
 }
 
 const VIEW_ROLE_KEY = 'shotlog-view-role';
@@ -108,17 +137,41 @@ export async function login(serverUrl: string, email: string, password: string):
     const body = (await res.json().catch(() => null)) as { error?: string } | null;
     throw new Error(body?.error ?? `login failed (${res.status})`);
   }
-  const data = (await res.json()) as {
-    accessToken: string;
-    refreshToken: string;
-    user: SessionUser;
-  };
+  const data = (await res.json()) as SessionPayload;
+  storeSession(url, { ...data, user: { ...data.user, email: data.user.email || email } });
+}
+
+/** Ask the server to email a password-reset link. Always resolves for a
+ *  well-formed email (no account enumeration); `emailConfigured` is the
+ *  server's own status so the UI can say "ask your admin" honestly. */
+export async function forgotPassword(
+  serverUrl: string,
+  email: string,
+): Promise<{ emailConfigured: boolean; debugLink?: string }> {
+  const url = serverUrl.replace(/\/$/, '');
+  const res = await fetch(`${url}/auth/forgot`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  const body = (await res.json().catch(() => null)) as
+    | { ok?: boolean; emailConfigured?: boolean; debugLink?: string; error?: string }
+    | null;
+  if (!res.ok) throw new Error(body?.error ?? `request failed (${res.status})`);
   localStorage.setItem(LS_KEYS.serverUrl, url);
-  localStorage.setItem(LS_KEYS.userEmail, email);
-  localStorage.setItem(LS_KEYS.accessToken, data.accessToken);
-  localStorage.setItem(LS_KEYS.refreshToken, data.refreshToken);
-  localStorage.setItem(LS_KEYS.userInfo, JSON.stringify(data.user));
-  setSessionExpired(false);
+  return { emailConfigured: Boolean(body?.emailConfigured), debugLink: body?.debugLink };
+}
+
+/** First-run welcome acknowledged — recorded on the account (best effort;
+ *  the local copy flips regardless so a flaky signal never re-shows it) */
+export async function markOnboarded(): Promise<void> {
+  const now = new Date().toISOString();
+  patchCachedUser({ onboardedAt: now });
+  try {
+    await authedFetch('/auth/me/onboarded', { method: 'PUT' });
+  } catch {
+    /* offline — the cached flag carries this device; /auth/me heals later */
+  }
 }
 
 export async function logout(): Promise<void> {
@@ -200,6 +253,7 @@ export async function changeMyPassword(currentPassword: string, newPassword: str
   });
   const body = (await res.json().catch(() => null)) as { error?: string } | null;
   if (!res.ok) throw new Error(body?.error ?? 'failed to change password');
+  patchCachedUser({ mustChangePassword: false });
 }
 
 // Single-flight token refresh: refresh tokens rotate server-side, so two

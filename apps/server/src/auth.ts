@@ -5,6 +5,8 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { prisma } from './db.js';
 import { parsePayloadSafe, upsertRecord } from './records.js';
+import { APP_URL, emailEnabled, resetMail, sendEmail } from './email.js';
+import { rateLimit } from './rateLimit.js';
 
 const JWT_SECRET = process.env.JWT_SECRET ?? '';
 if (!JWT_SECRET) {
@@ -13,6 +15,10 @@ if (!JWT_SECRET) {
 
 const ACCESS_TTL = '1h';
 const REFRESH_TTL_DAYS = 30;
+const RESET_TTL_MINUTES = 60;
+// Dev/harness only: when email is OFF, /auth/forgot may echo the reset link
+// so the flow can be exercised without a mailbox. Never set in production.
+const DEBUG_LINKS = process.env.AUTH_DEBUG_LINKS === '1';
 
 export interface AuthedRequest extends Request {
   userId?: string;
@@ -46,6 +52,48 @@ async function issueRefreshToken(userId: string): Promise<string> {
     },
   });
   return token;
+}
+
+/** The user shape every session response carries (login, enroll, reset, /me) */
+type SessionUserRow = {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  companyId: string;
+  licenses: unknown;
+  signature: string | null;
+  pinHash: string | null;
+  mustChangePassword: boolean;
+  onboardedAt: Date | null;
+  company: { name: string };
+};
+
+function publicUser(user: SessionUserRow) {
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    company: user.company.name,
+    licenses: user.licenses,
+    signature: user.signature,
+    pinHash: user.pinHash,
+    mustChangePassword: user.mustChangePassword,
+    onboardedAt: user.onboardedAt?.toISOString() ?? null,
+  };
+}
+
+/** Mint a full session (tokens + profile) — shared by login, enrollment
+ *  and password reset so every entry path lands the user signed in. */
+export async function issueSession(userId: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId }, include: { company: true } });
+  if (!user) throw new Error('user not found');
+  return {
+    accessToken: signAccess(user),
+    refreshToken: await issueRefreshToken(user.id),
+    user: publicUser(user),
+  };
 }
 
 /** Create the bootstrap admin user from env on first boot */
@@ -131,17 +179,117 @@ authRouter.post('/login', async (req, res) => {
   res.json({
     accessToken: signAccess(user),
     refreshToken: await issueRefreshToken(user.id),
-    user: {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      company: user.company.name,
-      licenses: user.licenses,
-      signature: user.signature,
-      pinHash: user.pinHash,
-    },
+    user: publicUser(user),
   });
+});
+
+// ── Forgot / reset password (public, rate-limited) ──────────────────────────
+// Always answers 200 for a well-formed email so the endpoint can't be used
+// to enumerate accounts. `emailConfigured` is a SERVER fact (not a user
+// fact) and lets the client say "email isn't set up — ask your admin".
+
+const forgotSchema = z.object({ email: z.string().email() });
+
+authRouter.post('/forgot', rateLimit, async (req, res) => {
+  const parsed = forgotSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'email required' });
+    return;
+  }
+  const email = parsed.data.email.trim().toLowerCase();
+  const user = await prisma.user.findFirst({
+    where: { email: { equals: email, mode: 'insensitive' }, isActive: true },
+    include: { company: true },
+  });
+  let debugLink: string | undefined;
+  if (user) {
+    // One live reset per user — a new request supersedes the old link
+    await prisma.passwordReset.deleteMany({ where: { userId: user.id, usedAt: null } });
+    const raw = randomBytes(48).toString('base64url');
+    await prisma.passwordReset.create({
+      data: {
+        tokenHash: hashToken(raw),
+        userId: user.id,
+        expiresAt: new Date(Date.now() + RESET_TTL_MINUTES * 60_000),
+      },
+    });
+    const link = `${APP_URL}/reset/${raw}`;
+    await sendEmail(
+      resetMail({ to: user.email, name: user.name, company: user.company.name, link, ttlMinutes: RESET_TTL_MINUTES }),
+    );
+    if (DEBUG_LINKS && !emailEnabled()) debugLink = link;
+  }
+  res.json({ ok: true, emailConfigured: emailEnabled(), ...(debugLink ? { debugLink } : {}) });
+});
+
+async function findValidReset(rawToken: string) {
+  const reset = await prisma.passwordReset.findUnique({
+    where: { tokenHash: hashToken(rawToken) },
+    include: { user: true },
+  });
+  if (!reset || !reset.user.isActive) return { error: 'This reset link is not valid.' as const };
+  if (reset.usedAt) return { error: 'This reset link was already used — sign in with your new password.' as const };
+  if (reset.expiresAt < new Date())
+    return { error: 'This reset link has expired — request a new one from the sign-in screen.' as const };
+  return { reset };
+}
+
+authRouter.get('/reset/:token', rateLimit, async (req, res) => {
+  const token = req.params.token;
+  if (typeof token !== 'string' || token.length < 32) {
+    res.status(400).json({ error: 'This reset link is not valid.' });
+    return;
+  }
+  const found = await findValidReset(token);
+  if ('error' in found) {
+    res.status(410).json({ error: found.error });
+    return;
+  }
+  res.json({ name: found.reset.user.name, email: found.reset.user.email });
+});
+
+const resetSchema = z.object({ password: z.string().min(8) });
+
+authRouter.post('/reset/:token', rateLimit, async (req, res) => {
+  const token = req.params.token;
+  const parsed = resetSchema.safeParse(req.body);
+  if (typeof token !== 'string' || !parsed.success) {
+    res.status(400).json({ error: 'password of 8+ characters required' });
+    return;
+  }
+  const found = await findValidReset(token);
+  if ('error' in found) {
+    res.status(410).json({ error: found.error });
+    return;
+  }
+  const { reset } = found;
+  try {
+    await prisma.$transaction(async (tx) => {
+      // Claim first with a guard — two racing submits can't both win
+      const claimed = await tx.passwordReset.updateMany({
+        where: { id: reset.id, usedAt: null },
+        data: { usedAt: new Date() },
+      });
+      if (claimed.count === 0) throw new Error('already used');
+      await tx.user.update({
+        where: { id: reset.userId },
+        data: { passwordHash: await bcrypt.hash(parsed.data.password, 12), mustChangePassword: false },
+      });
+      // Every other device must sign in again with the new password
+      await tx.refreshToken.updateMany({
+        where: { userId: reset.userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+    });
+  } catch (err) {
+    if (err instanceof Error && err.message === 'already used') {
+      res.status(410).json({ error: 'This reset link was already used — sign in with your new password.' });
+      return;
+    }
+    throw err;
+  }
+  // …and THIS device lands signed in
+  res.json(await issueSession(reset.userId));
 });
 
 const refreshSchema = z.object({ refreshToken: z.string().min(1) });
@@ -200,7 +348,7 @@ authRouter.post('/change-password', requireAuth, async (req: AuthedRequest, res:
   }
   await prisma.user.update({
     where: { id: user.id },
-    data: { passwordHash: await bcrypt.hash(parsed.data.newPassword, 12) },
+    data: { passwordHash: await bcrypt.hash(parsed.data.newPassword, 12), mustChangePassword: false },
   });
   // Revoke all refresh tokens — sessions must re-authenticate
   await prisma.refreshToken.updateMany({
@@ -221,18 +369,17 @@ authRouter.get('/me', requireAuth, async (req: AuthedRequest, res: Response) => 
     res.status(401).json({ error: 'invalid session' });
     return;
   }
-  res.json({
-    user: {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      company: user.company.name,
-      licenses: user.licenses,
-      signature: user.signature,
-      pinHash: user.pinHash,
-    },
+  res.json({ user: publicUser(user) });
+});
+
+/** First-run welcome acknowledged — per ACCOUNT, so no device repeats it */
+authRouter.put('/me/onboarded', requireAuth, async (req: AuthedRequest, res: Response) => {
+  const user = await prisma.user.update({
+    where: { id: req.userId! },
+    data: { onboardedAt: new Date() },
+    select: { onboardedAt: true },
   });
+  res.json({ ok: true, onboardedAt: user.onboardedAt?.toISOString() ?? null });
 });
 
 const licenseSchema = z

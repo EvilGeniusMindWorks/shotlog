@@ -39,7 +39,7 @@ async (page) => {
       await authedFetch(`/users/${m.id}/reset-password`, {
         method: 'POST',
         // canonical dev password — audit-sweep.mjs and harness36 expect it
-        body: JSON.stringify({ tempPassword: 'mech-pass-1234' }),
+        body: JSON.stringify({ tempPassword: 'mech-pass-1234', requireChange: false }),
       });
     });
 

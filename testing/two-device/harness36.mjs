@@ -40,7 +40,7 @@ async (page) => {
           if (u)
             await authedFetch(`/users/${u.id}/reset-password`, {
               method: 'POST',
-              body: JSON.stringify({ tempPassword: pw }),
+              body: JSON.stringify({ tempPassword: pw, requireChange: false }),
             });
         };
         await reset('dinis@', 'dinis-pass-123');
