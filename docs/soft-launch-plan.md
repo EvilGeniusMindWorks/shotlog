@@ -486,9 +486,15 @@ and re-download, which is exactly what the merge hit first.
    possible) and the day page opens on the daily report for drillers even
    when a blast log exists.
 2. Copy from previous starts blank — copying is opt-in (overrules S7b).
-3. Rig visibility: rig line under the trio ("Checklist rig: R-102 · not
-   filed today · Change rig" / "Pick rig"), *Change rig* on the checklist
-   header, and the rig picked on a drill log becomes the usual rig.
+3. Rig visibility — superseded the same day (Matthew: the rig read as a
+   locked setting and changing it looked like it cost a checklist). Final
+   shape (plan artifact f26be2bb, "Change it" → start empty + quick picks +
+   full fleet): the home tile is the verb (*File rig checklist*), the
+   checklist form asks *Which rig?* first with nothing preselected, quick
+   picks with reasons (today's log · last filed · usual · recent), *All
+   rigs* with search, one-tap switch that saves nothing, "already filed
+   today → Open it", two rigs a day; usual rig written only on file / on
+   logging with a rig / Settings. Route `/drill-checklist` (rig optional).
 4. The drill log's back arrow sends a driller home (the plan page and the
    day hub are the blaster's screens).
 

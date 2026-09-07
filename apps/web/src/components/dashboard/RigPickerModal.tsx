@@ -1,17 +1,15 @@
-// Rig picker for starting a drill checklist — shared by DrillerHome,
-// MechanicHome, the Drilling tab and the StartGrid launcher (own file to
-// avoid an import cycle between RoleCards and StartGrid).
+// The "usual rig" — the account-level memory of the drill a driller runs
+// (S7a: `equipment.assignedUserId`, which field roles may patch; the device
+// key stays as the offline fallback and for non-driller roles).
 //
-// S7a (2026-09-07): a driller's pick is remembered on the ACCOUNT as the
-// machine's usual operator (`equipment.assignedUserId` — field roles may
-// patch equipment), so a phone and a tablet agree. The device key stays
-// as the offline fallback and for non-driller roles.
-import { useNavigate } from 'react-router-dom';
-import { ClipboardCheck, X } from 'lucide-react';
+// 2026-09-07 (Matthew): the rig is chosen ON the checklist form, so the
+// picker modal that used to live here is gone. What remains is the memory,
+// and it is written only by things that mean the rig was really used —
+// filing a checklist, logging holes with a rig on the log, or the explicit
+// Settings › Preferences choice. Browsing never writes it.
 import { useLiveQuery, db } from '@/db';
 import { getSessionUser } from '@/lib/session';
 import { nowISO } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 
 export const LAST_RIG_KEY = 'shotlog-last-rig';
 
@@ -64,69 +62,4 @@ export function useUsualRigId(): string | undefined {
   } catch {
     return undefined;
   }
-}
-
-export function RigPickerModal({
-  onClose,
-  onPick,
-  title = 'Which rig?',
-}: {
-  onClose: () => void;
-  /** Override the default (open that rig's checklist) — e.g. "Change rig" on the home */
-  onPick?: (equipmentId: string) => void;
-  title?: string;
-}) {
-  const navigate = useNavigate();
-  const rigs =
-    useLiveQuery(() =>
-      db.equipment
-        .filter((e) => e.isActive && (e.category === 'rock_drill' || e.category === 'equip_drill'))
-        .toArray(),
-    ) ?? [];
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-      <div className="w-full sm:max-w-sm bg-white rounded-t-xl sm:rounded-xl p-4 max-h-[80vh] overflow-auto" data-rig-picker>
-        <div className="flex items-center justify-between mb-2">
-          <p className="font-bold">{title}</p>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
-        <div className="space-y-1">
-          {rigs.map((r) => (
-            <button
-              key={r.id}
-              className="w-full flex items-center gap-3 px-3 py-3 text-left rounded-lg border border-gray-200 hover:bg-gray-50"
-              data-rig-option={r.assetNumber}
-              onClick={() => {
-                void rememberUsualRig(r.id);
-                if (onPick) {
-                  onPick(r.id);
-                  onClose();
-                } else navigate(`/drill-checklist/${r.id}`);
-              }}
-            >
-              <ClipboardCheck className="h-5 w-5 text-navy shrink-0" />
-              <span className="min-w-0">
-                <span className="block text-sm font-semibold">
-                  {r.assetNumber}
-                  {r.status === 'in_shop' && <span className="ml-2 text-xs font-normal text-amber-700">in the shop</span>}
-                </span>
-                <span className="block text-xs text-gray-400 truncate">{r.description}</span>
-              </span>
-            </button>
-          ))}
-          {rigs.length === 0 && (
-            <p className="text-sm text-gray-400 py-2">
-              No drills in the equipment registry yet — ask the office to add your rig.
-            </p>
-          )}
-        </div>
-        <p className="text-xs text-gray-400 mt-3">
-          Your pick becomes your usual rig — the checklist tile opens it until you change it or
-          log holes on another rig.
-        </p>
-      </div>
-    </div>
-  );
 }

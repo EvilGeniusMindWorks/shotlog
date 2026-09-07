@@ -119,6 +119,7 @@ export function App() {
           <Route path="/equipment-locator" element={<EquipmentLocatorPage />} />
           <Route path="/drilling" element={<DrillingPage />} />
           <Route path="/crew/:id" element={<CrewPage />} />
+          <Route path="/drill-checklist" element={<DrillChecklistPage />} />
           <Route path="/drill-checklist/:equipmentId" element={<DrillChecklistPage />} />
           <Route path="/incident/:incidentId" element={<IncidentPage />} />
           <Route path="/admin" element={<AdminLayout />}>

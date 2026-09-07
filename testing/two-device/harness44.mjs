@@ -133,7 +133,7 @@ async (page) => {
     ok('the checklist tour auto-runs on the rig checklist', (await overlay(P2).getAttribute('data-tour-kind')) === 'checklist' && /The rig checklist/.test(await overlay(P2).innerText()));
     await P2.locator('[data-tour-next]').click();
     await P2.waitForTimeout(700);
-    ok('stop 2 spotlights the hour meter', /Hour meter first/.test(await overlay(P2).innerText()) && (await P2.locator('[data-tour="chk-hours"]').count()) === 1);
+    ok('stop 2 spotlights the rig question', /Which rig\?/.test(await overlay(P2).innerText()) && (await P2.locator('[data-tour="chk-rig"]').count()) === 1);
     await stepThrough(P2);
     await P2.waitForTimeout(800);
     ok('checklist recorded on the account', (await toursOf(P2)).includes('checklist'));

@@ -17,7 +17,6 @@ import { createIncident } from '@/pages/admin/AdminIncidentsPage';
 import type { IncidentType } from '@/db/schema';
 import { IconChip } from '@/components/ui/section-card';
 import { Button } from '@/components/ui/button';
-import { RigPickerModal } from './RigPickerModal';
 
 type Tile =
   | { kind: LauncherDoc; label: string; hint: string; icon: JSX.Element }
@@ -74,7 +73,6 @@ const ROLE_TILES: Record<string, (keyof typeof TILES)[]> = {
 export function StartGrid({ role }: { role: string }) {
   const navigate = useNavigate();
   const [pickFor, setPickFor] = useState<LauncherDoc | null>(null);
-  const [showRigs, setShowRigs] = useState(false);
   const [showIncident, setShowIncident] = useState(false);
   const [busy, setBusy] = useState(false);
   const jobs =
@@ -99,7 +97,8 @@ export function StartGrid({ role }: { role: string }) {
   };
 
   const tapTile = (tile: Tile) => {
-    if (tile.kind === 'checklist') return setShowRigs(true);
+    // The rig is the first question on the checklist itself (2026-09-07)
+    if (tile.kind === 'checklist') return navigate('/drill-checklist');
     if (tile.kind === 'incident') return setShowIncident(true);
     // Single active job — skip the picker entirely
     if (jobs.length === 1) return void launch(tile.kind, jobs[0].id);
@@ -136,7 +135,6 @@ export function StartGrid({ role }: { role: string }) {
           onClose={() => setPickFor(null)}
         />
       )}
-      {showRigs && <RigPickerModal onClose={() => setShowRigs(false)} />}
       {showIncident && <IncidentTypeSheet onClose={() => setShowIncident(false)} />}
     </div>
   );

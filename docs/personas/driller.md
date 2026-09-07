@@ -155,10 +155,18 @@ report (solo submit) · My Records · jobs list
   page opens on the daily report for the driller bucket even when a blast
   log exists; the Day tab is one tap away.
 - ✅ **Copy from previous starts blank** — copying is opt-in.
-- ✅ **The rig is obvious.** A line under the trio names the checklist rig
-  ("Checklist rig: R-102 · not filed today") with *Change rig* / *Pick
-  rig*; the checklist header has *Change rig*; the rig picked on a drill
-  log becomes the usual rig (the rig follows the work, not the person);
-  the launcher's Rig Checklist tile and the Drilling tab door remain.
+- ✅ **The rig is the first question on the checklist, not a setting on the
+  dashboard** (Matthew's second pass, same day — the rig line + Change rig
+  read as a locked value and changing rigs looked like it cost a filed
+  checklist). The home tile is a verb: *File rig checklist · not filed
+  today* / *Checklist filed · R-102*, and always opens the form. The form
+  opens with NOTHING preselected; quick picks name the rigs that matter
+  today with their reason (today's log · last filed · usual · recent) and
+  *All rigs* opens the searchable fleet. One tap switches, nothing is saved
+  until you file; a rig already filed today says so and offers *Open it*.
+  Two rigs in a day is natural. The usual rig is written only by filing a
+  checklist, logging holes with a rig, or Settings — browsing never writes.
+  Old per-rig links still preselect. Launcher tile and Drilling door open
+  the same form.
 - ✅ **Back goes home.** The drill log's back arrow returns a driller to
   their home (the trio), never to the blaster's plan page or day hub.

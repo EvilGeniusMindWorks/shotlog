@@ -114,6 +114,21 @@ export function useOpenTickets() {
 }
 
 /** Latest checklist per rig today — powers the "not filed yet" nudges */
+/** The checklists I filed today, newest first, with their rigs' asset
+ *  numbers — the driller home tile and the Drilling door read this
+ *  (2026-09-07: the rig is chosen on the form, the home only reports). */
+export function useMyChecklistsToday(): { checklist: DrillChecklist; asset: string }[] | undefined {
+  const me = getSessionUser();
+  return useLiveQuery(async () => {
+    const rows = (
+      await db.drillChecklists.filter((c) => c.date === todayISO() && (!me?.id || c.drillerUserId === me.id)).toArray()
+    ).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const out: { checklist: DrillChecklist; asset: string }[] = [];
+    for (const c of rows) out.push({ checklist: c, asset: (await db.equipment.get(c.equipmentId))?.assetNumber ?? '—' });
+    return out;
+  }, [me?.id]);
+}
+
 export function useTodayChecklist(equipmentId: string | undefined) {
   return useLiveQuery(
     () =>

@@ -82,23 +82,26 @@ async (page) => {
     // Checklist with nothing else: the tile opens the picker (no plan, no job)
     await P1.goto(`${WEB}/drilling`);
     await P1.locator('[data-checklist-door]').waitFor({ timeout: 8000 });
-    ok('Drilling tab has a Rig checklist door before any plan exists', /Pick your rig|not filed today/.test(await P1.locator('[data-checklist-door]').innerText()));
+    ok('Drilling tab has a Rig checklist door before any plan exists', /File rig checklist/.test(await P1.locator('[data-checklist-door]').innerText()));
     await P1.locator('[data-checklist-door]').click();
-    await P1.locator('[data-rig-picker]').waitFor({ timeout: 5000 });
-    await P1.locator('[data-rig-option]').first().waitFor({ timeout: 8000 });
-    const options = await P1.locator('[data-rig-option]').count();
-    ok(`picker lists the copied drills (${options})`, options > 0);
-    const pickedAsset = await P1.locator('[data-rig-option]').first().getAttribute('data-rig-option');
-    await P1.locator('[data-rig-option]').first().click();
-    await P1.waitForURL(/drill-checklist\//, { timeout: 8000 });
-    await P1.waitForTimeout(800);
+    await P1.waitForURL(/drill-checklist$/, { timeout: 8000 });
+    await P1.locator('[data-rig-field]').waitFor({ timeout: 5000 });
+    ok('the form asks which rig first — nothing preselected', (await P1.locator('[data-chk-pick-first]').count()) === 1);
+    await P1.locator('[data-rig-all-toggle]').click();
+    await P1.locator('[data-rig-all] [data-rig-chip]').first().waitFor({ timeout: 8000 });
+    const options = await P1.locator('[data-rig-all] [data-rig-chip]').count();
+    ok(`the fleet list shows the copied drills (${options})`, options > 0);
+    const pickedAsset = await P1.locator('[data-rig-all] [data-rig-chip]').first().getAttribute('data-rig-chip');
+    await P1.locator('[data-rig-all] [data-rig-chip]').first().click();
+    await P1.waitForTimeout(600);
+    ok('tapping a rig makes the form that rig\'s, no save', (await P1.locator('[data-chk-rig-selected]').getAttribute('data-chk-rig-selected')) === pickedAsset && (await P1.locator('[data-chk-hours]').count()) === 1);
     ok('checklist opens with no job attached ("No job — just the rig")', (await P1.locator('[data-checklist-job]').inputValue()) === '');
     const usual = await P1.evaluate(async () => {
       const { db } = await import('/src/db/index.ts');
       const me = JSON.parse(localStorage.getItem('shotlog-user-info') ?? '{}');
       return (await db.equipment.filter((e) => e.assignedUserId === me.id).toArray()).map((e) => e.assetNumber);
     });
-    ok(`the pick is remembered on the account as usual operator (${usual.join(',')})`, usual.length === 1 && usual[0] === pickedAsset);
+    ok('browsing the rigs writes nothing to the account (usual rig only on file)', usual.length === 0);
     // Now the week
     await addSample(P1);
     await P1.goto(WEB);
@@ -110,9 +113,12 @@ async (page) => {
     await P1.goto(`${WEB}/drilling`);
     await P1.waitForTimeout(1500);
     const door = await P1.locator('[data-checklist-door]').innerText();
-    ok('checklist door now names the rig from today\'s log or the usual rig', /not filed today/.test(door));
+    ok('checklist door still reads as the action (not filed today)', /File rig checklist/.test(door));
     await P1.locator('[data-checklist-door]').click();
-    await P1.waitForURL(/drill-checklist\//, { timeout: 8000 });
+    await P1.waitForURL(/drill-checklist$/, { timeout: 8000 });
+    await P1.locator('[data-rig-chip][data-rig-reason="today\'s log"]').waitFor({ timeout: 8000 });
+    ok('the quick picks lead with the rig from today\'s drill log', (await P1.locator('[data-rig-quick] [data-rig-chip]').first().getAttribute('data-rig-reason')) === "today's log");
+    await P1.locator('[data-rig-chip][data-rig-reason="today\'s log"]').click();
     await P1.waitForTimeout(1000);
     const sel = P1.locator('[data-checklist-job]');
     const selText = await sel.locator('option:checked').innerText();

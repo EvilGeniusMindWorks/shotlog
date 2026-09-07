@@ -255,7 +255,12 @@ export const SCREEN_TOURS: Record<ScreenTourKey, TourStep[]> = {
     {
       selector: null,
       title: 'The rig checklist',
-      body: 'The paper walk-around, once a day per machine. Needs no job and no plan. Three quick stops.',
+      body: 'The paper walk-around, once a day per machine. Needs no job and no plan. Four quick stops.',
+    },
+    {
+      selector: '[data-tour="chk-rig"]',
+      title: 'Which rig?',
+      body: 'Tap the rig you are on. The quick picks are the ones that matter today — from your drill log, the last you filed, your usual — and "All rigs" opens the whole fleet with search. Two rigs today? File one, then pick the other here.',
     },
     {
       selector: '[data-tour="chk-hours"]',
@@ -351,7 +356,7 @@ export function screenTourFor(pathname: string, search: string, bucket: TourBuck
   if (/^\/blast-day\/[^/]+\/drill-log\/[^/]+$/.test(pathname) || /^\/jobs\/[^/]+\/drill-plan\/[^/]+\/log\/[^/]+$/.test(pathname)) {
     return bucket === 'driller' ? 'drill-log' : null;
   }
-  if (/^\/drill-checklist\/[^/]+$/.test(pathname)) return bucket === 'driller' ? 'checklist' : null;
+  if (/^\/drill-checklist(\/[^/]+)?$/.test(pathname)) return bucket === 'driller' ? 'checklist' : null;
   if (pathname === '/' && bucket === 'mechanic') return 'shop';
   if (pathname === '/admin/approvals') return bucket === 'office' || bucket === 'admin' ? 'approvals' : null;
   if (pathname === '/admin/people') return bucket === 'admin' ? 'people' : null;

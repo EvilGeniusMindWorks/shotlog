@@ -9,7 +9,7 @@ import { AlertTriangle, ClipboardCheck, Wrench, X } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { createDrillPlanLog, drillLogRoute, getPlanHoles, usePlanDrilling } from '@/hooks/useDrillPlans';
 import { createDrillLog, getShotPlan } from '@/hooks/useDrillLogs';
-import { useOpenTickets, useTodayChecklist } from '@/hooks/useMaintenance';
+import { useMyChecklistsToday, useOpenTickets } from '@/hooks/useMaintenance';
 import { getSessionUser, getRealSessionUser, setViewRole } from '@/lib/session';
 import { listSubmissionSummaries, openSubmissionPdfById } from '@/lib/archive';
 import { formatDate, todayISO } from '@/lib/utils';
@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { RigPickerModal, useUsualRigId } from './RigPickerModal';
+import { useUsualRigId } from './RigPickerModal';
 import { ConsequenceSheet } from '@/components/records/LifecycleMenu';
 import { TimeCardRow } from '@/components/forms/TimeCardsCard';
 import { canEditCard, createStandaloneTimeCard } from '@/hooks/useTimeCards';
@@ -458,7 +458,7 @@ export function DrillingWork() {
 export function DrillerHome() {
   const navigate = useNavigate();
   const me = getSessionUser();
-  const [showRigPicker, setShowRigPicker] = useState(false);
+  const myChecklistsToday = useMyChecklistsToday();
   const myLogs = useLiveQuery(async () => {
     const logs = (await projectDrillLogs()).filter(
       (l) => l.status === 'open' && (!me?.id || l.drillerUserId === me.id || !l.drillerUserId),
@@ -500,8 +500,13 @@ export function DrillerHome() {
   const lastRigId =
     myLogs?.find((r) => r.log.drillRigEquipmentId)?.log.drillRigEquipmentId ?? usualRigId;
   const rig = useLiveQuery(() => (lastRigId ? db.equipment.get(lastRigId) : undefined), [lastRigId]);
-  const todayChecklist = useTodayChecklist(lastRigId);
   const tickets = useOpenTickets().filter((t) => t.equipmentId === lastRigId);
+  // Information for the home only: the rig on today's log (the checklist form asks)
+  const todayLogRigId = todayLogs.find((x) => x.log.drillRigEquipmentId)?.log.drillRigEquipmentId;
+  const todayLogRigAsset = useLiveQuery(
+    async () => (todayLogRigId ? (await db.equipment.get(todayLogRigId))?.assetNumber : undefined),
+    [todayLogRigId],
+  );
   const myDays = useLiveQuery(async () => {
     const days = await db.blastDays
       .filter((d) => !isBlastingWork(d.typeOfWork))
@@ -597,10 +602,16 @@ export function DrillerHome() {
 
       {/* The trio — the day's three obligations. All green = done. */}
       <div className="flex gap-2">
+        {/* The tile is a VERB (Matthew, 2026-09-07): it opens the checklist,
+            where the rig is the first question. Done = I filed one today. */}
         <TrioTile
-          state={todayChecklist ? 'done' : 'todo'}
-          label={`Checklist${rig ? `\n${rig.assetNumber}` : ''}`}
-          onClick={() => (lastRigId ? navigate(`/drill-checklist/${lastRigId}`) : setShowRigPicker(true))}
+          state={(myChecklistsToday?.length ?? 0) > 0 ? 'done' : 'todo'}
+          label={
+            (myChecklistsToday?.length ?? 0) > 0
+              ? `Checklist filed\n${myChecklistsToday!.map((m) => m.asset).join(', ')}`
+              : 'File rig checklist\nnot filed today'
+          }
+          onClick={() => navigate('/drill-checklist')}
         />
         <TrioTile
           state={
@@ -625,28 +636,13 @@ export function DrillerHome() {
           onClick={() => setShowHours(true)}
         />
       </div>
-      {/* S7 follow-up (Matthew's driller rehearsal): the checklist door and
-          the rig it opens must be OBVIOUS — the rig follows the last one you
-          logged holes on or picked; change it here in one tap */}
-      <div className="flex items-center gap-2 text-xs text-gray-500 -mt-1 px-1" data-rig-line>
-        <span className="min-w-0 truncate">
-          {rig ? (
-            <>
-              Checklist rig: <b className="text-gray-700">{rig.assetNumber}</b>
-              {todayChecklist ? ' · filed today' : ' · not filed today'}
-            </>
-          ) : (
-            'No rig picked yet — the checklist tile asks which rig'
-          )}
-        </span>
-        <button
-          className="ml-auto shrink-0 text-navy underline underline-offset-2 min-h-[32px] px-1"
-          data-change-rig
-          onClick={() => setShowRigPicker(true)}
-        >
-          {rig ? 'Change rig' : 'Pick rig'}
-        </button>
-      </div>
+      {/* Information only — the dashboard does not own the rig; the checklist
+          form asks. */}
+      {todayLogRigAsset && (
+        <p className="text-xs text-gray-400 -mt-1 px-1" data-rig-info>
+          Today's rig from your drill log: {todayLogRigAsset}
+        </p>
+      )}
 
       {/* Drilling today — the active pattern with everyone's progress */}
       {drillingToday && (
@@ -751,13 +747,6 @@ export function DrillerHome() {
         </Button>
       </div>
 
-      {showRigPicker && (
-        <RigPickerModal
-          title={rig ? 'Which rig today?' : 'Which rig?'}
-          onClose={() => setShowRigPicker(false)}
-          onPick={(id) => navigate(`/drill-checklist/${id}`)}
-        />
-      )}
       {showHours && (
         <MyHoursSheet
           card={myCardToday}

@@ -2,10 +2,10 @@ async (page) => {
   // S7 follow-up — Matthew's driller rehearsal (2026-09-07): a driller's new
   // day never opens on the blaster's hub (no blasting-type prefill for the
   // driller bucket; the day page lands on the daily report for them even
-  // when a blast log exists); Copy from previous starts blank; the checklist
-  // door and its rig are obvious — a rig line under the trio with "Change
-  // rig", "Change rig" on the checklist itself, and the rig logged on a
-  // drill log becomes the usual rig.
+  // when a blast log exists); Copy from previous starts blank; the RIG is
+  // the first question ON the checklist — nothing preselected, quick picks
+  // with reasons, All rigs with search, one-tap switch that saves nothing,
+  // usual rig written only on file; the drill log's back arrow goes home.
   const browser = page.context().browser();
   const results = [];
   const ok = (name, cond) => results.push(`${cond ? 'PASS' : 'FAIL'} ${name}`);
@@ -34,8 +34,15 @@ async (page) => {
     await P.waitForTimeout(3000);
   };
   const selectedChip = async (P) => (await P.locator('[data-new-day-dialog] button.bg-navy').allInnerTexts()).join('|');
+  const usualRigs = (P) =>
+    P.evaluate(async () => {
+      const { db } = await import('/src/db/index.ts');
+      const me = JSON.parse(localStorage.getItem('shotlog-user-info'));
+      return (await db.equipment.filter((e) => e.assignedUserId === me.id).toArray()).map((e) => e.assetNumber);
+    });
   let blasterDayId;
   let drillerDayId;
+  let checklistIds = [];
   let jobId;
   try {
     // ── 0. a blaster's Drill to Blast day at a job (the prefill bait) ───
@@ -46,7 +53,6 @@ async (page) => {
       const { db } = await import('/src/db/index.ts');
       const { createBlastDay } = await import('/src/hooks/useBlastDay.ts');
       const jobs = (await db.jobs.filter((j) => !j.archivedAt && j.isActive).toArray()).sort((a, b) => a.name.localeCompare(b.name));
-      // yesterday's blasting day so "the job's last day" is Drill to Blast
       const d = new Date(); d.setDate(d.getDate() - 1);
       const y = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       const id = await createBlastDay(jobs[2].id, y, undefined, { typeOfWork: 'drill_to_blast', name: `S7f bait ${stamp}` });
@@ -57,7 +63,7 @@ async (page) => {
     await P0.waitForTimeout(3000);
     await c0.close();
 
-    // ── 1. driller: usual rig, change rig, checklist door ───────────────
+    // ── 1. driller: the rig is the first question ON the checklist ─────
     const c1 = await mkCtx();
     const P1 = await c1.newPage();
     await signIn(P1, 'dinis@test.local', 'dinis-pass-123');
@@ -68,36 +74,69 @@ async (page) => {
     await P1.waitForTimeout(800);
     await P1.reload();
     await P1.waitForTimeout(2500);
-    // With the usual rig forgotten, the line falls back to the rig on my most
-    // recent drill log (the rig follows the work) — either way it must SAY
-    // which rig, or say none and offer Pick rig
-    const line0 = await P1.locator('[data-rig-line]').innerText();
-    const btn0 = await P1.locator('[data-change-rig]').innerText();
-    ok(`the home states the checklist rig or the lack of one (${line0.replace(/\n/g, ' ')})`, (/Checklist rig:/.test(line0) && /Change rig/.test(btn0)) || (/No rig picked yet/.test(line0) && /Pick rig/.test(btn0)));
-    await P1.locator('[data-change-rig]').click();
-    await P1.locator('[data-rig-picker]').waitFor({ timeout: 5000 });
-    await P1.locator('[data-rig-option]').first().waitFor({ timeout: 8000 });
-    const rigs = await P1.locator('[data-rig-option]').evaluateAll((els) => els.map((e) => e.getAttribute('data-rig-option')));
-    ok(`picker lists the drills (${rigs.join(', ')})`, rigs.length >= 1);
-    await P1.locator('[data-rig-option]').first().click();
-    await P1.waitForURL(/drill-checklist\//, { timeout: 8000 });
-    ok('picking a rig from the home opens ITS checklist', /drill-checklist\//.test(P1.url()));
-    await P1.locator('[data-checklist-change-rig]').waitFor({ timeout: 8000 }).catch(() => undefined);
-    ok('the checklist header offers Change rig', (await P1.locator('[data-checklist-change-rig]').count()) === 1);
-    const firstUrl = P1.url();
-    if (rigs.length > 1) {
-      await P1.locator('[data-checklist-change-rig]').click();
-      await P1.locator('[data-rig-option]').nth(1).waitFor({ timeout: 5000 });
-      await P1.locator('[data-rig-option]').nth(1).click();
-      await P1.waitForTimeout(800);
-      ok('Change rig on the checklist switches to the other rig', P1.url() !== firstUrl && /drill-checklist\//.test(P1.url()));
-    } else {
-      ok('Change rig on the checklist (one rig in this registry — skipped)', true);
-    }
+    ok('the home has no rig setting and no Change rig', (await P1.locator('[data-change-rig]').count()) === 0 && (await P1.locator('[data-rig-line]').count()) === 0);
+    const tile = P1.getByRole('button', { name: /File rig checklist|Checklist filed/ });
+    ok('the tile reads as the action ("File rig checklist")', (await tile.count()) === 1);
+    await tile.click();
+    await P1.waitForURL(/drill-checklist$/, { timeout: 8000 });
+    await P1.locator('[data-rig-field]').waitFor({ timeout: 5000 });
+    ok('nothing is preselected — the form asks which rig', (await P1.locator('[data-chk-pick-first]').count()) === 1 && (await P1.locator('[data-chk-hours]').count()) === 0);
+    const quick = await P1.locator('[data-rig-quick] [data-rig-chip]').evaluateAll((els) => els.map((e) => e.getAttribute('data-rig-reason')));
+    ok(`quick picks carry their reason (${quick.join(', ') || 'none on this account'})`, quick.every((r) => ["today's log", 'last filed', 'usual', 'recent'].includes(r)));
+    await P1.locator('[data-rig-all-toggle]').click();
+    await P1.locator('[data-rig-all] [data-rig-chip]').first().waitFor({ timeout: 8000 });
+    const rigs = await P1.locator('[data-rig-all] [data-rig-chip]').evaluateAll((els) => els.map((e) => e.getAttribute('data-rig-chip')));
+    ok(`All rigs opens the fleet with search (${rigs.join(', ')})`, rigs.length >= 1 && (await P1.locator('[data-rig-search]').count()) === 1);
+    await P1.locator('[data-rig-search]').fill(rigs[0].slice(0, 3));
+    await P1.waitForTimeout(300);
+    ok('search narrows the fleet', (await P1.locator('[data-rig-all] [data-rig-chip]').count()) >= 1);
+    await P1.locator(`[data-rig-all] [data-rig-chip="${rigs[0]}"]`).click();
+    await P1.waitForTimeout(600);
+    ok('one tap: the form is now for that rig (hours, service clock, job) — nothing saved', (await P1.locator('[data-chk-rig-selected]').getAttribute('data-chk-rig-selected')) === rigs[0] && (await P1.locator('[data-chk-hours]').count()) === 1);
+    ok('browsing and picking write nothing to the account', (await usualRigs(P1)).length === 0);
+    // File it → the rig becomes usual; the tile and the door say filed
+    const start = await P1.evaluate(async (asset) => {
+      const { db } = await import('/src/db/index.ts');
+      const { buildHourLedger } = await import('/src/lib/hourLedger.ts');
+      const rig = await db.equipment.filter((e) => e.assetNumber === asset).first();
+      const { currentHours } = await buildHourLedger(rig);
+      return Math.ceil(Math.max(currentHours ?? 0, rig.hourMeter ?? 0)) + 10;
+    }, rigs[0]);
+    await P1.locator('[data-chk-hours]').fill(String(start));
+    await P1.locator('[data-chk-file]').click();
+    await P1.waitForURL(/drill-checklist-file\//, { timeout: 10000 });
+    await P1.waitForTimeout(1200);
+    checklistIds = await P1.evaluate(async () => {
+      const { db } = await import('/src/db/index.ts');
+      const { todayISO } = await import('/src/lib/utils.ts');
+      const me = JSON.parse(localStorage.getItem('shotlog-user-info'));
+      return (await db.drillChecklists.filter((c) => c.date === todayISO() && c.drillerUserId === me.id).toArray()).map((c) => c.id);
+    });
+    const usualAfter = await usualRigs(P1);
+    ok('FILING is what makes a rig usual', usualAfter.length === 1 && usualAfter[0] === rigs[0]);
     await P1.goto(WEB);
     await P1.waitForTimeout(2000);
-    const line1 = await P1.locator('[data-rig-line]').innerText();
-    ok(`the home now names the checklist rig (${line1.replace(/\n/g, ' ')})`, /Checklist rig:/.test(line1) && /Change rig/.test(await P1.locator('[data-change-rig]').innerText()));
+    const filedTile = P1.getByRole('button', { name: /Checklist filed/ });
+    ok('the home tile now says Checklist filed · rig', (await filedTile.count()) === 1 && (await filedTile.innerText()).includes(rigs[0]));
+    // Back on the form: the filed rig is a quick pick and says "already has today's"
+    await P1.goto(`${WEB}/drill-checklist`);
+    await P1.locator('[data-rig-quick] [data-rig-chip][data-rig-reason="last filed"]').waitFor({ timeout: 8000 });
+    await P1.locator('[data-rig-quick] [data-rig-chip][data-rig-reason="last filed"]').click();
+    await P1.waitForTimeout(600);
+    ok('a rig already filed today says so, offers Open it, and lets you pick another', (await P1.locator('[data-chk-existing]').count()) === 1 && (await P1.locator('[data-chk-hours]').count()) === 0 && (await P1.locator('[data-rig-all-toggle]').count()) === 1);
+    // Old per-rig links still preselect
+    const rigId = await P1.evaluate(async (asset) => {
+      const { db } = await import('/src/db/index.ts');
+      return (await db.equipment.filter((e) => e.assetNumber === asset).first())?.id;
+    }, rigs[0]);
+    await P1.goto(`${WEB}/drill-checklist/${rigId}`);
+    await P1.waitForFunction((asset) => document.querySelector('[data-chk-rig-selected]')?.getAttribute('data-chk-rig-selected') === asset, rigs[0], { timeout: 8000 }).catch(() => undefined);
+    ok('an old per-rig link preselects that rig', (await P1.locator('[data-chk-rig-selected]').getAttribute('data-chk-rig-selected')) === rigs[0]);
+    await P1.goto(`${WEB}/drilling`);
+    await P1.waitForFunction(() => /File another rig checklist/.test(document.querySelector('[data-checklist-door]')?.textContent ?? ''), null, { timeout: 8000 }).catch(() => undefined);
+    ok('the Drilling door reports what was filed and opens the same form', /File another rig checklist/.test(await P1.locator('[data-checklist-door]').innerText()));
+    await P1.goto(WEB);
+    await P1.waitForTimeout(1500);
 
     // ── 2. driller: the new-day dialog never prefills a blasting type; copy blank ─
     await P1.locator('[data-tour="fab"]').click();
@@ -109,7 +148,6 @@ async (page) => {
     ok('Copy from previous is offered but starts blank', (await P1.locator('[data-day-copy]').count()) === 1 && (await P1.locator('[data-day-copy]').inputValue()) === '');
     await P1.locator('[data-day-name]').fill(`S7f driller day ${stamp}`);
     await P1.locator('[data-day-start]').click();
-    // Watch the first two seconds after Start work: the blaster's spine must never appear
     let spineSeen = false;
     for (let i = 0; i < 40; i++) {
       if ((await P1.locator('[data-tour="day-spine"]').count()) > 0) spineSeen = true;
@@ -123,7 +161,6 @@ async (page) => {
     }, drillerDayId);
     ok('the day is Drill Only, authored by the driller', dd?.typeOfWork === 'drill_only' && dd?.authorBucket === 'driller');
     ok('the driller lands on the daily report (their card, checklist, file-the-day)', (await P1.locator('[data-time-cards]').count()) === 1 && (await P1.locator('[data-report-owner]').getAttribute('data-report-owner')) === 'me');
-    // Even a BLASTING day (the blaster's) opens on the daily report for the driller
     await P1.goto(`${WEB}/blast-day/${blasterDayId}`);
     await P1.locator('[data-report-owner]').waitFor({ timeout: 8000 });
     ok('a blasting day opens on the daily report for the driller, not the hub', (await P1.locator('[data-tour="day-spine"]').count()) === 0 && (await P1.locator('[data-time-cards]').count()) === 1);
@@ -145,19 +182,15 @@ async (page) => {
     ok('the drill log\'s back arrow takes the driller HOME, not to the blaster\'s day hub', P1.url().replace(WEB, '').split('?')[0] === '/');
     await P1.goto(`${WEB}/blast-day/${blasterDayId}/drill-log/${logId}`);
     await P1.locator('[data-log-rig]').waitFor({ timeout: 8000 });
-    if (rigs.length > 1) {
-      const options = await P1.locator('[data-log-rig] option').evaluateAll((els) => els.map((e) => e.value).filter(Boolean));
-      await P1.locator('[data-log-rig]').selectOption(options[0]);
-      await P1.waitForTimeout(800);
-      const usual = await P1.evaluate(async () => {
-        const { db } = await import('/src/db/index.ts');
-        const me = JSON.parse(localStorage.getItem('shotlog-user-info'));
-        return (await db.equipment.filter((e) => e.assignedUserId === me.id).toArray()).map((e) => e.id);
-      });
-      ok('picking the rig on a drill log makes it the usual rig (one usual rig, the one logged)', usual.length === 1 && usual[0] === options[0]);
-    } else {
-      ok('drill-log rig → usual rig (one rig in this registry — skipped)', true);
-    }
+    const options = await P1.locator('[data-log-rig] option').evaluateAll((els) => els.map((e) => e.value).filter(Boolean));
+    await P1.locator('[data-log-rig]').selectOption(options[0]);
+    await P1.waitForTimeout(800);
+    const usualLog = await P1.evaluate(async () => {
+      const { db } = await import('/src/db/index.ts');
+      const me = JSON.parse(localStorage.getItem('shotlog-user-info'));
+      return (await db.equipment.filter((e) => e.assignedUserId === me.id).toArray()).map((e) => e.id);
+    });
+    ok('logging holes with a rig on the log also makes it the usual rig', usualLog.length === 1 && usualLog[0] === options[0]);
     await P1.waitForTimeout(2500);
     await c1.close();
   } catch (e) {
@@ -167,8 +200,8 @@ async (page) => {
       const c9 = await mkCtx();
       const P9 = await c9.newPage();
       await signIn(P9, 'mark@baystateblasting.com', 'dev-password-123');
-      const removed = await P9.evaluate(async (ids) => {
-        const { db } = await import('/src/db/index.ts');
+      const removed = await P9.evaluate(async ({ ids, checklistIds }) => {
+        const { db, deleteWithTombstone } = await import('/src/db/index.ts');
         const { deleteDayCascade } = await import('/src/lib/lifecycle.ts');
         let n = 0;
         for (const id of ids) {
@@ -178,10 +211,11 @@ async (page) => {
             n++;
           }
         }
+        for (const id of checklistIds) if (await db.drillChecklists.get(id)) await deleteWithTombstone('drillChecklists', id);
         return n;
-      }, [blasterDayId, drillerDayId]);
+      }, { ids: [blasterDayId, drillerDayId], checklistIds });
       await P9.waitForTimeout(3000);
-      results.push(`PASS cleanup removed ${removed} harness day(s)`);
+      results.push(`PASS cleanup removed ${removed} harness day(s) + ${checklistIds.length} checklist(s)`);
       await c9.close();
     } catch (e) {
       results.push(`FAIL cleanup ${e.message}`);
