@@ -60,7 +60,10 @@ npm run typecheck:web            # incremental (~1 s warm)
 ```
 
 Pre-steps some harnesses need are noted at the top of each file (e.g.
-harness44 resets `User.toursDone` for the dev accounts).
+harness44 resets `User.toursDone` for the dev accounts — run the SQL
+*before* starting it). Run harness42 (rehearsal) alone: it asserts the home
+company's record count never changes, so any harness writing in parallel
+fails it.
 
 Older files (`two-device/harness1–3`, `audit-sweep.mjs`, `build1-verify.mjs`)
 predate the runner; `two-device/README.md` describes the original sync
