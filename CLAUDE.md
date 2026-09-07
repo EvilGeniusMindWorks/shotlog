@@ -34,6 +34,8 @@ Android tablet (primary), phone, PC/Mac — all via PWA. Full functionality offl
 - CSS: Tailwind utility classes, no custom CSS files unless necessary
 - Components: shadcn/ui as the base component library
 - Testing: Vitest for unit tests, especially the calculations module
+- Browser harnesses: `npm run e2e -- <n> [--only k] [-p]` (see testing/README.md) — never through the Playwright MCP for regressions; new harnesses take `(page, lib)` and use `lib.report()` sections
+- Typecheck: `npm run typecheck:web` (incremental); the dev API runs under `tsx watch`
 
 ## Spec Documents (in ~/Downloads/files-20/)
 - `BlastLog-Pro-Spec.md` — Main spec: data model, field mapping, architecture

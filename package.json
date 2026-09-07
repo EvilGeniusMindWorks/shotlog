@@ -11,12 +11,15 @@
     "dev:server": "npm run dev -w apps/server",
     "build": "npm run build -w packages/shared && npm run build -w apps/web && npm run build -w apps/server",
     "test": "npm run test -w packages/shared",
-    "typecheck": "tsc --build && tsc --noEmit -p apps/web"
+    "typecheck": "tsc --build && tsc --noEmit -p apps/web",
+    "typecheck:web": "tsc --noEmit -p apps/web",
+    "e2e": "node testing/run.mjs"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "devDependencies": {
-    "pg": "^8.22.0"
+    "pg": "^8.22.0",
+    "playwright": "^1.63.0"
   }
 }

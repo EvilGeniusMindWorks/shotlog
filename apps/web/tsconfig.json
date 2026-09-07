@@ -11,6 +11,8 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "noEmit": true,
+    "incremental": true,
+    "tsBuildInfoFile": "./node_modules/.cache/tsc-web.tsbuildinfo",
     "paths": {
       "@/*": ["./src/*"]
     }
