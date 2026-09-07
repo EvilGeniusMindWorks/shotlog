@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { Cloud, Download, LogOut } from 'lucide-react';
 import { getSession, logout } from '@/lib/session';
 import { exportAllData } from '@/lib/export';
-import { disconnectAndClearPowerSync } from '@/db/powersync/client';
+import { resetLocalReplica } from '@/db/powersync/client';
 import { useSyncStatus } from '@/db/powersync/useSyncStatus';
 import { IconChip, SectionCard } from '@/components/ui/section-card';
 import { Button } from '@/components/ui/button';
@@ -27,9 +27,12 @@ export function AccountSyncCard() {
       return;
     }
     await logout();
-    await disconnectAndClearPowerSync();
+    // Bounded: a wedged replica can no longer hold the sign-out hostage —
+    // it is marked for deletion and the reload finishes the job
+    await resetLocalReplica();
     setSession(getSession());
     setStatus('Logged out');
+    window.location.reload();
   };
 
   const handleExport = async () => {

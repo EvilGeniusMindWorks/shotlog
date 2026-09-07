@@ -122,51 +122,90 @@ export async function disconnectAndClearPowerSync(): Promise<void> {
   await instance.disconnectAndClear();
 }
 
+/** The IndexedDB database the SDK's default VFS (IDBBatchAtomicVFS) keeps
+ *  the replica in — the same name as dbFilename. */
 const DB_FILENAME = 'shotlog.db';
+const RESET_FLAG = 'shotlog-replica-reset-pending';
+
+const timeout = (ms: number) =>
+  new Promise<'timeout'>((resolve) => window.setTimeout(() => resolve('timeout'), ms));
 
 /**
  * Hard reset of the local replica for a full account switch or a stuck
- * download: wait for the SDK's own clear (a mid-download clear can take a
- * while), and if it does not finish in 30s, fall back to deleting the
- * underlying IndexedDB databases so the next load starts from nothing.
- * Never resolves with a half-cleared database — that state is worse than
- * either outcome (2026-09-07: a rehearsal switch that raced the clear
- * against 8s left a replica that "connected" for ten hours without ever
- * reaching a checkpoint).
+ * download. Tries the SDK's own clear first (bounded); if that does not
+ * finish cleanly, marks the database for deletion AT THE NEXT BOOT — while
+ * the page is up, the SDK's shared worker holds the database open and
+ * IndexedDB silently defers a delete, so deleting here would do nothing
+ * (2026-09-07: Matthew's browser). Callers always reload afterwards.
+ * Never leaves a half-cleared replica behind: that state "connects"
+ * forever without ever reaching a checkpoint.
  */
 export async function resetLocalReplica(): Promise<void> {
-  const timeout = (ms: number) =>
-    new Promise<'timeout'>((resolve) => window.setTimeout(() => resolve('timeout'), ms));
   let clean = false;
   if (instance) {
     try {
-      const result = await Promise.race([instance.disconnectAndClear().then(() => 'ok' as const), timeout(30_000)]);
+      const result = await Promise.race([instance.disconnectAndClear().then(() => 'ok' as const), timeout(15_000)]);
       clean = result === 'ok';
     } catch {
       clean = false;
     }
     try {
-      await Promise.race([instance.close(), timeout(5_000)]);
+      await Promise.race([instance.close(), timeout(3_000)]);
     } catch {
-      /* closing a wedged instance may throw — the delete below is the backstop */
+      /* a wedged instance may refuse to close — the boot delete is the backstop */
     }
     instance = null;
   }
   if (!clean) {
-    logSyncEvent('local replica clear timed out — deleting the local database');
+    logSyncEvent('local replica clear did not finish — database will be deleted at next boot');
     try {
-      const dbs = (await indexedDB.databases?.()) ?? [];
-      for (const d of dbs) {
-        if (d.name && d.name.includes(DB_FILENAME)) {
-          await new Promise<void>((resolve) => {
-            const req = indexedDB.deleteDatabase(d.name!);
-            req.onsuccess = req.onerror = req.onblocked = () => resolve();
-          });
-        }
-      }
+      localStorage.setItem(RESET_FLAG, '1');
     } catch {
-      /* best effort — a reload with an empty session key set still recovers */
+      /* private mode: the reload alone still helps */
     }
+  }
+}
+
+/**
+ * Call ONCE at boot, before anything opens PowerSync: if a reset is
+ * pending, delete the replica database outright. Nothing holds it open
+ * yet, so the delete completes; a delete that is still blocked after 10s
+ * (another tab) is left pending for the next boot.
+ */
+export async function runPendingReplicaReset(): Promise<void> {
+  let pending = false;
+  try {
+    pending = localStorage.getItem(RESET_FLAG) === '1';
+  } catch {
+    return;
+  }
+  if (!pending) return;
+  const names = ((await indexedDB.databases?.().catch(() => [])) ?? [])
+    .map((d) => d.name)
+    .filter((n): n is string => Boolean(n) && n === DB_FILENAME);
+  let allGone = true;
+  for (const name of names.length ? names : [DB_FILENAME]) {
+    const outcome = await Promise.race([
+      new Promise<'ok' | 'error'>((resolve) => {
+        const req = indexedDB.deleteDatabase(name);
+        req.onsuccess = () => resolve('ok');
+        req.onerror = () => resolve('error');
+        // onblocked fires while another connection holds it; the request
+        // still completes once that connection closes — keep waiting
+      }),
+      timeout(10_000),
+    ]);
+    if (outcome !== 'ok') allGone = false;
+  }
+  if (allGone) {
+    try {
+      localStorage.removeItem(RESET_FLAG);
+    } catch {
+      /* ignore */
+    }
+    logSyncEvent('local database deleted at boot — downloading fresh');
+  } else {
+    logSyncEvent('local database still held open — will retry at next boot (close other ShotLog tabs)');
   }
 }
 

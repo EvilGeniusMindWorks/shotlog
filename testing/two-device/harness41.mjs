@@ -141,6 +141,16 @@ async (page) => {
     await P2.goto(`${WEB}/jobs`);
     await P2.waitForTimeout(5000);
     ok('Reset local data clears and re-downloads the company', (await P2.locator('[data-jobs-list] [data-list-row]').count()) > 0 && (await P2.locator('[data-sync-first]').count()) === 0);
+    // The boot-time delete path (what a wedged replica falls back to):
+    // flag → reload → the database is deleted before PowerSync opens → fresh download
+    await P2.evaluate(() => localStorage.setItem('shotlog-replica-reset-pending', '1'));
+    await P2.reload();
+    await P2.waitForTimeout(6000);
+    const bootLog = await P2.evaluate(() => localStorage.getItem('shotlog-sync-log') ?? '');
+    const flagCleared = await P2.evaluate(() => localStorage.getItem('shotlog-replica-reset-pending'));
+    await P2.goto(`${WEB}/jobs`);
+    await P2.waitForTimeout(5000);
+    ok('boot-time reset deletes the database and the company re-downloads', /deleted at boot/.test(bootLog) && flagCleared === null && (await P2.locator('[data-jobs-list] [data-list-row]').count()) > 0);
     await c2.close();
   } catch (e) {
     results.push(`ERROR ${e.message}`);
