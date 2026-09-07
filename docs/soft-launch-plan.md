@@ -478,6 +478,20 @@ In-round finding: a field role's day delete used to bounce at the server
 and re-download, which is exactly what the merge hit first.
 "Take over the report" for a second blaster stays tabled (multi-blaster).
 
+**S7 follow-up — Matthew's driller rehearsal (harness46)**
+1. "Briefly saw the blaster screen": the S7b type prefill took the job's
+   last day (the blaster's Drill to Blast) for the driller too, so their
+   new day grew a blast log and opened on the hub. Now the driller bucket
+   is never prefilled into a blasting type (→ Drill Only; hand choice still
+   possible) and the day page opens on the daily report for drillers even
+   when a blast log exists.
+2. Copy from previous starts blank — copying is opt-in (overrules S7b).
+3. Rig visibility: rig line under the trio ("Checklist rig: R-102 · not
+   filed today · Change rig" / "Pick rig"), *Change rig* on the checklist
+   header, and the rig picked on a drill log becomes the usual rig.
+4. The drill log's back arrow sends a driller home (the plan page and the
+   day hub are the blaster's screens).
+
 ---
 
 ## Open questions for Matthew

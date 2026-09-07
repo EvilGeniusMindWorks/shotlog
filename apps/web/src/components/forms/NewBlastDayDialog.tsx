@@ -4,7 +4,7 @@
 // Type of work (the job's last day → the job's default → this device's
 // default → the role's) · Copy from previous (most recent day at that job).
 import { useEffect, useMemo, useState } from 'react';
-import { can } from '@/lib/perms';
+import { can, myHomeDashboard } from '@/lib/perms';
 import { useLiveQuery, db } from '@/db';
 import { getJobViews } from '@/lib/jobContext';
 import { useJobActivity } from '@/lib/jobActivity';
@@ -134,6 +134,15 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork, onOpen
     if (jobsHere.length === 1) setJobId(jobsHere[0].id);
   };
 
+  // The lone-choice auto-fill also runs when the lists finish loading after
+  // the pick (a job created a moment ago reaches the live list a beat later)
+  useEffect(() => {
+    if (!customerId || showNewJob) return;
+    if (!siteId && sitesOfCustomer.length === 1) setSiteId(sitesOfCustomer[0].id);
+    if (!jobId && (siteId || sitesOfCustomer.length <= 1) && jobsOfSite.length === 1) setJobId(jobsOfSite[0].id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customerId, siteId, jobId, sitesOfCustomer.length, jobsOfSite.length, showNewJob]);
+
   // Copy from Previous: offered when the selected job has existing days
   const previousDays: BlastDay[] =
     useLiveQuery(async () => {
@@ -144,16 +153,20 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork, onOpen
   const job = jobs.find((j) => j.id === jobId);
 
   // Type of work follows the job (last day → job default → device → role)
-  // until the person picks one by hand; copy source defaults to the latest day
+  // until the person picks one by hand. A DRILLER is never prefilled into a
+  // blasting type (that makes a blast log and the blaster's hub — Matthew's
+  // rehearsal, S7 follow-up): blasting prefills become Drill Only for them;
+  // they can still choose Drill to Blast by hand. Copy from previous starts
+  // BLANK (Matthew: "it shouldn't default to copying").
   useEffect(() => {
     if (!jobId) return;
     const last = previousDays[0];
     if (!typeTouched) {
-      setTypeOfWork(
-        last?.typeOfWork ?? job?.defaultTypeOfWork ?? getDefaultWorkType() ?? defaultTypeOfWork ?? 'drill_to_blast',
-      );
+      const wanted: WorkType =
+        last?.typeOfWork ?? job?.defaultTypeOfWork ?? getDefaultWorkType() ?? defaultTypeOfWork ?? 'drill_to_blast';
+      setTypeOfWork(myHomeDashboard() === 'driller' && isBlastingWork(wanted) ? 'drill_only' : wanted);
     }
-    setCopySourceId(last?.id ?? '');
+    setCopySourceId('');
     // (job?.defaultTypeOfWork: a job created a moment ago reaches the live
     // list a beat after it is picked)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -326,13 +339,15 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork, onOpen
 
           {previousDays.length > 0 && !showNewJob && (
             <div className="border border-gray-200 rounded-lg p-3 space-y-2">
-              <Label>Copy from previous</Label>
+              <Label>
+                Copy from previous <span className="text-gray-400 font-normal">— optional</span>
+              </Label>
               <Select
                 data-day-copy
                 value={copySourceId}
                 onChange={(e) => setCopySourceId(e.target.value)}
                 options={[
-                  { value: '', label: 'Blank — no copy' },
+                  { value: '', label: 'Start blank' },
                   ...previousDays.slice(0, 10).map((d) => ({
                     value: d.id,
                     label: `${formatDate(d.date)}${d.name ? ` · ${d.name}` : ''} — ${d.status.replace('_', ' ')}`,

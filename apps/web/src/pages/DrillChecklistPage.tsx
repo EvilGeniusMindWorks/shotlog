@@ -10,6 +10,7 @@ import { useJobs } from '@/hooks/useBlastDay';
 import { getSessionUser } from '@/lib/session';
 import { formatDate, todayISO } from '@/lib/utils';
 import { Select } from '@/components/ui/select';
+import { RigPickerModal } from '@/components/dashboard/RigPickerModal';
 import type { CheckState } from '@/db/schema';
 import { DRILL_DAILY_CHECKS, DRILL_WEEKLY_CHECKS } from '@/db/schema';
 import { Button } from '@/components/ui/button';
@@ -120,6 +121,7 @@ export function DrillChecklistPage() {
     [me?.id],
   );
   const [jobTouched, setJobTouched] = useState(Boolean(jobParam));
+  const [showRigs, setShowRigs] = useState(false);
   useEffect(() => {
     if (!jobTouched && todaysJobId) setDraft((d) => (d.jobId ? d : { ...d, jobId: todaysJobId }));
   }, [todaysJobId, jobTouched]);
@@ -156,8 +158,18 @@ export function DrillChecklistPage() {
               {rig ? `${rig.assetNumber} · ${rig.description}` : '…'} · {formatDate(checklist.date)}
             </p>
           </div>
+          {/* S7 follow-up: a different rig for this job is one tap away — also
+              when THIS rig's checklist is already filed today */}
+          <button
+            className="shrink-0 rounded-lg bg-white/10 hover:bg-white/20 px-3 min-h-[40px] text-sm font-semibold"
+            data-checklist-change-rig
+            onClick={() => setShowRigs(true)}
+          >
+            Change rig
+          </button>
         </div>
       </div>
+      {showRigs && <RigPickerModal title="Which rig is this checklist for?" onClose={() => setShowRigs(false)} />}
 
       <div className="p-4 max-w-2xl mx-auto space-y-4">
         {existing && (

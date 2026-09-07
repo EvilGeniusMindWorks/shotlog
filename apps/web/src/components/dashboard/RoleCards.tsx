@@ -625,6 +625,28 @@ export function DrillerHome() {
           onClick={() => setShowHours(true)}
         />
       </div>
+      {/* S7 follow-up (Matthew's driller rehearsal): the checklist door and
+          the rig it opens must be OBVIOUS — the rig follows the last one you
+          logged holes on or picked; change it here in one tap */}
+      <div className="flex items-center gap-2 text-xs text-gray-500 -mt-1 px-1" data-rig-line>
+        <span className="min-w-0 truncate">
+          {rig ? (
+            <>
+              Checklist rig: <b className="text-gray-700">{rig.assetNumber}</b>
+              {todayChecklist ? ' · filed today' : ' · not filed today'}
+            </>
+          ) : (
+            'No rig picked yet — the checklist tile asks which rig'
+          )}
+        </span>
+        <button
+          className="ml-auto shrink-0 text-navy underline underline-offset-2 min-h-[32px] px-1"
+          data-change-rig
+          onClick={() => setShowRigPicker(true)}
+        >
+          {rig ? 'Change rig' : 'Pick rig'}
+        </button>
+      </div>
 
       {/* Drilling today — the active pattern with everyone's progress */}
       {drillingToday && (
@@ -729,7 +751,13 @@ export function DrillerHome() {
         </Button>
       </div>
 
-      {showRigPicker && <RigPickerModal onClose={() => setShowRigPicker(false)} />}
+      {showRigPicker && (
+        <RigPickerModal
+          title={rig ? 'Which rig today?' : 'Which rig?'}
+          onClose={() => setShowRigPicker(false)}
+          onPick={(id) => navigate(`/drill-checklist/${id}`)}
+        />
+      )}
       {showHours && (
         <MyHoursSheet
           card={myCardToday}

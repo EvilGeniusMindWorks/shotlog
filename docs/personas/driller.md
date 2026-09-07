@@ -147,3 +147,18 @@ report (solo submit) · My Records · jobs list
 - ✅ Starting drilling where the blaster already opened today's day joins
   it (the dialog offers *Open that day*); a standalone card lands on
   today's day when one exists.
+
+### S7 follow-up — Matthew's driller rehearsal (2026-09-07)
+- ✅ **Never the blaster's screen.** A driller's new day is never prefilled
+  into a blasting type (a job whose last day was Drill to Blast prefills
+  Drill Only for them — Drill to Blast stays a hand choice), and the day
+  page opens on the daily report for the driller bucket even when a blast
+  log exists; the Day tab is one tap away.
+- ✅ **Copy from previous starts blank** — copying is opt-in.
+- ✅ **The rig is obvious.** A line under the trio names the checklist rig
+  ("Checklist rig: R-102 · not filed today") with *Change rig* / *Pick
+  rig*; the checklist header has *Change rig*; the rig picked on a drill
+  log becomes the usual rig (the rig follows the work, not the person);
+  the launcher's Rig Checklist tile and the Drilling tab door remain.
+- ✅ **Back goes home.** The drill log's back arrow returns a driller to
+  their home (the trio), never to the blaster's plan page or day hub.

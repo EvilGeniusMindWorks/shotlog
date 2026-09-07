@@ -4,7 +4,7 @@ import { mergeDays } from '@/lib/lifecycle';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, CalendarCheck, FileText, ClipboardList, ChevronDown, ChevronUp, FileBarChart, History, Lock, PhoneCall, Printer } from 'lucide-react';
 import { type Role } from '@shotlog/shared';
-import { can, canDayTransition, canEditApprovedDay } from '@/lib/perms';
+import { can, canDayTransition, canEditApprovedDay, myHomeDashboard } from '@/lib/perms';
 import { addBlastLogToDay, useBlastDay } from '@/hooks/useBlastDay';
 import { db, useLiveQuery } from '@/db';
 import { deleteDayCascade } from '@/lib/lifecycle';
@@ -101,8 +101,14 @@ export function BlastDayPage() {
       return v;
     return searchParams.get('tab') === 'daily' ? 'daily-report' : null;
   });
-  // Non-blasting days have no blast log — the daily report is the whole day
-  const view: DayView = blastLog ? (viewState ?? 'hub') : 'daily-report';
+  // Non-blasting days have no blast log — the daily report is the whole day.
+  // S7 follow-up (Matthew's driller rehearsal): the DRILLER bucket lands on
+  // the daily report too — the hub and its spine are the blaster's
+  // (Drilling → Readiness → Shots); the driller's part of a blasting day is
+  // their card, log and checklist, and the Day tab is one tap away.
+  const view: DayView = blastLog
+    ? (viewState ?? (myHomeDashboard() === 'driller' ? 'daily-report' : 'hub'))
+    : 'daily-report';
   const setView = (v: string) => setViewState(v as DayView);
   const tab: Tab = view === 'daily-report' ? 'daily-report' : 'blast-log';
   const phaseModel = useDayPhases(blastDay, blastLog, shots);

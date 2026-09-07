@@ -69,7 +69,7 @@ async (page) => {
       await order(P1, ['[data-day-name]', '[data-day-customer]', '[data-day-site]', '[data-day-job]', '[data-day-date]', '[data-new-day-dialog] button.bg-navy']));
     await P1.locator(`[data-day-customer] option[value="${fx.customerId}"]`).waitFor({ state: 'attached', timeout: 5000 });
     await P1.locator('[data-day-customer]').selectOption(fx.customerId);
-    await P1.waitForTimeout(300);
+    await P1.waitForTimeout(800);
     ok('a customer with one site fills the site in', (await P1.locator('[data-day-site]').inputValue()) === fx.siteId);
     ok('a site with one job fills the job in', (await P1.locator('[data-day-job]').inputValue()) === fx.jobId);
     ok('type of work follows the role for a job with no days and no default (Drill to Blast)', /Drill to Blast/.test(await selectedChip(P1)));
@@ -103,7 +103,10 @@ async (page) => {
     await P1.waitForTimeout(600);
     ok('a Recent chip selects the job and fills customer + site', (await P1.locator('[data-day-job]').inputValue()) === fx.jobId && (await P1.locator('[data-day-customer]').inputValue()) === fx.customerId);
     ok("the job's LAST day beats its default (Drill to Excavate, not Blasting)", /Drill to Excavate/.test(await selectedChip(P1)));
-    ok('Copy from previous defaults to the most recent day', (await P1.locator('[data-day-copy]').inputValue()) === day1.id);
+    // S7 follow-up (Matthew): copying is opt-in — the select starts blank
+    ok('Copy from previous is offered but starts BLANK', (await P1.locator('[data-day-copy]').count()) === 1 && (await P1.locator('[data-day-copy]').inputValue()) === '');
+    await P1.locator('[data-day-copy]').selectOption(day1.id);
+    await P1.waitForTimeout(300);
     ok('non-blasting type: only Crew & Equipment is offered to copy', (await dlg.locator('input[type="checkbox"]').count()) === 1);
     ok('same-date warning shows for a second day today', /already has a work day on this date/.test(await dlg.innerText()));
     // New job from inside the dialog: Customer → Site → Job, customer carried over

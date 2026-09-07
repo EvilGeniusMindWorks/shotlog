@@ -66,7 +66,16 @@ export function useUsualRigId(): string | undefined {
   }
 }
 
-export function RigPickerModal({ onClose }: { onClose: () => void }) {
+export function RigPickerModal({
+  onClose,
+  onPick,
+  title = 'Which rig?',
+}: {
+  onClose: () => void;
+  /** Override the default (open that rig's checklist) — e.g. "Change rig" on the home */
+  onPick?: (equipmentId: string) => void;
+  title?: string;
+}) {
   const navigate = useNavigate();
   const rigs =
     useLiveQuery(() =>
@@ -78,7 +87,7 @@ export function RigPickerModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
       <div className="w-full sm:max-w-sm bg-white rounded-t-xl sm:rounded-xl p-4 max-h-[80vh] overflow-auto" data-rig-picker>
         <div className="flex items-center justify-between mb-2">
-          <p className="font-bold">Which rig?</p>
+          <p className="font-bold">{title}</p>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>
@@ -91,7 +100,10 @@ export function RigPickerModal({ onClose }: { onClose: () => void }) {
               data-rig-option={r.assetNumber}
               onClick={() => {
                 void rememberUsualRig(r.id);
-                navigate(`/drill-checklist/${r.id}`);
+                if (onPick) {
+                  onPick(r.id);
+                  onClose();
+                } else navigate(`/drill-checklist/${r.id}`);
               }}
             >
               <ClipboardCheck className="h-5 w-5 text-navy shrink-0" />
@@ -110,7 +122,10 @@ export function RigPickerModal({ onClose }: { onClose: () => void }) {
             </p>
           )}
         </div>
-        <p className="text-xs text-gray-400 mt-3">Your pick is remembered as your usual rig.</p>
+        <p className="text-xs text-gray-400 mt-3">
+          Your pick becomes your usual rig — the checklist tile opens it until you change it or
+          log holes on another rig.
+        </p>
       </div>
     </div>
   );

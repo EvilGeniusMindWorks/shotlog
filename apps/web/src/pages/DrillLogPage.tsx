@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Check, Droplets, Printer, Trash2 } from 'lucide-react';
 import { type Role } from '@shotlog/shared';
-import { canDrillLogTransition, canEditAcceptedLog } from '@/lib/perms';
+import { canDrillLogTransition, canEditAcceptedLog, myHomeDashboard } from '@/lib/perms';
 import { useLiveQuery, db } from '@/db';
 import { addHole, aggregateDrilling, drilledHoleNumbers, getShotPlan, nextHoleNumber } from '@/hooks/useDrillLogs';
 import { getPlanHoles, planDrilledHoleNumbers, planToDiagram } from '@/hooks/useDrillPlans';
@@ -26,6 +26,7 @@ import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { SignatureField } from '@/components/ui/signature-field';
 import { propagateHourMeter, useTodayChecklist } from '@/hooks/useMaintenance';
+import { rememberUsualRig } from '@/components/dashboard/RigPickerModal';
 import { buildHourLedger } from '@/lib/hourLedger';
 
 const CONDITIONS: { code: HoleConditionCode; label: string }[] = [
@@ -160,9 +161,15 @@ export function DrillLogPage() {
   if (!log) return <div className="p-4 text-center text-gray-500">Loading…</div>;
 
   // Where "back", "print", and "accept" go depends on the log's world
-  const backTo = log.drillPlanId
-    ? `/jobs/${log.jobId}/drill-plan/${log.drillPlanId}`
-    : `/blast-day/${log.blastDayId}`;
+  // Back: the blaster returns to the plan or the day hub they came from; the
+  // DRILLER goes home to the trio — the plan page and the hub are the
+  // blaster's screens (Matthew's driller rehearsal, S7 follow-up)
+  const backTo =
+    myHomeDashboard() === 'driller'
+      ? '/'
+      : log.drillPlanId
+        ? `/jobs/${log.jobId}/drill-plan/${log.drillPlanId}`
+        : `/blast-day/${log.blastDayId}`;
   const logBase = log.drillPlanId
     ? `/jobs/${log.jobId}/drill-plan/${log.drillPlanId}/log/${log.id}`
     : `/blast-day/${log.blastDayId}/drill-log/${log.id}`;
@@ -461,7 +468,14 @@ export function DrillLogPage() {
               )}
             </div>
             <Select value={log.drillRigEquipmentId ?? ''} disabled={!editable}
-              onChange={(e) => void update({ drillRigEquipmentId: e.target.value || undefined })}
+              data-log-rig
+              onChange={(e) => {
+                const id = e.target.value || undefined;
+                void update({ drillRigEquipmentId: id });
+                // S7 follow-up: the rig you actually log holes on becomes your
+                // usual rig — the checklist tile follows it
+                if (id) void rememberUsualRig(id);
+              }}
               options={[{ value: '', label: 'Pick rig…' },
                 ...rigs.map((r) => ({ value: r.id, label: `${r.assetNumber} — ${r.description}` }))]} />
           </div>
