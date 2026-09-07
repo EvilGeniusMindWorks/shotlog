@@ -17,7 +17,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-const PIN_KEY = 'shotlog-pin';
+import { clearDevicePin } from '@/lib/pin';
+import { getRealSessionUser as realUserForPin } from '@/lib/session';
 
 /**
  * The signed-in user's personal page: everything here follows the account
@@ -201,7 +202,7 @@ function SecurityCard() {
               size="sm"
               onClick={() => {
                 // Cleared PIN + reload → AuthGate shows the set-PIN screen
-                localStorage.removeItem(PIN_KEY);
+                clearDevicePin(realUserForPin()?.id);
                 window.location.reload();
               }}
             >

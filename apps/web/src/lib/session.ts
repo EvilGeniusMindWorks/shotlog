@@ -3,6 +3,8 @@
 // auto-fill. Extracted unchanged from the deleted custom sync engine —
 // sync itself is PowerSync's job now (see src/db/powersync/).
 
+import { clearDevicePin } from '@/lib/pin';
+
 const LS_KEYS = {
   serverUrl: 'shotlog-server-url',
   accessToken: 'shotlog-access-token',
@@ -208,6 +210,9 @@ export async function markScreenTourDone(key: string): Promise<void> {
 }
 
 export async function logout(): Promise<void> {
+  // Signing out forgets this account's PIN on this device: the next person
+  // to sign in (or enrol) here sets their own
+  clearDevicePin(getRealSessionUser()?.id);
   const { serverUrl } = getSession();
   const refreshToken = localStorage.getItem(LS_KEYS.refreshToken);
   if (serverUrl && refreshToken) {

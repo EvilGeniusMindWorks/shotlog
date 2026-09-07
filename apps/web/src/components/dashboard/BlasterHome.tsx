@@ -10,6 +10,7 @@ import { createBlastDay, useBlastDay } from '@/hooks/useBlastDay';
 import { useDayPhases } from '@/hooks/useDayPhases';
 import { getPlanHoles, planDrilledHoleNumbers } from '@/hooks/useDrillPlans';
 import { formatDate, todayISO } from '@/lib/utils';
+import { homeIsMineFirst, isMyPlan, myDayIds, onlyMine } from '@/lib/mine';
 import { Badge } from '@/components/ui/badge';
 import { NewBlastDayDialog } from '@/components/forms/NewBlastDayDialog';
 import { MonthDayList } from '@/components/dashboard/MonthDayList';
@@ -35,9 +36,14 @@ function useNeedsAttention(): AttentionRow[] | undefined {
     const rows: AttentionRow[] = [];
     const jobs = new Map((await db.jobs.toArray()).map((j) => [j.id, j]));
     const days = await db.blastDays.toArray();
+    // Unasked, only MY work nags me (Matthew, 2026-09-07): my days, my
+    // patterns. Everyone else's lives under Days › Everyone / Records.
+    const mineFirst = homeIsMineFirst();
+    const mine = mineFirst ? await myDayIds() : null;
 
     for (const day of days) {
       if (day.status !== 'draft') continue;
+      if (mine && !mine.has(day.id)) continue;
       // Sent-back days surface from ANY date (today included); ordinary
       // drafts only once they're stale — today's draft is just today's work
       if (!day.sendBackNote && day.date >= today) continue;
@@ -70,6 +76,7 @@ function useNeedsAttention(): AttentionRow[] | undefined {
     // Fully-drilled open patterns waiting for the blaster's review
     const plans = await db.drillPlans.filter((p) => p.status === 'open' && !p.archivedAt).toArray();
     for (const plan of plans) {
+      if (mineFirst && !isMyPlan(plan)) continue;
       const holes = getPlanHoles(plan);
       if (!holes || holes.length === 0) continue;
       const drilled = (await planDrilledHoleNumbers(plan.id)).size;
@@ -136,10 +143,20 @@ export function BlasterHome() {
   const [showNewDialog, setShowNewDialog] = useState(false);
   const today = todayISO();
 
+  // Field homes show only MY days (authored, or my time card on it);
+  // office/admin/shop homes never render this component with mine-first
+  const mineFirst = homeIsMineFirst();
+  const mineIds = useLiveQuery(async () => (mineFirst ? myDayIds() : null), [mineFirst]);
   const todayDays = useLiveQuery(
-    async () => db.blastDays.where('date').equals(todayISO()).toArray(),
-    [today],
+    async () => {
+      const all = await db.blastDays.where('date').equals(todayISO()).toArray();
+      if (!mineFirst) return all;
+      if (mineIds === undefined) return undefined; // still resolving
+      return all.filter((d) => mineIds?.has(d.id));
+    },
+    [today, mineFirst, mineIds],
   );
+  const mySummaries = mineFirst && mineIds ? onlyMine(summaries ?? [], mineIds) : summaries;
   const jobs = useLiveQuery(() => db.jobs.toArray()) ?? [];
   const jobLabel = (jobId: string) => {
     const j = jobs.find((x) => x.id === jobId);
@@ -147,7 +164,7 @@ export function BlasterHome() {
   };
 
   return (
-    <div className="space-y-4" data-tour="home">
+    <div className="space-y-4" data-tour="home" data-home-scope={mineFirst ? 'mine' : 'all'}>
       {/* Band 1 — needs attention (only exists when non-empty) */}
       {attention && attention.length > 0 && (
         <div className="bg-white border border-gray-200 border-l-4 border-l-safety-orange rounded-xl px-3 py-2">
@@ -180,7 +197,19 @@ export function BlasterHome() {
           <TodayDayRow key={day.id} day={day} jobLabel={jobLabel(day.jobId)} />
         ))}
         {todayDays !== undefined && todayDays.length === 0 && (
-          <p className="text-sm text-gray-400 py-1">Nothing started today. Tap + to start work at a job, or open a day below to keep going.</p>
+          <p className="text-sm text-gray-400 py-1" data-today-empty>
+            {mineFirst ? (
+              <>
+                No day started. Tap + to start work — or open a colleague's day in{' '}
+                <button className="underline underline-offset-2 text-navy" onClick={() => navigate('/days?scope=all')}>
+                  Days › Everyone
+                </button>
+                .
+              </>
+            ) : (
+              'Nothing started today. Tap + to start work at a job, or open a day below to keep going.'
+            )}
+          </p>
         )}
         <button
           className="w-full bg-white border border-gray-300 text-navy rounded-xl py-2.5 font-bold text-sm mt-2 hover:bg-gray-50"
@@ -190,8 +219,9 @@ export function BlasterHome() {
         </button>
       </div>
 
-      {/* Band 3 — months, current open, older collapsed (shared list) */}
-      <MonthDayList summaries={summaries} />
+      {/* Band 3 — months, current open, older collapsed (shared list); on a
+          field home only MY days — search still finds everyone's */}
+      <MonthDayList summaries={mySummaries} searchPool={mineFirst ? summaries : undefined} title={mineFirst ? 'My recent days' : 'Recent days'} />
 
 
       {showNewDialog && (

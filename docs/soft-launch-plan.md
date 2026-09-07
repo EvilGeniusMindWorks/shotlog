@@ -498,6 +498,19 @@ and re-download, which is exactly what the merge hit first.
 4. The drill log's back arrow sends a driller home (the plan page and the
    day hub are the blaster's screens).
 
+**S7 follow-up — Matthew's invite test (plan artifact ed13a981, all Build)**
+5. Whose work shows up: a new blaster was handed Mark's drafts and a
+   driller's finished log. Field homes now surface only *my* work (day
+   authored or worked; pattern I laid; drilling on my patterns); `/days`
+   gets Mine / Everyone (default Mine, per device, search spans Everyone);
+   Records › Company stays the review door; office/admin/shop unchanged;
+   sync and permissions unchanged. Pre-stamp days sit under Everyone only.
+6. PIN never asked: the PIN was one key per browser, never cleared by
+   sign-out or enroll, so a new account on Mark's browser skipped Set PIN
+   and unlocked with Mark's PIN. Now per account per device; sign-out,
+   Forgot PIN and enrolling clear it; the account's PIN still seeds a new
+   device; the old key migrates silently to the signed-in user.
+
 **Admin follow-up — Add person in one shot (harness47).** Mockup first
 (artifact 5880eda4), then built as accepted: First · Last · Role · Email ·
 Access in one panel, button labels *Add person* / *Add & send invite* /

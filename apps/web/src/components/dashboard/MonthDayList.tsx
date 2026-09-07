@@ -42,10 +42,13 @@ export function MonthDayList({
   summaries,
   includeToday = false,
   title = 'Recent days',
+  searchPool,
 }: {
   summaries: DaySummary[] | undefined;
   includeToday?: boolean;
   title?: string;
+  /** When the list is scoped (Mine), a search still spans this wider pool */
+  searchPool?: DaySummary[];
 }) {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
@@ -53,8 +56,9 @@ export function MonthDayList({
   const today = todayISO();
 
   const months = useMemo(() => {
-    const pool = (summaries ?? []).filter((s) => includeToday || s.day.date < today);
     const q = search.trim().toLowerCase();
+    const base = q && searchPool ? searchPool : (summaries ?? []);
+    const pool = base.filter((s) => includeToday || s.day.date < today);
     const filtered = q
       ? pool.filter(
           (s) =>
@@ -69,7 +73,7 @@ export function MonthDayList({
       map.set(ym, [...(map.get(ym) ?? []), s]);
     }
     return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
-  }, [summaries, search, today, includeToday]);
+  }, [summaries, searchPool, search, today, includeToday]);
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl px-3 py-2">

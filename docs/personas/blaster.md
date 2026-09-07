@@ -6,9 +6,18 @@ Real people: Mark; other licensed blasters on larger jobs
 ## Who they are
 
 A blaster is **essentially a supervisory role** (Mark). Senior capacity on
-every job, **sees everything** — but not always the job lead: large jobs
+every job, **can reach everything** — but not always the job lead: large jobs
 run several blasters at once. Licensed in multiple states; the license
 drives what they may sign.
+
+**Visibility (amended 2026-09-07, Matthew's invite test):** *unasked, the
+home shows only the blaster's own work* — days they authored or worked
+(a time card), patterns they laid, drilling finished on those patterns.
+Everyone else's work is one deliberate step away: Days › Everyone, Records
+› Company, the job page. Availability never narrows (the company's records
+sync to every device; a second blaster can open Mark's day); attention
+does. Office, admin and the shop keep seeing everything — that is their
+job. This supersedes "blaster default view = ALL crews' days" (2026-08-17).
 
 ## The workflow, as validated (2026-08-17)
 
@@ -158,3 +167,13 @@ page · customer/site/job create (new) · contacts · My Records · reference
   day is opened, not duplicated, and two offline copies merge from the day
   page. "Take over the report" for a second blaster is tabled with the
   multi-blaster decision.
+- **Whose work shows up (accepted 2026-09-07, plan artifact ed13a981):**
+  Today, Needs attention and the home's month list show only *my* days
+  (authored, or I have a time card on it) and *my* patterns (I laid the
+  plan). `/days` gets a Mine / Everyone switch, default Mine, remembered
+  on the device; search spans Everyone. Records already opens on My
+  records with Company beside it. Days from before the author stamp
+  (pre-Sep 7) have no owner and live under Everyone only (Matthew cleans
+  them up before real test users). PIN becomes per account on the device:
+  sign-out and enrolling clear it, so a new account on a used browser is
+  asked to set one.

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowDown, ArrowUp, LayoutGrid, Plus, Search, Table2 } from 'lucide-react';
+import { getDaysScope, homeIsMineFirst, myDayIds, onlyMine, setDaysScope, type DaysScope } from '@/lib/mine';
 import { useLiveQuery, db } from '@/db';
 import { getPowerSync } from '@/db/powersync/client';
 import { createBlastDay } from '@/hooks/useBlastDay';
@@ -233,10 +234,46 @@ function NewWorkDayFab({ defaultTypeOfWork }: { defaultTypeOfWork?: WorkType }) 
 export function WorkDaysPage() {
   const role = getSessionUser()?.role;
   const summaries = useDaySummaries();
+  // Field roles: Mine / Everyone, default Mine, remembered on the device;
+  // `?scope=all` (the home's "Days › Everyone" link) opens on Everyone.
+  // Office, admin and the shop always see everyone — no switch.
+  const mineFirst = homeIsMineFirst();
+  const [params] = useSearchParams();
+  const [scope, setScope] = useState<DaysScope>(() =>
+    !mineFirst ? 'all' : params.get('scope') === 'all' ? 'all' : getDaysScope(),
+  );
+  const pick = (s: DaysScope) => {
+    setScope(s);
+    setDaysScope(s);
+  };
+  const mineIds = useLiveQuery(async () => (mineFirst ? myDayIds() : null), [mineFirst]);
+  const shown =
+    scope === 'mine' ? (mineIds ? onlyMine(summaries ?? [], mineIds) : undefined) : summaries;
   return (
     <div className="p-4 max-w-3xl mx-auto pb-24">
-      <h2 className="text-xl font-bold text-gray-900 mb-3">Work days</h2>
-      <MonthDayList summaries={summaries} includeToday title="All days" />
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <h2 className="text-xl font-bold text-gray-900">Work days</h2>
+        {mineFirst && (
+          <div className="inline-flex rounded-lg border border-gray-300 overflow-hidden text-sm" data-days-scope={scope}>
+            {(['mine', 'all'] as DaysScope[]).map((s) => (
+              <button
+                key={s}
+                data-days-scope-opt={s}
+                className={cn('px-3 py-1.5 font-medium', scope === s ? 'bg-navy text-white' : 'bg-white text-gray-700 hover:bg-gray-50')}
+                onClick={() => pick(s)}
+              >
+                {s === 'mine' ? 'Mine' : 'Everyone'}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <MonthDayList
+        summaries={shown}
+        searchPool={scope === 'mine' ? summaries : undefined}
+        includeToday
+        title={scope === 'mine' ? 'My days' : 'All days'}
+      />
       {role !== 'office' && (
         <NewWorkDayFab defaultTypeOfWork={role === 'driller' ? 'drill_only' : undefined} />
       )}

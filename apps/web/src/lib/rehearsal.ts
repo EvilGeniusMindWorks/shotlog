@@ -3,7 +3,8 @@
 // the chosen role, wipe the local replica, reload — the gate then runs the
 // whole first-run (PIN → welcome → walkthrough) as a brand-new person.
 // End: wipe the sandbox server-side, restore the stash, reload as yourself.
-import { authedFetch, getSession, type SessionPayload } from '@/lib/session';
+import { authedFetch, getSession, getRealSessionUser as realUserForPin, type SessionPayload } from '@/lib/session';
+import { clearDevicePin } from '@/lib/pin';
 import { resetLocalReplica } from '@/db/powersync/client';
 import { todayISO } from '@/lib/utils';
 
@@ -83,6 +84,8 @@ export async function endRehearsal(): Promise<void> {
   // Wipe the sandbox with the rehearsal session while we still hold it
   await authedFetch('/platform/rehearsal/end', { method: 'POST' }).catch(() => undefined);
   await clearReplica();
+  // The rehearsal person's PIN does not outlive the rehearsal
+  clearDevicePin(realUserForPin()?.id);
   let stash: Record<string, string | null> = {};
   try {
     stash = JSON.parse(localStorage.getItem(STASH_KEY) ?? '{}') as Record<string, string | null>;

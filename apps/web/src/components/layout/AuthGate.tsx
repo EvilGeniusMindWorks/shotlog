@@ -14,13 +14,14 @@ import {
 } from '@/lib/session';
 import { connectPowerSync } from '@/db/powersync/client';
 import { myHomeDashboard } from '@/lib/perms';
+import { clearDevicePin, devicePinHash, setDevicePin } from '@/lib/pin';
 import { InstallCard } from '@/components/onboarding/InstallCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ShotLogTile } from '@/components/brand/ShotLogLogo';
 
-const PIN_KEY = 'shotlog-pin';
+// The PIN lives in lib/pin.ts — per ACCOUNT on this device (2026-09-07)
 const LAST_ACTIVE_KEY = 'shotlog-last-active';
 const LOCK_AFTER_MS = 5 * 60_000; // relock after 5 minutes hidden
 
@@ -49,7 +50,7 @@ const touchActivity = () => localStorage.setItem(LAST_ACTIVE_KEY, String(Date.no
 function nextGateState(): GateState {
   const user = getRealSessionUser();
   if (user?.mustChangePassword) return 'change-password';
-  if (!localStorage.getItem(PIN_KEY)) return 'set-pin';
+  if (!devicePinHash(user?.id)) return 'set-pin';
   if (user && !user.onboardedAt) return 'welcome';
   return 'open';
 }
@@ -76,7 +77,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
         touchActivity();
       } else if (document.visibilityState === 'visible' && state === 'open') {
         const last = Number(localStorage.getItem(LAST_ACTIVE_KEY) ?? 0);
-        if (localStorage.getItem(PIN_KEY) && Date.now() - last > LOCK_AFTER_MS) {
+        if (devicePinHash(getRealSessionUser()?.id) && Date.now() - last > LOCK_AFTER_MS) {
           setState('locked');
         } else {
           touchActivity();
@@ -104,10 +105,8 @@ export function AuthGate({ children }: { children: ReactNode }) {
         onDone={(password) => {
           // The PIN follows the account: a fresh login seeds this device
           // with the user's existing PIN instead of demanding a new one
-          const accountPin = getRealSessionUser()?.pinHash;
-          if (accountPin && !localStorage.getItem(PIN_KEY)) {
-            localStorage.setItem(PIN_KEY, accountPin);
-          }
+          const me = getRealSessionUser();
+          if (me?.pinHash && !devicePinHash(me.id)) setDevicePin(me.id, me.pinHash);
           setTempPassword(password);
           touchActivity();
           setState(nextGateState());
@@ -153,7 +152,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
     <PinLockScreen
       onUnlock={() => setState(nextGateState())}
       onForgot={async () => {
-        localStorage.removeItem(PIN_KEY);
+        clearDevicePin(getRealSessionUser()?.id);
         await logout();
         setState('login');
       }}
@@ -572,7 +571,8 @@ function SetPinScreen({ onDone }: { onDone: () => void }) {
         setPin('');
       } else if (first === pin) {
         void hashPin(pin).then((h) => {
-          localStorage.setItem(PIN_KEY, h);
+          const me = getRealSessionUser();
+          if (me) setDevicePin(me.id, h);
           // Save to the account too (best effort — offline keeps it local)
           void updateMyPin(h).catch(() => undefined);
           onDone();
@@ -612,7 +612,7 @@ function PinLockScreen({ onUnlock, onForgot }: { onUnlock: () => void; onForgot:
   useEffect(() => {
     if (pin.length !== 6) return;
     void hashPin(pin).then((h) => {
-      if (h === localStorage.getItem(PIN_KEY)) {
+      if (h === devicePinHash(getRealSessionUser()?.id)) {
         onUnlock();
       } else {
         setError(true);

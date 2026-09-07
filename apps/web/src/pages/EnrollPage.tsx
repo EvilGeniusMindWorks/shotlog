@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ShotLogLogo } from '@/components/brand/ShotLogLogo';
+import { clearAllDevicePins } from '@/lib/pin';
 
 const serverUrl = () => localStorage.getItem('shotlog-server-url') || DEFAULT_SERVER_URL;
 
@@ -65,6 +66,9 @@ export function EnrollPage() {
       setDone(true);
       localStorage.setItem('shotlog-user-email', email.trim());
       if (body?.accessToken && body.refreshToken && body.user) {
+        // A NEW account on this browser always sets its own PIN — whatever
+        // PIN the previous person left here must not unlock it
+        clearAllDevicePins();
         // Signed in right here — no second password entry
         storeSession(serverUrl(), { accessToken: body.accessToken, refreshToken: body.refreshToken, user: body.user });
       }
