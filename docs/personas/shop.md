@@ -105,6 +105,8 @@ Shop home (queue + PM due) · repair ticket · equipment list + detail
 - **S7b (accepted):** Records defaults to checklists · repair tickets ·
   services · hour corrections for the shop; the rest behind "show
   everything". No new role mapping — buckets.
+- **S7c (shipped):** the shop tour runs once on the home — the trio, the
+  one worklist, Fleet. Re-run from ? → "Show me the shop".
 - **S7d (accepted):** the hour ledger gains a fourth source — the driller's
   end-of-day meter at drill-log sign-complete. Corrections still win. The
   shop files no time cards for now.

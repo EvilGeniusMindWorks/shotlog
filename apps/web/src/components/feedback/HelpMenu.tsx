@@ -3,12 +3,13 @@
 // whenever the coach map knows the current route (Round S2).
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { CircleHelp, Info, MessageSquarePlus, Route } from 'lucide-react';
+import { CircleHelp, Footprints, Info, MessageSquarePlus, Route } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { openFeedbackComposer } from './FeedbackComposer';
 import { coachFor } from '@/components/guidance/coach';
 import { CoachSheet } from '@/components/guidance/CoachSheet';
-import { tourBucket } from '@/components/layout/Tour';
+import { SCREEN_TOUR_TITLE, screenTourFor } from '@/components/guidance/tourScripts';
+import { startScreenTour, tourBucket } from '@/components/layout/Tour';
 
 export function HelpMenu({
   variant,
@@ -22,6 +23,7 @@ export function HelpMenu({
   const ref = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const coach = coachFor(location.pathname, location.search, tourBucket());
+  const screenTour = screenTourFor(location.pathname, location.search, tourBucket());
 
   useEffect(() => {
     if (!open) return;
@@ -60,6 +62,19 @@ export function HelpMenu({
           }}
         >
           <Info className="h-4 w-4 text-gray-500" /> About this screen
+        </button>
+      )}
+      {screenTour && (
+        <button
+          role="menuitem"
+          className={item}
+          data-help-screen-tour={screenTour}
+          onClick={() => {
+            setOpen(false);
+            startScreenTour(screenTour);
+          }}
+        >
+          <Footprints className="h-4 w-4 text-gray-500" /> Show me {SCREEN_TOUR_TITLE[screenTour]}
         </button>
       )}
       <button

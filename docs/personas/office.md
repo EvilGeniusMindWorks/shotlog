@@ -71,6 +71,9 @@ Incidents · People (read) · company/customer/site pages · export surfaces
 - **S7a (building):** rehearsal sample data lands a submitted day in the
   queue with filed cards attached, an open incident, and a permit — the
   approve / send-back / cards paths are testable.
+- **S7c (shipped):** the approvals tour runs once on first open — what is
+  attached, Approve, Send back with a reason. Re-run from ? → "Show me
+  approvals".
 - **S7d (accepted):** the day's Work Force is its time cards (keyed by job
   + date); the office keeps approving the day and the cards separately;
   a card that arrives after the day was approved lands in the cards pile

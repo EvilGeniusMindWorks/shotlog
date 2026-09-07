@@ -127,6 +127,12 @@ report (solo submit) · My Records · jobs list
 - Rehearsal sample data gives the driller a plan sent to them, half
   drilled, on a rig with a checklist history — the trio is testable.
 
+### S7c (shipped 2026-09-07)
+- ✅ Screen tours, once per account: the drill log (tap the holes you
+  drilled · your rig, your name · sign it complete) and the rig checklist
+  (hour meter first · the walk-around · out of service). Re-run from
+  ? → "Show me the drill log / the rig checklist".
+
 ### S7d (planned, accepted 2026-09-07 — see docs/round-s7-plan.md)
 - The driller owns their trio and nothing more: own time card, own drill
   log, own rig checklist. They never own the day's report on a blasting

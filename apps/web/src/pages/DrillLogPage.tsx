@@ -289,7 +289,7 @@ export function DrillLogPage() {
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0" data-tour="log-header">
             <h2 className="font-bold text-lg truncate leading-tight">
               Drill Log — {contextTitle}
             </h2>
@@ -308,6 +308,7 @@ export function DrillLogPage() {
           <Badge variant={STATUS_BADGE[log.status]}>{log.status}</Badge>
           {log.status === 'open' && canDrillLogTransition('open', 'complete') && (
             <Button size="sm" variant="secondary" disabled={holes.length === 0}
+              data-tour="log-complete"
               onClick={() => { setNoteText(''); setNotePrompt('complete'); }}>
               Mark Complete
             </Button>
@@ -462,7 +463,7 @@ export function DrillLogPage() {
 
         {/* Quick hole entry */}
         {editable && (
-          <div className="rounded-xl border-2 border-safety-orange/40 bg-white p-4 space-y-3">
+          <div className="rounded-xl border-2 border-safety-orange/40 bg-white p-4 space-y-3" data-tour="log-entry">
             {plan && remaining && (
               <div>
                 <div className="flex items-center justify-between text-xs text-gray-500 mb-1">

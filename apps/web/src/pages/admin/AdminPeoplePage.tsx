@@ -526,7 +526,7 @@ export function AdminPeoplePage() {
         </label>
         <div className="flex-1" />
         <BulkAdd known={new Set(people.map((p) => p.name.toLowerCase()))} />
-        <Button onClick={() => setAdding(!adding)}>
+        <Button onClick={() => setAdding(!adding)} data-tour="people-add">
           <Plus className="h-4 w-4 mr-1" /> Add person
         </Button>
       </div>

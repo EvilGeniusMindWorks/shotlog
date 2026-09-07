@@ -53,6 +53,8 @@ export interface SessionUser {
   onboardedAt?: string | null;
   /** Walkthrough auto-ran once (per account); re-runnable from Help */
   tourDoneAt?: string | null;
+  /** Screen tours seen (S7c) — per account, once per screen */
+  toursDone?: string[];
   /** Vendor-level marker (Matthew): sees Admin › Feedback. Server-decided
    *  from PLATFORM_ADMIN_EMAILS — never a company role or capability */
   platformAdmin?: boolean;
@@ -188,6 +190,20 @@ export async function markTourDone(): Promise<void> {
     await authedFetch('/auth/me/tour-done', { method: 'PUT' });
   } catch {
     /* offline — the cached flag carries this device; /auth/me heals later */
+  }
+}
+
+/** A screen tour finished or skipped — per ACCOUNT, per screen (S7c) */
+export async function markScreenTourDone(key: string): Promise<void> {
+  const cur = getRealSessionUser()?.toursDone ?? [];
+  if (!cur.includes(key)) patchCachedUser({ toursDone: [...cur, key] });
+  try {
+    await authedFetch('/auth/me/tours-done', {
+      method: 'PUT',
+      body: JSON.stringify({ screen: key }),
+    });
+  } catch {
+    /* offline — the cached list carries this device; /auth/me heals later */
   }
 }
 

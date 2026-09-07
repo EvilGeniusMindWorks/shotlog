@@ -45,6 +45,7 @@ Company) · customers/sites/jobs setup · everything else read
 
 - ✅ Walkthrough: Company home → People → Roles → Records → Help.
 - ✅ "About this screen": People, Roles, Company home, Feedback (platform admin only), plus everything the other roles get.
+- ✅ Screen tours (Round S7c, 2026-09-07): People (Add person · one line each · the ⋯ menu) and Approvals run once on first open; re-run from ? → "Show me …".
 - ✅ First-week card: walkthrough · invite a person · read Roles once · check company details · try View as.
 
 ## Clutter sweep + records (Round S4, 2026-09-06)

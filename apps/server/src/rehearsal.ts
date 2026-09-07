@@ -95,6 +95,7 @@ async function resetFirstRun(cid: string): Promise<void> {
     data: {
       onboardedAt: null,
       tourDoneAt: null,
+      toursDone: [],
       pinHash: null,
       licenses: [],
       signature: null,
@@ -251,7 +252,7 @@ rehearsalRouter.get('/status', requireAuth, requirePlatformAdmin, async (req: Au
   });
   const users = await prisma.user.findMany({
     where: { companyId: sandbox.id },
-    select: { email: true, role: true, onboardedAt: true, tourDoneAt: true, pinHash: true },
+    select: { email: true, role: true, onboardedAt: true, tourDoneAt: true, toursDone: true, pinHash: true },
   });
   res.json({
     sandbox,

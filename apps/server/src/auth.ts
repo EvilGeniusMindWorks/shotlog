@@ -107,6 +107,7 @@ type SessionUserRow = {
   mustChangePassword: boolean;
   onboardedAt: Date | null;
   tourDoneAt: Date | null;
+  toursDone: unknown;
   company: { name: string };
 };
 
@@ -123,6 +124,7 @@ function publicUser(user: SessionUserRow) {
     mustChangePassword: user.mustChangePassword,
     onboardedAt: user.onboardedAt?.toISOString() ?? null,
     tourDoneAt: user.tourDoneAt?.toISOString() ?? null,
+    toursDone: Array.isArray(user.toursDone) ? (user.toursDone as string[]) : [],
     // Vendor-level marker (feedback triage) — never a company role
     platformAdmin: isPlatformAdminEmail(user.email),
   };
@@ -435,6 +437,22 @@ authRouter.put('/me/tour-done', requireAuth, async (req: AuthedRequest, res: Res
     select: { tourDoneAt: true },
   });
   res.json({ ok: true, tourDoneAt: user.tourDoneAt?.toISOString() ?? null });
+});
+
+/** A screen tour finished or skipped — per ACCOUNT, per screen (Round S7c).
+ *  Append-only set; re-running from Help never clears it. */
+const screenTourSchema = z.object({ screen: z.string().min(1).max(40) });
+authRouter.put('/me/tours-done', requireAuth, async (req: AuthedRequest, res: Response) => {
+  const parsed = screenTourSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'screen required' });
+    return;
+  }
+  const current = await prisma.user.findUnique({ where: { id: req.userId! }, select: { toursDone: true } });
+  const list = Array.isArray(current?.toursDone) ? (current!.toursDone as string[]) : [];
+  const next = list.includes(parsed.data.screen) ? list : [...list, parsed.data.screen];
+  await prisma.user.update({ where: { id: req.userId! }, data: { toursDone: next } });
+  res.json({ ok: true, toursDone: next });
 });
 
 const licenseSchema = z

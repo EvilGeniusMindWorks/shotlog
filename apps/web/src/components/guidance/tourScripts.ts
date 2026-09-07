@@ -170,3 +170,190 @@ export const TOUR_SCRIPTS: Record<TourBucket, TourStep[]> = {
 export function tourScriptFor(bucket: TourBucket): TourStep[] {
   return TOUR_SCRIPTS[bucket] ?? TOUR_SCRIPTS.field;
 }
+
+// ── Screen tours (Round S7c, Matthew: "a tour that launches the first time
+// they start a new blast day, showing them around that screen"). Short
+// scripts on the SCREEN where the work happens, auto-run once per account
+// the first time that screen opens, re-runnable from ? → Show me this
+// screen. A step's route may carry ?view= — the engine matches path+search.
+export type ScreenTourKey = 'day' | 'drill-log' | 'checklist' | 'shop' | 'approvals' | 'people';
+
+export const SCREEN_TOUR_TITLE: Record<ScreenTourKey, string> = {
+  day: 'your work day',
+  'drill-log': 'the drill log',
+  checklist: 'the rig checklist',
+  shop: 'the shop',
+  approvals: 'approvals',
+  people: 'people',
+};
+
+export const SCREEN_TOURS: Record<ScreenTourKey, TourStep[]> = {
+  day: [
+    {
+      selector: null,
+      title: 'Your work day',
+      body: 'One day, one job. Everything you file today lives here: the blasting log, the daily report, your time card. Five quick stops.',
+    },
+    {
+      selector: '[data-tour="day-spine"]',
+      title: 'The spine',
+      body: 'Where the day stands and what comes next. Continue walks you Drilling → Readiness → Shots → Seismo → File — you never have to remember the order.',
+    },
+    {
+      selector: '[data-tour="day-tabs"]',
+      title: 'Day · Blast Log · Daily Report',
+      body: 'The paper forms, as tabs. The Blast Log is the shot; the Daily Report is who worked, what ran, what was used.',
+    },
+    {
+      route: '?view=blast-log',
+      selector: '[data-tour="shot-drill"]',
+      title: 'The shot: drill parameters',
+      body: 'Hole size, burden, spacing, stemming, sub-drill — from the plan, adjusted to what was actually drilled. Totals compute from them.',
+    },
+    {
+      route: '?view=blast-log',
+      selector: '[data-tour="shot-explosives"]',
+      title: 'Explosives, top-down',
+      body: 'Count what went in — sticks, bags, boosters. Pounds are computed from the catalog, never typed.',
+    },
+    {
+      route: '?view=blast-log',
+      selector: '[data-tour="shot-design"]',
+      title: 'Design plan and compliance',
+      body: 'Closest structure, distance, pounds per delay → scaled distance and predicted PPV. The badge explains its own math — tap it.',
+    },
+    {
+      route: '?view=blast-log',
+      selector: '[data-tour="shot-signoff"]',
+      title: 'Sign-off, then file',
+      body: 'The responsible blaster signs the shot. Then Submit to Office files the PDFs and locks the day; sent back, it returns to your Dashboard with the note.',
+    },
+  ],
+  'drill-log': [
+    {
+      selector: null,
+      title: 'The drill log',
+      body: 'The pattern the blaster planned, hole by hole. You record what actually went in the ground. Three quick stops.',
+    },
+    {
+      selector: '[data-tour="log-entry"]',
+      title: 'Tap the holes you drilled',
+      body: 'Select on the grid, then "Log N as planned" — two taps for a clean row. Water, voids or a change of depth? "Log with changes"; a hole you did not drill is "Mark skipped" — normal, not an apology.',
+    },
+    {
+      selector: '[data-tour="log-header"]',
+      title: 'Your rig, your name',
+      body: 'The rig on the log feeds its hours and the shop. Conditions you note at depth reach the blaster before loading.',
+    },
+    {
+      selector: '[data-tour="log-complete"]',
+      title: 'Sign it complete',
+      body: 'When the pattern is done, Mark Complete signs the log and hands it to the blaster to accept. Unsigned logs wait for you on your home under "Yesterday needs you".',
+    },
+  ],
+  checklist: [
+    {
+      selector: null,
+      title: 'The rig checklist',
+      body: 'The paper walk-around, once a day per machine. Needs no job and no plan. Three quick stops.',
+    },
+    {
+      selector: '[data-tour="chk-hours"]',
+      title: 'Hour meter first',
+      body: 'Starting hours drive the 50-hour service clock and the shop\'s ledger. Read the meter, type it, done — a typo going backwards is ignored.',
+    },
+    {
+      selector: '[data-tour="chk-daily"]',
+      title: 'The walk-around',
+      body: 'Everything starts ✓. Tap only what is N/A or not done. Repairs needed go in the box below — the shop sees them as a ticket.',
+    },
+    {
+      selector: '[data-tour="chk-oos"]',
+      title: 'Out of service',
+      body: 'Tick this and the rig is pulled from the fleet until the shop clears it. Sign, then File — the office copy is filed for you.',
+    },
+  ],
+  shop: [
+    {
+      selector: null,
+      title: 'My Shop',
+      body: 'What is down, what is due, what came in from the field. Three quick stops.',
+    },
+    {
+      selector: '[data-tour="shop-trio"]',
+      title: 'Down · Tickets · Due',
+      body: 'The three numbers that matter this morning. Checklists filed today shows how many rigs have been looked at.',
+    },
+    {
+      selector: '[data-tour="shop-worklist"]',
+      title: 'One worklist',
+      body: 'Tickets from rig checklists and services due from the hour ledger, in the order YOU want — drag to reorder; it sticks. Open a row to resolve the ticket or log the service.',
+    },
+    {
+      selector: '[data-tour="nav-/admin/equipment"]',
+      title: 'Fleet',
+      body: 'Every machine, its hours and status. Log a service there and the PM clock restarts; correct a meter when the physical one disagrees.',
+    },
+  ],
+  approvals: [
+    {
+      selector: null,
+      title: 'Approvals',
+      body: 'Days the crews submitted, oldest first. Three quick stops.',
+    },
+    {
+      selector: '[data-approval-row]',
+      title: 'What is attached',
+      body: 'Open the job name to read the day itself — log, report, cards, checklist, drill log — before you decide.',
+    },
+    {
+      selector: '[data-tour="approve"]',
+      title: 'Approve',
+      body: 'Locks the day and files it as the record of that date. Time cards are approved separately from your home queue.',
+    },
+    {
+      selector: '[data-tour="send-back"]',
+      title: 'Send back, with a reason',
+      body: 'The blaster sees the note on their Dashboard right away and resubmits. The audit trail keeps both trips.',
+    },
+  ],
+  people: [
+    {
+      selector: null,
+      title: 'People',
+      body: 'One list: everyone on the roster, with a login as a property of the person. Three quick stops.',
+    },
+    {
+      selector: '[data-tour="people-add"]',
+      title: 'Add a person',
+      body: 'Names first, one per line. A person needs no login to be on time cards and drill logs.',
+    },
+    {
+      selector: '[data-person-row]',
+      title: 'One line each',
+      body: 'Name, role, login status. Search by name or email; the list windows to 15 and Show all.',
+    },
+    {
+      selector: '[data-person-more]',
+      title: 'The ⋯ menu',
+      body: 'Invite (the link expires in 7 days), change the role, reset a password, deactivate. Accounts are never hard-deleted — the records they signed stay theirs.',
+    },
+  ],
+};
+
+/** Which screen tour belongs to this route for this bucket, if any */
+export function screenTourFor(pathname: string, search: string, bucket: TourBucket): ScreenTourKey | null {
+  const params = new URLSearchParams(search);
+  if (/^\/blast-day\/[^/]+$/.test(pathname)) {
+    const view = params.get('view');
+    return bucket === 'field' && (!view || view === 'hub' || view === 'blast-log') ? 'day' : null;
+  }
+  if (/^\/blast-day\/[^/]+\/drill-log\/[^/]+$/.test(pathname) || /^\/jobs\/[^/]+\/drill-plan\/[^/]+\/log\/[^/]+$/.test(pathname)) {
+    return bucket === 'driller' ? 'drill-log' : null;
+  }
+  if (/^\/drill-checklist\/[^/]+$/.test(pathname)) return bucket === 'driller' ? 'checklist' : null;
+  if (pathname === '/' && bucket === 'mechanic') return 'shop';
+  if (pathname === '/admin/approvals') return bucket === 'office' || bucket === 'admin' ? 'approvals' : null;
+  if (pathname === '/admin/people') return bucket === 'admin' ? 'people' : null;
+  return null;
+}

@@ -942,7 +942,7 @@ export function MechanicHome() {
       <h2 className="text-xl font-bold text-gray-900">My Shop</h2>
 
       {/* The shop trio (Round 4): Down · Tickets · Due soon */}
-      <div className="flex gap-2 max-w-md">
+      <div className="flex gap-2 max-w-md" data-tour="shop-trio">
         <div className="flex-1 bg-white border border-red-200 rounded-xl px-2 py-2.5 text-center">
           <p className="font-mono text-2xl font-extrabold text-red-600">{downCount}</p>
           <p className="text-[11px] font-semibold text-gray-500">Down</p>
@@ -961,7 +961,7 @@ export function MechanicHome() {
 
       {/* Wide-first: worklist beside the fleet's live state + locator map */}
       <div className="lg:grid lg:grid-cols-[1.5fr_1fr] lg:gap-3 space-y-3 lg:space-y-0 items-start">
-        <div className="rounded-xl border-l-4 border border-gray-200 border-l-safety-orange bg-white p-3">
+        <div className="rounded-xl border-l-4 border border-gray-200 border-l-safety-orange bg-white p-3" data-tour="shop-worklist">
           <div className="flex items-center justify-between mb-1">
             <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
               Worklist · your order

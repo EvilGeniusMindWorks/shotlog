@@ -144,6 +144,10 @@ page · customer/site/job create (new) · contacts · My Records · reference
   jobs / Customer → Site → Job → Date → Type of work (last day's type,
   else the job's default type, else drill-to-blast). One New job flow,
   top-down. Log out lives in My Profile only.
+- **S7c (shipped):** the day tour runs once, the first time a work day
+  opens — spine, tabs, then the shot: drill parameters, explosives
+  top-down, design/compliance, sign-off and filing. Re-run from ? → "Show
+  me your work day".
 - **S7d (accepted, design in docs/round-s7-plan.md):** the day is a
   container; **the blaster owns the report** on any day with a blast log
   regardless of who opened the day; each person owns their own card, log

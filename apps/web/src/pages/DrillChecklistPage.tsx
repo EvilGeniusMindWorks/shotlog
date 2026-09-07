@@ -177,7 +177,7 @@ export function DrillChecklistPage() {
 
         {!readOnly && (
           <>
-            <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-3">
+            <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-3" data-tour="chk-hours">
               <div className="flex gap-3">
                 <div className="w-40">
                   <Label className="text-xs">Starting hours</Label>
@@ -216,7 +216,7 @@ export function DrillChecklistPage() {
 
             {rig && <ServiceClockCard rig={rig} />}
 
-            <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-2">
+            <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-2" data-tour="chk-daily">
               <p className="text-sm font-semibold">
                 Daily — all start ✓; tap anything that's N/A or wasn't done
               </p>
@@ -251,7 +251,7 @@ export function DrillChecklistPage() {
                   onChange={(e) => set({ repairsNote: e.target.value })}
                 />
               </div>
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <label className="flex items-center gap-2 text-sm cursor-pointer" data-tour="chk-oos">
                 <input type="checkbox" checked={draft.outOfService}
                   onChange={(e) => set({ outOfService: e.target.checked })} />
                 <span className={draft.outOfService ? 'font-semibold text-safety-orange' : ''}>

@@ -25,7 +25,16 @@ import { startFileUploader } from '@/lib/fileUploader';
 import { getSessionUser, getRealSessionUser, getViewRole, setViewRole } from '@/lib/session';
 import { hasCap, myHomeDashboard, useRoleDefsSync } from '@/lib/perms';
 import { FirstSyncStrip, SessionExpiredBanner, SyncChip, UpdateChip } from './SyncChip';
-import { START_TOUR_EVENT, Tour, shouldAutoRunTour, startTour } from './Tour';
+import {
+  SCREEN_TOUR_EVENT,
+  START_TOUR_EVENT,
+  Tour,
+  shouldAutoRunScreenTour,
+  shouldAutoRunTour,
+  startTour,
+  tourBucket,
+} from './Tour';
+import { screenTourFor, type ScreenTourKey } from '@/components/guidance/tourScripts';
 import { HelpMenu } from '@/components/feedback/HelpMenu';
 import { RehearsalBar } from '@/components/rehearsal/RehearsalBar';
 
@@ -269,6 +278,24 @@ export function AppShell() {
       window.clearTimeout(auto);
     };
   }, []);
+  // Screen tours (S7c): asked for from Help, or auto-run once per account
+  // the first time a screen with a tour opens — a beat after it renders,
+  // never on top of the walkthrough, never right after another tour
+  const shellLocation = useLocation();
+  const [screenTour, setScreenTour] = useState<ScreenTourKey | null>(null);
+  useEffect(() => {
+    const open = (e: Event) => setScreenTour((e as CustomEvent<ScreenTourKey>).detail);
+    window.addEventListener(SCREEN_TOUR_EVENT, open);
+    return () => window.removeEventListener(SCREEN_TOUR_EVENT, open);
+  }, []);
+  useEffect(() => {
+    if (touring || screenTour) return;
+    if (shellLocation.pathname === '/' && shouldAutoRunTour()) return; // the walkthrough goes first
+    const key = screenTourFor(shellLocation.pathname, shellLocation.search, tourBucket());
+    if (!key || !shouldAutoRunScreenTour(key)) return;
+    const t = window.setTimeout(() => setScreenTour(key), 1400);
+    return () => window.clearTimeout(t);
+  }, [shellLocation.pathname, shellLocation.search, touring, screenTour]);
   const profile = useLiveQuery(() => db.blasterProfiles.filter((b) => b.isCurrentUser).first());
   const session = getSessionUser();
   const realAdmin = getRealSessionUser()?.role === 'admin';
@@ -394,6 +421,7 @@ export function AppShell() {
       </div>
 
       {touring && <Tour onEnd={() => setTouring(false)} />}
+      {!touring && screenTour && <Tour screenKey={screenTour} onEnd={() => setScreenTour(null)} />}
       {import.meta.env.DEV && <CrashProbe />}
 
       {/* Mobile bottom navigation — each rail's top four, then Settings

@@ -109,6 +109,7 @@ export function SubSection({
   summary,
   navigate,
   defaultOpen = false,
+  anchor,
   children,
 }: {
   icon: ReactNode;
@@ -117,12 +118,14 @@ export function SubSection({
   /** if set, the row is a navigation link instead of a collapsible */
   navigate?: () => void;
   defaultOpen?: boolean;
+  /** Tour anchor (S7c): rendered as data-tour on the row */
+  anchor?: string;
   children?: ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const isLink = Boolean(navigate);
   return (
-    <div className="border-t border-gray-100 first:border-t-0">
+    <div className="border-t border-gray-100 first:border-t-0" data-tour={anchor}>
       <div
         role="button"
         tabIndex={0}

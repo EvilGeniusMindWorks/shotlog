@@ -91,10 +91,12 @@ export function AdminApprovalsPage() {
               <Badge variant="submitted">submitted</Badge>
               <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white"
                 disabled={!online || busyId === day.id}
+                data-tour="approve"
                 onClick={() => void act(day.id, 'approved')}>
                 <CheckCircle2 className="h-4 w-4 mr-1" /> Approve
               </Button>
               <Button size="sm" variant="secondary" disabled={!online || busyId === day.id}
+                data-tour="send-back"
                 onClick={() => void act(day.id, 'draft')}>
                 <Undo2 className="h-4 w-4 mr-1" /> Send Back
               </Button>

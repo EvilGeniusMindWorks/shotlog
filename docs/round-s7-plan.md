@@ -2,7 +2,7 @@
 
 Status: **ACCEPTED 2026-09-07 — all eleven Build.** S7a ✅ shipped
 2026-09-07 (harness42 27/27); S7b ✅ shipped 2026-09-07 (harness43
-34/34). S7c, S7d next in that order. Review
+34/34); S7c ✅ shipped 2026-09-07 (harness44 31/31). S7d next. Review
 artifact https://claude.ai/code/artifact/b33c3106-1cbd-49d4-98d8-4f0b71461612
 (reactions in its `responses` collection, ids `i1`…`i11`, `i10b`).
 Item 10 second-draft answers: end-of-day meter on the drill log at

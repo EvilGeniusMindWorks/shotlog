@@ -415,7 +415,7 @@ export function BlastDayPage() {
       <div className="px-4 pt-3">
         <div className="max-w-5xl mx-auto">
           {blastLog ? (
-            <div className="flex bg-gray-100 rounded-lg p-1">
+            <div className="flex bg-gray-100 rounded-lg p-1" data-tour="day-tabs">
               {(
                 [
                   ['hub', 'Day', CalendarCheck],
@@ -492,7 +492,7 @@ export function BlastDayPage() {
       {/* The day hub — phases in order, a map not a gate. Stays tappable on
           locked days (it's navigation, not editing). */}
       {view === 'hub' && blastLog && phaseModel && (
-        <div className="p-4 max-w-5xl mx-auto space-y-3">
+        <div className="p-4 max-w-5xl mx-auto space-y-3" data-tour="day-spine">
           <PhaseSpine model={phaseModel} onOpen={setView} />
           <PreBlastCard />
         </div>

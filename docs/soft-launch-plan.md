@@ -419,7 +419,28 @@ untouched) + harness41 regression with the new labels.
    services · hour corrections; office/admin = everything. "Show
    everything" / "Just my kind of paper" toggles; no role mapping —
    `tourBucket()` as the rails use.
-**S7c — Screen tours (small server field)**
+**S7c — Screen tours — ✅ SHIPPED 2026-09-07 (harness44 31/31; harness39 34/34 + harness41 25/25 regression)**
+1. `User.toursDone` (JSON list, migration `20260907180000_user_tours_done`),
+   `PUT /auth/me/tours-done {screen}` append-only; in the session payload;
+   the rehearsal reset clears it.
+2. One engine, two kinds: the role walkthrough (S2) and SCREEN tours —
+   `SCREEN_TOURS` in tourScripts.ts, keyed `day` (hub → the blast-log view,
+   7 stops: spine, tabs, drill parameters, explosives, design/compliance,
+   sign-off), `drill-log` (entry box, header, Mark Complete), `checklist`
+   (hours, walk-around, out of service), `shop` (trio, worklist, Fleet),
+   `approvals` (row, Approve, Send back), `people` (Add person, row, ⋯).
+   Steps may carry `?view=` routes; the engine matches path + search.
+3. Auto-run once per ACCOUNT the first time the screen opens for that
+   bucket (field · driller · mechanic · office/admin · admin), 1.4 s after
+   render; never on top of the walkthrough (it goes first on the home);
+   never within 60 s of another tour ending ("one sitting" — the day tour
+   is not chased by anything). Re-run any time from ? → "Show me …". The
+   legacy `shotlog-tour-done` device key suppresses every auto-run (the
+   older harnesses rely on it).
+4. Anchors added: day spine/tabs, shot sub-sections (`anchor` prop on
+   SubSection), sign-off, drill-log header/entry/complete, checklist
+   hours/daily/out-of-service, shop trio/worklist, approve/send-back,
+   people add. Matthew's prod step: none.
 **S7d — Time and the day (role ownership; design accepted, see plan doc)**
 
 ---

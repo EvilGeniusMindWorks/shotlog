@@ -1,38 +1,85 @@
-// Role-aware walkthrough (Round S2 rebuild). Navigates between the real
-// screens of the role's script, spotlights the first VISIBLE match of each
-// step's selector (one anchor name serves both layouts), and records
-// completion on the ACCOUNT so no other device auto-runs it again.
-//
-// Start it from anywhere with startTour(); AppShell hosts it (needs the
-// router) and auto-runs it once for accounts with no tourDoneAt.
+// The guided tour engine (Round S2; S7c adds SCREEN tours). Two kinds run
+// through one component:
+//  · the role WALKTHROUGH — a trip through the 3–5 screens a role lives in,
+//    auto-run once per account on the home, re-runnable from Help;
+//  · a SCREEN tour — a few stops on the screen where the work happens,
+//    auto-run once per account the first time that screen opens (Matthew:
+//    "everyone, once"), re-runnable from Help › "Show me …".
+// Never two tours at once, and never one right after another: a tour that
+// just ended puts the auto-run on a short cooldown, so the day-hub tour is
+// not chased by the shot tour in the same breath.
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getRealSessionUser, markTourDone } from '@/lib/session';
+import { getRealSessionUser, markScreenTourDone, markTourDone } from '@/lib/session';
 import { myHomeDashboard } from '@/lib/perms';
-import { tourScriptFor, type TourBucket, type TourStep } from '@/components/guidance/tourScripts';
+import {
+  SCREEN_TOURS,
+  tourScriptFor,
+  type ScreenTourKey,
+  type TourBucket,
+  type TourStep,
+} from '@/components/guidance/tourScripts';
 
 export const START_TOUR_EVENT = 'shotlog-start-tour';
-/** Dev/harness suppression of the auto-run (legacy key, still honoured) */
+export const SCREEN_TOUR_EVENT = 'shotlog-start-screen-tour';
+/** Dev/harness suppression of every auto-run (legacy key, still honoured) */
 const LEGACY_DONE_KEY = 'shotlog-tour-done';
+/** A tour ended this recently → no auto-run of another (one sitting) */
+const LAST_ENDED_KEY = 'shotlog-tour-last-ended';
+const COOLDOWN_MS = 60_000;
 
 /** Ask the shell to start the walkthrough (no-op when no shell is mounted) */
 export function startTour(): void {
   window.dispatchEvent(new Event(START_TOUR_EVENT));
 }
 
+/** Ask the shell to start a screen tour */
+export function startScreenTour(key: ScreenTourKey): void {
+  window.dispatchEvent(new CustomEvent<ScreenTourKey>(SCREEN_TOUR_EVENT, { detail: key }));
+}
+
 export function tourBucket(): TourBucket {
   return getRealSessionUser()?.role === 'admin' ? 'admin' : myHomeDashboard();
+}
+
+function legacySuppressed(): boolean {
+  try {
+    return localStorage.getItem(LEGACY_DONE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function endedRecently(): boolean {
+  try {
+    return Date.now() - Number(sessionStorage.getItem(LAST_ENDED_KEY) ?? 0) < COOLDOWN_MS;
+  } catch {
+    return false;
+  }
+}
+
+function noteEnded(): void {
+  try {
+    sessionStorage.setItem(LAST_ENDED_KEY, String(Date.now()));
+  } catch {
+    /* ignore */
+  }
 }
 
 /** Should the walkthrough auto-run for this account on this device? */
 export function shouldAutoRunTour(): boolean {
   const user = getRealSessionUser();
   if (!user || user.tourDoneAt) return false;
-  try {
-    if (localStorage.getItem(LEGACY_DONE_KEY) === '1') return false;
-  } catch {
-    /* ignore */
-  }
+  return !legacySuppressed();
+}
+
+/** Should this screen's tour auto-run now? Once per account, not while
+ *  another tour just ended, never under the harness suppression key. */
+export function shouldAutoRunScreenTour(key: ScreenTourKey): boolean {
+  const user = getRealSessionUser();
+  if (!user) return false;
+  if ((user.toursDone ?? []).includes(key)) return false;
+  if (legacySuppressed() || endedRecently()) return false;
   return true;
 }
 
@@ -44,16 +91,27 @@ function firstVisible(selector: string): Element | null {
   return null;
 }
 
-export function Tour({ onEnd }: { onEnd: () => void }) {
+/** A step's route: absolute, or "?view=…" relative to the current screen */
+function stepTarget(route: string): string {
+  return route.startsWith('?') ? `${window.location.pathname}${route}` : route;
+}
+
+export function Tour({ screenKey, onEnd }: { screenKey?: ScreenTourKey; onEnd: () => void }) {
   const navigate = useNavigate();
-  const steps = useMemo(() => tourScriptFor(tourBucket()), []);
+  const steps = useMemo(
+    () => (screenKey ? SCREEN_TOURS[screenKey] : tourScriptFor(tourBucket())),
+    [screenKey],
+  );
   const [index, setIndex] = useState(0);
   const step: TourStep = steps[index];
   const [rect, setRect] = useState<DOMRect | null>(null);
 
   // Navigate for the step, then wait for its anchor to exist and be laid out
   useEffect(() => {
-    if (step.route && window.location.pathname !== step.route) navigate(step.route);
+    if (step.route) {
+      const target = stepTarget(step.route);
+      if (`${window.location.pathname}${window.location.search}` !== target) navigate(target);
+    }
     if (!step.selector) {
       setRect(null);
       return;
@@ -87,7 +145,9 @@ export function Tour({ onEnd }: { onEnd: () => void }) {
   }, [step, navigate]);
 
   const finish = () => {
-    void markTourDone();
+    if (screenKey) void markScreenTourDone(screenKey);
+    else void markTourDone();
+    noteEnded();
     onEnd();
   };
 
@@ -107,7 +167,12 @@ export function Tour({ onEnd }: { onEnd: () => void }) {
   }, [rect]);
 
   return (
-    <div className="fixed inset-0 z-[100]" data-tour-overlay data-tour-step={index}>
+    <div
+      className="fixed inset-0 z-[100]"
+      data-tour-overlay
+      data-tour-step={index}
+      data-tour-kind={screenKey ?? 'walkthrough'}
+    >
       <div
         className="absolute inset-0 bg-black/60 transition-all"
         style={

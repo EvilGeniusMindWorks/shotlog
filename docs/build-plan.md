@@ -148,8 +148,10 @@ company's fleet/roster/catalog, *Add sample data* loads a connected week
 for every role, driller checklist door + usual rig on the account. S7b ✅
 shipped the same day (harness43 34/34): Customer → Site → Job everywhere,
 the day dialog reordered with Recent chips and type prefill, Settings
-reorganised (sign out only in Profile), Records by home bucket. S7c
-(screen tours) and S7d (time model) follow.
+reorganised (sign out only in Profile), Records by home bucket. S7c ✅
+(harness44 31/31): screen tours once per account on the day hub → shot,
+drill log, checklist, shop, approvals, people; "Show me …" in Help. S7d
+(time model) follows.
 
 ## Runs alongside (not gated on rounds)
 

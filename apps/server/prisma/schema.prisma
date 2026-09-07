@@ -47,6 +47,10 @@ model User {
   /// Role-aware walkthrough finished or skipped once (per ACCOUNT, Round S2);
   /// re-runnable any time from Help — this only stops the auto-run
   tourDoneAt    DateTime?
+  /// Screen tours seen (Round S7c): keys like "day", "drill-log",
+  /// "checklist", "shop", "approvals", "people" — per ACCOUNT, once each;
+  /// re-runnable from Help › "Show me this screen"
+  toursDone     Json           @default("[]")
   companyId     String
   company       Company        @relation(fields: [companyId], references: [id])
   createdAt     DateTime       @default(now())

@@ -91,6 +91,7 @@ export function ShotForm({ shot, allShots, explosiveUsage, kFactor: _kFactor, bl
     <div>
       {/* Drill Parameters */}
       <SubSection
+        anchor="shot-drill"
         icon={<IconChip tint="blue"><Wrench className="h-4 w-4" /></IconChip>}
         title="Drill Parameters"
         summary={drillSummary}
@@ -192,6 +193,7 @@ export function ShotForm({ shot, allShots, explosiveUsage, kFactor: _kFactor, bl
 
       {/* Explosives (this shot) — auto-distributed */}
       <SubSection
+        anchor="shot-explosives"
         icon={<IconChip tint="red"><Flame className="h-4 w-4" /></IconChip>}
         title="Explosives (this shot)"
         summary={<Badge variant="secondary" className="text-[10px]">Auto</Badge>}
@@ -202,6 +204,7 @@ export function ShotForm({ shot, allShots, explosiveUsage, kFactor: _kFactor, bl
       {/* Design Plan → full screen */}
       {blastDayId && (
         <SubSection
+          anchor="shot-design"
           icon={<IconChip tint="orange"><MapPin className="h-4 w-4" /></IconChip>}
           title="Design Plan"
           summary={designSummary.length > 0 ? designSummary.join(' · ') : 'Site · Shot · Column · Compliance'}

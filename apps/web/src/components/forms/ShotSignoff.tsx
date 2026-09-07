@@ -67,7 +67,7 @@ export function ShotSignoff({ shot }: { shot: Shot }) {
   );
 
   return (
-    <div className="border-t border-gray-100 mt-4 pt-3 space-y-2">
+    <div className="border-t border-gray-100 mt-4 pt-3 space-y-2" data-tour="shot-signoff">
       <Label className="text-xs">
         Responsible Blaster
         <span className="text-gray-400 font-normal"> — who runs this shot</span>
