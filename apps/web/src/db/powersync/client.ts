@@ -9,6 +9,7 @@ import {
   PowerSyncDatabase,
   Schema,
   Table,
+  WASQLiteVFS,
   column,
   type PowerSyncBackendConnector,
 } from '@powersync/web';
@@ -71,14 +72,124 @@ class ShotLogConnector implements PowerSyncBackendConnector {
   }
 }
 
-let instance: PowerSyncDatabase | null = null;
+// ONE database per page, held on globalThis rather than in this module:
+// Vite's HMR can leave two copies of this module alive (the app's
+// '?t=…'-versioned import and a harness's plain import), and two
+// PowerSyncDatabase instances on one file hang WebKit (no shared worker
+// there) — seen 2026-09-07 while measuring storage engines.
+type PsGlobal = typeof globalThis & { __shotlogPowerSync?: PowerSyncDatabase | null; __shotlogPowerSyncOpenedAt?: number };
+const g = globalThis as PsGlobal;
+let instance: PowerSyncDatabase | null = g.__shotlogPowerSync ?? null;
+
+// ── Storage engine (measurement, 2026-09-07) ────────────────────────────
+// The SDK's default keeps the SQLite file in IndexedDB (IDBBatchAtomicVFS),
+// which is slow at big writes on phones. OPFS (a real file in the browser's
+// origin-private file system) is the faster path where supported. Opt-in
+// per device via Settings › Data & device; the default stays IndexedDB
+// until the measurement says otherwise.
+export type StorageEngine = 'idb' | 'opfs';
+const ENGINE_KEY = 'shotlog-storage-engine';
+
+export function opfsSupported(): boolean {
+  try {
+    return (
+      typeof navigator !== 'undefined' &&
+      Boolean(navigator.storage) &&
+      typeof navigator.storage.getDirectory === 'function' &&
+      typeof Worker !== 'undefined'
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** The engine this device is set to (falls back to IndexedDB when OPFS is unavailable) */
+export function storageEngine(): StorageEngine {
+  try {
+    return localStorage.getItem(ENGINE_KEY) === 'opfs' && opfsSupported() ? 'opfs' : 'idb';
+  } catch {
+    return 'idb';
+  }
+}
+
+export function setStorageEngine(engine: StorageEngine): void {
+  try {
+    localStorage.setItem(ENGINE_KEY, engine);
+  } catch {
+    /* private mode */
+  }
+}
+
+/** Log the first completed download on this device (how long, how many)
+ *  — attached at open time so it never depends on which screen is mounted */
+function watchFirstSync(ps: PowerSyncDatabase, engine: StorageEngine): void {
+  let sawUnsynced = ps.currentStatus?.hasSynced === false;
+  const dispose = ps.registerListener({
+    statusChanged: (status) => {
+      if (status.hasSynced === false) sawUnsynced = true;
+      if (status.hasSynced === true && sawUnsynced) {
+        dispose();
+        void ps
+          .getAll<{ n: number }>('SELECT count(*) AS n FROM records')
+          .then((rows) => {
+            const secs = ((performance.now() - openedAt) / 1000).toFixed(1);
+            logSyncEvent(`first sync done: ${rows[0]?.n ?? 0} records in ${secs}s · ${engine === 'opfs' ? 'OPFS' : 'IndexedDB'}`);
+          })
+          .catch(() => undefined);
+      }
+    },
+  });
+}
+
+/**
+ * Call ONCE at boot before anything opens PowerSync. A device set to OPFS
+ * whose browser cannot actually open the origin-private file system (seen
+ * on WebKit builds: getDirectory() throws UnknownError) would otherwise
+ * fail to open its database at all — so the setting falls back to
+ * IndexedDB, with a line in the sync log saying why.
+ */
+export async function preflightStorageEngine(): Promise<void> {
+  let wanted: string | null = null;
+  try {
+    wanted = localStorage.getItem(ENGINE_KEY);
+  } catch {
+    return;
+  }
+  if (wanted !== 'opfs') return;
+  try {
+    if (!opfsSupported()) throw new Error('no OPFS API');
+    const root = await navigator.storage.getDirectory();
+    const probe = await root.getFileHandle('shotlog-opfs-probe', { create: true });
+    void probe;
+    await root.removeEntry('shotlog-opfs-probe').catch(() => undefined);
+  } catch (err) {
+    setStorageEngine('idb');
+    logSyncEvent(`OPFS unavailable in this browser (${err instanceof Error ? err.message : 'error'}) — using IndexedDB`);
+  }
+}
+
+/** performance.now() when the database was opened — first-sync timing */
+let openedAt = 0;
+export function powerSyncOpenedAt(): number {
+  return g.__shotlogPowerSyncOpenedAt ?? openedAt;
+}
 
 export function getPowerSync(): PowerSyncDatabase {
+  if (!instance && g.__shotlogPowerSync) instance = g.__shotlogPowerSync;
   if (!instance) {
+    const engine = storageEngine();
+    openedAt = performance.now();
+    g.__shotlogPowerSyncOpenedAt = openedAt;
     instance = new PowerSyncDatabase({
       schema,
-      database: { dbFilename: 'shotlog.db' },
+      database:
+        engine === 'opfs'
+          ? { dbFilename: DB_FILENAME, vfs: WASQLiteVFS.OPFSCoopSyncVFS }
+          : { dbFilename: DB_FILENAME },
     });
+    g.__shotlogPowerSync = instance;
+    logSyncEvent(`storage engine: ${engine === 'opfs' ? 'OPFS' : 'IndexedDB'}`);
+    watchFirstSync(instance, engine);
     // Connect only once a session (or dev override) exists — otherwise the
     // SDK would loop on credential failures behind the login screen.
     if (getSession().loggedIn || import.meta.env.VITE_POWERSYNC_TOKEN_URL) {
@@ -155,6 +266,7 @@ export async function resetLocalReplica(): Promise<void> {
       /* a wedged instance may refuse to close — the boot delete is the backstop */
     }
     instance = null;
+    g.__shotlogPowerSync = null;
   }
   if (!clean) {
     logSyncEvent('local replica clear did not finish — database will be deleted at next boot');
@@ -180,6 +292,21 @@ export async function runPendingReplicaReset(): Promise<void> {
     return;
   }
   if (!pending) return;
+  // OPFS engine: the replica is a file (plus lock/journal siblings) in the
+  // origin-private file system — remove everything named after it
+  if (opfsSupported()) {
+    try {
+      const root = await navigator.storage.getDirectory();
+      const gone: string[] = [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      for await (const [name] of (root as any).entries() as AsyncIterable<[string, unknown]>) {
+        if (name.includes(DB_FILENAME)) gone.push(name);
+      }
+      for (const name of gone) await root.removeEntry(name, { recursive: true }).catch(() => undefined);
+    } catch {
+      /* no OPFS here — IndexedDB path below */
+    }
+  }
   const names = ((await indexedDB.databases?.().catch(() => [])) ?? [])
     .map((d) => d.name)
     .filter((n): n is string => Boolean(n) && n === DB_FILENAME);

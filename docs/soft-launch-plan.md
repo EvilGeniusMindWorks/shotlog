@@ -510,6 +510,25 @@ and re-download, which is exactly what the merge hit first.
    and unlocked with Mark's PIN. Now per account per device; sign-out,
    Forgot PIN and enrolling clear it; the account's PIN still seeds a new
    device; the old key migrates silently to the signed-in user.
+8. Long "Syncing" on the phone (diagnosed 2026-09-07, fix planned): the
+   company replica is ~8.6 MB and 7.6 MB of it is 40 filed office copies
+   carrying their PDF bytes inline (avg 190 KB, max 480 KB) — every device
+   downloads every PDF ever filed; Sign Out wipes the replica so every
+   login is a full first sync; the SDK's SQLite lives in IndexedDB, which
+   is slow at big writes on iPhone. Plan: PDFs to file storage (lazy
+   download), keep the replica across sign-out for the same company,
+   honest first-sync progress. **Storage-engine measurement (harness51,
+   Settings › Data & device switch):** desktop Chromium — IndexedDB first
+   sync 0.6 s for 2,523 records / 8.4 MB (1.3 s including sign-in), OPFS
+   1.3 s; reads equal; OPFS writes 2.2× slower. Desktop WebKit — IndexedDB
+   first sync 0.9 s, writes ~9× slower than Chromium (10 day create+delete
+   = 2.7 s vs 0.3 s). OPFS cannot be opened under Playwright's WebKit
+   (getDirectory throws) so Safari must be measured on the phone via the
+   switch, which falls back to IndexedDB when OPFS is unavailable. Verdict
+   so far: OPFS is not a win; the size and the sign-out wipe are the fix.
+   Side find: Vite HMR could leave two PowerSync instances on one file
+   (app import vs harness import) — hangs WebKit, inflated earlier numbers;
+   the singleton now lives on globalThis.
 7. Installed-app edges (✅ 2026-09-07, harness50 12/12): as a PWA the bars
    ran into the phone's corners. `viewport-fit=cover` + safe-area utilities
    (index.css): navy status-bar strip above the mobile header, bottom nav

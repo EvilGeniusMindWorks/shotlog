@@ -9,6 +9,7 @@
 //   node testing/run.mjs 37 45 46 -p        …in parallel (own page each; shared browser)
 //   node testing/run.mjs 49 -v              print PASS lines too
 //   node testing/run.mjs 49 --headed        watch it
+//   node testing/run.mjs 51 --webkit        run under WebKit (Safari's engine)
 //
 // Harness files are `async (page) => {…}` or `async (page, lib) => {…}`
 // expressions in testing/two-device/harnessNN.mjs — unchanged for the old
@@ -18,7 +19,7 @@ import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
+import { chromium, webkit } from 'playwright';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
@@ -26,6 +27,7 @@ const flags = new Set(args.filter((a) => a.startsWith('-')));
 const verbose = flags.has('-v') || flags.has('--verbose');
 const parallel = flags.has('-p') || flags.has('--parallel');
 const headed = flags.has('--headed');
+const useWebkit = flags.has('--webkit'); // Safari's engine (npx playwright install webkit)
 const onlyArg = args.find((a) => a.startsWith('--only='))?.slice(7) ?? (args.includes('--only') ? args[args.indexOf('--only') + 1] : null);
 const only = onlyArg
   ? new Set(onlyArg.split(',').map((s) => (Number.isFinite(Number(s)) ? Number(s) : s.trim())))
@@ -33,7 +35,7 @@ const only = onlyArg
 const targets = args.filter((a, i) => !a.startsWith('-') && !(args[i - 1] === '--only'));
 
 if (targets.length === 0) {
-  console.error('usage: node testing/run.mjs <harness…> [--only n,m] [-p] [-v] [--headed]');
+  console.error('usage: node testing/run.mjs <harness…> [--only n,m] [-p] [-v] [--headed] [--webkit]');
   process.exit(2);
 }
 
@@ -82,7 +84,7 @@ async function runOne(browser, file, lib) {
 
 const files = targets.map(resolveHarness);
 const lib = await import(path.join(here, 'two-device', 'lib.mjs'));
-const browser = await chromium.launch({ headless: !headed });
+const browser = await (useWebkit ? webkit : chromium).launch({ headless: !headed });
 const t0 = Date.now();
 let allGreen = true;
 try {

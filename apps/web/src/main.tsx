@@ -8,7 +8,7 @@ import { startFeedbackOutbox } from './lib/feedback';
 import { showToast } from './components/ui/undo-toast';
 import { openFeedbackComposer } from './components/feedback/FeedbackComposer';
 import { ErrorBoundary } from './components/feedback/ErrorBoundary';
-import { runPendingReplicaReset } from './db/powersync/client';
+import { preflightStorageEngine, runPendingReplicaReset } from './db/powersync/client';
 import './index.css';
 
 // Chrome fires beforeinstallprompt once, early — grab it before React mounts
@@ -84,7 +84,9 @@ if (import.meta.env.DEV) {
 
 // A pending local-replica reset must run BEFORE the first render opens
 // PowerSync — once the database is open, IndexedDB defers the delete
-void runPendingReplicaReset().finally(() => {
+void preflightStorageEngine()
+  .then(() => runPendingReplicaReset())
+  .finally(() => {
   ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
       {/* Outside the auth gate on purpose: a crash anywhere — gate included —
