@@ -536,7 +536,9 @@ and re-download, which is exactly what the merge hit first.
    company's copy (`shotlog-replica-cid`; another company clears it; "Sign
    out & clear this device" in Profile), chip shows "Downloading — N%" until
    the first download completes, Settings line says where filed PDFs live,
-   storage-engine selector removed. harness52.
+   storage-engine selector removed. harness52 15/15 · 37/46/49 green.
+   ✅ SHIPPED 2026-09-07 (d3d49ad). Verify: prod `/health.legacyInlinePdfs`
+   → 0 after the deploy; Matthew's phone "Last first sync" reading.
    Side find: Vite HMR could leave two PowerSync instances on one file
    (app import vs harness import) — hangs WebKit, inflated earlier numbers;
    the singleton now lives on globalThis.
