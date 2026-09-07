@@ -9,8 +9,10 @@ import { AccountSyncCard } from '@/components/forms/AccountSyncCard';
 import { InstallCard } from '@/components/onboarding/InstallCard';
 import { openFeedbackComposer } from '@/components/feedback/FeedbackComposer';
 import { getLayoutPref, setLayoutPref, type LayoutPref } from '@/components/layout/RecordShell';
-import { getSessionUser } from '@/lib/session';
+import { getRealSessionUser, getSessionUser } from '@/lib/session';
 import { FEEDBACK_OUTBOX_EVENT, outboxCount } from '@/lib/feedback';
+import { REHEARSAL_ROLES, rehearsalRole, startRehearsal } from '@/lib/rehearsal';
+import { showToast } from '@/components/ui/undo-toast';
 import { buildId } from '@/lib/diagnostics';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,6 +56,51 @@ function HelpCard() {
           </p>
         )}
         <p className="text-xs text-gray-400">Build {buildId()}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Platform admin only (Round S6): become a brand-new person of a role in
+ *  the sandbox company — PIN, welcome, walkthrough, empty home — to judge
+ *  the experience as often as you like. End wipes the sandbox. */
+function RehearsalCard() {
+  const [busy, setBusy] = useState<string | null>(null);
+  if (!getRealSessionUser()?.platformAdmin || rehearsalRole()) return null;
+  return (
+    <Card data-rehearsal-card>
+      <CardHeader>
+        <CardTitle className="text-base">Rehearse as…</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-gray-500">
+          Sign into the sandbox company as a brand-new person of that role: PIN, welcome,
+          walkthrough, an empty home. Nothing you do there is real; ending wipes it.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {REHEARSAL_ROLES.map((r) => (
+            <Button
+              key={r}
+              variant="outline"
+              className="capitalize"
+              disabled={busy !== null}
+              data-rehearse-as={r}
+              onClick={() => {
+                setBusy(r);
+                void startRehearsal(r).catch((e: Error) => {
+                  showToast(e.message);
+                  setBusy(null);
+                });
+              }}
+            >
+              {busy === r ? 'Starting…' : r}
+            </Button>
+          ))}
+        </div>
+        <p className="text-xs text-gray-400">
+          Not rehearsed: the invite email and the install prompt — they are the same for every
+          role; send yourself one real invite to see them.
+        </p>
       </CardContent>
     </Card>
   );
@@ -106,6 +153,7 @@ export function SettingsPage() {
       <AccountSyncCard />
       <InstallCard always />
       <HelpCard />
+      <RehearsalCard />
       <LayoutCard />
       {MANAGER_ROLES.includes(role) && (
         <p className="text-sm text-gray-500 rounded-lg border border-gray-200 bg-white px-3 py-2">

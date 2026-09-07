@@ -27,6 +27,7 @@ import { hasCap, myHomeDashboard, useRoleDefsSync } from '@/lib/perms';
 import { FirstSyncStrip, SessionExpiredBanner, SyncChip, UpdateChip } from './SyncChip';
 import { START_TOUR_EVENT, Tour, shouldAutoRunTour, startTour } from './Tour';
 import { HelpMenu } from '@/components/feedback/HelpMenu';
+import { RehearsalBar } from '@/components/rehearsal/RehearsalBar';
 
 /** Dev-only: `window.shotlogCrash()` throws during render so the harness
  *  can prove the root error boundary catches it (never shipped in prod) */
@@ -356,6 +357,7 @@ export function AppShell() {
       {/* min-w-0: flex children default to min-width:auto, so one wide widget
           stretches the whole shell past the viewport on phones */}
       <div className="flex-1 min-w-0 lg:pl-56 flex flex-col min-h-screen">
+        <RehearsalBar />
         <ViewAsBanner />
         <SessionExpiredBanner />
         <FirstSyncStrip />

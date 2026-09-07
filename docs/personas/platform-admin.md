@@ -23,6 +23,16 @@ architecture decisions account for the separation BEFORE it's urgent.
    first platform-actor marker; it lives in env, not in the company roles
    engine. Single tenant today; the routes are not company-scoped for
    platform admins, so cross-tenant listing is a filter away.
+0b. 🟡 **Rehearsal mode (Round S6, 2026-09-07):** Matthew's call — "I need
+   to test as each user type, onboarding and tour included, regularly,
+   without the complexity." One switch in Settings › Help (platform admin
+   only): *Rehearse as <role>* signs him into a **sandbox company** as a
+   brand-new person of that role (PIN → welcome → walkthrough → empty
+   home); a sticky bar offers *Add sample job* and *End*, which wipes the
+   sandbox and signs him back in as himself. The invite email and the
+   install prompt are role-independent and tested once for real. This is
+   also the first tenant the platform ever creates programmatically — the
+   seed of job 1 below.
 1. ❌ Tenant management: onboard a new blasting company (company record,
    first admin, seeded catalog/roles), suspend, offboard
 2. ❌ Cross-tenant support: see a company's health (sync status, errors,

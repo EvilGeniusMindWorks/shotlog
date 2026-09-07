@@ -279,6 +279,50 @@ Re-run `audit-sweep.mjs`; gate: no screen > 3 for any persona.
 - Cohort + cadence: who gets invited first, and a weekly "feedback
   review" ritual with Mark.
 
+### S6 — Rehearsal mode (server + web) — ✅ SHIPPED 2026-09-07 (harness41 22/22; harness38 38/38 + harness39 34/34 regression)
+
+Built exactly as designed below. In-round facts: the sandbox is created by
+the server on the first Start (no migration); the client clear of the local
+replica is raced against an 8-second timeout so a wedged SDK can never
+hold the switch; sandbox feedback rows carry `notified: sandbox` and are
+never mailed; the office bucket's rehearsal lands on the queue home. Dev
+gotcha recorded: Playwright init scripts run on every load, so a harness
+that seeds the device PIN hides the Set-PIN step — seed it only outside a
+rehearsal. Matthew's prod step: none — the Rehearse card appears in
+Settings for the platform admin after the deploy.
+
+Matthew's ask: test as every user type, onboarding and tour included, on a
+regular basis, without ceremony. Design (accepted 2026-09-07):
+
+1. **Sandbox company** "ShotLog Sandbox", created by the server on first
+   use, with one rehearsal account per built-in role
+   (`rehearsal-<role>@sandbox.shotlog`, never emailed, no usable password —
+   sessions are minted directly). Same tenancy as any customer: its own
+   records bucket, catalog and manufacturers seeded, a roster of the six
+   rehearsal people.
+2. **`POST /platform/rehearsal/start {role}`** (platform admin only):
+   wipe the sandbox (records → reseed reference data + roster, audit,
+   feedback, invites, sandbox sessions), reset every rehearsal account's
+   first-run flags (onboardedAt, tourDoneAt, PIN, licenses, signature),
+   return a session for the chosen role. **`POST …/end`** (any sandbox
+   session): wipe again. **`POST …/sample`**: one customer, site, job and
+   rig so the driller has a plan to drill and the office has something to
+   approve. **`GET …/status`** for the harness.
+3. **Client switch** (`lib/rehearsal.ts`): stash the real session + this
+   device's first-run keys, swap in the rehearsal session, clear the PIN
+   and dismissals, reset the local database, reload → Set PIN → welcome →
+   walkthrough → empty home. **RehearsalBar** (sticky, amber like View-as):
+   "Rehearsing as blaster · sandbox — nothing here is real · Add sample job
+   · End". End restores everything and reloads as the real user.
+4. **Settings › Help** gains "Rehearse as…" (six roles) for platform
+   admins. Sandbox feedback is stored but never emailed.
+5. Not rehearsed on purpose: the invite email and the install prompt (role-
+   independent; one real invite covers them).
+
+Harness (harness41): start as blaster → Set PIN → field welcome → tour →
+bar → empty jobs → sample job → a day → End → real session + PIN back,
+sandbox empty; office rehearsal shows the queue; non-platform admin 403.
+
 #### S5 status — 2026-09-06 (started; the gates are Matthew's to close)
 
 | Gate | State | Notes |

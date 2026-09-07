@@ -138,7 +138,10 @@ one-line rows, daily-report collapse, jobs/customers/sites rows, driller
 cap, catalog + costing windowing, records manager R-A. S5 🟡 started
 2026-09-06: audit 12 → 4 (transitive, accepted), engineer packet
 (docs/usbm-curve-signoff.md) and runbook (docs/soft-launch-runbook.md)
-written; the remaining gates are Matthew's decisions D1–D4 + Resend.
+written; Resend went live 2026-09-07 (shotlog.evilgenius.io). S6 ✅
+Rehearsal mode shipped 2026-09-07 (harness41 22/22): Settings › Rehearse
+as <role> → sandbox company, first-run from scratch, End wipes it. The
+remaining gates are Matthew's decisions D1–D4.
 
 ## Runs alongside (not gated on rounds)
 

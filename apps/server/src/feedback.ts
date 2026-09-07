@@ -17,6 +17,7 @@ import {
 } from './auth.js';
 import { emailEnabled, feedbackMail, sendEmail } from './email.js';
 import { rateLimit } from './rateLimit.js';
+import { SANDBOX_COMPANY_NAME } from './rehearsal.js';
 
 export const feedbackRouter = Router();
 
@@ -94,9 +95,13 @@ feedbackRouter.post('/', rateLimit, requireAuth, async (req: AuthedRequest, res:
     },
   });
 
-  // Email hook — truthful outcome recorded on the row
-  let notified: 'sent' | 'email-off' | 'failed' = 'email-off';
-  if (emailEnabled()) {
+  // Email hook — truthful outcome recorded on the row. Rehearsal-sandbox
+  // reports are stored (Matthew reads them in Admin › Feedback) but never
+  // mailed — they are his own notes to himself.
+  let notified: 'sent' | 'email-off' | 'failed' | 'sandbox' = 'email-off';
+  if (user.company.name === SANDBOX_COMPANY_NAME) {
+    notified = 'sandbox';
+  } else if (emailEnabled()) {
     const recipients = feedbackRecipients();
     let anySent = false;
     for (const to of recipients) {
