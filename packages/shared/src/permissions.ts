@@ -66,7 +66,10 @@ export const TABLE_PERMISSIONS: Record<string, TableRule> = {
   // Work days are the root of EVERY field day (drill-only, crushing,
   // hauling included) — drillers create and edit them too. The blasting
   // LOG and its children stay blaster-and-up.
-  blastDays: { PUT: REPORT_FAMILY, PATCH: REPORT_FAMILY, DELETE: REGISTRY },
+  // S7d: the people who start days may also fold a duplicate away ("two
+  // copies of today" → merge) — the server still refuses any delete of a
+  // day that is not a draft with nothing filed from it.
+  blastDays: { PUT: REPORT_FAMILY, PATCH: REPORT_FAMILY, DELETE: REPORT_FAMILY },
   blastLogs: uniform(BLAST_FAMILY),
   shots: uniform(BLAST_FAMILY),
   seismoReadings: uniform(BLAST_FAMILY),

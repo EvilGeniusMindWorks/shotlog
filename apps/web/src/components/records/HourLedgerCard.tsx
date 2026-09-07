@@ -16,6 +16,7 @@ import { showToast } from '@/components/ui/undo-toast';
 
 const SOURCE_LABEL: Record<HourSource, string> = {
   checklist: 'checklist',
+  drill_log: 'drill log · end of day',
   daily_report: 'daily report',
   correction: 'shop correction',
 };

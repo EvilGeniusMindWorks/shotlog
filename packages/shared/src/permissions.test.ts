@@ -34,8 +34,9 @@ describe('table permissions', () => {
     expect(canPerformOp('productCatalog', 'PUT', 'blaster')).toBe(false);
     expect(canPerformOp('companySettings', 'PUT', 'blaster')).toBe(false);
     expect(canPerformOp('crewMembers', 'PUT', 'blaster')).toBe(false);
-    // blastDay deletion is registry-level, not blaster
-    expect(canPerformOp('blastDays', 'DELETE', 'blaster')).toBe(false);
+    // S7d: the people who start days may fold a duplicate away; the server
+    // still refuses any delete of a day that is not a draft with nothing filed
+    expect(canPerformOp('blastDays', 'DELETE', 'blaster')).toBe(true);
   });
 
   it('blaster sets up customers/sites/jobs; archive/delete stays supervisory (2026-08-17)', () => {
@@ -83,7 +84,7 @@ describe('table permissions', () => {
     expect(canPerformOp('dailyReports', 'PUT', 'driller')).toBe(true);
     expect(canPerformOp('workForceEntries', 'PATCH', 'driller')).toBe(true);
     expect(canPerformOp('equipmentEntries', 'PUT', 'driller')).toBe(true);
-    expect(canPerformOp('blastDays', 'DELETE', 'driller')).toBe(false);
+    expect(canPerformOp('blastDays', 'DELETE', 'driller')).toBe(true); // S7d merge (draft + nothing filed, server-checked)
     expect(canPerformOp('blastLogs', 'PUT', 'driller')).toBe(false);
     expect(canPerformOp('shots', 'PUT', 'driller')).toBe(false);
   });

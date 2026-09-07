@@ -150,8 +150,11 @@ shipped the same day (harness43 34/34): Customer → Site → Job everywhere,
 the day dialog reordered with Recent chips and type prefill, Settings
 reorganised (sign out only in Profile), Records by home bucket. S7c ✅
 (harness44 31/31): screen tours once per account on the day hub → shot,
-drill log, checklist, shop, approvals, people; "Show me …" in Help. S7d
-(time model) follows.
+drill log, checklist, shop, approvals, people; "Show me …" in Help. S7d ✅
+(harness45 25/25): the day is a container, the blaster owns the report,
+everyone owns their trio, Work Force is the day's time cards, rig hours
+come from the rig's own meter readings, duplicate days merge. Round S7
+complete.
 
 ## Runs alongside (not gated on rounds)
 

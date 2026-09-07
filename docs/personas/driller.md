@@ -133,12 +133,17 @@ report (solo submit) · My Records · jobs list
   (hour meter first · the walk-around · out of service). Re-run from
   ? → "Show me the drill log / the rig checklist".
 
-### S7d (planned, accepted 2026-09-07 — see docs/round-s7-plan.md)
-- The driller owns their trio and nothing more: own time card, own drill
-  log, own rig checklist. They never own the day's report on a blasting
-  day; a drill-only day keeps the slim "file the day" path.
-- End-of-day meter asked once at drill-log sign-complete (prefilled,
-  skippable) — closes the rig's hours for the day without typing them on
-  any report. Person hours are proposed from their own timestamps
-  (checklist signed → first hole; log signed → last hole), confirmed and
-  signed by them.
+### S7d (shipped 2026-09-07)
+- ✅ The driller owns their trio and nothing more: own time card, own drill
+  log, own rig checklist. On a blasting day the report is the blaster's
+  (the daily-report tab says so); a drill-only day they start is theirs,
+  with the slim "file the day" card, until a blaster adds the blast log.
+- ✅ End-of-day meter asked once at Mark Complete (prefilled from the
+  ledger, skippable) — closes the rig's hours without typing them on any
+  report; the shop's ledger shows it as "drill log · end of day".
+- ✅ Their card starts filled in from their own records (checklist signed
+  → first hole; log signed → last hole, to five minutes), with the sources
+  named, until they edit — then they sign and file as before.
+- ✅ Starting drilling where the blaster already opened today's day joins
+  it (the dialog offers *Open that day*); a standalone card lands on
+  today's day when one exists.

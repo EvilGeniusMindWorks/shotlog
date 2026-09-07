@@ -39,6 +39,8 @@ interface Props {
   ) => void;
   /** The role's fallback type of work (drillers default to drill_only) */
   defaultTypeOfWork?: WorkType;
+  /** S7d: today's day at that job already exists — open it instead */
+  onOpenExisting?: (dayId: string) => void;
 }
 
 const NEW_JOB = '__new';
@@ -50,7 +52,7 @@ function daysAgo(n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork }: Props) {
+export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork, onOpenExisting }: Props) {
   // NOTE: boolean fields can't be indexed in IndexedDB — use filter(), not where()
   const jobs: Job[] =
     useLiveQuery(async () => getJobViews(await db.jobs.filter((j) => j.isActive).toArray())) ?? [];
@@ -157,9 +159,11 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork }: Prop
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobId, previousDays.length, job?.defaultTypeOfWork]);
 
-  // Two offline devices can both create "today's day" — warn, don't block
-  // (split shifts on one date are legitimate; S7d folds them into one day)
-  const sameDateExists = previousDays.some((d) => d.date === date);
+  // S7d: the day is a container — one per job per date. If it already
+  // exists, the first choice is to OPEN it (a driller who got there first
+  // claimed nothing); a second day stays possible for a real split shift.
+  const existingSameDate = previousDays.find((d) => d.date === date);
+  const sameDateExists = Boolean(existingSameDate);
 
   const handleCreate = () => {
     if (!jobId) return;
@@ -281,11 +285,24 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork }: Prop
           <div>
             <Label>Date</Label>
             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} data-day-date />
-            {sameDateExists && (
-              <p className="text-xs text-safety-orange bg-orange-50 border border-orange-200 rounded-lg px-3 py-2 mt-2">
-                ⚠ This job already has a work day on this date — creating another makes a second
-                day (fine for split shifts, easy to miss otherwise).
-              </p>
+            {sameDateExists && existingSameDate && (
+              <div className="text-xs text-safety-orange bg-orange-50 border border-orange-200 rounded-lg px-3 py-2 mt-2 space-y-2" data-day-exists>
+                <p>
+                  This job already has a work day on this date
+                  {existingSameDate.authorName ? ` — started by ${existingSameDate.authorName}` : ''}. Open it
+                  and add your part; a second day is only for a real split shift.
+                </p>
+                {onOpenExisting && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    data-day-open-existing
+                    onClick={() => onOpenExisting(existingSameDate.id)}
+                  >
+                    Open that day
+                  </Button>
+                )}
+              </div>
             )}
           </div>
 

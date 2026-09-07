@@ -33,7 +33,9 @@ export interface CapabilityDef {
 }
 
 const REPORT_TABLES_RW: Record<string, readonly WriteOp[]> = {
-  blastDays: ['PUT', 'PATCH'],
+  // S7d: DELETE lets the day's own people fold a duplicate copy away; the
+  // server still refuses unless the day is a draft with nothing filed
+  blastDays: ['PUT', 'PATCH', 'DELETE'],
   dailyReports: ['PUT', 'PATCH', 'DELETE'],
   workForceEntries: ['PUT', 'PATCH', 'DELETE'],
   materialEntries: ['PUT', 'PATCH', 'DELETE'],

@@ -70,11 +70,12 @@ async (page) => {
     await P1.waitForTimeout(2500);
     const emptyRows = await P1.locator('[data-empty-add]').count();
     const drScreens = await screens(P1);
-    ok('daily report: 4 empty sections collapse to single "+ Add" rows', emptyRows === 4);
+    // S7d: Work Force is no longer a typed section (hours live on time cards) — three rows remain
+    ok('daily report: 3 empty sections collapse to single "+ Add" rows', emptyRows === 3);
     ok(`daily report tab @430 ≤ 3 screens (was ~4.1) — ${drScreens.toFixed(1)}`, drScreens <= 3);
-    await P1.locator('[data-empty-add="Work Force"]').click();
+    await P1.locator('[data-empty-add="Equipment / Assets"]').click();
     await P1.waitForTimeout(600);
-    ok('tapping the row adds the first line and opens the section', (await P1.locator('[data-empty-add="Work Force"]').count()) === 0 && (await P1.getByText('Work Force').count()) > 0);
+    ok('tapping the row adds the first line and opens the section', (await P1.locator('[data-empty-add="Equipment / Assets"]').count()) === 0 && (await P1.getByText('Equipment / Assets').count()) > 0);
     // submit the day (blaster may draft→submitted) → locked: empty sections vanish
     await P1.evaluate(async (id) => {
       const { db } = await import('/src/db/index.ts');

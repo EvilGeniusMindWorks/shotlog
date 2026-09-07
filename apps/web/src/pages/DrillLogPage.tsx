@@ -25,7 +25,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { SignatureField } from '@/components/ui/signature-field';
-import { useTodayChecklist } from '@/hooks/useMaintenance';
+import { propagateHourMeter, useTodayChecklist } from '@/hooks/useMaintenance';
+import { buildHourLedger } from '@/lib/hourLedger';
 
 const CONDITIONS: { code: HoleConditionCode; label: string }[] = [
   { code: 'W', label: 'Water' },
@@ -123,6 +124,16 @@ export function DrillLogPage() {
   // Handoff-note prompts: driller → blaster at complete, blaster → driller at reopen
   const [notePrompt, setNotePrompt] = useState<'complete' | 'reopen' | null>(null);
   const [noteText, setNoteText] = useState('');
+  // S7d: end-of-day meter asked at sign-complete (prefilled from the ledger)
+  const [endMeter, setEndMeter] = useState('');
+  const rigMeter = useLiveQuery(
+    async () => {
+      if (!log?.drillRigEquipmentId) return null;
+      const rig = await db.equipment.get(log.drillRigEquipmentId);
+      return rig ? (await buildHourLedger(rig)).currentHours : null;
+    },
+    [log?.drillRigEquipmentId],
+  );
 
   useEffect(() => {
     if (!log || holeNumber) return;
@@ -795,6 +806,27 @@ export function DrillLogPage() {
               <p className="font-bold">
                 {notePrompt === 'complete' ? 'Mark complete' : 'Send back to the driller'}
               </p>
+              {/* S7d: the rig's end-of-day meter, asked ONCE here — closes the
+                  rig's hours without typing them on any report. Skippable. */}
+              {notePrompt === 'complete' && log.drillRigEquipmentId && (
+                <div>
+                  <Label className="text-xs">
+                    {rigs.find((r) => r.id === log.drillRigEquipmentId)?.assetNumber ?? 'Rig'} meter at end of day
+                    <span className="text-gray-400 font-normal"> — optional</span>
+                  </Label>
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    data-log-end-meter
+                    value={endMeter}
+                    placeholder={rigMeter != null ? String(rigMeter) : ''}
+                    onChange={(e) => setEndMeter(e.target.value)}
+                  />
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    Goes to the shop's hour ledger and the daily report's equipment hours.
+                  </p>
+                </div>
+              )}
               <div>
                 <Label className="text-xs">
                   {notePrompt === 'complete'
@@ -812,16 +844,20 @@ export function DrillLogPage() {
                   Cancel
                 </Button>
                 <Button
+                  data-log-complete-confirm
                   onClick={() => {
                     const note = noteText.trim() || undefined;
                     if (notePrompt === 'complete') {
+                      const ending = endMeter.trim() ? parseFloat(endMeter) : null;
                       // completing clears any sent-back reason from last round
                       void update({
                         status: 'complete',
                         completedAt: nowISO(),
                         completionNote: note,
                         reopenNote: undefined,
+                        ...(ending != null && Number.isFinite(ending) ? { endingHours: ending } : {}),
                       });
+                      if (ending != null && log.drillRigEquipmentId) void propagateHourMeter(log.drillRigEquipmentId, ending);
                     } else {
                       void update({ status: 'open', reopenNote: note });
                     }

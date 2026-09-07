@@ -76,7 +76,10 @@ export function useDayPhases(
     const shotsWithReadings = readShots.size;
 
     // ── time cards ──
-    const cards = await db.timeCards.where('blastDayId').equals(day.id).toArray();
+    // S7d: cards belong to the job + date (day id kept as a convenience)
+    const cards = await db.timeCards
+      .filter((c) => c.blastDayId === day.id || (c.jobId === day.jobId && c.date === day.date))
+      .toArray();
     const mine = me ? cards.find((c) => c.userId === me.id) : undefined;
     const others = cards.filter((c) => c.id !== mine?.id);
     const othersFiled = others.filter((c) => c.status !== 'draft').length;

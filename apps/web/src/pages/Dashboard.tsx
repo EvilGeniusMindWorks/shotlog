@@ -212,6 +212,10 @@ function NewWorkDayFab({ defaultTypeOfWork }: { defaultTypeOfWork?: WorkType }) 
       {showNewDialog && (
         <NewBlastDayDialog
           defaultTypeOfWork={defaultTypeOfWork}
+          onOpenExisting={(id) => {
+            setShowNewDialog(false);
+            navigate(`/blast-day/${id}`);
+          }}
           onClose={() => setShowNewDialog(false)}
           onCreate={async (jobId, date, copy, opts) => {
             const id = await createBlastDay(jobId, date, copy, opts);

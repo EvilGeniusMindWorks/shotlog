@@ -1,8 +1,14 @@
 # Round S7 — plan from Matthew's first-rehearsal feedback (2026-09-07)
 
-Status: **ACCEPTED 2026-09-07 — all eleven Build.** S7a ✅ shipped
-2026-09-07 (harness42 27/27); S7b ✅ shipped 2026-09-07 (harness43
-34/34); S7c ✅ shipped 2026-09-07 (harness44 31/31). S7d next. Review
+Status: **COMPLETE 2026-09-07 — all eleven shipped.** S7a (harness42
+27/27) · S7b (harness43 34/34) · S7c (harness44 31/31) · S7d (harness45
+25/25). Shipped deltas from the design below: ownership is by ROLE with a
+recorded author (a blaster takes a day over when the blast log is added);
+"nudge" is a list of who has no card yet (no notification transport);
+legacy Work Force rows are shown read-only rather than migrated;
+`blastDays DELETE` opened to the report family so merges can happen
+(server still requires draft + nothing filed). Deploy details in
+docs/soft-launch-plan.md § S7. Review
 artifact https://claude.ai/code/artifact/b33c3106-1cbd-49d4-98d8-4f0b71461612
 (reactions in its `responses` collection, ids `i1`…`i11`, `i10b`).
 Item 10 second-draft answers: end-of-day meter on the drill log at

@@ -441,7 +441,42 @@ untouched) + harness41 regression with the new labels.
    SubSection), sign-off, drill-log header/entry/complete, checklist
    hours/daily/out-of-service, shop trio/worklist, approve/send-back,
    people add. Matthew's prod step: none.
-**S7d — Time and the day (role ownership; design accepted, see plan doc)**
+**S7d — Time and the day — ✅ SHIPPED 2026-09-07 (harness45 25/25; harness40 46/46 · 42 27/27 · 44 31/31 regression)**
+1. **Ownership by role** (`BlastDay.authorUserId/Name/Bucket`,
+   lib/dayOwnership.ts): whoever starts a day authors it; a field bucket
+   takes a day over the moment it adds the blast log (or opens a blasting
+   day that a non-blaster started); opening never claims for supervision.
+   The daily-report tab says "Report: <name> (you)" or "— the report is
+   theirs; your card, drill log and checklist are yours here"; conditions
+   Edit, the report's sections and the drill-only file card follow the
+   owner. Client rule + audit; the server keeps enforcing by role table.
+2. **Work Force = the day's time cards keyed by job + date**
+   (`useDayTimeCards(day)`, the phase model and the office queue agree);
+   the typed Work Force editor is gone — rows from before stay read-only;
+   "Worked today, no card yet: …" lists people with a log/checklist/blast
+   signature that day but no card (no nudge transport yet — the list is
+   the nudge). A standalone card joins today's day when one exists.
+3. **Rig hours from the machine**: `DrillLog.endingHours` asked once at
+   Mark Complete (prefilled from the ledger, skippable) → hour-ledger source
+   `drill_log` → `equipment.hourMeter`; the daily report's Equipment section
+   shows drills as derived read-only rows "start → end h" (latest checklist
+   of the day + the log's end meter); trucks and seismographs stay manual.
+4. **The driller's card starts filled in** (lib/timeSuggest.ts): in = the
+   checklist they signed (else first hole), out = the log they signed
+   complete (else last hole), to five minutes, with `suggestedFrom` shown
+   until they edit — a suggestion they confirm and sign.
+5. **Join, don't duplicate**: the dialog's same-date notice names who
+   started the day and offers *Open that day*. **Two offline copies** →
+   a merge strip on the day page (author or supervision) → `mergeDays`
+   re-parents logs, cards, attachments, incidents and report lines (a
+   blast log moves if the kept day has none; otherwise its shots append)
+   and tombstones the other day. To make that possible for the people who
+   start days, `blastDays DELETE` moved from registry to the REPORT FAMILY
+   in both the legacy matrix and the capability bundles — the server's
+   "draft with nothing filed" rule is unchanged and still decides.
+In-round finding: a field role's day delete used to bounce at the server
+and re-download, which is exactly what the merge hit first.
+"Take over the report" for a second blaster stays tabled (multi-blaster).
 
 ---
 

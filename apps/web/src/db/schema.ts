@@ -302,6 +302,15 @@ export interface BlastDay extends BaseRecord {
   conditions: BlastDayConditions;
   typeOfWork: WorkType;
   fireDetail: boolean;
+  /** S7d ownership: the day is a container; its REPORT (name, type,
+   *  conditions, notes, materials, subs, equipment list) belongs to the
+   *  blaster on any day with a blast log, else to whoever started it.
+   *  Stamped at creation / when a blaster adds the blast log; a field
+   *  bucket takes over a driller-started day the moment it becomes a
+   *  blasting day. Everyone else edits only their own trio. */
+  authorUserId?: string;
+  authorName?: string;
+  authorBucket?: 'field' | 'driller' | 'mechanic' | 'office';
 }
 
 // ══════════════════════════════════════════════════════
@@ -559,6 +568,9 @@ export interface TimeCard extends BaseRecord {
   straightTime: number; // hours
   overtime: number;
   notes?: string;
+  /** S7d: in/out were proposed from the person's own records that day
+   *  ("checklist 6:40 · log signed 15:05") — shown until they edit */
+  suggestedFrom?: string;
   signatureImage: Blob | null;
   status: TimeCardStatus;
   filedAt?: string;
@@ -787,6 +799,10 @@ export interface DrillLog extends BaseRecord {
   drillerName: string;
   signatureImage: Blob | null;
   completedAt?: string;
+  /** S7d: the rig's meter at the end of the day, asked once at sign-
+   *  complete — closes the rig's hours without typing them on any report
+   *  (hour-ledger source 'drill_log') */
+  endingHours?: number | null;
   acceptedBy?: string;
   acceptedAt?: string;
   // Dispatch: set when the blaster sent this log to a driller (vs self-started)

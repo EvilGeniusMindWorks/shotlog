@@ -30,12 +30,28 @@ import { getSessionUser } from '@/lib/session';
 import { dataUrlToBlob, nowISO } from '@/lib/utils';
 
 export function TimeCardsCard({ blastDay }: { blastDay: BlastDay }) {
-  const cards = useDayTimeCards(blastDay.id);
+  const cards = useDayTimeCards(blastDay);
   const roster = useLiveQuery(() => db.crewMembers.filter((m) => m.isActive).toArray()) ?? [];
   const me = getSessionUser();
   const mine = myCard(cards);
   const supervisory = canEditApprovedDay();
   const [addingOther, setAddingOther] = useState(false);
+  // S7d roll-up: who WORKED this day by their own records (drill log,
+  // rig checklist, blast-log signature) but has no card yet — the author
+  // sees who is missing and can nudge; login-holders file their own
+  const worked = useLiveQuery(async () => {
+    const names = new Map<string, string>(); // userId|name → name
+    for (const l of await db.drillLogs.filter((l) => l.blastDayId === blastDay.id || ((l.date ?? l.createdAt.slice(0, 10)) === blastDay.date && l.jobId === blastDay.jobId)).toArray())
+      if (l.drillerName) names.set(l.drillerUserId || l.drillerName, l.drillerName);
+    for (const c of await db.drillChecklists.filter((c) => c.date === blastDay.date && c.jobId === blastDay.jobId).toArray())
+      if (c.drillerName) names.set(c.drillerUserId || c.drillerName, c.drillerName);
+    const log = await db.blastLogs.where('blastDayId').equals(blastDay.id).first();
+    if (log?.blasterName) names.set(log.blasterUserId || log.blasterName, log.blasterName);
+    return [...names.entries()].map(([key, name]) => ({ key, name }));
+  }, [blastDay.id, blastDay.date, blastDay.jobId]) ?? [];
+  const noCardYet = worked.filter(
+    (w) => !cards.some((c) => c.userId === w.key || c.personName === w.name),
+  );
 
   if (!hasCap('file_time_cards')) return null;
 
@@ -50,10 +66,10 @@ export function TimeCardsCard({ blastDay }: { blastDay: BlastDay }) {
   const enterable = supervisory ? withoutCard : withoutCard.filter((m) => !m.userId);
 
   return (
-    <Card>
+    <Card data-time-cards>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-base flex items-center gap-2">
-          <Clock className="h-4 w-4 text-navy" /> Time Cards
+          <Clock className="h-4 w-4 text-navy" /> Work force · time cards
           {cards.length > 0 && (
             <span className="text-xs font-normal text-gray-400">
               {filed}/{cards.length} filed
@@ -78,6 +94,11 @@ export function TimeCardsCard({ blastDay }: { blastDay: BlastDay }) {
         {cards.map((card) => (
           <TimeCardRow key={card.id} card={card} editable={canEditCard(card, roster)} />
         ))}
+        {noCardYet.length > 0 && (
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2" data-no-card-yet>
+            Worked today, no card yet: {noCardYet.map((w) => w.name).join(', ')} — each files their own from their home.
+          </p>
+        )}
 
         {enterable.length > 0 && !addingOther && (
           <button
@@ -179,6 +200,11 @@ export function TimeCardRow({ card, editable }: { card: TimeCard; editable: bool
         )}
       </div>
 
+      {card.suggestedFrom && card.status === 'draft' && (
+        <p className="text-[11px] text-navy bg-blue-50 border border-blue-100 rounded-md px-2 py-1" data-card-suggested>
+          Suggested from your own records — {card.suggestedFrom}. Adjust if needed, then sign and file.
+        </p>
+      )}
       {editable ? (
         <div className="grid grid-cols-4 gap-2">
           <div>

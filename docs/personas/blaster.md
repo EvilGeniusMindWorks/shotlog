@@ -148,11 +148,13 @@ page · customer/site/job create (new) · contacts · My Records · reference
   opens — spine, tabs, then the shot: drill parameters, explosives
   top-down, design/compliance, sign-off and filing. Re-run from ? → "Show
   me your work day".
-- **S7d (accepted, design in docs/round-s7-plan.md):** the day is a
-  container; **the blaster owns the report** on any day with a blast log
-  regardless of who opened the day; each person owns their own card, log
-  and checklist; Work Force becomes the day's time cards keyed by job +
-  date (entered-for rows for no-login people; nudge, never edit); drill
-  hours on the report derive from the rig's own meter readings. "Take
-  over the report" for a second blaster is tabled with the multi-blaster
-  decision.
+- **S7d (shipped):** the day is a container; **the blaster owns the
+  report** on any day with a blast log regardless of who opened it (adding
+  the blast log to a driller's day hands it over); each person owns their
+  own card, log and checklist; Work Force is the day's time cards keyed by
+  job + date (entered-for rows for no-login people; "worked today, no card
+  yet" list, never editing another login's card); drill hours on the
+  report derive from the rig's checklist and end-of-day meter; today's
+  day is opened, not duplicated, and two offline copies merge from the day
+  page. "Take over the report" for a second blaster is tabled with the
+  multi-blaster decision.

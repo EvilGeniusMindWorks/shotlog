@@ -9,7 +9,7 @@ import { matchesAsset } from '@/lib/equipmentHistory';
 import { getSessionUser } from '@/lib/session';
 import { generateId, nowISO } from '@/lib/utils';
 
-export type HourSource = 'checklist' | 'daily_report' | 'correction';
+export type HourSource = 'checklist' | 'drill_log' | 'daily_report' | 'correction';
 
 export interface HourLedgerEntry {
   key: string;
@@ -43,6 +43,20 @@ export async function buildHourLedger(equip: Equipment): Promise<HourLedger> {
       source: 'checklist',
       hours: c.startingHours,
       who: c.drillerName || 'checklist',
+    });
+  }
+
+  // S7d: the driller's end-of-day meter at drill-log sign-complete
+  for (const l of await db.drillLogs.filter((x) => x.drillRigEquipmentId === equip.id).toArray()) {
+    if (l.endingHours == null) continue;
+    entries.push({
+      key: `log-${l.id}`,
+      date: l.date ?? l.createdAt.slice(0, 10),
+      at: l.completedAt ?? l.updatedAt,
+      source: 'drill_log',
+      hours: l.endingHours,
+      who: l.drillerName || 'drill log',
+      note: 'end of day',
     });
   }
 

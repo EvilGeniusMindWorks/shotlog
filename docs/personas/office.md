@@ -74,9 +74,9 @@ Incidents · People (read) · company/customer/site pages · export surfaces
 - **S7c (shipped):** the approvals tour runs once on first open — what is
   attached, Approve, Send back with a reason. Re-run from ? → "Show me
   approvals".
-- **S7d (accepted):** the day's Work Force is its time cards (keyed by job
+- **S7d (shipped):** the day's Work Force is its time cards (keyed by job
   + date); the office keeps approving the day and the cards separately;
   a card that arrives after the day was approved lands in the cards pile
   as today. Two offline copies of the same day show a merge strip to the
-  blaster, supervisor and office.
+  day's author and to supervision (the office reads; it does not write days).
 - 🟡 Job 6 (compliance clocks) now SURFACES on the home; job 7 ("missing paperwork") is the "never submitted" section — both provisional.

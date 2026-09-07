@@ -1,4 +1,6 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { claimDay, ownerLine, ownsReport, shouldClaim } from '@/lib/dayOwnership';
+import { mergeDays } from '@/lib/lifecycle';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, CalendarCheck, FileText, ClipboardList, ChevronDown, ChevronUp, FileBarChart, History, Lock, PhoneCall, Printer } from 'lucide-react';
 import { type Role } from '@shotlog/shared';
@@ -118,6 +120,24 @@ export function BlastDayPage() {
       () => (id ? db.submissions.filter((s) => s.blastDayId === id).count() : 0),
       [id],
     ) ?? 0;
+  // S7d ownership: opening a day I am the kind of person who owns claims
+  // it (no author yet; or it is a blasting day under a non-blaster and I
+  // am the blaster). Supervision never claims by opening.
+  useEffect(() => {
+    if (!blastDay || !dailyReport || blastDay.status !== 'draft') return;
+    if (shouldClaim(blastDay, blastLog)) void claimDay(blastDay.id);
+  }, [blastDay?.id, blastDay?.authorUserId, blastDay?.authorBucket, blastLog?.id, dailyReport?.id, blastDay?.status]);
+  // Two copies of the same job + date (both devices offline) → offer a merge
+  const duplicates =
+    useLiveQuery(
+      () =>
+        blastDay
+          ? db.blastDays
+              .filter((d) => d.jobId === blastDay.jobId && d.date === blastDay.date && d.id !== blastDay.id)
+              .toArray()
+          : [],
+      [blastDay?.id, blastDay?.jobId, blastDay?.date],
+    ) ?? [];
 
   if (!blastDay) {
     return (
@@ -130,15 +150,19 @@ export function BlastDayPage() {
   const status = blastDay.status;
   // Filed with the office (submitted) OR approved → frozen for field roles
   const locked = status !== 'draft' && !canEditApprovedDay();
+  // S7d: the shared report (name, type, conditions, notes, materials, subs,
+  // equipment) is the author's; everyone else edits only their own trio
+  const owner = ownsReport(blastDay, blastLog);
+  const reportReadOnly = locked || !owner;
 
   const updateConditions = (field: string, value: string | boolean) => {
-    if (locked) return;
+    if (reportReadOnly) return;
     const updated = { ...blastDay.conditions, [field]: value };
     db.blastDays.update(blastDay.id, { conditions: updated, updatedAt: nowISO() });
   };
 
   const updateBlastDay = (field: string, value: string | boolean) => {
-    if (locked) return;
+    if (reportReadOnly) return;
     db.blastDays.update(blastDay.id, { [field]: value, updatedAt: nowISO() });
   };
 
@@ -304,13 +328,16 @@ export function BlastDayPage() {
             <CondChip>{GROUND_OPTIONS.find((o) => o.value === blastDay.conditions.groundConditions)?.label}</CondChip>
             <CondChip>{WORK_TYPE_OPTIONS.find((o) => o.value === blastDay.typeOfWork)?.label}</CondChip>
             {blastDay.fireDetail && <CondChip accent>⚑ Fire Detail</CondChip>}
-            <button
-              className="ml-auto text-sm text-blue-600 font-semibold min-h-[36px] px-2 flex items-center gap-1"
-              onClick={() => setShowConditions(!showConditions)}
-            >
-              Edit
-              {showConditions ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            </button>
+            {!reportReadOnly && (
+              <button
+                className="ml-auto text-sm text-blue-600 font-semibold min-h-[36px] px-2 flex items-center gap-1"
+                data-conditions-edit
+                onClick={() => setShowConditions(!showConditions)}
+              >
+                Edit
+                {showConditions ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </button>
+            )}
           </div>
 
         {showConditions && (
@@ -410,6 +437,24 @@ export function BlastDayPage() {
         )}
         </div>
       </div>
+
+      {/* S7d: two copies of today at this job (both devices offline) → merge */}
+      {duplicates.length > 0 && !locked && (owner || canEditApprovedDay()) && (
+        <div className="px-4 pt-3">
+          <div
+            className="max-w-5xl mx-auto rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 flex items-center gap-3 flex-wrap text-sm"
+            data-merge-strip
+          >
+            <span className="flex-1 min-w-[200px]">
+              <b>Two copies of this day</b> at this job — another device started one too. Merge keeps
+              this one; the other's logs, cards and report lines move here.
+            </span>
+            <Button size="sm" data-merge-days onClick={() => void mergeDays(blastDay, duplicates[0])}>
+              Merge into this one
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Segmented tab control (wireframe §4.3) — blast log tab only when one exists */}
       <div className="px-4 pt-3">
@@ -541,7 +586,15 @@ export function BlastDayPage() {
         )}
         {tab === 'daily-report' && dailyReport && blastDay && (
           <div className="mb-4 space-y-4">
-            {!blastLog && <DrillOnlyFileCard day={blastDay} />}
+            <p className="text-xs text-gray-500 flex items-center gap-2" data-report-owner={owner ? 'me' : 'other'}>
+              <span className="font-semibold">{ownerLine(blastDay)}</span>
+              {!owner && !locked && (
+                <span className="text-gray-400">
+                  — the report is theirs; your card, drill log and checklist are yours here.
+                </span>
+              )}
+            </p>
+            {!blastLog && owner && <DrillOnlyFileCard day={blastDay} />}
             <TimeCardsCard blastDay={blastDay} />
             <AttachmentsCard parentId={blastDay.id} parentType="blast_day" title="Day attachments" />
           </div>
@@ -552,6 +605,7 @@ export function BlastDayPage() {
             dailyReport={dailyReport}
             blastLog={blastLog}
             shots={shots}
+            readOnly={!owner}
           />
         )}
       </div>

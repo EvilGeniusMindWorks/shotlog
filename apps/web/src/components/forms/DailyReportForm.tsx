@@ -42,9 +42,11 @@ interface Props {
   dailyReport: DailyReport;
   blastLog: BlastLog | undefined;
   shots: Shot[];
+  /** S7d: the report belongs to its author — everyone else reads */
+  readOnly?: boolean;
 }
 
-export function DailyReportForm({ blastDay, dailyReport, blastLog, shots }: Props) {
+export function DailyReportForm({ blastDay, dailyReport, blastLog, shots, readOnly }: Props) {
   const workforce = useLiveQuery(
     () => db.workForceEntries.where('dailyReportId').equals(dailyReport.id).sortBy('rowNumber'),
     [dailyReport.id]
@@ -67,7 +69,7 @@ export function DailyReportForm({ blastDay, dailyReport, blastLog, shots }: Prop
 
   // Filed/approved days are read-only for field roles: empty sections hide
   // entirely instead of stacking four screens of empty cards (S4, I3)
-  const locked = blastDay.status !== 'draft' && !canEditApprovedDay();
+  const locked = (blastDay.status !== 'draft' && !canEditApprovedDay()) || Boolean(readOnly);
 
   // Shared data from Blast Log
   const totalHoles = shots.reduce((s, sh) => s + sh.totals.numHoles, 0);
@@ -102,17 +104,14 @@ export function DailyReportForm({ blastDay, dailyReport, blastLog, shots }: Prop
       </Card>
 
       {/* Work Force */}
-      <WorkForceSection
-        dailyReportId={dailyReport.id}
-        entries={workforce}
-        locked={locked}
-      />
+      <WorkForceSection entries={workforce} />
 
       {/* Equipment */}
       <EquipmentSection
         dailyReportId={dailyReport.id}
         entries={equipmentEntries}
         locked={locked}
+        blastDay={blastDay}
       />
 
       {/* Materials */}
@@ -161,197 +160,30 @@ export function DailyReportForm({ blastDay, dailyReport, blastLog, shots }: Prop
   );
 }
 
-function WorkForceSection({
-  dailyReportId,
-  entries,
-  locked,
-}: {
-  dailyReportId: string;
-  entries: WorkForceEntry[];
-  locked?: boolean;
-}) {
-  // Roster-linked rows: picking a member stamps crewMemberId + name so the
-  // person history page can trace worked days reliably (mirror of pickAsset).
-  // Boolean fields aren't indexable in IndexedDB — must .filter(), not .where().
-  const roster =
-    useLiveQuery(() => db.crewMembers.filter((m) => m.isActive).toArray()) ?? [];
-  const rosterSorted = [...roster].sort((a, b) => a.name.localeCompare(b.name));
-  // Rows the user explicitly switched to free text (before a name is typed)
-  const [otherRows, setOtherRows] = useState<Set<string>>(new Set());
-
-  const pickWorker = (entryId: string, value: string) => {
-    if (value === '__other') {
-      setOtherRows((s) => new Set(s).add(entryId));
-      void db.workForceEntries.update(entryId, {
-        crewMemberId: undefined,
-        workerName: '',
-        updatedAt: nowISO(),
-      });
-      return;
-    }
-    const member = roster.find((m) => m.id === value);
-    if (!member) return;
-    setOtherRows((s) => {
-      const next = new Set(s);
-      next.delete(entryId);
-      return next;
-    });
-    void db.workForceEntries.update(entryId, {
-      crewMemberId: member.id,
-      workerName: member.name,
-      updatedAt: nowISO(),
-    });
-  };
-
-  const addEntry = async () => {
-    const now = nowISO();
-    await db.workForceEntries.add({
-      id: generateId(),
-      dailyReportId,
-      rowNumber: entries.length + 1,
-      workerName: '',
-      timeIn: '',
-      timeOut: '',
-      straightTime: 0,
-      overtime: 0,
-      truckHours: 0,
-      travelHours: 0,
-      createdAt: now,
-      updatedAt: now,
-      syncStatus: 'local',
-    });
-  };
-
-  const updateEntry = (id: string, field: string, value: string | number) => {
-    db.workForceEntries.get(id).then((entry) => {
-      if (!entry) return;
-      const updates: Record<string, string | number> = { [field]: value, updatedAt: nowISO() };
-
-      // Auto-calculate straight time
-      const timeIn = field === 'timeIn' ? (value as string) : entry.timeIn;
-      const timeOut = field === 'timeOut' ? (value as string) : entry.timeOut;
-      const ot = field === 'overtime' ? (value as number) : entry.overtime;
-      if (timeIn && timeOut) {
-        updates.straightTime = straightTime(timeIn, timeOut, ot);
-      }
-
-      db.workForceEntries.update(id, updates);
-    });
-  };
-
-  const removeEntry = (id: string) => {
-    void deleteWithTombstone('workForceEntries', id);
-  };
-
-  if (entries.length === 0) {
-    return locked ? null : <EmptyAddRow title="Work Force" label="Add worker" onAdd={() => void addEntry()} />;
-  }
+/** S7d: hours live on TIME CARDS (each person files their own; the day's
+ *  Work Force is the roll-up in the Time Cards card above). Rows typed
+ *  here before S7d stay visible, read-only — nothing filed is lost. */
+function WorkForceSection({ entries }: { entries: WorkForceEntry[] }) {
+  if (entries.length === 0) return null;
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-base">Work Force</CardTitle>
-        <Button size="sm" onClick={addEntry}>
-          <Plus className="h-4 w-4 mr-1" /> Add Worker
-        </Button>
+    <Card data-workforce-legacy>
+      <CardHeader>
+        <CardTitle className="text-base">
+          Work Force <span className="text-xs font-normal text-gray-400">— rows from before time cards</span>
+        </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
-        {entries.length === 0 && (
-          <p className="text-sm text-gray-400 text-center py-3">No workers added</p>
-        )}
-        {entries.map((e) => {
-          const freeText = !e.crewMemberId && (Boolean(e.workerName) || otherRows.has(e.id));
-          return (
-          <div key={e.id} className="border border-gray-200 rounded-lg p-3">
-            <div className="flex items-start justify-between gap-2 mb-2 flex-wrap">
-              <div className="flex-1 min-w-[160px]">
-                <Select
-                  value={e.crewMemberId ?? (freeText ? '__other' : '')}
-                  onChange={(ev) => pickWorker(e.id, ev.target.value)}
-                  placeholder="Pick from roster…"
-                  options={[
-                    ...rosterSorted.map((m) => ({
-                      value: m.id,
-                      label: m.role ? `${m.name} · ${m.role}` : m.name,
-                    })),
-                    // Keep rows stamped to a since-deactivated member readable
-                    ...(e.crewMemberId && !roster.some((m) => m.id === e.crewMemberId)
-                      ? [{ value: e.crewMemberId, label: e.workerName || 'Former member' }]
-                      : []),
-                    { value: '__other', label: 'Other / not on roster' },
-                  ]}
-                />
-              </div>
-              {freeText && (
-                <div className="flex-1 min-w-[140px]">
-                  <Input
-                    value={e.workerName}
-                    onChange={(ev) => updateEntry(e.id, 'workerName', ev.target.value)}
-                    placeholder="Worker name"
-                    className="font-medium"
-                  />
-                </div>
-              )}
-              <Button variant="ghost" size="icon" onClick={() => removeEntry(e.id)}>
-                <Trash2 className="h-4 w-4 text-gray-400" />
-              </Button>
-            </div>
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-              <div>
-                <Label className="text-xs">IN</Label>
-                <Input
-                  type="time"
-                  value={e.timeIn}
-                  onChange={(ev) => updateEntry(e.id, 'timeIn', ev.target.value)}
-                />
-              </div>
-              <div>
-                <Label className="text-xs">OUT</Label>
-                <Input
-                  type="time"
-                  value={e.timeOut}
-                  onChange={(ev) => updateEntry(e.id, 'timeOut', ev.target.value)}
-                />
-              </div>
-              <div>
-                <Label className="text-xs text-gray-400">ST (auto)</Label>
-                <p className="h-10 flex items-center font-mono text-sm bg-gray-50 rounded-md px-3 border border-gray-200">
-                  {e.straightTime > 0 ? e.straightTime.toFixed(1) : '—'}
-                </p>
-              </div>
-              <div>
-                <Label className="text-xs">OT</Label>
-                <Input
-                  type="number"
-                  step="0.5"
-                  value={e.overtime || ''}
-                  onChange={(ev) => updateEntry(e.id, 'overtime', parseFloat(ev.target.value) || 0)}
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <Label className="text-xs">TRK</Label>
-                <Input
-                  type="number"
-                  step="0.5"
-                  value={e.truckHours || ''}
-                  onChange={(ev) => updateEntry(e.id, 'truckHours', parseFloat(ev.target.value) || 0)}
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <Label className="text-xs">TRVL</Label>
-                <Input
-                  type="number"
-                  step="0.5"
-                  value={e.travelHours || ''}
-                  onChange={(ev) => updateEntry(e.id, 'travelHours', parseFloat(ev.target.value) || 0)}
-                  placeholder="0"
-                />
-              </div>
-            </div>
+      <CardContent className="space-y-1">
+        {entries.map((e) => (
+          <div key={e.id} className="flex items-center gap-3 text-sm py-1 border-t border-gray-100 first:border-t-0">
+            <span className="font-medium flex-1 min-w-0 truncate">{e.workerName || '—'}</span>
+            <span className="font-mono text-xs text-gray-500">
+              {e.timeIn || '—'}–{e.timeOut || '—'} · ST {e.straightTime > 0 ? e.straightTime.toFixed(1) : '—'} · OT {e.overtime || 0}
+              {e.truckHours ? ` · TRK ${e.truckHours}` : ''}
+              {e.travelHours ? ` · TRVL ${e.travelHours}` : ''}
+            </span>
           </div>
-          );
-        })}
+        ))}
+        <p className="text-[11px] text-gray-400 pt-2">Hours are filed on time cards now — see Time Cards above.</p>
       </CardContent>
     </Card>
   );
@@ -361,11 +193,50 @@ function EquipmentSection({
   dailyReportId,
   entries,
   locked,
+  blastDay,
 }: {
   dailyReportId: string;
   entries: EquipmentEntry[];
   locked?: boolean;
+  blastDay: BlastDay;
 }) {
+  // S7d: drill hours come from the rigs' OWN records that day — checklist
+  // starting hours in the morning, the driller's end-of-day meter at
+  // sign-complete — derived here, read-only. Trucks and seismographs stay
+  // manual rows (nothing else records them).
+  const derived =
+    useLiveQuery(async () => {
+      const logs = await db.drillLogs
+        .filter(
+          (l) =>
+            l.blastDayId === blastDay.id ||
+            (l.jobId === blastDay.jobId && (l.date ?? l.createdAt.slice(0, 10)) === blastDay.date),
+        )
+        .toArray();
+      const rigIds = [...new Set(logs.map((l) => l.drillRigEquipmentId).filter((x): x is string => Boolean(x)))];
+      const out: { rigId: string; asset: string; start: number | null; end: number | null; who?: string }[] = [];
+      for (const rigId of rigIds) {
+        const rig = await db.equipment.get(rigId);
+        if (!rig) continue;
+        // latest checklist that day wins (a refiled one supersedes)
+        const chk = (await db.drillChecklists.filter((c) => c.equipmentId === rigId && c.date === blastDay.date).toArray()).sort(
+          (a, b) => b.createdAt.localeCompare(a.createdAt),
+        )[0];
+        const ends = logs
+          .filter((l) => l.drillRigEquipmentId === rigId && l.endingHours != null)
+          .map((l) => l.endingHours as number)
+          .sort((a, b) => b - a);
+        out.push({
+          rigId,
+          asset: rig.assetNumber,
+          start: chk?.startingHours ?? null,
+          end: ends[0] ?? null,
+          who: logs.find((l) => l.drillRigEquipmentId === rigId)?.drillerName,
+        });
+      }
+      return out;
+    }, [blastDay.id, blastDay.jobId, blastDay.date]) ?? [];
+
   const addEntry = async () => {
     const now = nowISO();
     await db.equipmentEntries.add({
@@ -419,20 +290,36 @@ function EquipmentSection({
     items: entries.filter((e) => e.category === cat.value),
   }));
 
-  if (entries.length === 0) {
+  if (entries.length === 0 && derived.length === 0) {
     return locked ? null : <EmptyAddRow title="Equipment / Assets" label="Add equipment" onAdd={() => void addEntry()} />;
   }
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-base">Equipment / Assets</CardTitle>
-        <Button size="sm" onClick={addEntry}>
-          <Plus className="h-4 w-4 mr-1" /> Add
-        </Button>
+        {!locked && (
+          <Button size="sm" onClick={addEntry}>
+            <Plus className="h-4 w-4 mr-1" /> Add
+          </Button>
+        )}
       </CardHeader>
       <CardContent className="space-y-3">
-        {entries.length === 0 && (
-          <p className="text-sm text-gray-400 text-center py-3">No equipment added</p>
+        {derived.length > 0 && (
+          <div data-derived-rigs>
+            <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+              Drills — from the rigs' own records
+            </h4>
+            {derived.map((d) => (
+              <div key={d.rigId} className="flex items-center gap-2 text-sm py-1 flex-wrap" data-derived-rig={d.asset}>
+                <span className="font-mono font-bold text-xs bg-blue-50 text-navy rounded-lg px-2 py-0.5">{d.asset}</span>
+                <span className="font-mono text-gray-700">
+                  {d.start ?? '—'} → {d.end ?? '—'} h
+                </span>
+                {d.who && <span className="text-xs text-gray-400">· {d.who}</span>}
+                <span className="ml-auto text-[10px] uppercase tracking-wide text-gray-400">checklist · drill log</span>
+              </div>
+            ))}
+          </div>
         )}
         {grouped
           .filter((g) => g.items.length > 0)

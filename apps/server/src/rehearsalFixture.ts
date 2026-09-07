@@ -243,9 +243,12 @@ export async function buildSampleWeek(
   }
 
   // ── Yesterday: a full blasting day on the pit job, SUBMITTED ─────────
+  // S7d: the blaster authors the report on a blasting day
+  const authored = { authorUserId: blaster.id, authorName: blaster.name, authorBucket: 'field' };
   const yDay = put('blastDays', {
     date: yesterday, jobId: pitJob, name: 'Bench 2 lift 4', status: 'submitted', typeOfWork: 'drill_to_blast', fireDetail: false,
     conditions: { temperatureRange: 'mod', weather: 'partly_cloudy', windDirection: 'NW', groundConditions: 'normal', weatherNotes: '' },
+    ...authored,
   });
   const yLog = put('blastLogs', {
     blastDayId: yDay, operation: 'quarry', typeOfRock: 'Granite', typeOfTerrain: 'Bench',
@@ -317,6 +320,7 @@ export async function buildSampleWeek(
   const tDay = put('blastDays', {
     date: today, jobId: culvertJob, name: 'Culvert cut, north end', status: 'draft', typeOfWork: 'drill_to_blast', fireDetail: true,
     conditions: { temperatureRange: 'mod', weather: 'sunny', windDirection: '', groundConditions: 'normal', weatherNotes: '' },
+    ...authored,
   });
   const tLog = put('blastLogs', {
     blastDayId: tDay, operation: 'construction', typeOfRock: 'Shale over granite', typeOfTerrain: 'Cut',

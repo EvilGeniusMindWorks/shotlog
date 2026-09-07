@@ -13,6 +13,7 @@ import type {
 import { isBlastingWork } from '@/db/schema';
 import { generateId, nowISO, todayISO } from '@/lib/utils';
 import { getSessionUser } from '@/lib/session';
+import { authorStamp, myBucket } from '@/lib/dayOwnership';
 import { ensureCustomerAndSite, getJobContext, getJobView, getJobViews, nextJobNumber } from '@/lib/jobContext';
 
 export function useBlastDays() {
@@ -129,6 +130,9 @@ export async function createBlastDay(
     },
     typeOfWork,
     fireDetail: false,
+    // S7d: whoever starts the day authors its report — until a blaster
+    // adds the blast log (then it is theirs)
+    ...authorStamp(),
     createdAt: now,
     updatedAt: now,
     syncStatus: 'local',
@@ -329,8 +333,13 @@ export async function addBlastLogToDay(blastDayId: string): Promise<string> {
   const blastLogId = generateId();
 
   await db.transaction('rw', [db.blastDays, db.blastLogs, db.shots, db.explosiveUsages], async () => {
+    // S7d: a blasting day's report belongs to the blaster — the field
+    // bucket adding the log takes the day over from whoever started it
+    const takeOver = myBucket() === 'field' && day.authorBucket !== 'field' ? authorStamp() : {};
     if (!isBlastingWork(day.typeOfWork)) {
-      await db.blastDays.update(blastDayId, { typeOfWork: 'drill_to_blast', updatedAt: now });
+      await db.blastDays.update(blastDayId, { typeOfWork: 'drill_to_blast', ...takeOver, updatedAt: now });
+    } else if (Object.keys(takeOver).length > 0) {
+      await db.blastDays.update(blastDayId, { ...takeOver, updatedAt: now });
     }
     await db.blastLogs.add({
       id: blastLogId,
