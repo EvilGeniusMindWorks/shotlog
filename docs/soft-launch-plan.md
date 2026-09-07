@@ -291,6 +291,14 @@ that seeds the device PIN hides the Set-PIN step — seed it only outside a
 rehearsal. Matthew's prod step: none — the Rehearse card appears in
 Settings for the platform admin after the deploy.
 
+**Post-deploy fix (2026-09-07):** the 8-second race on the local-replica
+clear left Matthew's browser with a half-cleared database that connected
+but never synced. Replaced by `resetLocalReplica()` (wait for the SDK
+clear, then delete the database if it will not release) and a **Reset
+local data** button in the sync panel with a "taking too long?" hint.
+harness41 now also proves Baystate data re-downloads after End and after
+a reset.
+
 Matthew's ask: test as every user type, onboarding and tour included, on a
 regular basis, without ceremony. Design (accepted 2026-09-07):
 

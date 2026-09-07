@@ -122,6 +122,54 @@ export async function disconnectAndClearPowerSync(): Promise<void> {
   await instance.disconnectAndClear();
 }
 
+const DB_FILENAME = 'shotlog.db';
+
+/**
+ * Hard reset of the local replica for a full account switch or a stuck
+ * download: wait for the SDK's own clear (a mid-download clear can take a
+ * while), and if it does not finish in 30s, fall back to deleting the
+ * underlying IndexedDB databases so the next load starts from nothing.
+ * Never resolves with a half-cleared database — that state is worse than
+ * either outcome (2026-09-07: a rehearsal switch that raced the clear
+ * against 8s left a replica that "connected" for ten hours without ever
+ * reaching a checkpoint).
+ */
+export async function resetLocalReplica(): Promise<void> {
+  const timeout = (ms: number) =>
+    new Promise<'timeout'>((resolve) => window.setTimeout(() => resolve('timeout'), ms));
+  let clean = false;
+  if (instance) {
+    try {
+      const result = await Promise.race([instance.disconnectAndClear().then(() => 'ok' as const), timeout(30_000)]);
+      clean = result === 'ok';
+    } catch {
+      clean = false;
+    }
+    try {
+      await Promise.race([instance.close(), timeout(5_000)]);
+    } catch {
+      /* closing a wedged instance may throw — the delete below is the backstop */
+    }
+    instance = null;
+  }
+  if (!clean) {
+    logSyncEvent('local replica clear timed out — deleting the local database');
+    try {
+      const dbs = (await indexedDB.databases?.()) ?? [];
+      for (const d of dbs) {
+        if (d.name && d.name.includes(DB_FILENAME)) {
+          await new Promise<void>((resolve) => {
+            const req = indexedDB.deleteDatabase(d.name!);
+            req.onsuccess = req.onerror = req.onblocked = () => resolve();
+          });
+        }
+      }
+    } catch {
+      /* best effort — a reload with an empty session key set still recovers */
+    }
+  }
+}
+
 /** Wrap the PowerSync database in the facade's minimal SQL surface. */
 export function createPowerSyncAdapter(): SqlAdapter {
   return {

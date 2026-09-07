@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { Copy, RefreshCw, X } from 'lucide-react';
 import { useSyncStatus } from '@/db/powersync/useSyncStatus';
-import { connectPowerSync, reconnectPowerSync } from '@/db/powersync/client';
+import { connectPowerSync, reconnectPowerSync, resetLocalReplica } from '@/db/powersync/client';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useSessionExpired } from '@/hooks/useSessionExpired';
 import { deriveSyncState, type SyncState } from '@/lib/syncState';
@@ -94,6 +94,33 @@ function SyncPanel({ state, onClose }: { state: SyncState; onClose: () => void }
     void navigator.clipboard?.writeText(text).catch(() => undefined);
   };
 
+  // A replica that is connected but never reaches its first checkpoint is
+  // stuck, not slow — surface the reset after a minute in that state
+  const [stuck, setStuck] = useState(false);
+  useEffect(() => {
+    if (sync.hasSynced !== false) {
+      setStuck(false);
+      return;
+    }
+    const t = window.setTimeout(() => setStuck(true), 60_000);
+    return () => window.clearTimeout(t);
+  }, [sync.hasSynced, sync.connected]);
+  const [resetting, setResetting] = useState(false);
+  const resetLocal = async () => {
+    if (
+      sync.queued > 0 &&
+      !confirm(
+        `${sync.queued} change${sync.queued === 1 ? '' : 's'} on this device haven't reached the server ` +
+          `and will be LOST. Reset anyway?`,
+      )
+    )
+      return;
+    if (sync.queued === 0 && !confirm('Clear this device’s copy and download everything again?')) return;
+    setResetting(true);
+    await resetLocalReplica();
+    window.location.reload();
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-6"
@@ -127,8 +154,9 @@ function SyncPanel({ state, onClose }: { state: SyncState; onClose: () => void }
         </div>
 
         {sync.hasSynced === false && (
-          <p className="text-sm text-amber-600">
+          <p className="text-sm text-amber-600" data-sync-first>
             First sync hasn't completed yet — company data is still downloading to this device.
+            {stuck && ' Taking too long? Reset the local copy below and it downloads fresh.'}
           </p>
         )}
 
@@ -146,6 +174,16 @@ function SyncPanel({ state, onClose }: { state: SyncState; onClose: () => void }
               {reconnecting ? 'Reconnecting…' : 'Reconnect now'}
             </Button>
           )}
+          <Button
+            variant="outline"
+            className={cn(stuck && 'border-amber-400 text-amber-700')}
+            disabled={resetting}
+            onClick={() => void resetLocal()}
+            title="Clear this device's copy of the company data and download it again. Unsent changes are lost."
+            data-sync-reset
+          >
+            {resetting ? 'Resetting…' : 'Reset local data'}
+          </Button>
         </div>
 
         {log.length > 0 && (

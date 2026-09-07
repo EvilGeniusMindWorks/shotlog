@@ -127,6 +127,20 @@ async (page) => {
     await P2.locator('[data-rehearsal-end]').click();
     await P2.waitForTimeout(4000);
     ok('End works from the office rehearsal too', (await P2.locator('[data-rehearsal-bar]').count()) === 0 && /Baystate/.test(await P2.locator('aside').innerText()));
+    // after the account switch the replica must be Baystate's, fully synced
+    await P2.goto(`${WEB}/jobs`);
+    await P2.waitForTimeout(5000);
+    const jobsBack = await P2.locator('[data-jobs-list] [data-list-row]').count();
+    ok(`Baystate data re-downloaded after End (${jobsBack} jobs visible)`, jobsBack > 0);
+    // Sync panel: Reset local data → clean replica → data comes back
+    P2.on('dialog', (d) => d.accept());
+    await P2.locator('aside button[title^="Sync status"]').click();
+    await P2.locator('[data-sync-reset]').waitFor({ timeout: 5000 });
+    await P2.locator('[data-sync-reset]').click();
+    await P2.waitForTimeout(6000);
+    await P2.goto(`${WEB}/jobs`);
+    await P2.waitForTimeout(5000);
+    ok('Reset local data clears and re-downloads the company', (await P2.locator('[data-jobs-list] [data-list-row]').count()) > 0 && (await P2.locator('[data-sync-first]').count()) === 0);
     await c2.close();
   } catch (e) {
     results.push(`ERROR ${e.message}`);

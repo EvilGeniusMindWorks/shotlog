@@ -4,19 +4,17 @@
 // whole first-run (PIN → welcome → walkthrough) as a brand-new person.
 // End: wipe the sandbox server-side, restore the stash, reload as yourself.
 import { authedFetch, getSession, type SessionPayload } from '@/lib/session';
-import { disconnectAndClearPowerSync } from '@/db/powersync/client';
+import { resetLocalReplica } from '@/db/powersync/client';
 
 const REHEARSAL_KEY = 'shotlog-rehearsal';
 const STASH_KEY = 'shotlog-rehearsal-stash';
 
-/** Stop replication and wipe the local replica, but never let a wedged SDK
- *  hold the switch hostage — after 8s we reload anyway and the next connect
- *  converges the replica to the new company's bucket. */
+/** Wipe the local replica COMPLETELY before switching accounts. A partial
+ *  clear (the 8s race this used to be) left a replica that connected but
+ *  never reached a checkpoint — resetLocalReplica waits, then deletes the
+ *  database outright if the SDK will not release it. */
 async function clearReplica(): Promise<void> {
-  await Promise.race([
-    disconnectAndClearPowerSync().catch(() => undefined),
-    new Promise<void>((resolve) => window.setTimeout(resolve, 8000)),
-  ]);
+  await resetLocalReplica();
 }
 
 /** Everything that makes this device "yours" or "already onboarded" */
