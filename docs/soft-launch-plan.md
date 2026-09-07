@@ -510,6 +510,11 @@ and re-download, which is exactly what the merge hit first.
    and unlocked with Mark's PIN. Now per account per device; sign-out,
    Forgot PIN and enrolling clear it; the account's PIN still seeds a new
    device; the old key migrates silently to the signed-in user.
+7. Installed-app edges (✅ 2026-09-07, harness50 12/12): as a PWA the bars
+   ran into the phone's corners. `viewport-fit=cover` + safe-area utilities
+   (index.css): navy status-bar strip above the mobile header, bottom nav
+   and page content pad by the home-indicator inset, + button and toasts
+   rise with it; iOS web-app metas. Zero effect in a browser.
 
 **Admin follow-up — Add person in one shot (harness47).** Mockup first
 (artifact 5880eda4), then built as accepted: First · Last · Role · Email ·
