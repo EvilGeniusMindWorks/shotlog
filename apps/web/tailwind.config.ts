@@ -6,8 +6,9 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Brand navy / orange from the final logo kit (Sep 2026)
         navy: {
-          DEFAULT: '#1a365d',
+          DEFAULT: '#1C3859',
           50: '#e8edf4',
           100: '#c5d1e4',
           200: '#9fb3d1',
@@ -17,10 +18,10 @@ const config: Config = {
           600: '#375a8e',
           700: '#2d4a75',
           800: '#243b5d',
-          900: '#1a365d',
+          900: '#1C3859',
         },
         safety: {
-          orange: '#dd6b20',
+          orange: '#EE7A2E',
         },
         compliant: '#38a169',
         warning: '#d69e2e',

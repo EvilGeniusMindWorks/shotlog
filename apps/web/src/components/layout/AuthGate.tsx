@@ -18,6 +18,7 @@ import { InstallCard } from '@/components/onboarding/InstallCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ShotLogTile } from '@/components/brand/ShotLogLogo';
 
 const PIN_KEY = 'shotlog-pin';
 const LAST_ACTIVE_KEY = 'shotlog-last-active';
@@ -164,23 +165,10 @@ function Frame({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-navy flex items-center justify-center p-6">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <svg viewBox="0 0 200 200" className="h-16 w-16 mx-auto mb-3" aria-hidden>
-            <rect width="200" height="200" rx="44" fill="#DD6B20" />
-            <g transform="translate(100,100)">
-              <circle cx="0" cy="0" r="50" fill="none" stroke="#fff" strokeWidth="4" opacity="0.3" />
-              <line x1="0" y1="-12" x2="0" y2="-34" stroke="#fff" strokeWidth="5" strokeLinecap="round" />
-              <line x1="0" y1="12" x2="0" y2="34" stroke="#fff" strokeWidth="5" strokeLinecap="round" />
-              <line x1="-12" y1="0" x2="-34" y2="0" stroke="#fff" strokeWidth="5" strokeLinecap="round" />
-              <line x1="12" y1="0" x2="34" y2="0" stroke="#fff" strokeWidth="5" strokeLinecap="round" />
-              <circle cx="0" cy="0" r="13" fill="#fff" />
-              <circle cx="0" cy="0" r="8" fill="#F6AD55" />
-              <circle cx="0" cy="0" r="4" fill="#1a365d" />
-            </g>
-          </svg>
-          <h1 className="text-2xl tracking-widest text-white">
-            <span className="font-light">SHOT</span>
-            <span className="font-extrabold text-safety-orange">LOG</span>
+        <div className="text-center mb-8 flex flex-col items-center gap-3">
+          <ShotLogTile size={72} />
+          <h1 className="text-2xl font-extrabold tracking-tight text-white leading-none">
+            SHOT<span className="text-[#EE7A2E]">LOG</span>
           </h1>
         </div>
         <div className="bg-white rounded-2xl shadow-xl p-6">{children}</div>

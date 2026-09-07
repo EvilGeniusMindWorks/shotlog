@@ -7,6 +7,7 @@ import { DEFAULT_SERVER_URL, storeSession, type SessionPayload } from '@/lib/ses
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ShotLogLogo } from '@/components/brand/ShotLogLogo';
 
 const serverUrl = () => localStorage.getItem('shotlog-server-url') || DEFAULT_SERVER_URL;
 
@@ -62,10 +63,9 @@ export function ResetPage() {
   return (
     <div className="min-h-screen bg-navy flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        <h1 className="text-center text-white text-2xl font-bold mb-4">
-          <span className="font-light">SHOT</span>
-          <span className="text-safety-orange font-extrabold">LOG</span>
-        </h1>
+        <div className="flex justify-center mb-5">
+          <ShotLogLogo size={44} tone="light" />
+        </div>
         <div className="bg-white rounded-2xl shadow-xl p-6">
           {fatal ? (
             <div className="space-y-3">

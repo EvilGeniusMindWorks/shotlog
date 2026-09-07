@@ -67,18 +67,21 @@ export function roleBlurb(role: string): string {
 function layout(opts: { company: string; title: string; intro: string; steps: string[]; cta: { label: string; url: string }; footer: string }): string {
   const steps = opts.steps
     .map(
-      (s, i) => `<tr><td style="padding:6px 10px 6px 0;vertical-align:top;color:#E8772E;font-weight:700;font-family:Arial,sans-serif">${i + 1}.</td><td style="padding:6px 0;font-family:Arial,sans-serif;font-size:15px;color:#172338;line-height:1.45">${s}</td></tr>`,
+      (s, i) => `<tr><td style="padding:6px 10px 6px 0;vertical-align:top;color:#EE7A2E;font-weight:700;font-family:Arial,sans-serif">${i + 1}.</td><td style="padding:6px 0;font-family:Arial,sans-serif;font-size:15px;color:#172338;line-height:1.45">${s}</td></tr>`,
     )
     .join('');
   return `<!doctype html><html><body style="margin:0;padding:0;background:#F3F5F8">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#F3F5F8;padding:24px 12px"><tr><td align="center">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border-radius:12px;overflow:hidden">
-<tr><td style="background:#1E3A5F;padding:18px 24px;font-family:Arial,sans-serif;color:#ffffff;font-size:18px;letter-spacing:2px;font-weight:700">SHOT<span style="color:#E8772E">LOG</span><span style="float:right;font-size:12px;letter-spacing:0;font-weight:400;opacity:.85;padding-top:4px">${esc(opts.company)}</span></td></tr>
+<tr><td style="background:#1C3859;padding:14px 24px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>
+<td style="vertical-align:middle"><img src="${APP_URL}/shotlog-lockup-dark.png" width="147" height="36" alt="ShotLog" style="display:block;border:0;height:36px;width:147px"></td>
+<td align="right" style="vertical-align:middle;font-family:Arial,sans-serif;color:#ffffff;font-size:12px;opacity:.85">${esc(opts.company)}</td>
+</tr></table></td></tr>
 <tr><td style="padding:26px 24px 8px;font-family:Arial,sans-serif">
 <h1 style="margin:0 0 10px;font-size:22px;color:#172338">${esc(opts.title)}</h1>
 <p style="margin:0 0 16px;font-size:15px;line-height:1.5;color:#4E5D75">${opts.intro}</p>
 <table role="presentation" cellspacing="0" cellpadding="0" style="margin:6px 0 18px">${steps}</table>
-<table role="presentation" cellspacing="0" cellpadding="0"><tr><td style="background:#E8772E;border-radius:8px"><a href="${opts.cta.url}" style="display:inline-block;padding:12px 22px;font-family:Arial,sans-serif;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none">${esc(opts.cta.label)}</a></td></tr></table>
+<table role="presentation" cellspacing="0" cellpadding="0"><tr><td style="background:#EE7A2E;border-radius:8px"><a href="${opts.cta.url}" style="display:inline-block;padding:12px 22px;font-family:Arial,sans-serif;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none">${esc(opts.cta.label)}</a></td></tr></table>
 <p style="margin:16px 0 0;font-size:12px;line-height:1.5;color:#7A8698">If the button does not work, copy this link into your browser:<br><a href="${opts.cta.url}" style="color:#2B5FA8;word-break:break-all">${opts.cta.url}</a></p>
 </td></tr>
 <tr><td style="padding:14px 24px 22px;font-family:Arial,sans-serif;font-size:12px;line-height:1.5;color:#7A8698;border-top:1px solid #E9EDF3">${opts.footer}</td></tr>
@@ -155,7 +158,7 @@ export function feedbackMail(opts: {
     html: layout({
       company: opts.company,
       title: `${kindLabel} from ${esc(opts.name)}`,
-      intro: `<span style="display:block;white-space:pre-wrap;border-left:3px solid #E8772E;padding:6px 12px;color:#172338">${esc(opts.message)}</span>`,
+      intro: `<span style="display:block;white-space:pre-wrap;border-left:3px solid #EE7A2E;padding:6px 12px;color:#172338">${esc(opts.message)}</span>`,
       steps: where.map(esc),
       cta: { label: 'Open in ShotLog', url: link },
       footer: 'Sent by ShotLog when a user files feedback or the app catches an error. Reply notes live in Admin › Feedback.',

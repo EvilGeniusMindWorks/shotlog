@@ -3,8 +3,9 @@
 // Home Screen steps (Safari never offers a prompt). Already installed or
 // nothing to offer: renders nothing. `always` ignores a prior "Not now"
 // (the welcome screen wants it once regardless).
-import { Share, SquarePlus, Download } from 'lucide-react';
+import { Share, SquarePlus } from 'lucide-react';
 import { dismissInstall, promptInstall, useInstallState } from '@/lib/install';
+import { ShotLogTile } from '@/components/brand/ShotLogLogo';
 import { Button } from '@/components/ui/button';
 
 export function InstallCard({ always = false, tone = 'card' }: { always?: boolean; tone?: 'card' | 'plain' }) {
@@ -21,9 +22,8 @@ export function InstallCard({ always = false, tone = 'card' }: { always?: boolea
   return (
     <div className={shell} data-install-card>
       <div className="flex items-start gap-3">
-        <span className="h-9 w-9 rounded-lg bg-safety-orange text-white flex items-center justify-center shrink-0">
-          <Download className="h-5 w-5" />
-        </span>
+        {/* the actual app icon, so people know what to look for on the home screen */}
+        <ShotLogTile size={40} className="shrink-0" />
         <div className="space-y-1 min-w-0">
           <p className="font-semibold text-gray-900">Install ShotLog on this device</p>
           {s.ios ? (

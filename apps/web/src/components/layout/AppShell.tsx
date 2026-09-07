@@ -37,6 +37,7 @@ import {
 import { screenTourFor, type ScreenTourKey } from '@/components/guidance/tourScripts';
 import { HelpMenu } from '@/components/feedback/HelpMenu';
 import { RehearsalBar } from '@/components/rehearsal/RehearsalBar';
+import { ShotLogLogo } from '@/components/brand/ShotLogLogo';
 
 /** Dev-only: `window.shotlogCrash()` throws during render so the harness
  *  can prove the root error boundary catches it (never shipped in prod) */
@@ -234,28 +235,7 @@ function ViewAsBanner() {
 }
 
 function Wordmark({ compact }: { compact?: boolean }) {
-  return (
-    <div className="flex items-center gap-2.5">
-      <svg viewBox="0 0 200 200" className={compact ? 'h-8 w-8' : 'h-9 w-9'} aria-hidden>
-        <rect width="200" height="200" rx="44" fill="#DD6B20" />
-        <g transform="translate(100,100)">
-          <circle cx="0" cy="0" r="50" fill="none" stroke="#fff" strokeWidth="4" opacity="0.3" />
-          <line x1="0" y1="-12" x2="0" y2="-34" stroke="#fff" strokeWidth="5" strokeLinecap="round" />
-          <line x1="0" y1="12" x2="0" y2="34" stroke="#fff" strokeWidth="5" strokeLinecap="round" />
-          <line x1="-12" y1="0" x2="-34" y2="0" stroke="#fff" strokeWidth="5" strokeLinecap="round" />
-          <line x1="12" y1="0" x2="12" y2="0" stroke="#fff" strokeWidth="5" strokeLinecap="round" />
-          <line x1="12" y1="0" x2="34" y2="0" stroke="#fff" strokeWidth="5" strokeLinecap="round" />
-          <circle cx="0" cy="0" r="13" fill="#fff" />
-          <circle cx="0" cy="0" r="8" fill="#F6AD55" />
-          <circle cx="0" cy="0" r="4" fill="#1a365d" />
-        </g>
-      </svg>
-      <span className="text-lg tracking-widest leading-none">
-        <span className="font-light">SHOT</span>
-        <span className="font-extrabold text-safety-orange">LOG</span>
-      </span>
-    </div>
-  );
+  return <ShotLogLogo size={compact ? 32 : 36} tone="light" />;
 }
 
 export function AppShell() {

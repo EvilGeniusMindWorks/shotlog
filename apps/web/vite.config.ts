@@ -22,27 +22,23 @@ export default defineConfig({
       // 'prompt': new builds download quietly and an Update chip lets the
       // user choose when to restart — no surprise reloads mid-form
       registerType: 'prompt',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
+      // Brand assets from the final kit (public/): favicon.ico + favicon.svg,
+      // apple-touch-icon (180, square navy tile — iOS rounds it), icon-192 /
+      // icon-512 (square navy tile), icon-512-maskable (mark inside the 80 %
+      // safe zone so Android's adaptive shapes never clip the cloud)
+      includeAssets: ['favicon.ico', 'favicon.svg', 'apple-touch-icon.png', 'shotlog-*.svg', 'shotlog-*.png'],
       manifest: {
         name: 'ShotLog',
         short_name: 'ShotLog',
-        description: 'Offline-first blasting log & daily report PWA',
-        theme_color: '#1a365d',
-        background_color: '#f7fafc',
+        description: 'Blasting logs, drill logs and daily reports for the crew — works with no signal',
+        theme_color: '#1C3859',
+        background_color: '#1C3859',
         display: 'standalone',
         orientation: 'portrait',
         icons: [
-          {
-            src: 'pwa-192x192.png',
-            sizes: '192x192',
-            type: 'image/png',
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable',
-          },
+          { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'icon-512-maskable.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {
