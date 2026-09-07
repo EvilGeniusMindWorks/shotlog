@@ -154,7 +154,9 @@ drill log, checklist, shop, approvals, people; "Show me …" in Help. S7d ✅
 (harness45 25/25): the day is a container, the blaster owns the report,
 everyone owns their trio, Work Force is the day's time cards, rig hours
 come from the rig's own meter readings, duplicate days merge. Round S7
-complete.
+complete. Follow-ups the same day: driller rehearsal fixes (harness46),
+Admin › People "Add person in one shot" from an accepted mockup
+(harness47), CI now generates the Prisma client.
 
 ## Runs alongside (not gated on rounds)
 
