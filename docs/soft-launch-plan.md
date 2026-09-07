@@ -498,7 +498,7 @@ and re-download, which is exactly what the merge hit first.
 4. The drill log's back arrow sends a driller home (the plan page and the
    day hub are the blaster's screens).
 
-**S7 follow-up — Matthew's invite test (plan artifact ed13a981, all Build)**
+**S7 follow-up — Matthew's invite test (plan artifact ed13a981, all Build) — ✅ SHIPPED 2026-09-07 (harness49 26/26; 37/42/45/46 regressions green)**
 5. Whose work shows up: a new blaster was handed Mark's drafts and a
    driller's finished log. Field homes now surface only *my* work (day
    authored or worked; pattern I laid; drilling on my patterns); `/days`
