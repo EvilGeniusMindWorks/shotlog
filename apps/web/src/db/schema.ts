@@ -606,6 +606,10 @@ export interface HourCorrection extends BaseRecord {
 
 export interface CrewMember extends BaseRecord {
   name: string;
+  /** Sort key for the People list (Matthew, 2026-09-07: "Baltazar, Danny").
+   *  Stamped on new people; older rows derive it from the last word of
+   *  `name` (lib/people.ts). `name` stays "First Last" everywhere else. */
+  lastName?: string;
   licenseNumber: string;
   licenseState: string;
   isActive: boolean;

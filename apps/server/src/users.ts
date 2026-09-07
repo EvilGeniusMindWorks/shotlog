@@ -79,7 +79,11 @@ async function syncCrewForUser(
     }
     return linked.id;
   }
-  const id = randomUUID();
+  // The client may name the roster row it JUST created and has not yet
+  // uploaded (Add person in one shot, 2026-09-07). Create the row under that
+  // same id so the client's upload merges into it instead of producing a
+  // second "Bee Baltazar" — a random id here made exactly that duplicate.
+  const id = preferCrewId ?? randomUUID();
   await upsertRecord(
     tx,
     cid,

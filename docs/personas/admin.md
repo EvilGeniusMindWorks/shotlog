@@ -48,6 +48,26 @@ Company) · customers/sites/jobs setup · everything else read
 - ✅ Screen tours (Round S7c, 2026-09-07): People (Add person · one line each · the ⋯ menu) and Approvals run once on first open; re-run from ? → "Show me …".
 - ✅ First-week card: walkthrough · invite a person · read Roles once · check company details · try View as.
 
+## Add person in one shot (Matthew, 2026-09-07 — mockup accepted, all four calls)
+
+- ✅ One panel: First · Last · Role · Email · Access (invite / create login
+  with a temp password / roster only). The button says what it does: *Add
+  person* · *Add & send invite* · *Add & create login*. A typed email
+  defaults to Invite; blank email defaults to roster only.
+- ✅ Offline is honest: the roster add works offline as before; the two
+  login options grey out with the reason. If the server half fails, the
+  person is still on the roster and the panel says so.
+- ✅ Duplicate guard: a name already on the roster is not added twice — the
+  panel offers to open the existing person.
+- ✅ Existing people keep Invite / Login / reset / deactivate on the ⋯ row.
+- ✅ The People list reads and sorts "Last, First" (`crewMembers.lastName`,
+  stamped on new people; older rows derive it from the last word of the
+  name — no migration). `name` stays "First Last" everywhere else.
+- ✅ Paste list takes an optional email per line and invites those people
+  in bulk (online); links are listed when email is not set up.
+- Not done: editing the derived last name on the person page (the person
+  page has no name editor today) — add if a real name splits wrongly.
+
 ## Clutter sweep + records (Round S4, 2026-09-06)
 
 - ✅ People: one-line rows, 15 + Show all, actions behind ⋯ (4.4 screens → 1.1). Catalog 15 per manufacturer tab. Company home keeps the costing table, windowed 10 + Show all.

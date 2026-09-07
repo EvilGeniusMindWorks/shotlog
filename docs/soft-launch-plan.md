@@ -492,6 +492,13 @@ and re-download, which is exactly what the merge hit first.
 4. The drill log's back arrow sends a driller home (the plan page and the
    day hub are the blaster's screens).
 
+**Admin follow-up — Add person in one shot (harness47).** Mockup first
+(artifact 5880eda4), then built as accepted: First · Last · Role · Email ·
+Access in one panel, button labels *Add person* / *Add & send invite* /
+*Add & create login*, offline-honest, duplicate guard, "Last, First" list
+order via `crewMembers.lastName`, Paste list with emails → bulk invites.
+The ⋯ row keeps Invite / Login for people already on the roster.
+
 ---
 
 ## Open questions for Matthew

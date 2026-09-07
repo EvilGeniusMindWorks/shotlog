@@ -18,6 +18,8 @@ import { useLiveQuery, db } from '@/db';
 import { authedFetch, getSessionUser, type UserLicense } from '@/lib/session';
 import { generateId, nowISO } from '@/lib/utils';
 import type { CrewMember } from '@/db/schema';
+import { compareByLastName, lastFirst, parsePersonLine } from '@/lib/people';
+import { AddPersonPanel } from '@/components/admin/AddPersonPanel';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -81,46 +83,104 @@ function ExpiryChip({ licenses }: { licenses?: UserLicense[] }) {
   );
 }
 
-/** Paste "Last, First" or "First Last" lines to add many people at once */
-function BulkAdd({ known }: { known: Set<string> }) {
+/** Paste "Last, First" or "First Last" lines to add many people at once.
+ *  2026-09-07: a line may carry an email ("Baltazar, Dinis, danny@…" or
+ *  "Dean Briggs <dean@…>") — online, each of those gets an invite too. */
+function BulkAdd({
+  known,
+  isAdmin,
+  online,
+  role,
+  onDirectory,
+}: {
+  known: Set<string>;
+  isAdmin: boolean;
+  online: boolean;
+  role: string;
+  onDirectory: () => Promise<void> | void;
+}) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [links, setLinks] = useState<{ name: string; link: string }[]>([]);
+  const canInvite = isAdmin && online;
   const run = async () => {
+    setBusy(true);
     const seen = new Set(known);
     const now = nowISO();
     let added = 0;
+    let invited = 0;
+    let emailed = 0;
+    let failed = 0;
+    const out: { name: string; link: string }[] = [];
     for (const raw of text.split('\n')) {
-      const line = raw.trim();
-      if (!line) continue;
-      const m = line.match(/^([^,]+),\s*(.+)$/);
-      const name = (m ? `${m[2].trim()} ${m[1].trim()}` : line).replace(/\s+/g, ' ');
-      if (seen.has(name.toLowerCase())) continue;
-      seen.add(name.toLowerCase());
+      const p = parsePersonLine(raw);
+      if (!p || seen.has(p.name.toLowerCase())) continue;
+      seen.add(p.name.toLowerCase());
+      const id = generateId();
       await db.crewMembers.put({
-        id: generateId(), name, licenseNumber: '', licenseState: '', isActive: true,
+        id, name: p.name, lastName: p.lastName || undefined, licenseNumber: '', licenseState: '', isActive: true,
+        ...(role ? { role } : {}),
         createdAt: now, updatedAt: now, syncStatus: 'local',
       });
       added++;
+      if (p.email && canInvite) {
+        try {
+          const res = await authedFetch('/admin/invites', {
+            method: 'POST',
+            body: JSON.stringify({ name: p.name, role: role || 'blaster', crewMemberId: id, email: p.email }),
+          });
+          const body = (await res.json().catch(() => null)) as { link?: string; emailed?: boolean } | null;
+          if (!res.ok) throw new Error('invite failed');
+          invited++;
+          if (body?.emailed) emailed++;
+          else if (body?.link) out.push({ name: p.name, link: body.link });
+        } catch {
+          failed++;
+        }
+      }
     }
-    setResult(`Added ${added} ${added === 1 ? 'person' : 'people'}.`);
+    if (invited || failed) await onDirectory();
+    const parts = [`Added ${added} ${added === 1 ? 'person' : 'people'}`];
+    if (invited) parts.push(`invited ${invited}${emailed ? ` (${emailed} emailed)` : ''}`);
+    if (failed) parts.push(`${failed} invite${failed === 1 ? '' : 's'} failed — use Invite on their rows`);
+    setResult(`${parts.join(' · ')}.`);
+    setLinks(out);
     setText('');
+    setBusy(false);
   };
   return (
     <div className="space-y-2">
-      <Button variant="outline" size="sm" onClick={() => setOpen(!open)}>Paste list</Button>
+      <Button variant="outline" size="sm" onClick={() => setOpen(!open)} data-bulk-open>Paste list</Button>
       {open && (
         <div className="space-y-2">
           <textarea
             className="w-full h-32 rounded-lg border border-gray-300 p-2 text-sm"
-            placeholder={'One person per line:\nBaltazar, Dinis\nDean Briggs'}
+            placeholder={'One person per line — add an email to invite them too:\nBaltazar, Dinis, dinis@company.com\nDean Briggs <dean@company.com>\nLuis Ferreira'}
             value={text}
             onChange={(e) => setText(e.target.value)}
+            data-bulk-text
           />
-          <div className="flex items-center gap-2">
-            <Button size="sm" disabled={!text.trim()} onClick={() => void run()}>Add people</Button>
-            {result && <p className="text-sm text-gray-500">{result}</p>}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button size="sm" disabled={!text.trim() || busy} onClick={() => void run()} data-bulk-run>
+              {busy ? 'Adding…' : 'Add people'}
+            </Button>
+            <span className="text-xs text-gray-400">
+              {canInvite ? 'Lines with an email get an invite (role: the chip picked in Add person, else blaster).' : isAdmin ? 'Offline — people are added; invites can go from their rows later.' : 'Roster only.'}
+            </span>
+            {result && <p className="text-sm text-gray-500 w-full" data-bulk-result>{result}</p>}
           </div>
+          {links.length > 0 && (
+            <div className="rounded-lg bg-green-50 border border-green-200 p-2 space-y-1" data-bulk-links>
+              <p className="text-xs text-green-800">Email is not set up — text these links:</p>
+              {links.map((l) => (
+                <p key={l.link} className="text-xs font-mono truncate">
+                  <b className="font-sans">{l.name}</b> · {l.link}
+                </p>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -266,8 +326,8 @@ function PersonRow({
           title="Open person page"
           onClick={() => navigate(`/crew/${member.id}`)}
         >
-          <span className="block font-medium text-sm truncate hover:underline">
-            {member.name}
+          <span className="block font-medium text-sm truncate hover:underline" data-person-name>
+            {lastFirst(member)}
             {isSelf && <span className="text-gray-400 font-normal"> (you)</span>}
           </span>
           {user && <span className="block text-[11px] text-gray-400 truncate">{user.email}</span>}
@@ -452,7 +512,6 @@ export function AdminPeoplePage() {
   const [invites, setInvites] = useState<InviteLite[]>([]);
   const [search, setSearch] = useState('');
   const [adding, setAdding] = useState(false);
-  const [addForm, setAddForm] = useState({ name: '', role: '' });
   const [showInactive, setShowInactive] = useState(false);
   // S4: 15 rows + Show all (search shows everyone) — Baystate's 24-person
   // roster was 4.4 screens of 3-line blocks
@@ -491,20 +550,8 @@ export function AdminPeoplePage() {
       const u = p.userId ? userById.get(p.userId) : undefined;
       return p.name.toLowerCase().includes(q) || (u?.email ?? '').toLowerCase().includes(q);
     })
-    .sort((a, b) => Number(b.isActive) - Number(a.isActive) || a.name.localeCompare(b.name));
-
-  const addPerson = async () => {
-    const name = addForm.name.trim().replace(/\s+/g, ' ');
-    if (!name) return;
-    const now = nowISO();
-    await db.crewMembers.put({
-      id: generateId(), name, licenseNumber: '', licenseState: '', isActive: true,
-      ...(addForm.role ? { role: addForm.role } : {}),
-      createdAt: now, updatedAt: now, syncStatus: 'local',
-    });
-    setAddForm({ name: '', role: '' });
-    setAdding(false);
-  };
+    // "Baltazar, Danny" order (Matthew, 2026-09-07)
+    .sort(compareByLastName);
 
   return (
     <div className="space-y-3">
@@ -525,27 +572,27 @@ export function AdminPeoplePage() {
           show deactivated
         </label>
         <div className="flex-1" />
-        <BulkAdd known={new Set(people.map((p) => p.name.toLowerCase()))} />
+        <BulkAdd
+          known={new Set(people.map((p) => p.name.toLowerCase()))}
+          isAdmin={isAdmin}
+          online={online}
+          role=""
+          onDirectory={loadDirectory}
+        />
         <Button onClick={() => setAdding(!adding)} data-tour="people-add">
           <Plus className="h-4 w-4 mr-1" /> Add person
         </Button>
       </div>
 
       {adding && (
-        <div className="rounded-xl border border-gray-200 bg-white p-4 flex items-end gap-2 flex-wrap">
-          <div className="w-56">
-            <Label className="text-xs">Name</Label>
-            <Input value={addForm.name} onChange={(e) => setAddForm({ ...addForm, name: e.target.value })} />
-          </div>
-          <div>
-            <Label className="text-xs">Role (optional)</Label>
-            <ChipSelect value={addForm.role} onChange={(role) => setAddForm({ ...addForm, role })} options={ROLE_OPTIONS} />
-          </div>
-          <Button size="sm" disabled={!addForm.name.trim()} onClick={() => void addPerson()}>Add</Button>
-          <p className="w-full text-xs text-gray-400">
-            Works offline. {isAdmin ? 'Add a login afterwards from their row if they need one.' : ''}
-          </p>
-        </div>
+        <AddPersonPanel
+          roleOptions={ROLE_OPTIONS}
+          isAdmin={isAdmin}
+          online={online}
+          people={people}
+          onDone={loadDirectory}
+          onClose={() => setAdding(false)}
+        />
       )}
 
       <div className="divide-y divide-gray-100 rounded-xl border border-gray-200 bg-white">
