@@ -539,7 +539,15 @@ and re-download, which is exactly what the merge hit first.
    storage-engine selector removed. harness52 15/15 · 37/46/49 green.
    ✅ SHIPPED 2026-09-07 (d3d49ad). Verified: prod `/health` files=true,
    legacyInlinePdfs=0 after the first boot; **Matthew's phone: 567 records
-   in 1.4 s (was 23.6 s); sign out and back in — instant.**
+   in 1.4 s (was 23.6 s); sign out and back in — instant.** Then a fresh
+   PWA install read **25.3 s on IndexedDB** for the same 567 records: on
+   iOS the IndexedDB VFS is ~18× slower at applying rows than OPFS (the
+   pre-migration readings matched only because download and writes
+   overlapped). Policy shipped 2026-09-07: Apple WebKit → OPFS by default
+   (fresh devices at first open; existing IndexedDB devices hand over at
+   next launch once idle; fallback to IndexedDB where OPFS cannot open);
+   Chromium stays on IndexedDB (faster there). `lib/storageEnginePolicy.ts`
+   + unit tests.
    Side find: Vite HMR could leave two PowerSync instances on one file
    (app import vs harness import) — hangs WebKit, inflated earlier numbers;
    the singleton now lives on globalThis.

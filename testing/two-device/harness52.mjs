@@ -60,9 +60,12 @@ async (page, lib) => {
     // the kept copy reports hasSynced immediately — no first-sync strip
     await P.locator('main, [data-tour-overlay]').first().waitFor({ timeout: 15000 });
     const strip = await P.locator('[data-first-sync-strip]').count();
-    const synced = await P.evaluate(async () => (await import('/src/db/powersync/client.ts')).getPowerSync().currentStatus?.hasSynced === true);
     const n = await count();
-    R.ok(`Dinis is in after ${Date.now() - t0} ms with the company already on the device (${n} records, no first-sync strip)`, strip === 0 && n >= recordsBefore - 50 && synced);
+    const inMs = Date.now() - t0;
+    // WebKit reports hasSynced a beat after connect — wait for it briefly, but the
+    // proof of "no re-download" is the record count + no strip + no new log line
+    const synced = await waitForSync(P, 10000).then(() => true).catch(() => false);
+    R.ok(`Dinis is in after ${inMs} ms with the company already on the device (${n} records, no first-sync strip)`, strip === 0 && n >= recordsBefore - 50 && synced);
     R.ok('no second "first sync done" line — nothing was re-downloaded', (await firstSyncLines()) === 1);
     await skipTours(P);
   });

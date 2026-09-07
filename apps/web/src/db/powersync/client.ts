@@ -15,6 +15,7 @@ import {
 } from '@powersync/web';
 import { authedFetch, getSession, sessionCompanyId } from '@/lib/session';
 import { logSyncEvent } from '@/lib/syncLog';
+import { defaultEngineFor, type StorageEngine as PolicyEngine } from '@/lib/storageEnginePolicy';
 import type { SqlAdapter } from './adapter';
 
 const schema = new Schema({
@@ -87,8 +88,17 @@ let instance: PowerSyncDatabase | null = g.__shotlogPowerSync ?? null;
 // origin-private file system) is the faster path where supported. Opt-in
 // per device via Settings › Data & device; the default stays IndexedDB
 // until the measurement says otherwise.
-export type StorageEngine = 'idb' | 'opfs';
+export type StorageEngine = PolicyEngine;
 const ENGINE_KEY = 'shotlog-storage-engine';
+
+/** The engine this device SHOULD use per the policy (Apple WebKit → OPFS) */
+export function preferredEngine(): StorageEngine {
+  try {
+    return defaultEngineFor(navigator.userAgent, navigator.platform, navigator.maxTouchPoints ?? 0, opfsSupported());
+  } catch {
+    return 'idb';
+  }
+}
 
 export function opfsSupported(): boolean {
   try {
@@ -155,6 +165,22 @@ export async function preflightStorageEngine(): Promise<void> {
   } catch {
     return;
   }
+  // No choice recorded yet: a fresh Apple device starts on OPFS (25 s → 1.4 s
+  // on Matthew's iPhone); a device that already holds an IndexedDB copy is
+  // handed over later by scheduleEngineHandover(), once its queue is empty
+  if (wanted === null && preferredEngine() === 'opfs') {
+    let existing = false;
+    try {
+      existing = ((await indexedDB.databases?.().catch(() => [])) ?? []).some((d) => d.name === DB_FILENAME);
+    } catch {
+      existing = false;
+    }
+    if (!existing) {
+      setStorageEngine('opfs');
+      wanted = 'opfs';
+      logSyncEvent('storage engine: OPFS chosen for this device (Apple WebKit)');
+    }
+  }
   if (wanted !== 'opfs') return;
   try {
     if (!opfsSupported()) throw new Error('no OPFS API');
@@ -166,6 +192,48 @@ export async function preflightStorageEngine(): Promise<void> {
     setStorageEngine('idb');
     logSyncEvent(`OPFS unavailable in this browser (${err instanceof Error ? err.message : 'error'}) — using IndexedDB`);
   }
+}
+
+/**
+ * A device that already holds an IndexedDB copy but should be on OPFS
+ * (Apple WebKit) switches at its NEXT launch — recorded only once nothing
+ * is waiting to upload, so no local write can be lost. The boot reset then
+ * deletes the IndexedDB copy and the first sync on OPFS takes seconds.
+ */
+function scheduleEngineHandover(ps: PowerSyncDatabase): void {
+  let decided = false;
+  let flag: string | null = null;
+  try {
+    flag = localStorage.getItem(ENGINE_KEY);
+  } catch {
+    return;
+  }
+  if (flag !== null || preferredEngine() !== 'opfs') return;
+  const dispose = ps.registerListener({
+    statusChanged: (status) => {
+      if (decided || !status.connected || status.hasSynced !== true) return;
+      decided = true;
+      void ps
+        .getAll<{ n: number }>('SELECT count(*) AS n FROM ps_crud')
+        .then((rows) => {
+          if ((rows[0]?.n ?? 0) > 0) {
+            decided = false; // try again on a later status change
+            return;
+          }
+          dispose();
+          setStorageEngine('opfs');
+          try {
+            localStorage.setItem(RESET_FLAG, '1');
+          } catch {
+            /* ignore */
+          }
+          logSyncEvent('switching to faster storage (OPFS) at next launch — the company downloads again once, in seconds');
+        })
+        .catch(() => {
+          decided = false;
+        });
+    },
+  });
 }
 
 /** performance.now() when the database was opened — first-sync timing */
@@ -190,6 +258,7 @@ export function getPowerSync(): PowerSyncDatabase {
     g.__shotlogPowerSync = instance;
     logSyncEvent(`storage engine: ${engine === 'opfs' ? 'OPFS' : 'IndexedDB'}`);
     watchFirstSync(instance, engine);
+    if (engine === 'idb') scheduleEngineHandover(instance);
     // Connect only once a session (or dev override) exists — otherwise the
     // SDK would loop on credential failures behind the login screen.
     if (getSession().loggedIn || import.meta.env.VITE_POWERSYNC_TOKEN_URL) {
