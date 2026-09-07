@@ -2,6 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Installed-app safe areas (2026-09-07) ──────────────────────────────
+   In a browser the URL bar and the browser's own toolbar keep our bars
+   away from the phone's corners. Installed as a PWA the page runs edge to
+   edge (viewport-fit=cover in index.html), so the top bar sits under the
+   status bar / notch and the bottom nav under the home indicator and the
+   rounded corners. These utilities pad by the device's real insets; in a
+   browser (or on a square screen) every inset is 0 and nothing changes. */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+.safe-area-top { padding-top: var(--sat); }
+.safe-area-bottom { padding-bottom: var(--sab); }
+.safe-area-x { padding-left: var(--sal); padding-right: var(--sar); }
+/* the status-bar strip above the mobile header, painted in the header's navy */
+.safe-area-top-strip { height: var(--sat); }
+/* page content on a phone: clearance for the 4 rem nav + its inset padding */
+.pb-nav-safe { padding-bottom: calc(5rem + var(--sab)); }
+
 /* ── Dark mode (v1) ─────────────────────────────────────────────────────
    Pragmatic utility remap: the app's components use a small, consistent
    set of light-theme utilities, remapped here under .dark. Print pages

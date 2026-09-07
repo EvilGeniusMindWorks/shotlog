@@ -204,7 +204,7 @@ function NewWorkDayFab({ defaultTypeOfWork }: { defaultTypeOfWork?: WorkType }) 
     <>
       <button
         data-tour="fab"
-        className="fixed bottom-24 right-4 sm:bottom-8 sm:right-8 h-14 w-14 rounded-full bg-safety-orange text-white shadow-lg flex items-center justify-center active:scale-95 transition-transform z-20"
+        className="fixed bottom-[calc(6rem+var(--sab))] right-[calc(1rem+var(--sar))] sm:bottom-8 sm:right-8 h-14 w-14 rounded-full bg-safety-orange text-white shadow-lg flex items-center justify-center active:scale-95 transition-transform z-20"
         title="Start work at a job"
         onClick={() => setShowNewDialog(true)}
       >

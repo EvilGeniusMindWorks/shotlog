@@ -364,12 +364,15 @@ export function AppShell() {
       {/* min-w-0: flex children default to min-width:auto, so one wide widget
           stretches the whole shell past the viewport on phones */}
       <div className="flex-1 min-w-0 lg:pl-56 flex flex-col min-h-screen">
+        {/* Installed on a phone: the status bar / notch area, painted navy so
+            the header reads as one bar; height 0 in a browser */}
+        <div className="lg:hidden bg-navy safe-area-top-strip shrink-0" data-safe-top aria-hidden />
         <RehearsalBar />
         <ViewAsBanner />
         <SessionExpiredBanner />
         <FirstSyncStrip />
         {/* Mobile header */}
-        <header className="lg:hidden bg-navy text-white px-4 py-3 shadow-md flex items-center justify-between shrink-0">
+        <header className="lg:hidden bg-navy text-white px-4 py-3 shadow-md flex items-center justify-between shrink-0 safe-area-x">
           <Wordmark compact />
           <div className="flex items-center gap-1">
             <HelpMenu
@@ -395,7 +398,7 @@ export function AppShell() {
           </div>
         </header>
 
-        <main className="flex-1 min-w-0 overflow-auto pb-20 lg:pb-4">
+        <main className="flex-1 min-w-0 overflow-auto pb-nav-safe lg:pb-4 safe-area-x">
           <Outlet />
         </main>
       </div>
@@ -408,7 +411,7 @@ export function AppShell() {
           (the phone mirrors the rail, decision 2026-08-18) */}
       <nav
         data-tour="nav"
-        className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-bottom z-50"
+        className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-bottom safe-area-x z-50"
       >
         <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
           {[
@@ -421,13 +424,14 @@ export function AppShell() {
               data-tour={`nav-${item.to}`}
               className={({ isActive }) =>
                 cn(
-                  'flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-colors min-w-[64px]',
+                  // py-1: two-line labels ("Work days") must still fit the 4 rem bar
+                  'flex flex-col items-center justify-center gap-1 px-3 py-1 rounded-lg transition-colors min-w-[64px] max-h-16',
                   isActive ? 'text-navy font-semibold' : 'text-gray-400 hover:text-gray-600',
                 )
               }
             >
-              <item.icon className="h-5 w-5" />
-              <span className="text-xs">{item.label}</span>
+              <item.icon className="h-5 w-5 shrink-0" />
+              <span className="text-xs leading-tight text-center">{item.label}</span>
             </NavLink>
           ))}
         </div>
