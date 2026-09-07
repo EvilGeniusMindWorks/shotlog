@@ -128,14 +128,14 @@ export function HelpMenu({
   return (
     <div ref={ref} className="relative">
       <button
-        className="h-10 w-10 rounded-lg flex items-center justify-center text-navy-200"
+        className="h-10 w-10 rounded-lg flex items-center justify-center text-navy-100"
         title="Help & feedback"
         aria-haspopup="menu"
         aria-expanded={open}
         data-help-button
         onClick={() => setOpen((o) => !o)}
       >
-        <CircleHelp className="h-5 w-5" />
+        <CircleHelp className="h-6 w-6" />
       </button>
       {open && items}
       {sheet}

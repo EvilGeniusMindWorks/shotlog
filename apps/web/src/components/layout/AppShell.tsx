@@ -372,7 +372,8 @@ export function AppShell() {
         <SessionExpiredBanner />
         <FirstSyncStrip />
         {/* Mobile header */}
-        <header className="lg:hidden bg-navy text-white px-4 py-3 shadow-md flex items-center justify-between shrink-0 safe-area-x">
+        {/* side padding = 1 rem + the device's side inset (landscape corners) */}
+        <header className="lg:hidden bg-navy text-white pl-[calc(1rem+var(--sal))] pr-[calc(1rem+var(--sar))] py-3 shadow-md flex items-center justify-between shrink-0">
           <Wordmark compact />
           <div className="flex items-center gap-1">
             <HelpMenu
@@ -380,11 +381,11 @@ export function AppShell() {
               onWalkthrough={startTour}
             />
             <button
-              className="h-10 w-10 rounded-lg flex items-center justify-center text-navy-200"
+              className="h-10 w-10 rounded-lg flex items-center justify-center text-navy-100"
               title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
               onClick={toggle}
             >
-              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              {theme === 'dark' ? <Sun className="h-6 w-6" /> : <Moon className="h-6 w-6" />}
             </button>
             <UpdateChip />
             <SyncChip variant="badge" />
@@ -411,9 +412,11 @@ export function AppShell() {
           (the phone mirrors the rail, decision 2026-08-18) */}
       <nav
         data-tour="nav"
-        className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-bottom safe-area-x z-50"
+        className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-bottom-nav safe-area-x z-50"
       >
-        <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
+        {/* Like a native tab bar: a short body, labels just above the
+            home-indicator zone (the inset padding), no dead band under them */}
+        <div className="flex items-start justify-around pt-1.5 max-w-lg mx-auto">
           {[
             ...navItems.slice(0, 4),
             ...navItems.filter((i) => i.to === '/settings' || i.to === '/admin'),
@@ -424,8 +427,7 @@ export function AppShell() {
               data-tour={`nav-${item.to}`}
               className={({ isActive }) =>
                 cn(
-                  // py-1: two-line labels ("Work days") must still fit the 4 rem bar
-                  'flex flex-col items-center justify-center gap-1 px-3 py-1 rounded-lg transition-colors min-w-[64px] max-h-16',
+                  'flex flex-col items-center justify-start gap-1 px-3 py-0.5 rounded-lg transition-colors min-w-[64px]',
                   isActive ? 'text-navy font-semibold' : 'text-gray-400 hover:text-gray-600',
                 )
               }

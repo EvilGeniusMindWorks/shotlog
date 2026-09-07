@@ -20,7 +20,10 @@
 .safe-area-x { padding-left: var(--sal); padding-right: var(--sar); }
 /* the status-bar strip above the mobile header, painted in the header's navy */
 .safe-area-top-strip { height: var(--sat); }
-/* page content on a phone: clearance for the 4 rem nav + its inset padding */
+/* the bottom nav: at least 0.5 rem under the labels in a browser; installed,
+   exactly the home-indicator zone (native tab bars do the same) */
+.safe-area-bottom-nav { padding-bottom: max(0.5rem, var(--sab)); }
+/* page content on a phone: clearance for the nav body + its inset padding */
 .pb-nav-safe { padding-bottom: calc(5rem + var(--sab)); }
 
 /* ── Dark mode (v1) ─────────────────────────────────────────────────────
