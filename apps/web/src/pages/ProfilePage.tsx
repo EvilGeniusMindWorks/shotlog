@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { KeyRound, Lock, LogOut, PenLine } from 'lucide-react';
+import { resetLocalReplica } from '@/db/powersync/client';
 import {
   changeMyPassword,
   getSessionUser,
@@ -209,8 +210,12 @@ function SecurityCard() {
             <Button
               variant="ghost"
               size="sm"
+              data-profile-sign-out
               onClick={async () => {
+                // S7b: the ONE sign-out (Settings lost its copy). Bounded
+                // replica reset so a wedged database can never hold it.
                 await logout();
+                await resetLocalReplica();
                 window.location.reload();
               }}
             >

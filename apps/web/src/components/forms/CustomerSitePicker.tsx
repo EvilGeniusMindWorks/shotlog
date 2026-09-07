@@ -1,7 +1,9 @@
-// Customer + Site selection for job creation: pick existing ones from
+// Customer → Site selection for job creation: pick existing ones from
 // dropdowns, or flip either to "new" and type it — the create flow turns
-// the typed values into real records. One component, both job forms.
-import { useState } from 'react';
+// the typed values into real records. One component, every job form.
+// S7b (Matthew): top-down order is the point — customer first; a customer
+// with ONE site fills it in; otherwise only that customer's sites show.
+import { useEffect, useState } from 'react';
 import { useLiveQuery, db } from '@/db';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,14 +17,24 @@ export interface CustomerSitePick {
   siteId?: string;
   /** Typed values (used when creating new) */
   customerName: string;
+  siteName: string;
   address: string;
   city: string;
   state: string;
   kFactor: number;
 }
 
-export function emptyPick(): CustomerSitePick {
-  return { customerName: '', address: '', city: '', state: '', kFactor: 180 };
+export function emptyPick(initial?: { customerId?: string; siteId?: string }): CustomerSitePick {
+  return {
+    customerId: initial?.customerId,
+    siteId: initial?.siteId,
+    customerName: '',
+    siteName: '',
+    address: '',
+    city: '',
+    state: '',
+    kFactor: 180,
+  };
 }
 
 export function pickReady(p: CustomerSitePick): boolean {
@@ -42,32 +54,43 @@ export function CustomerSitePicker({
         a.name.localeCompare(b.name),
       ),
     ) ?? [];
-  const sites =
-    useLiveQuery(
-      async () =>
-        value.customerId
-          ? (await db.sites.where('customerId').equals(value.customerId).toArray())
-              .filter((s) => s.isActive)
-              .sort((a, b) => a.name.localeCompare(b.name))
-          : [],
-      [value.customerId],
-    ) ?? [];
+  const sites = useLiveQuery(
+    async () =>
+      value.customerId
+        ? (await db.sites.where('customerId').equals(value.customerId).toArray())
+            .filter((s) => s.isActive)
+            .sort((a, b) => a.name.localeCompare(b.name))
+        : [],
+    [value.customerId],
+  );
   // '' = nothing chosen yet; NEW = typing a new one
   const [customerMode, setCustomerMode] = useState(value.customerId ?? (customers.length ? '' : NEW));
-  const [siteMode, setSiteMode] = useState(value.siteId ?? NEW);
+  const [siteMode, setSiteMode] = useState(value.siteId ?? '');
+  const [siteChosenByHand, setSiteChosenByHand] = useState(Boolean(value.siteId));
   const newCustomer = customerMode === NEW;
   const newSite = newCustomer || siteMode === NEW;
+
+  // A customer with exactly one site: that is the site
+  useEffect(() => {
+    if (!value.customerId || value.siteId || siteChosenByHand || !sites || sites.length !== 1) return;
+    const s = sites[0];
+    setSiteMode(s.id);
+    onChange({ ...value, siteId: s.id, address: s.address, city: s.city, state: s.state });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sites, value.customerId, value.siteId, siteChosenByHand]);
 
   return (
     <>
       <div>
         <Label>Customer *</Label>
         <Select
+          data-pick-customer
           value={customerMode}
           onChange={(e) => {
             const v = e.target.value;
             setCustomerMode(v);
-            setSiteMode(NEW);
+            setSiteMode('');
+            setSiteChosenByHand(false);
             if (v === NEW || v === '') {
               onChange({ ...value, customerId: undefined, siteId: undefined });
             } else {
@@ -91,17 +114,19 @@ export function CustomerSitePicker({
         )}
       </div>
       <div>
-        <Label>Site / Location</Label>
+        <Label>Site</Label>
         {!newCustomer ? (
           <Select
+            data-pick-site
             value={siteMode}
             disabled={!value.customerId}
             onChange={(e) => {
               const v = e.target.value;
               setSiteMode(v);
-              if (v === NEW) onChange({ ...value, siteId: undefined });
+              setSiteChosenByHand(true);
+              if (v === NEW || v === '') onChange({ ...value, siteId: undefined });
               else {
-                const s = sites.find((x) => x.id === v);
+                const s = (sites ?? []).find((x) => x.id === v);
                 onChange({
                   ...value,
                   siteId: v,
@@ -112,7 +137,8 @@ export function CustomerSitePicker({
               }
             }}
             options={[
-              ...sites.map((s) => ({ value: s.id, label: s.name })),
+              { value: '', label: value.customerId ? 'Pick site…' : 'Pick the customer first' },
+              ...(sites ?? []).map((s) => ({ value: s.id, label: `${s.name}${s.city ? ` · ${s.city}` : ''}` })),
               { value: NEW, label: '+ New site' },
             ]}
           />
@@ -122,6 +148,14 @@ export function CustomerSitePicker({
       </div>
       {newSite && (
         <>
+          <div>
+            <Label>Site name</Label>
+            <Input
+              placeholder="defaults to the address"
+              value={value.siteName}
+              onChange={(e) => onChange({ ...value, siteName: e.target.value })}
+            />
+          </div>
           <div>
             <Label>Address</Label>
             <Input value={value.address} onChange={(e) => onChange({ ...value, address: e.target.value })} />

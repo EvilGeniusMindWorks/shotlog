@@ -189,6 +189,9 @@ export interface Job extends BaseRecord, Archivable {
   customerId?: string;
   siteId?: string;
   operation: 'construction' | 'quarry' | 'trench' | 'open';
+  /** S7b: what a new day at this job is, unless the last day says otherwise
+   *  (dialog prefill order: last day's type → this → role default) */
+  defaultTypeOfWork?: WorkType;
   typeOfRock: string;
   typeOfTerrain: string;
   defaultHazards: string;

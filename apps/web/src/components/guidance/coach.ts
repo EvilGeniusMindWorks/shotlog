@@ -403,8 +403,12 @@ const RULES: CoachRule[] = [
     pattern: '/settings',
     entry: {
       title: 'Settings',
-      what: 'Personal: account, install, help, and how record pages lay out on this device.',
-      steps: ['Company setup (people, equipment, catalog) lives under Admin.'],
+      what: 'Personal: who you are, your preferences on this device, help, and the device remedies.',
+      steps: [
+        'Preferences: dark mode, your usual rig, what a new day starts as, what Copy from previous ticks.',
+        'Sign out lives in My Profile. Data & device (reset, export) is last on purpose.',
+        'Company setup (people, equipment, catalog) lives under Admin.',
+      ],
     },
   },
   {

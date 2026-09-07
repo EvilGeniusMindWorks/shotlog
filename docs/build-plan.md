@@ -145,8 +145,10 @@ remaining gates are Matthew's decisions D1–D4. S7 (his eleven
 first-rehearsal notes, docs/round-s7-plan.md) accepted 2026-09-07; S7a ✅
 shipped the same day (harness42 27/27): rehearsal starts with his
 company's fleet/roster/catalog, *Add sample data* loads a connected week
-for every role, driller checklist door + usual rig on the account. S7b
-(hierarchy, day dialog, Settings, log-out, records by bucket), S7c
+for every role, driller checklist door + usual rig on the account. S7b ✅
+shipped the same day (harness43 34/34): Customer → Site → Job everywhere,
+the day dialog reordered with Recent chips and type prefill, Settings
+reorganised (sign out only in Profile), Records by home bucket. S7c
 (screen tours) and S7d (time model) follow.
 
 ## Runs alongside (not gated on rounds)

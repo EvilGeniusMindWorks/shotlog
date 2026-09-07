@@ -13,7 +13,19 @@ import { matchesPersonName, matchesWorkRow, workedRow } from '@/lib/personHistor
 import { drillLogRoute } from '@/hooks/useDrillPlans';
 import type { CrewMember, DrillLog } from '@/db/schema';
 
-export type DocKind = 'blast_log' | 'daily_report' | 'drill_log' | 'drill_checklist' | 'incident';
+export type DocKind =
+  | 'blast_log'
+  | 'daily_report'
+  | 'drill_log'
+  | 'drill_checklist'
+  | 'incident'
+  // S7b: the rest of the paper — so each home bucket's default set is
+  // complete without a role mapping (time cards for drillers; tickets,
+  // services and hour corrections for the shop)
+  | 'time_card'
+  | 'repair_ticket'
+  | 'service'
+  | 'hour_correction';
 
 export interface DocRow {
   key: string;
@@ -41,6 +53,10 @@ export const DOC_KIND_LABEL: Record<DocKind, string> = {
   drill_log: 'Drill Log',
   drill_checklist: 'Checklist',
   incident: 'Incident',
+  time_card: 'Time Card',
+  repair_ticket: 'Repair Ticket',
+  service: 'Service',
+  hour_correction: 'Hour Correction',
 };
 
 const DAY_STATUS_VARIANT: Record<string, 'draft' | 'submitted' | 'approved'> = {
@@ -319,6 +335,148 @@ export async function buildDocRows(opts: {
         });
       }
     }
+  }
+
+  // ── S7b kinds: time cards · repair tickets · services · hour corrections ──
+  const assetRows = await projectTable<{ assetNumber: string | null; services: string | null }>('equipment', {
+    assetNumber: 'assetNumber',
+    services: 'services',
+  });
+  const asset = new Map(assetRows.map((e) => [e.id, e.assetNumber ?? '—']));
+  const personMatch = (userId: string | null | undefined, name: string | null | undefined) =>
+    !person
+      ? true
+      : person.userId && userId
+        ? userId === person.userId
+        : matchesPersonName(name ?? '', person);
+
+  const cards = await projectTable<{
+    date: string;
+    jobId: string;
+    blastDayId: string | null;
+    personName: string | null;
+    userId: string | null;
+    enteredByUserId: string | null;
+    status: string;
+    straightTime: number | null;
+    overtime: number | null;
+  }>('timeCards', {
+    date: 'date',
+    jobId: 'jobId',
+    blastDayId: 'blastDayId',
+    personName: 'personName',
+    userId: 'userId',
+    enteredByUserId: 'enteredByUserId',
+    status: 'status',
+    straightTime: 'straightTime',
+    overtime: 'overtime',
+  });
+  for (const c of cards) {
+    if (!company && meId && c.userId !== meId && c.enteredByUserId !== meId) continue;
+    if (!personMatch(c.userId, c.personName)) continue;
+    out.push({
+      key: `tc-${c.id}`,
+      kind: 'time_card',
+      date: c.date,
+      title: `Time Card — ${c.personName ?? '—'}`,
+      sub: `${jobs.get(c.jobId) ?? ''} · ${c.straightTime ?? 0} ST / ${c.overtime ?? 0} OT`,
+      status: c.status,
+      statusVariant: c.status === 'approved' ? 'approved' : c.status === 'filed' ? 'submitted' : 'draft',
+      to: c.blastDayId ? `/blast-day/${c.blastDayId}?view=daily-report` : `/jobs/${c.jobId}`,
+      sourceId: c.id,
+      jobId: c.jobId,
+      person: c.personName ?? undefined,
+      ...scopeOf(c.jobId),
+    });
+  }
+
+  const tickets = await projectTable<{
+    equipmentId: string;
+    description: string | null;
+    status: string;
+    openedByName: string | null;
+    openedByUserId: string | null;
+    createdAt: string;
+  }>('repairTickets', {
+    equipmentId: 'equipmentId',
+    description: 'description',
+    status: 'status',
+    openedByName: 'openedByName',
+    openedByUserId: 'openedByUserId',
+    createdAt: 'createdAt',
+  });
+  for (const t of tickets) {
+    if (!company && meId && t.openedByUserId !== meId) continue;
+    if (!personMatch(t.openedByUserId, t.openedByName)) continue;
+    out.push({
+      key: `rt-${t.id}`,
+      kind: 'repair_ticket',
+      date: t.createdAt.slice(0, 10),
+      title: `Repair — ${asset.get(t.equipmentId) ?? '—'}`,
+      sub: (t.description ?? '').slice(0, 60),
+      status: t.status,
+      statusVariant: t.status === 'resolved' ? 'approved' : 'draft',
+      to: `/equipment/${t.equipmentId}`,
+      sourceId: t.id,
+      person: t.openedByName ?? undefined,
+    });
+  }
+
+  for (const e of assetRows) {
+    let services: { id: string; type: string; atHours: number; date: string; byName: string; note?: string }[] = [];
+    try {
+      services = e.services ? (JSON.parse(e.services) as typeof services) : [];
+    } catch {
+      services = [];
+    }
+    for (const s of services) {
+      if (!company && meName && s.byName !== meName) continue;
+      if (person && !matchesPersonName(s.byName ?? '', person)) continue;
+      out.push({
+        key: `sv-${s.id}`,
+        kind: 'service',
+        date: s.date,
+        title: `${s.type.charAt(0).toUpperCase()}${s.type.slice(1)} service — ${e.assetNumber ?? '—'}`,
+        sub: `${s.atHours} h${s.note ? ` · ${s.note}` : ''}`,
+        status: 'logged',
+        statusVariant: 'approved',
+        to: `/equipment/${e.id}`,
+        sourceId: s.id,
+        person: s.byName,
+      });
+    }
+  }
+
+  const corrections = await projectTable<{
+    equipmentId: string;
+    observedHours: number | null;
+    previousHours: number | null;
+    correctedByName: string | null;
+    correctedByUserId: string | null;
+    createdAt: string;
+  }>('hourCorrections', {
+    equipmentId: 'equipmentId',
+    observedHours: 'observedHours',
+    previousHours: 'previousHours',
+    correctedByName: 'correctedByName',
+    correctedByUserId: 'correctedByUserId',
+    createdAt: 'createdAt',
+  });
+  for (const h of corrections) {
+    if (!company && meId && h.correctedByUserId !== meId) continue;
+    if (!personMatch(h.correctedByUserId, h.correctedByName)) continue;
+    out.push({
+      key: `hc-${h.id}`,
+      kind: 'hour_correction',
+      date: h.createdAt.slice(0, 10),
+      title: `Hour correction — ${asset.get(h.equipmentId) ?? '—'}`,
+      sub: `${h.previousHours ?? '—'} → ${h.observedHours ?? '—'} h`,
+      status: 'logged',
+      statusVariant: 'approved',
+      to: `/equipment/${h.equipmentId}`,
+      sourceId: h.id,
+      person: h.correctedByName ?? undefined,
+    });
   }
 
   return out.sort((a, b) => b.date.localeCompare(a.date));

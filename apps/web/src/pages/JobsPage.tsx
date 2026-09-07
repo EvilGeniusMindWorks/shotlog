@@ -7,8 +7,7 @@ import { daysUntil, relativeDay, rollUp, useJobActivity, type JobActivity } from
 import { todayISO } from '@/lib/utils';
 import { useLiveQuery, db } from '@/db';
 import { createCustomer, createSite, getJobViews } from '@/lib/jobContext';
-import { CustomerSitePicker, emptyPick, pickReady, type CustomerSitePick } from '@/components/forms/CustomerSitePicker';
-import { createJob } from '@/hooks/useBlastDay';
+import { NewJobForm } from '@/components/forms/NewJobForm';
 import { authedFetch, getSessionUser } from '@/lib/session';
 import { AddressFields, emptyAddress } from '@/components/forms/AddressFields';
 import { PeekSheet } from '@/components/layout/PeekSheet';
@@ -142,12 +141,6 @@ function StartsChip({ date }: { date: string }) {
   );
 }
 
-const OPERATION_OPTIONS = [
-  { value: 'construction', label: 'Construction' },
-  { value: 'quarry', label: 'Quarry' },
-  { value: 'trench', label: 'Trench' },
-  { value: 'open', label: 'Open' },
-];
 
 type Lens = 'jobs' | 'customers' | 'sites';
 const LENS_LABEL: Record<Lens, string> = { jobs: 'Jobs', customers: 'Customers', sites: 'Sites' };
@@ -212,37 +205,15 @@ export function JobsPage() {
     });
   const [showNew, setShowNew] = useState(false);
   const [peek, setPeek] = useState<Job | undefined>();
-  const [form, setForm] = useState({
-    name: '', operation: 'construction' as const, typeOfRock: '', typeOfTerrain: '', customerPO: '',
-  });
-  const [pick, setPick] = useState<CustomerSitePick>(emptyPick());
-
-  const handleCreate = async () => {
-    await createJob({
-      name: form.name,
-      operation: form.operation,
-      typeOfRock: form.typeOfRock,
-      typeOfTerrain: form.typeOfTerrain,
-      customerPO: form.customerPO,
-      customerId: pick.customerId,
-      siteId: pick.siteId,
-      customer: pick.customerName,
-      address: pick.address,
-      city: pick.city,
-      state: pick.state,
-      kFactor: pick.kFactor,
-    });
-    setShowNew(false);
-    setForm({ name: '', operation: 'construction', typeOfRock: '', typeOfTerrain: '', customerPO: '' });
-    setPick(emptyPick());
-  };
 
   return (
     <div className="p-4 max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
         <h2 className="text-xl font-bold text-gray-900">Jobs</h2>
-        <div className="flex rounded-lg border border-gray-300 overflow-hidden">
-          {(['jobs', 'customers', 'sites'] as const).map((l) => (
+        <div className="flex rounded-lg border border-gray-300 overflow-hidden" data-lens-tabs>
+          {/* S7b: the hierarchy reads left to right — Customers · Sites · Jobs
+              (the rail still lands on Jobs, the list the field opens all day) */}
+          {(['customers', 'sites', 'jobs'] as const).map((l) => (
             <button
               key={l}
               className={
@@ -287,21 +258,8 @@ export function JobsPage() {
 
       {lens === 'jobs' && showNew && (
         <Card className="mb-4">
-          <CardHeader><CardTitle className="text-base">New Job</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>Job Name *</Label><Input value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} /></div>
-              <CustomerSitePicker value={pick} onChange={setPick} />
-              <div><Label>Operation</Label><Select value={form.operation} onChange={(e) => setForm({...form, operation: e.target.value as typeof form.operation})} options={OPERATION_OPTIONS} /></div>
-              <div><Label>Customer PO</Label><Input value={form.customerPO} onChange={(e) => setForm({...form, customerPO: e.target.value})} /></div>
-              <div><Label>Rock Type</Label><Input value={form.typeOfRock} onChange={(e) => setForm({...form, typeOfRock: e.target.value})} /></div>
-              <div><Label>Terrain</Label><Input value={form.typeOfTerrain} onChange={(e) => setForm({...form, typeOfTerrain: e.target.value})} /></div>
-            </div>
-            <p className="text-xs text-gray-400">Job # is assigned automatically (this year's next number) — editable on the job page.</p>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowNew(false)}>Cancel</Button>
-              <Button disabled={!form.name || !pickReady(pick)} onClick={handleCreate}>Create Job</Button>
-            </div>
+          <CardContent className="pt-4">
+            <NewJobForm onCreated={() => setShowNew(false)} onCancel={() => setShowNew(false)} />
           </CardContent>
         </Card>
       )}

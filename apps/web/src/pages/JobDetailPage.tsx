@@ -17,7 +17,8 @@ import { LifecycleMenu } from '@/components/records/LifecycleMenu';
 import { createDrillPlan, getPlanHoles } from '@/hooks/useDrillPlans';
 import { useJobContext, type JobContext } from '@/lib/jobContext';
 import { nowISO } from '@/lib/utils';
-import type { Job, KFactorHistoryEntry } from '@/db/schema';
+import type { Job, KFactorHistoryEntry, WorkType } from '@/db/schema';
+import { WORK_TYPES, WORK_TYPE_LABEL } from '@/lib/prefs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -705,6 +706,18 @@ function JobConfigCard({ job }: { job: Job }) {
           <Input
             value={draft.engineerOfRecord ?? ''}
             onChange={(e) => setField('engineerOfRecord', e.target.value)}
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Default type of work</Label>
+          <Select
+            value={draft.defaultTypeOfWork ?? ''}
+            onChange={(e) => setField('defaultTypeOfWork', (e.target.value || undefined) as WorkType | undefined)}
+            options={[
+              { value: '', label: 'Follow the last day (else the role default)' },
+              ...WORK_TYPES.map((t) => ({ value: t, label: WORK_TYPE_LABEL[t] })),
+            ]}
+            data-job-default-work
           />
         </div>
         <div>

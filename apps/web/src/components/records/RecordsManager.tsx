@@ -23,6 +23,7 @@ import {
 import { useLiveQuery, db } from '@/db';
 import { getSessionUser } from '@/lib/session';
 import { buildDocRows, DOC_KIND_LABEL, type DocKind, type DocRow } from '@/lib/docRows';
+import { tourBucket } from '@/components/layout/Tour';
 import {
   downloadSubmissionPdfById,
   getSubmissionPdfBlob,
@@ -76,7 +77,27 @@ type GroupBy = 'date' | 'job' | 'kind';
 type SortKey = 'date' | 'title' | 'job' | 'person' | 'status' | 'filedAt';
 const WINDOW = 25;
 
-const KIND_ORDER: DocKind[] = ['blast_log', 'daily_report', 'drill_log', 'drill_checklist', 'incident'];
+const KIND_ORDER: DocKind[] = [
+  'blast_log', 'daily_report', 'drill_log', 'drill_checklist', 'incident',
+  'time_card', 'repair_ticket', 'service', 'hour_correction',
+];
+
+/** S7b (Matthew: role-specific records "without complicated role
+ *  mappings"): each HOME BUCKET opens on its own paper; "Show everything"
+ *  is one tap away. Custom roles inherit from their bucket, as the rails
+ *  do. Office and admin see everything. */
+function bucketKinds(): DocKind[] {
+  switch (tourBucket()) {
+    case 'field':
+      return ['blast_log', 'daily_report', 'drill_log', 'incident'];
+    case 'driller':
+      return ['drill_log', 'drill_checklist', 'time_card'];
+    case 'mechanic':
+      return ['drill_checklist', 'repair_ticket', 'service', 'hour_correction'];
+    default:
+      return [];
+  }
+}
 const SUB_TYPE_TO_KIND: Record<string, DocKind> = {
   blast_log: 'blast_log',
   daily_report: 'daily_report',
@@ -86,6 +107,19 @@ const SUB_TYPE_TO_KIND: Record<string, DocKind> = {
 };
 
 function statusOf(doc: DocRow, filed: SubmissionSummary | undefined): { status: RecStatus; label: string; variant: RecRow['statusVariant'] } {
+  if (doc.kind === 'time_card') {
+    if (doc.status === 'approved') return { status: 'approved', label: 'Approved', variant: 'approved' };
+    if (doc.status === 'filed') return { status: 'submitted', label: 'Filed, awaiting approval', variant: 'submitted' };
+    return { status: 'draft', label: 'Draft', variant: 'draft' };
+  }
+  if (doc.kind === 'repair_ticket') {
+    return doc.status === 'resolved'
+      ? { status: 'closed', label: 'Resolved', variant: 'approved' }
+      : { status: 'open', label: 'Open', variant: 'draft' };
+  }
+  if (doc.kind === 'service' || doc.kind === 'hour_correction') {
+    return { status: 'closed', label: 'Logged', variant: 'approved' };
+  }
   if (doc.kind === 'incident') {
     if (doc.status === 'closed') return { status: 'closed', label: 'Closed', variant: 'approved' };
     return { status: 'open', label: doc.status === 'office review' ? 'Office review' : 'Open', variant: doc.status === 'office review' ? 'submitted' : 'draft' };
@@ -302,7 +336,10 @@ export function RecordsManager({ scope }: { scope: 'mine' | 'company' }) {
   const sites = useLiveQuery(() => db.sites.toArray()) ?? [];
 
   const [search, setSearch] = useState('');
-  const [kinds, setKinds] = useState<Set<DocKind>>(new Set());
+  // Opens on the bucket's own paper (S7b); everything is one tap away
+  const [defaultKinds] = useState<DocKind[]>(bucketKinds);
+  const [kinds, setKinds] = useState<Set<DocKind>>(() => new Set(defaultKinds));
+  const onDefaults = defaultKinds.length > 0 && kinds.size === defaultKinds.length && defaultKinds.every((k) => kinds.has(k));
   const [statuses, setStatuses] = useState<Set<RecStatus>>(new Set());
   const [jobId, setJobId] = useState('');
   const [customerId, setCustomerId] = useState('');
@@ -396,7 +433,7 @@ export function RecordsManager({ scope }: { scope: 'mine' | 'company' }) {
   const openRow = filtered.find((r) => r.key === openKey) ?? null;
   const selectedRows = filtered.filter((r) => selected.has(r.key));
   const selectedFiled = selectedRows.filter((r) => r.filed);
-  const anyFilter = kinds.size + statuses.size > 0 || jobId || customerId || siteId || person || from || to || search;
+  const anyFilter = (kinds.size > 0 && !onDefaults) || statuses.size > 0 || jobId || customerId || siteId || person || from || to || search;
 
   const clearFilters = () => {
     setKinds(new Set()); setStatuses(new Set()); setJobId(''); setCustomerId(''); setSiteId(''); setPerson(''); setFrom(''); setTo(''); setSearch('');
@@ -474,7 +511,16 @@ export function RecordsManager({ scope }: { scope: 'mine' | 'company' }) {
     <div className="space-y-4 text-sm" data-records-facets>
       <div>
         <p className="text-[10px] font-bold tracking-widest text-gray-400 uppercase mb-1">Kind</p>
-        {KIND_ORDER.map((k) => <KindChip key={k} k={k} />)}
+        {(onDefaults ? defaultKinds : KIND_ORDER).map((k) => <KindChip key={k} k={k} />)}
+        {defaultKinds.length > 0 && (
+          <button
+            className="mt-1 text-xs text-navy underline"
+            data-records-scope-toggle={onDefaults ? 'everything' : 'mine'}
+            onClick={() => setKinds(onDefaults ? new Set() : new Set(defaultKinds))}
+          >
+            {onDefaults ? 'Show everything' : 'Just my kind of paper'}
+          </button>
+        )}
       </div>
       <div>
         <p className="text-[10px] font-bold tracking-widest text-gray-400 uppercase mb-1">Status</p>

@@ -415,6 +415,7 @@ export async function createJob(data: Partial<Job> & { name: string; customer: s
     customerId,
     siteId,
     operation: data.operation ?? 'construction',
+    ...(data.defaultTypeOfWork ? { defaultTypeOfWork: data.defaultTypeOfWork } : {}),
     typeOfRock: data.typeOfRock ?? '',
     typeOfTerrain: data.typeOfTerrain ?? '',
     defaultHazards: data.defaultHazards ?? '',

@@ -390,7 +390,35 @@ worklist 3 items, office queue 1 day + 3 cards + 1 incident, blaster
 yesterday submitted + today draft; Start-empty still empty; source company
 untouched) + harness41 regression with the new labels.
 
-**S7b — Hierarchy, day dialog, settings, log-out, records by bucket (web)**
+**S7b — Hierarchy, day dialog, settings, log-out, records by bucket (web) — ✅ SHIPPED 2026-09-07 (harness43 34/34; harness37/38/39/40 regressions green)**
+1. `Job.defaultTypeOfWork` (new field; set on create, editable on the job
+   page). The New work day dialog reads **Name → Recent jobs (anyone's
+   work in the last 14 days, one tap) → Customer → Site → Job → Date →
+   Type of work → Copy from previous**. A customer with one site fills
+   the site; a site with one job fills the job. Type prefill: the job's
+   last day → the job's default → this device's default (Settings) → the
+   role's. Copy defaults to the most recent day at that job; a non-blasting
+   type only offers Crew & Equipment (copying blast content would force a
+   blasting day). "+ New job…" in the Job select opens the ONE New job
+   form inline with the customer/site carried over.
+2. `NewJobForm` — Customer → Site (auto-fills a lone site; new site gets a
+   name) → the job (name, operation, default type of work, PO, rock,
+   terrain). Used by the dialog and the Jobs lens. Lens tabs reorder to
+   Customers · Sites · Jobs; the rail still lands on Jobs.
+3. Log out removed from Settings; My Profile's Sign Out now also runs the
+   bounded local-replica reset (the incident remedy) before reloading.
+4. Settings: You (→ Profile) · Preferences (light/dark switch that the rail
+   toggle follows; usual rig for drillers, on the account; what a new day
+   starts as; Copy-from-previous defaults; record page layout — all
+   per-device except the rig) · Help & feedback · Install · Rehearse ·
+   **Data & device last** (sync line, Reset local data, Export JSON, build).
+5. Records: four new kinds (time cards, repair tickets, services, hour
+   corrections — rows from the records, no PDFs) and per-bucket defaults:
+   field = blast logs · daily reports · drill logs · incidents; driller =
+   drill logs · checklists · time cards; mechanic = checklists · tickets ·
+   services · hour corrections; office/admin = everything. "Show
+   everything" / "Just my kind of paper" toggles; no role mapping —
+   `tourBucket()` as the rails use.
 **S7c — Screen tours (small server field)**
 **S7d — Time and the day (role ownership; design accepted, see plan doc)**
 

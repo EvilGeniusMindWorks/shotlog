@@ -1,23 +1,203 @@
-// Settings is PERSONAL: your account, sync, and sign-in preferences.
-// Company-level management (people, equipment, catalog, company details)
-// lives under Admin — one place, no duplicate lists.
+// Settings is PERSONAL (Round S7b order, Matthew: "export data should
+// certainly not be the primary section"): You · Preferences · Help &
+// feedback · Install · Rehearse (platform admin) · Data & device — last.
+// Sign out lives in My Profile only. Company-level management (people,
+// equipment, catalog, company details) lives under Admin.
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, MessageSquarePlus, Route } from 'lucide-react';
+import { BookOpen, ChevronRight, MessageSquarePlus, Moon, Route, Sun, UserRound } from 'lucide-react';
 import { startTour } from '@/components/layout/Tour';
-import { AccountSyncCard } from '@/components/forms/AccountSyncCard';
+import { DataDeviceCard } from '@/components/forms/DataDeviceCard';
 import { InstallCard } from '@/components/onboarding/InstallCard';
 import { openFeedbackComposer } from '@/components/feedback/FeedbackComposer';
 import { getLayoutPref, setLayoutPref, type LayoutPref } from '@/components/layout/RecordShell';
+import { forgetUsualRig, rememberUsualRig, useUsualRigId } from '@/components/dashboard/RigPickerModal';
+import { useLiveQuery, db } from '@/db';
+import { useTheme } from '@/hooks/useTheme';
 import { getRealSessionUser, getSessionUser } from '@/lib/session';
+import { myHomeDashboard } from '@/lib/perms';
 import { FEEDBACK_OUTBOX_EVENT, outboxCount } from '@/lib/feedback';
 import { REHEARSAL_ROLES, rehearsalRole, startRehearsal } from '@/lib/rehearsal';
+import {
+  COPY_SECTIONS,
+  getCopySections,
+  getDefaultWorkType,
+  setCopySections,
+  setDefaultWorkType,
+  WORK_TYPES,
+  WORK_TYPE_LABEL,
+  type CopySectionKey,
+} from '@/lib/prefs';
+import type { WorkType } from '@/db/schema';
 import { showToast } from '@/components/ui/undo-toast';
-import { buildId } from '@/lib/diagnostics';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
+
+/** Who you are — one line, and the door to everything about you */
+function YouCard() {
+  const me = getSessionUser();
+  const real = getRealSessionUser();
+  if (!me) return null;
+  return (
+    <Card data-you-card>
+      <CardContent className="pt-4">
+        <Link to="/profile" className="flex items-center gap-3 group" data-settings-profile>
+          <span className="h-10 w-10 rounded-full bg-navy/10 text-navy flex items-center justify-center shrink-0">
+            <UserRound className="h-5 w-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold text-gray-900 truncate">{me.name}</span>
+            <span className="block text-xs text-gray-500 truncate capitalize">
+              {me.role} · {me.company}
+              {real && real.id !== me.id ? ` · viewing as ${me.role}` : ''}
+            </span>
+            <span className="block text-xs text-navy mt-0.5">
+              Profile, licenses, signature, PIN, password, sign out
+            </span>
+          </span>
+          <ChevronRight className="h-5 w-5 text-gray-300 group-hover:text-navy" />
+        </Link>
+      </CardContent>
+    </Card>
+  );
+}
+
+const LAYOUT_OPTIONS = [
+  { value: 'auto', label: 'Auto — fit this device' },
+  { value: 'compact', label: 'Always compact (one scroll)' },
+  { value: 'tabs', label: 'Always tabs (wide layout)' },
+];
+
+/** Per-DEVICE preferences plus the one account-level pick (usual rig) */
+function PreferencesCard() {
+  const { theme, set } = useTheme();
+  const [workType, setWorkType] = useState<WorkType | ''>(getDefaultWorkType() ?? '');
+  const [copy, setCopy] = useState<Record<CopySectionKey, boolean>>(getCopySections);
+  const [layout, setLayout] = useState<LayoutPref>(getLayoutPref);
+  const isDriller = myHomeDashboard() === 'driller';
+  const usualRigId = useUsualRigId();
+  const drills =
+    useLiveQuery(() =>
+      db.equipment
+        .filter((e) => e.isActive && (e.category === 'rock_drill' || e.category === 'equip_drill'))
+        .toArray(),
+    ) ?? [];
+  return (
+    <Card data-preferences-card>
+      <CardHeader>
+        <CardTitle className="text-base">Preferences</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium">Appearance</p>
+            <p className="text-xs text-gray-400">Also on the rail. Saved on this device.</p>
+          </div>
+          <div className="flex rounded-lg border border-gray-300 overflow-hidden" data-theme-switch>
+            {(['light', 'dark'] as const).map((t) => (
+              <button
+                key={t}
+                className={
+                  theme === t
+                    ? 'px-3 py-1.5 text-sm font-medium bg-navy text-white inline-flex items-center gap-1'
+                    : 'px-3 py-1.5 text-sm font-medium bg-white text-gray-600 inline-flex items-center gap-1'
+                }
+                data-theme-choice={t}
+                onClick={() => set(t)}
+              >
+                {t === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                {t === 'dark' ? 'Dark' : 'Light'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {isDriller && (
+          <div>
+            <Label className="text-xs">
+              Your usual rig{' '}
+              <span className="text-gray-400 font-normal">— follows your account to every device</span>
+            </Label>
+            <Select
+              data-pref-usual-rig
+              value={usualRigId && drills.some((d) => d.id === usualRigId) ? usualRigId : ''}
+              onChange={(e) => {
+                const id = e.target.value;
+                void (id ? rememberUsualRig(id) : forgetUsualRig()).then(() =>
+                  showToast(id ? 'Usual rig saved' : 'Usual rig cleared'),
+                );
+              }}
+              options={[
+                { value: '', label: 'Ask each time' },
+                ...drills.map((d) => ({ value: d.id, label: `${d.assetNumber} · ${d.description}` })),
+              ]}
+            />
+          </div>
+        )}
+
+        <div>
+          <Label className="text-xs">
+            What a new day starts as{' '}
+            <span className="text-gray-400 font-normal">— when the job's last day and its default don't say</span>
+          </Label>
+          <Select
+            data-pref-work-type
+            value={workType}
+            onChange={(e) => {
+              const v = e.target.value as WorkType | '';
+              setWorkType(v);
+              setDefaultWorkType(v || null);
+            }}
+            options={[
+              { value: '', label: 'Follow my role' },
+              ...WORK_TYPES.map((t) => ({ value: t, label: WORK_TYPE_LABEL[t] })),
+            ]}
+          />
+        </div>
+
+        <div>
+          <Label className="text-xs">Copy from previous ticks by default</Label>
+          <div className="grid grid-cols-2 gap-1 pt-1" data-pref-copy>
+            {COPY_SECTIONS.map(({ key, label }) => (
+              <label key={key} className="flex items-center gap-2 py-1 cursor-pointer text-sm">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-gray-300 text-navy"
+                  checked={copy[key]}
+                  onChange={(e) => {
+                    const next = { ...copy, [key]: e.target.checked };
+                    setCopy(next);
+                    setCopySections(next);
+                  }}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <Label className="text-xs">
+            Record page layout{' '}
+            <span className="text-gray-400 font-normal">— customer, site and job pages</span>
+          </Label>
+          <Select
+            value={layout}
+            onChange={(e) => {
+              const next = e.target.value as LayoutPref;
+              setLayout(next);
+              setLayoutPref(next);
+            }}
+            options={LAYOUT_OPTIONS}
+          />
+        </div>
+        <p className="text-xs text-gray-400">Saved on this device, except the usual rig.</p>
+      </CardContent>
+    </Card>
+  );
+}
 
 /** Help & feedback (Round S3; S2 adds Walkthrough + coach sheets here) */
 function HelpCard() {
@@ -55,14 +235,13 @@ function HelpCard() {
             {queued} report{queued === 1 ? '' : 's'} waiting for signal — sends automatically.
           </p>
         )}
-        <p className="text-xs text-gray-400">Build {buildId()}</p>
       </CardContent>
     </Card>
   );
 }
 
 /** Platform admin only (Round S6): become a brand-new person of a role in
- *  the sandbox company — PIN, welcome, walkthrough, empty home — to judge
+ *  the sandbox company — PIN, welcome, walkthrough, their home — to judge
  *  the experience as often as you like. End wipes the sandbox. */
 function RehearsalCard() {
   const [busy, setBusy] = useState<string | null>(null);
@@ -125,53 +304,17 @@ function RehearsalCard() {
 
 const MANAGER_ROLES = ['admin', 'supervisor', 'mechanic', 'office'];
 
-const LAYOUT_OPTIONS = [
-  { value: 'auto', label: 'Auto — fit this device' },
-  { value: 'compact', label: 'Always compact (one scroll)' },
-  { value: 'tabs', label: 'Always tabs (wide layout)' },
-];
-
-/** Per-DEVICE record-page layout override (stored locally, not synced) */
-function LayoutCard() {
-  const [pref, setPref] = useState<LayoutPref>(getLayoutPref);
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Record page layout</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        <Label className="text-xs">
-          Customer, site, and job pages
-          <span className="text-gray-400 font-normal">
-            {' '}
-            — Auto uses tabs on wide screens and one compact scroll on phones
-          </span>
-        </Label>
-        <Select
-          value={pref}
-          onChange={(e) => {
-            const next = e.target.value as LayoutPref;
-            setPref(next);
-            setLayoutPref(next);
-          }}
-          options={LAYOUT_OPTIONS}
-        />
-        <p className="text-xs text-gray-400">Saved on this device only.</p>
-      </CardContent>
-    </Card>
-  );
-}
-
 export function SettingsPage() {
   const role = getSessionUser()?.role ?? '';
   return (
-    <div className="p-4 max-w-2xl mx-auto space-y-4">
+    <div className="p-4 max-w-2xl mx-auto space-y-4" data-settings-page>
       <h2 className="text-xl font-bold text-gray-900">Settings</h2>
-      <AccountSyncCard />
-      <InstallCard always />
+      <YouCard />
+      <PreferencesCard />
       <HelpCard />
+      <InstallCard always />
       <RehearsalCard />
-      <LayoutCard />
+      <DataDeviceCard />
       {MANAGER_ROLES.includes(role) && (
         <p className="text-sm text-gray-500 rounded-lg border border-gray-200 bg-white px-3 py-2">
           People, equipment, and company setup are managed in{' '}
