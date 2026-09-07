@@ -66,6 +66,7 @@ function HelpCard() {
  *  the experience as often as you like. End wipes the sandbox. */
 function RehearsalCard() {
   const [busy, setBusy] = useState<string | null>(null);
+  const [withData, setWithData] = useState(true);
   if (!getRealSessionUser()?.platformAdmin || rehearsalRole()) return null;
   return (
     <Card data-rehearsal-card>
@@ -75,8 +76,24 @@ function RehearsalCard() {
       <CardContent className="space-y-3">
         <p className="text-sm text-gray-500">
           Sign into the sandbox company as a brand-new person of that role: PIN, welcome,
-          walkthrough, an empty home. Nothing you do there is real; ending wipes it.
+          walkthrough, then their home. Nothing you do there is real; ending wipes it.
         </p>
+        <label className="flex items-start gap-2 text-sm cursor-pointer">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={withData}
+            data-rehearsal-with-data
+            onChange={(e) => setWithData(e.target.checked)}
+          />
+          <span>
+            Start with your company's equipment, people and catalog
+            <span className="block text-xs text-gray-400">
+              A copy — people arrive without logins, nothing is written back. Untick for the true
+              blank slate a brand-new company sees.
+            </span>
+          </span>
+        </label>
         <div className="flex flex-wrap gap-2">
           {REHEARSAL_ROLES.map((r) => (
             <Button
@@ -87,7 +104,7 @@ function RehearsalCard() {
               data-rehearse-as={r}
               onClick={() => {
                 setBusy(r);
-                void startRehearsal(r).catch((e: Error) => {
+                void startRehearsal(r, withData).catch((e: Error) => {
                   showToast(e.message);
                   setBusy(null);
                 });

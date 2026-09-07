@@ -5,6 +5,7 @@
 // End: wipe the sandbox server-side, restore the stash, reload as yourself.
 import { authedFetch, getSession, type SessionPayload } from '@/lib/session';
 import { resetLocalReplica } from '@/db/powersync/client';
+import { todayISO } from '@/lib/utils';
 
 const REHEARSAL_KEY = 'shotlog-rehearsal';
 const STASH_KEY = 'shotlog-rehearsal-stash';
@@ -50,11 +51,13 @@ interface StartResponse extends SessionPayload {
   role: RehearsalRole;
 }
 
-export async function startRehearsal(role: RehearsalRole): Promise<void> {
+/** Start as `role`. `withData` (default) copies your own company's
+ *  equipment, people, catalog and settings into the sandbox first (S7a). */
+export async function startRehearsal(role: RehearsalRole, withData = true): Promise<void> {
   if (!getSession().loggedIn) throw new Error('sign in first');
   const res = await authedFetch('/platform/rehearsal/start', {
     method: 'POST',
-    body: JSON.stringify({ role }),
+    body: JSON.stringify({ role, withData }),
   });
   if (!res.ok) {
     const body = (await res.json().catch(() => null)) as { error?: string } | null;
@@ -97,9 +100,15 @@ export async function endRehearsal(): Promise<void> {
   window.location.assign('/');
 }
 
-/** One customer · site · job · rig in the sandbox */
-export async function addSampleJob(): Promise<'added' | 'existing'> {
-  const res = await authedFetch('/platform/rehearsal/sample', { method: 'POST' });
+/** A connected week in the sandbox (S7a): two jobs, a plan half drilled by
+ *  the rehearsal driller, yesterday submitted with cards, today's draft, a
+ *  rig in the shop, a rig due for service, an open incident. The server's
+ *  clock is UTC — send this device's date so "today" is today here. */
+export async function addSampleData(): Promise<'added' | 'existing'> {
+  const res = await authedFetch('/platform/rehearsal/sample', {
+    method: 'POST',
+    body: JSON.stringify({ today: todayISO() }),
+  });
   if (!res.ok) throw new Error(`sample failed (${res.status})`);
   const body = (await res.json()) as { existing?: boolean };
   return body.existing ? 'existing' : 'added';

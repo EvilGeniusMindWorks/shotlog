@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { LAST_RIG_KEY, RigPickerModal } from './RigPickerModal';
+import { RigPickerModal, useUsualRigId } from './RigPickerModal';
 import { ConsequenceSheet } from '@/components/records/LifecycleMenu';
 import { TimeCardRow } from '@/components/forms/TimeCardsCard';
 import { canEditCard, createStandaloneTimeCard } from '@/hooks/useTimeCards';
@@ -290,6 +290,15 @@ export function DrillingWork() {
     return out;
   }, [me?.id]);
 
+  // A plan I'm drilling today lives in the trio band, not here — the empty
+  // state must not call the day planless (S7a rehearsal finding)
+  const workingToday = useLiveQuery(
+    async () =>
+      (await projectDrillLogs()).some(
+        (l) => l.status === 'open' && l.date === todayISO() && (!me?.id || l.drillerUserId === me.id),
+      ),
+    [me?.id],
+  );
   const readyToDrill = useLiveQuery(async () => {
     const days = (await db.blastDays.filter((d) => d.status !== 'approved').toArray())
       .sort((a, b) => b.date.localeCompare(a.date))
@@ -436,9 +445,9 @@ export function DrillingWork() {
         (readyToDrill ?? []).length === 0 && assigned !== undefined && (
         <div className="rounded-xl border border-gray-200 bg-white p-3">
           <p className="text-sm text-gray-400">
-            No open drill plans. Drilling starts from a plan — the blaster
-            makes one on the job page in seconds, even for a small job, or
-            sends you one directly.
+            {workingToday
+              ? "Nothing else is waiting — today's pattern is above."
+              : 'No open drill plans. Drilling starts from a plan — the blaster makes one on the job page in seconds, even for a small job, or sends you one directly.'}
           </p>
         </div>
       )}
@@ -485,11 +494,11 @@ export function DrillerHome() {
   // Round 3 trio split: today's work up top, prior days need attention
   const todayLogs = activeLogs.filter((x) => !x.isPrior);
   const priorLogs = activeLogs.filter((x) => x.isPrior);
-  // The rig from my most recent log (or my last picker choice) drives the nudge
+  // The rig from my most recent log, else my usual rig (on the account —
+  // S7a), else this device's last picker choice, drives the nudge
+  const usualRigId = useUsualRigId();
   const lastRigId =
-    myLogs?.find((r) => r.log.drillRigEquipmentId)?.log.drillRigEquipmentId ??
-    localStorage.getItem(LAST_RIG_KEY) ??
-    undefined;
+    myLogs?.find((r) => r.log.drillRigEquipmentId)?.log.drillRigEquipmentId ?? usualRigId;
   const rig = useLiveQuery(() => (lastRigId ? db.equipment.get(lastRigId) : undefined), [lastRigId]);
   const todayChecklist = useTodayChecklist(lastRigId);
   const tickets = useOpenTickets().filter((t) => t.equipmentId === lastRigId);

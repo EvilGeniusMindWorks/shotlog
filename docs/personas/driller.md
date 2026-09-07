@@ -112,3 +112,27 @@ report (solo submit) · My Records · jobs list
 ## Clutter sweep + records (Round S4, 2026-09-06)
 
 - ✅ "Yesterday needs you" is capped at 5 ranked rows (sent-back first) + "N more on the Drilling tab" — the trio never sinks below the fold.
+
+## Round S7 — first-rehearsal feedback (Matthew, 2026-09-07)
+
+### S7a (building)
+- **A rig checklist with nothing else.** The Checklist tile already opens
+  the picker → checklist with no job or day; it only failed in rehearsal
+  because the sandbox had no rigs. Now: the Drilling tab gets a *Rig
+  checklist* door too; the picked rig is remembered on the ACCOUNT (the
+  machine's "usual operator" — `equipment.assignedUserId`, which field
+  roles may patch) so a phone and a tablet agree, with the device key as
+  the offline fallback; the checklist page offers "attach to a job"
+  as an optional select, prefilled with today's job when there is one.
+- Rehearsal sample data gives the driller a plan sent to them, half
+  drilled, on a rig with a checklist history — the trio is testable.
+
+### S7d (planned, accepted 2026-09-07 — see docs/round-s7-plan.md)
+- The driller owns their trio and nothing more: own time card, own drill
+  log, own rig checklist. They never own the day's report on a blasting
+  day; a drill-only day keeps the slim "file the day" path.
+- End-of-day meter asked once at drill-log sign-complete (prefilled,
+  skippable) — closes the rig's hours for the day without typing them on
+  any report. Person hours are proposed from their own timestamps
+  (checklist signed → first hole; log signed → last hole), confirmed and
+  signed by them.

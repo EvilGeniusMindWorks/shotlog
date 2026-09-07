@@ -141,7 +141,13 @@ cap, catalog + costing windowing, records manager R-A. S5 🟡 started
 written; Resend went live 2026-09-07 (shotlog.evilgenius.io). S6 ✅
 Rehearsal mode shipped 2026-09-07 (harness41 22/22): Settings › Rehearse
 as <role> → sandbox company, first-run from scratch, End wipes it. The
-remaining gates are Matthew's decisions D1–D4.
+remaining gates are Matthew's decisions D1–D4. S7 (his eleven
+first-rehearsal notes, docs/round-s7-plan.md) accepted 2026-09-07; S7a ✅
+shipped the same day (harness42 27/27): rehearsal starts with his
+company's fleet/roster/catalog, *Add sample data* loads a connected week
+for every role, driller checklist door + usual rig on the account. S7b
+(hierarchy, day dialog, Settings, log-out, records by bucket), S7c
+(screen tours) and S7d (time model) follow.
 
 ## Runs alongside (not gated on rounds)
 

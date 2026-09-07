@@ -95,3 +95,16 @@ Shop home (queue + PM due) · repair ticket · equipment list + detail
 - ✅ "About this screen": My Shop, Fleet, machine page, Locator.
 - ✅ First-week card: walkthrough · order the worklist · resolve a ticket · log a service · find a machine — mixed self-ticking and tap-to-tick.
 - ✅ Empty states: "Queue's clear" now says where tickets come from; checklists band says who files them.
+
+## Round S7 — first-rehearsal feedback (Matthew, 2026-09-07)
+
+- **S7a (building):** rehearsal starts with the platform admin's own fleet
+  (a copy; the sandbox never writes back), and sample data adds a rig out
+  of service from a failed checklist (open ticket), a second rig with the
+  50-hour service overdue and an engine PM due — the worklist is testable.
+- **S7b (accepted):** Records defaults to checklists · repair tickets ·
+  services · hour corrections for the shop; the rest behind "show
+  everything". No new role mapping — buckets.
+- **S7d (accepted):** the hour ledger gains a fourth source — the driller's
+  end-of-day meter at drill-log sign-complete. Corrections still win. The
+  shop files no time cards for now.

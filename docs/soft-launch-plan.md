@@ -341,6 +341,59 @@ sandbox empty; office rehearsal shows the queue; non-platform admin 403.
 | Cohort + cadence | ❌ Matthew | **docs/soft-launch-runbook.md** — gates, staggered invite order (Mark → Evette → one blaster + one driller → rest → shop), first-day script, what to watch daily, weekly review with Mark, decisions D1–D4. |
 | Resend key | ❌ Matthew | since July (docs/resend-setup.md) |
 
+### S7 — First-rehearsal feedback (2026-09-07) — S7a ✅ SHIPPED 2026-09-07 (harness42 27/27; harness41 25/25 regression)
+
+S7a built as designed below. In-round findings: the driller home's
+"No open drill plans" empty state showed while a plan was half drilled
+(the plan I'm working lives in the trio band, not the plans band) — copy
+now says "Nothing else is waiting — today's pattern is above"; the
+rehearsal sandbox's Baystate copy holds one drill, so the fixture sends
+it to the shop and creates the driller's active rig; the picker's
+first-option wait, uppercase eyebrows and initials in the cards queue
+were harness-side only. Matthew's prod step: none — the switch and *Add
+sample data* appear after the deploy.
+
+Matthew's eleven notes after rehearsing the roles, all accepted (docs/
+round-s7-plan.md holds the full design and his answers). Four sub-rounds:
+
+**S7a — Rehearsal makes the rest testable (server + web)**
+1. `POST /platform/rehearsal/start {role, withData}` — when `withData`
+   (default), the sandbox is seeded from the platform admin's own company:
+   `equipment` (assigned-operator link stripped), `crewMembers` (login link
+   stripped — roster people, nobody can sign in as them), `productCatalog`,
+   `manufacturers`, `companySettings`, `roleDefinitions`; same ids (records
+   are keyed per company). Then the six rehearsal roster rows on top. End
+   wipes to empty; the next Start copies again. Settings › Rehearse gains
+   the switch.
+2. `POST /platform/rehearsal/sample {today}` (client sends its local date)
+   — idempotent fixture: two customers/sites/jobs (Ledgeville Pit 26-001
+   quarry; Route 3 culvert 26-007 construction with an abutter and a
+   permit); a drill plan on 26-001 sent to Rehearsal Driller with 14 of 31
+   holes logged today (one water condition, one skipped) on rig B;
+   yesterday's day on 26-001 **submitted** (blast log with readiness
+   review, one signed shot with design numbers, a compliant seismo
+   reading, explosives from the sandbox catalog, an accepted shot drill
+   log, equipment rows, filed time cards for blaster, driller and
+   supervisor); today's draft day on 26-007; rig A's checklist yesterday
+   with a hydraulic leak → open ticket, rig A in shop; rig B's last
+   weekly service 58 h ago (50-h clock overdue) and engine PM overdue; an
+   open blasting incident (cracked window claim) on yesterday's shot.
+   Rigs, a seismograph and a pickup are taken from the registry when the
+   company data was copied, created otherwise.
+3. Driller checklist doors: *Rig checklist* on the Drilling tab; the picked
+   rig is remembered on the account as the machine's usual operator
+   (`equipment.assignedUserId`, field-patchable) with the device key as
+   fallback; optional "attach to a job" on the checklist page.
+
+Harness: harness42 (sample data per role — driller trio live, mechanic
+worklist 3 items, office queue 1 day + 3 cards + 1 incident, blaster
+yesterday submitted + today draft; Start-empty still empty; source company
+untouched) + harness41 regression with the new labels.
+
+**S7b — Hierarchy, day dialog, settings, log-out, records by bucket (web)**
+**S7c — Screen tours (small server field)**
+**S7d — Time and the day (role ownership; design accepted, see plan doc)**
+
 ---
 
 ## Open questions for Matthew

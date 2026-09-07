@@ -1,12 +1,15 @@
 // Daily rock-drill checklist — mirrors the paper form with minimum taps:
 // every daily check starts OK; tap to flip N/A or "not done". Repairs
 // notes open a shop ticket the mechanic actually sees.
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Wrench } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { emptyChecklist, fileChecklist, useTodayChecklist } from '@/hooks/useMaintenance';
-import { formatDate } from '@/lib/utils';
+import { useJobs } from '@/hooks/useBlastDay';
+import { getSessionUser } from '@/lib/session';
+import { formatDate, todayISO } from '@/lib/utils';
+import { Select } from '@/components/ui/select';
 import type { CheckState } from '@/db/schema';
 import { DRILL_DAILY_CHECKS, DRILL_WEEKLY_CHECKS } from '@/db/schema';
 import { Button } from '@/components/ui/button';
@@ -97,12 +100,30 @@ function CheckGrid({
 export function DrillChecklistPage() {
   const { equipmentId } = useParams<{ equipmentId: string }>();
   const [params] = useSearchParams();
-  const jobId = params.get('job') ?? undefined;
+  const jobParam = params.get('job') ?? undefined;
   const navigate = useNavigate();
   const rig = useLiveQuery(() => (equipmentId ? db.equipment.get(equipmentId) : undefined), [equipmentId]);
   const existing = useTodayChecklist(equipmentId);
-  const [draft, setDraft] = useState(() => emptyChecklist(equipmentId ?? '', jobId));
+  const [draft, setDraft] = useState(() => emptyChecklist(equipmentId ?? '', jobParam));
   const [saved, setSaved] = useState<{ ticketId?: string } | null>(null);
+  // S7a: attaching to a job is OPTIONAL — a checklist needs nothing else.
+  // Offered as a select, prefilled with the job I'm drilling today.
+  const jobs = useJobs();
+  const me = getSessionUser();
+  const todaysJobId = useLiveQuery(
+    async () =>
+      (
+        await db.drillLogs
+          .filter((l) => l.status === 'open' && (l.date ?? l.createdAt.slice(0, 10)) === todayISO() && (!me?.id || l.drillerUserId === me.id))
+          .first()
+      )?.jobId,
+    [me?.id],
+  );
+  const [jobTouched, setJobTouched] = useState(Boolean(jobParam));
+  useEffect(() => {
+    if (!jobTouched && todaysJobId) setDraft((d) => (d.jobId ? d : { ...d, jobId: todaysJobId }));
+  }, [todaysJobId, jobTouched]);
+  const jobId = draft.jobId;
 
   const checklist = useMemo(() => existing ?? draft, [existing, draft]);
   const readOnly = Boolean(existing) || Boolean(saved);
@@ -173,6 +194,23 @@ export function DrillChecklistPage() {
                 <p className="text-xs text-gray-400 self-end pb-2">
                   Updates the registry's hour meter automatically (typos going backward are ignored).
                 </p>
+              </div>
+              <div>
+                <Label className="text-xs">
+                  Job <span className="text-gray-400 font-normal">— optional; the checklist files without one</span>
+                </Label>
+                <Select
+                  data-checklist-job
+                  value={jobId ?? ''}
+                  onChange={(e) => {
+                    setJobTouched(true);
+                    set({ jobId: e.target.value || undefined });
+                  }}
+                  options={[
+                    { value: '', label: 'No job — just the rig' },
+                    ...jobs.map((j) => ({ value: j.id, label: `${j.jobNumber ? `${j.jobNumber} · ` : ''}${j.name}` })),
+                  ]}
+                />
               </div>
             </div>
 

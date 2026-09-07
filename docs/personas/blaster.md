@@ -133,3 +133,22 @@ page · customer/site/job create (new) · contacts · My Records · reference
 - ✅ Daily Report tab: empty sections are one "+ Add" row; locked days hide them (~4 screens → 1.3 on a phone).
 - ✅ Jobs rows answer "which job, when did we last work it": number · name · customer · town · last worked · day count; chips only when they say something; long-press peeks.
 - ✅ My records is the records manager on a phone: list + preview sheet.
+
+## Round S7 — first-rehearsal feedback (Matthew, 2026-09-07)
+
+- **S7a (building):** rehearsal sample data gives the blaster yesterday's
+  submitted day (log, shot, seismo, accepted drill log, cards) and today's
+  draft at a second job, so the hub, review and file paths are testable
+  without authoring from zero.
+- **S7b (accepted):** the New work day dialog reorders to Name → Recent
+  jobs / Customer → Site → Job → Date → Type of work (last day's type,
+  else the job's default type, else drill-to-blast). One New job flow,
+  top-down. Log out lives in My Profile only.
+- **S7d (accepted, design in docs/round-s7-plan.md):** the day is a
+  container; **the blaster owns the report** on any day with a blast log
+  regardless of who opened the day; each person owns their own card, log
+  and checklist; Work Force becomes the day's time cards keyed by job +
+  date (entered-for rows for no-login people; nudge, never edit); drill
+  hours on the report derive from the rig's own meter readings. "Take
+  over the report" for a second blaster is tabled with the multi-blaster
+  decision.

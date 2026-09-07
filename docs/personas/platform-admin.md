@@ -33,6 +33,16 @@ architecture decisions account for the separation BEFORE it's urgent.
    install prompt are role-independent and tested once for real. This is
    also the first tenant the platform ever creates programmatically — the
    seed of job 1 below.
+   **S7a amendment (2026-09-07):** Start copies the platform admin's OWN
+   company's equipment, roster (as people without logins), catalog,
+   manufacturers, company settings and custom roles into the sandbox
+   (switch: *Start with your company's data* / *Start empty*), and *Add
+   sample data* loads a connected week — two jobs, a plan half drilled by
+   the rehearsal driller, yesterday's submitted day with cards, today's
+   draft, a failed checklist → ticket + rig in shop, a rig with service
+   due, an open incident — so every role has real work in front of them.
+   The copy is made fresh on every Start and wiped on End; the source
+   company is never written.
 1. ❌ Tenant management: onboard a new blasting company (company record,
    first admin, seeded catalog/roles), suspend, offboard
 2. ❌ Cross-tenant support: see a company's health (sync status, errors,

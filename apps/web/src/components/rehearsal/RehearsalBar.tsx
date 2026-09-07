@@ -2,7 +2,7 @@
 // that nothing here is real, one tap for sample data, one tap to end.
 import { useState } from 'react';
 import { Drama } from 'lucide-react';
-import { addSampleJob, endRehearsal, rehearsalRole } from '@/lib/rehearsal';
+import { addSampleData, endRehearsal, rehearsalRole } from '@/lib/rehearsal';
 import { showToast } from '@/components/ui/undo-toast';
 
 export function RehearsalBar() {
@@ -25,13 +25,19 @@ export function RehearsalBar() {
         data-rehearsal-sample
         onClick={() => {
           setBusy('sample');
-          void addSampleJob()
-            .then((r) => showToast(r === 'added' ? 'Added Granite Ridge · Ledgeville Pit · job 26-001 · rig R-101' : 'The sample job is already there'))
+          void addSampleData()
+            .then((r) =>
+              showToast(
+                r === 'added'
+                  ? 'Added a week at Ledgeville Pit and Route 3 — a plan to drill, yesterday to approve, a rig in the shop'
+                  : 'The sample week is already there',
+              ),
+            )
             .catch(() => showToast("Couldn't add the sample — are you online?"))
             .finally(() => setBusy(null));
         }}
       >
-        {busy === 'sample' ? 'Adding…' : 'Add sample job'}
+        {busy === 'sample' ? 'Adding…' : 'Add sample data'}
       </button>
       <button
         className="shrink-0 rounded-md bg-violet-950 text-violet-50 px-2.5 py-0.5 text-xs font-semibold"

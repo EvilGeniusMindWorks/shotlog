@@ -74,9 +74,9 @@ async (page) => {
     await P1.waitForTimeout(3000);
     ok('sandbox starts empty (no jobs)', /No jobs yet/.test(await P1.locator('main').innerText()));
     await P1.locator('[data-rehearsal-sample]').click();
-    await P1.getByText(/Added Granite Ridge/).waitFor({ timeout: 10000 });
-    await P1.waitForTimeout(3000); // sync down
-    ok('sample job appears', (await P1.locator('[data-jobs-list] [data-list-row]').count()) === 1 && /Ledgeville/.test(await P1.locator('[data-jobs-list]').innerText()));
+    await P1.getByText(/Added a week/).waitFor({ timeout: 20000 });
+    await P1.waitForTimeout(4000); // sync down
+    ok('sample jobs appear (S7a: two)', (await P1.locator('[data-jobs-list] [data-list-row]').count()) === 2 && /Ledgeville/.test(await P1.locator('[data-jobs-list]').innerText()));
     const dayId = await P1.evaluate(async () => {
       const { db } = await import('/src/db/index.ts');
       const { createBlastDay } = await import('/src/hooks/useBlastDay.ts');
@@ -86,7 +86,7 @@ async (page) => {
     ok('the rehearsal blaster can start work', Boolean(dayId));
     await P1.waitForTimeout(3000);
     const st1 = await api('/platform/rehearsal/status', {}, adminTok);
-    ok('server status: sandbox holds the job + day', st1.body?.tables?.jobs === 1 && st1.body?.tables?.blastDays === 1 && st1.body.tables.productCatalog > 0);
+    ok('server status: sandbox holds the sample week + the new day', st1.body?.tables?.jobs === 2 && st1.body?.tables?.blastDays === 3 && st1.body.tables.productCatalog > 0);
     // feedback from the sandbox is stored but not mailed
     const rehTok = await P1.evaluate(() => localStorage.getItem('shotlog-access-token'));
     const fb = await api('/feedback', { method: 'POST', body: JSON.stringify({ id: `reh-${Date.now()}-00000001`, kind: 'idea', message: 'S6 harness sandbox note', route: '/', buildId: 'harness' }) }, rehTok);

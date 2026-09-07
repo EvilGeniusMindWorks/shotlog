@@ -5,6 +5,12 @@
 // sandbox. The sandbox is a real tenant: its own records bucket, seeded
 // reference data, a roster of six rehearsal people. It is also the first
 // company the platform ever creates programmatically.
+//
+// S7a (2026-09-07): Start copies the platform admin's OWN company's
+// reference data — equipment, roster (logins stripped), catalog,
+// manufacturers, settings, custom roles — into the sandbox so the fleet and
+// the people are real; `withData: false` keeps the true blank slate. And
+// /sample loads a connected week (rehearsalFixture.ts) instead of one job.
 import { randomBytes, randomUUID } from 'node:crypto';
 import { Router, type Response } from 'express';
 import bcrypt from 'bcryptjs';
@@ -18,6 +24,7 @@ import {
 } from './auth.js';
 import { seedCompanyReference } from './seed.js';
 import { upsertRecord } from './records.js';
+import { buildSampleWeek } from './rehearsalFixture.js';
 
 export const SANDBOX_COMPANY_NAME = 'ShotLog Sandbox';
 
@@ -32,6 +39,18 @@ const ROLE_NAME: Record<RehearsalRole, string> = {
   office: 'Rehearsal Office',
 };
 const rehearsalEmail = (role: RehearsalRole) => `rehearsal-${role}@sandbox.shotlog`;
+
+/** Tables copied from the platform admin's company on Start. Records are
+ *  keyed per company, so ids are kept — links between them (catalog →
+ *  manufacturer, roles) stay intact. */
+const COPIED_TABLES = [
+  'equipment',
+  'crewMembers',
+  'productCatalog',
+  'manufacturers',
+  'companySettings',
+  'roleDefinitions',
+] as const;
 
 export async function ensureSandbox(): Promise<{ id: string; name: string }> {
   const existing = await prisma.company.findFirst({ where: { name: SANDBOX_COMPANY_NAME } });
@@ -86,13 +105,40 @@ async function resetFirstRun(cid: string): Promise<void> {
   await prisma.refreshToken.deleteMany({ where: { userId: { in: users.map((u) => u.id) } } });
 }
 
+/** Copy one company's reference data into another. People lose their
+ *  login link (nobody can sign in as them); machines lose their usual
+ *  operator (a login in the source company). The source is only read. */
+async function copyCompanyData(fromCid: string, toCid: string): Promise<number> {
+  const rows = await prisma.record.findMany({
+    where: { companyId: fromCid, tableName: { in: [...COPIED_TABLES] } },
+  });
+  const now = new Date().toISOString();
+  const data = [];
+  for (const r of rows) {
+    let payload: Record<string, unknown>;
+    try {
+      payload = JSON.parse(r.payload) as Record<string, unknown>;
+    } catch {
+      continue;
+    }
+    if (r.tableName === 'crewMembers') delete payload.userId;
+    if (r.tableName === 'equipment') delete payload.assignedUserId;
+    payload.syncStatus = 'synced';
+    data.push({ id: r.id, companyId: toCid, tableName: r.tableName, payload: JSON.stringify(payload), updatedAt: now });
+  }
+  if (data.length > 0) await prisma.record.createMany({ data, skipDuplicates: true });
+  return data.length;
+}
+
 /** Empty the sandbox of everything a rehearsal produced, then put back the
- *  reference data and the six-person roster. */
-export async function wipeSandbox(cid: string): Promise<void> {
+ *  reference data (copied from `sourceCid` when given, seeded otherwise)
+ *  and the six-person roster. */
+export async function wipeSandbox(cid: string, sourceCid?: string): Promise<number> {
   await prisma.$executeRaw`DELETE FROM "records" WHERE "company_id" = ${cid}`;
   await prisma.auditEntry.deleteMany({ where: { companyId: cid } });
   await prisma.feedback.deleteMany({ where: { companyId: cid } });
   await prisma.inviteToken.deleteMany({ where: { companyId: cid } });
+  const copied = sourceCid && sourceCid !== cid ? await copyCompanyData(sourceCid, cid) : 0;
   await seedCompanyReference(cid);
   const now = new Date().toISOString();
   const users = await prisma.user.findMany({ where: { companyId: cid } });
@@ -118,6 +164,7 @@ export async function wipeSandbox(cid: string): Promise<void> {
       now,
     );
   }
+  return copied;
 }
 
 async function recordCount(cid: string, tableName: string): Promise<number> {
@@ -126,9 +173,11 @@ async function recordCount(cid: string, tableName: string): Promise<number> {
 
 export const rehearsalRouter = Router();
 
-const startSchema = z.object({ role: z.enum(ROLES) });
+const startSchema = z.object({ role: z.enum(ROLES), withData: z.boolean().optional() });
 
-/** Platform admin → fresh sandbox + a session as the chosen role */
+/** Platform admin → fresh sandbox + a session as the chosen role. With
+ *  `withData` (default) the sandbox starts with the admin's own company's
+ *  fleet, roster, catalog and settings. */
 rehearsalRouter.post('/start', requireAuth, requirePlatformAdmin, async (req: AuthedRequest, res: Response) => {
   const parsed = startSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -137,12 +186,13 @@ rehearsalRouter.post('/start', requireAuth, requirePlatformAdmin, async (req: Au
   }
   const sandbox = await ensureSandbox();
   const users = await ensureRehearsalUsers(sandbox.id);
-  await wipeSandbox(sandbox.id);
+  const withData = parsed.data.withData !== false && req.companyId !== sandbox.id;
+  const copied = await wipeSandbox(sandbox.id, withData ? req.companyId : undefined);
   await resetFirstRun(sandbox.id);
   const user = users.find((u) => u.role === parsed.data.role)!;
   const session = await issueSession(user.id);
-  console.log(`[rehearsal] ${req.userId} started as ${parsed.data.role}`);
-  res.json({ ...session, sandbox, role: parsed.data.role });
+  console.log(`[rehearsal] ${req.userId} started as ${parsed.data.role} (${withData ? `${copied} records copied` : 'empty'})`);
+  res.json({ ...session, sandbox, role: parsed.data.role, withData, copied });
 });
 
 /** From inside the sandbox: wipe it (the client then restores the real session) */
@@ -157,7 +207,12 @@ rehearsalRouter.post('/end', requireAuth, async (req: AuthedRequest, res: Respon
   res.json({ ok: true });
 });
 
-/** One customer · site · job · rig so every role has something to work with */
+const sampleSchema = z.object({ today: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() });
+
+/** A connected week so every role has real work: two jobs, a plan half
+ *  drilled, yesterday submitted with cards, today's draft, a rig in the
+ *  shop, a rig due for service, an open incident. The client sends ITS
+ *  local date — the server's clock is UTC. Idempotent. */
 rehearsalRouter.post('/sample', requireAuth, async (req: AuthedRequest, res: Response) => {
   if (!(await isSandboxRequest(req))) {
     res.status(403).json({ error: 'not a rehearsal session' });
@@ -168,72 +223,25 @@ rehearsalRouter.post('/sample', requireAuth, async (req: AuthedRequest, res: Res
     res.json({ ok: true, existing: true });
     return;
   }
-  const now = new Date().toISOString();
-  const base = { createdAt: now, updatedAt: now, syncStatus: 'synced' };
-  const customerId = randomUUID();
-  const siteId = randomUUID();
-  const jobId = randomUUID();
-  const rigId = randomUUID();
-  const put = (id: string, table: string, payload: Record<string, unknown>) =>
-    upsertRecord(prisma, cid, id, table, JSON.stringify({ id, ...base, ...payload }), now);
-  await put(customerId, 'customers', {
-    name: 'Granite Ridge Construction',
-    status: 'active',
-    isActive: true,
-    phone: '(413) 555-0142',
-    paymentTerms: 'Net 30',
+  const parsed = sampleSchema.safeParse(req.body ?? {});
+  const today = (parsed.success && parsed.data.today) || new Date().toISOString().slice(0, 10);
+  const users = await prisma.user.findMany({
+    where: { companyId: cid },
+    select: { id: true, name: true, role: true },
   });
-  await put(siteId, 'sites', {
-    customerId,
-    name: 'Ledgeville Pit',
-    address: '410 Quarry Rd',
-    city: 'Westfield',
-    state: 'MA',
-    zip: '01085',
-    kFactor: 180,
-    kFactorHistory: [],
-    rockType: 'Granite',
-    permits: [
-      { id: randomUUID(), name: 'Blasting permit', number: 'BP-2026-114', authority: 'Westfield FD', expiresAt: '2026-11-30' },
-    ],
-  });
-  await put(jobId, 'jobs', {
-    name: 'Ledgeville Pit — Phase 1',
-    jobNumber: '26-001',
-    jobStatus: 'active',
-    customerId,
-    siteId,
-    operation: 'quarry',
-    typeOfRock: 'Granite',
-    typeOfTerrain: 'Bench',
-    defaultHazards: 'Overhead lines on the east boundary',
-    defaultPrecautions: 'Mats on the east side; flagger at the gate',
-    isActive: true,
-    customer: 'Granite Ridge Construction',
-    address: '410 Quarry Rd',
-    city: 'Westfield',
-    state: 'MA',
-    kFactor: 180,
-    kFactorHistory: [],
-  });
-  await put(rigId, 'equipment', {
-    assetNumber: 'R-101',
-    description: 'Track drill',
-    category: 'rock_drill',
-    isActive: true,
-    status: 'active',
-    make: 'Sandvik',
-    model: 'DX800',
-    hourMeter: 1240,
-  });
-  res.json({ ok: true, jobId, siteId, customerId, rigId });
+  const summary = await buildSampleWeek(cid, users, today);
+  res.json({ ok: true, ...summary });
 });
 
-/** Harness + curiosity: what is in the sandbox right now */
-rehearsalRouter.get('/status', requireAuth, requirePlatformAdmin, async (_req, res) => {
+/** Harness + curiosity: what is in the sandbox right now (+ the platform
+ *  admin's own company's record count, to prove Start never writes it) */
+rehearsalRouter.get('/status', requireAuth, requirePlatformAdmin, async (req: AuthedRequest, res) => {
   const sandbox = await prisma.company.findFirst({ where: { name: SANDBOX_COMPANY_NAME } });
+  const home = req.companyId
+    ? { companyId: req.companyId, records: await prisma.record.count({ where: { companyId: req.companyId } }) }
+    : null;
   if (!sandbox) {
-    res.json({ sandbox: null });
+    res.json({ sandbox: null, home });
     return;
   }
   const rows = await prisma.record.groupBy({
@@ -247,6 +255,7 @@ rehearsalRouter.get('/status', requireAuth, requirePlatformAdmin, async (_req, r
   });
   res.json({
     sandbox,
+    home,
     tables: Object.fromEntries(rows.map((r) => [r.tableName, r._count._all])),
     users: users.map((u) => ({ ...u, pinHash: Boolean(u.pinHash) })),
   });

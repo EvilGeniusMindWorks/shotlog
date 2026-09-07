@@ -65,4 +65,15 @@ Incidents · People (read) · company/customer/site pages · export surfaces
 - ✅ Office home is now the QUEUE the charter asked for: awaiting approval (oldest first, with what is attached) · sent back, waiting · time cards to approve · expiring COI/permits (90 d) · open incidents · never submitted (>3 days). Job costing and latest filings moved to the admin home and Records. Provisional until Evette's walkthrough.
 - ✅ Records is a record system: facets with counts, inline PDF preview, versions + SHA-256, multi-select → ZIP / CSV index / print. Audit pack curation and saved views are R-B (jobs 5 and 8 stay 🟡 until then).
 - ✅ Office rail gains People (read-only roster) for license/phone lookups.
+
+## Round S7 — first-rehearsal feedback (Matthew, 2026-09-07)
+
+- **S7a (building):** rehearsal sample data lands a submitted day in the
+  queue with filed cards attached, an open incident, and a permit — the
+  approve / send-back / cards paths are testable.
+- **S7d (accepted):** the day's Work Force is its time cards (keyed by job
+  + date); the office keeps approving the day and the cards separately;
+  a card that arrives after the day was approved lands in the cards pile
+  as today. Two offline copies of the same day show a merge strip to the
+  blaster, supervisor and office.
 - 🟡 Job 6 (compliance clocks) now SURFACES on the home; job 7 ("missing paperwork") is the "never submitted" section — both provisional.
