@@ -13,7 +13,7 @@ import {
   column,
   type PowerSyncBackendConnector,
 } from '@powersync/web';
-import { authedFetch, getSession } from '@/lib/session';
+import { authedFetch, getSession, sessionCompanyId } from '@/lib/session';
 import { logSyncEvent } from '@/lib/syncLog';
 import type { SqlAdapter } from './adapter';
 
@@ -202,6 +202,7 @@ export function getPowerSync(): PowerSyncDatabase {
 /** Call after login: starts (or restarts) replication with fresh credentials. */
 export async function connectPowerSync(): Promise<void> {
   await getPowerSync().connect(new ShotLogConnector());
+  noteReplicaCompany();
 }
 
 // Debounce so a burst of online/visibility events triggers ONE reconnect
@@ -237,6 +238,40 @@ export async function disconnectAndClearPowerSync(): Promise<void> {
  *  the replica in — the same name as dbFilename. */
 const DB_FILENAME = 'shotlog.db';
 const RESET_FLAG = 'shotlog-replica-reset-pending';
+// Which company's copy this device holds (2026-09-07): sign-out no longer
+// wipes it — the same company signing back in reuses it (instant), only a
+// DIFFERENT company triggers a reset. Sync buckets are per company, so a
+// colleague sees exactly what they would have downloaded anyway.
+const REPLICA_CID_KEY = 'shotlog-replica-cid';
+
+export function noteReplicaCompany(): void {
+  const cid = sessionCompanyId();
+  if (!cid) return;
+  try {
+    localStorage.setItem(REPLICA_CID_KEY, cid);
+  } catch {
+    /* private mode */
+  }
+}
+
+/** True when the device's copy belongs to another company than the session */
+export function replicaCompanyMismatch(): boolean {
+  try {
+    const held = localStorage.getItem(REPLICA_CID_KEY);
+    const cid = sessionCompanyId();
+    return Boolean(held && cid && held !== cid);
+  } catch {
+    return false;
+  }
+}
+
+export function forgetReplicaCompany(): void {
+  try {
+    localStorage.removeItem(REPLICA_CID_KEY);
+  } catch {
+    /* ignore */
+  }
+}
 
 const timeout = (ms: number) =>
   new Promise<'timeout'>((resolve) => window.setTimeout(() => resolve('timeout'), ms));
@@ -252,6 +287,7 @@ const timeout = (ms: number) =>
  * forever without ever reaching a checkpoint.
  */
 export async function resetLocalReplica(): Promise<void> {
+  forgetReplicaCompany();
   let clean = false;
   if (instance) {
     try {
@@ -288,6 +324,13 @@ export async function runPendingReplicaReset(): Promise<void> {
   let pending = false;
   try {
     pending = localStorage.getItem(RESET_FLAG) === '1';
+    // A copy that belongs to another company must not be reused
+    if (!pending && getSession().loggedIn && replicaCompanyMismatch()) {
+      pending = true;
+      logSyncEvent('device held another company\'s copy — clearing it');
+    }
+    // Devices from before the marker existed: the copy is this session's
+    if (getSession().loggedIn && !localStorage.getItem(REPLICA_CID_KEY)) noteReplicaCompany();
   } catch {
     return;
   }
@@ -325,6 +368,7 @@ export async function runPendingReplicaReset(): Promise<void> {
     if (outcome !== 'ok') allGone = false;
   }
   if (allGone) {
+    forgetReplicaCompany();
     try {
       localStorage.removeItem(RESET_FLAG);
     } catch {

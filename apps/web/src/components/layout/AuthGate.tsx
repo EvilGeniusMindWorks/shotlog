@@ -12,7 +12,7 @@ import {
   markOnboarded,
   updateMyPin,
 } from '@/lib/session';
-import { connectPowerSync } from '@/db/powersync/client';
+import { connectPowerSync, replicaCompanyMismatch, resetLocalReplica } from '@/db/powersync/client';
 import { myHomeDashboard } from '@/lib/perms';
 import { clearDevicePin, devicePinHash, setDevicePin } from '@/lib/pin';
 import { InstallCard } from '@/components/onboarding/InstallCard';
@@ -193,6 +193,9 @@ function LoginScreen({ onDone, onForgot }: { onDone: (password: string) => void;
     setError(null);
     try {
       await login(form.serverUrl, email, password);
+      // The device's copy is reused for the same company (instant sign-in);
+      // another company's copy is cleared first
+      if (replicaCompanyMismatch()) await resetLocalReplica();
       // Start replication in the background — don't block entry on hydration
       void connectPowerSync().catch(() => undefined);
       onDone(password);

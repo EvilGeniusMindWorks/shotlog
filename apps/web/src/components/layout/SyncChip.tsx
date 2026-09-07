@@ -253,7 +253,10 @@ export function FirstSyncStrip() {
   return (
     <div className="bg-blue-50 dark:bg-blue-950 border-b border-blue-200 px-4 py-1.5 text-xs text-blue-900 dark:text-blue-100 flex items-center gap-2">
       <RefreshCw className="h-3 w-3 animate-spin" />
-      First sync in progress — downloading company data to this device…
+      <span data-first-sync-strip>
+        First sync in progress — downloading company data to this device…
+        {sync.progress != null ? ` ${Math.round(sync.progress * 100)}%` : ''}
+      </span>
     </div>
   );
 }

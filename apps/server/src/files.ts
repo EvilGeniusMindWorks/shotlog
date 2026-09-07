@@ -25,6 +25,24 @@ const s3 = configured
     })
   : null;
 
+/** True when R2 credentials are present — /health and Settings report it */
+export function filesConfigured(): boolean {
+  return configured;
+}
+
+/** The exact key the client's presign would have produced for this file —
+ *  so a server-side move (legacy inline PDFs → R2) lands where the app's
+ *  own uploader would have put it. */
+export function submissionObjectKey(companyId: string, attachmentId: string, fileName: string): string {
+  return `c/${companyId}/a/${attachmentId}/${sanitizeFileName(fileName)}`;
+}
+
+/** Server-side upload (no presign) — used only by the legacy-PDF migration */
+export async function putObjectDirect(key: string, body: Buffer, contentType: string): Promise<void> {
+  if (!s3) throw new Error('file storage not configured');
+  await s3.send(new PutObjectCommand({ Bucket: R2_BUCKET, Key: key, Body: body, ContentType: contentType }));
+}
+
 /** Keys are safe, deterministic, and always under the caller's company prefix */
 function sanitizeFileName(name: string): string {
   return (name || 'file').replace(/[^A-Za-z0-9._-]+/g, '_').slice(0, 120);

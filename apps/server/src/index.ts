@@ -11,6 +11,8 @@ import { usersRouter } from './users.js';
 import { feedbackRouter } from './feedback.js';
 import { rehearsalRouter } from './rehearsal.js';
 import { emailEnabled } from './email.js';
+import { filesConfigured } from './files.js';
+import { countLegacyInlinePdfs, migrateLegacyInlinePdfs } from './legacyPdfs.js';
 import { seedCompanyReference } from './seed.js';
 
 const app = express();
@@ -18,7 +20,10 @@ app.use(cors());
 // Payloads carry base64 blobs (signatures, map snapshots, printout photos)
 app.use(express.json({ limit: '30mb' }));
 
-app.get('/health', (_req, res) => {
+app.get('/health', async (_req, res) => {
+  // Filed copies still carrying their PDF inline — watched reaching zero
+  // after the boot migration (legacyPdfs.ts); null when the DB is unreachable
+  const legacyInlinePdfs = await countLegacyInlinePdfs().catch(() => null);
   // `tables` surfaces the permission matrix size — a cheap deploy marker
   // proving which @shotlog/shared build this server is running. `commit`
   // (Railway-injected) pins the exact build even when the matrix is
@@ -32,6 +37,9 @@ app.get('/health', (_req, res) => {
     // Truthful email status — the People page says "share the link" when
     // this is false instead of pretending an invite was emailed
     email: emailEnabled(),
+    // Truthful file-storage status — Settings says where filed PDFs live
+    files: filesConfigured(),
+    legacyInlinePdfs,
   });
 });
 
@@ -56,6 +64,8 @@ async function main() {
   app.listen(port, () => {
     console.log(`ShotLog sync server listening on :${port}`);
   });
+  // Move legacy inline PDFs to file storage (idempotent, logs a summary)
+  void migrateLegacyInlinePdfs().catch((err) => console.error('[legacy-pdfs]', err));
 }
 
 void main();

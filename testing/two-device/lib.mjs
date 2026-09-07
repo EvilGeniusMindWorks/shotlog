@@ -107,16 +107,31 @@ export async function mkCtx(browser, opts = {}) {
 
 /** Sign in and wait for whatever comes next (home, a gate screen, a tour)
  *  — never a fixed sleep. Returns the page. */
-export async function signIn(P, user, { sync = true, timeout = 20000 } = {}) {
+export async function signIn(P, user, { sync = true, timeout = 20000, pin = '123456' } = {}) {
   const u = typeof user === 'string' ? USERS[user] : user;
   await P.goto(WEB);
   await P.locator('input[type="email"]').fill(u.email);
   await P.locator('input[type="password"]').fill(u.pass);
   await P.getByRole('button', { name: 'Sign in' }).click();
   await P.locator('input[type="email"]').waitFor({ state: 'detached', timeout });
-  await P.locator('main, [data-tour-overlay], [data-change-password], [data-welcome]').first().waitFor({ timeout }).catch(() => undefined);
+  await P.locator('main, [data-tour-overlay], [data-change-password], [data-welcome], [data-pin-pad]').first().waitFor({ timeout }).catch(() => undefined);
+  // PIN is per account (2026-09-07): an account with no PIN on this device
+  // and none on the account is asked to set one — do it, then carry on
+  await passPinSetup(P, pin);
   if (sync) await waitForSync(P).catch(() => undefined);
   return P;
+}
+
+/** If the gate is asking for a new PIN, set (and confirm) one */
+export async function passPinSetup(P, pin = '123456') {
+  if (!(await P.getByText(/Set a 6-digit PIN/).count())) return false;
+  for (const d of pin + pin) await P.getByRole('button', { name: d, exact: true }).click();
+  await P.locator('main, [data-tour-overlay], [data-welcome]').first().waitFor({ timeout: 15000 }).catch(() => undefined);
+  if (await P.getByRole('button', { name: /Let.s go/ }).count()) {
+    await P.getByRole('button', { name: /Let.s go/ }).click();
+    await P.locator('main').first().waitFor({ timeout: 15000 }).catch(() => undefined);
+  }
+  return true;
 }
 
 /** Until PowerSync reports the first download complete (`hasSynced`).

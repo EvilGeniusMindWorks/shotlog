@@ -213,14 +213,30 @@ function SecurityCard() {
               size="sm"
               data-profile-sign-out
               onClick={async () => {
-                // S7b: the ONE sign-out (Settings lost its copy). Bounded
-                // replica reset so a wedged database can never hold it.
+                // Sign out keeps the company's copy on this device (2026-09-07):
+                // the next sign-in from the same company is instant instead of
+                // a full download. Session, tokens and PIN still clear.
+                await logout();
+                window.location.reload();
+              }}
+            >
+              <LogOut className="h-4 w-4 mr-1" /> Sign Out
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-gray-500"
+              data-profile-sign-out-clear
+              onClick={async () => {
+                // A shared or departing phone: also clear the company data.
+                // Bounded replica reset so a wedged database can never hold it.
+                if (!confirm("Sign out and clear this device's copy of the company data? The next sign-in downloads it again.")) return;
                 await logout();
                 await resetLocalReplica();
                 window.location.reload();
               }}
             >
-              <LogOut className="h-4 w-4 mr-1" /> Sign Out
+              Sign out &amp; clear this device
             </Button>
           </div>
         )}

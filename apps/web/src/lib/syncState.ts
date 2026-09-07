@@ -22,6 +22,10 @@ export interface SyncStateInput {
   queued: number;
   /** Session definitively rejected — syncing paused until re-login */
   expired: boolean;
+  /** false until this device's FIRST download has completed (undefined = unknown) */
+  hasSynced?: boolean;
+  /** 0..1 progress of the current download, when the SDK reports one */
+  progress?: number | null;
 }
 
 export interface SyncState {
@@ -51,6 +55,17 @@ export function deriveSyncState(i: SyncStateInput): SyncState {
     };
   }
   if (i.connected) {
+    // First download still running: never "Synced" (Matthew saw the chip go
+    // green two seconds into a twenty-second download, 2026-09-07)
+    if (i.hasSynced === false) {
+      const pct = i.progress != null ? Math.round(Math.min(1, Math.max(0, i.progress)) * 100) : null;
+      return {
+        kind: 'syncing',
+        label: pct != null ? `Downloading company data — ${pct}%` : 'Downloading company data…',
+        short: pct != null ? `${pct}%` : 'Downloading',
+        tone: 'busy',
+      };
+    }
     if (i.queued > 0 || i.uploading || i.downloading) {
       return {
         kind: 'syncing',

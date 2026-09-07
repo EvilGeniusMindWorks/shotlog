@@ -14,6 +14,8 @@ export interface SyncStatusView {
   /** false until this device has completed its FIRST download sync */
   hasSynced: boolean | undefined;
   lastSyncedAt: Date | null;
+  /** 0..1 progress of the current download (SDK operation counts), else null */
+  progress: number | null;
   /** Writes captured locally but not yet acknowledged by the server */
   queued: number;
 }
@@ -24,6 +26,7 @@ type SdkStatus = {
   hasSynced?: boolean;
   lastSyncedAt?: Date;
   dataFlowStatus?: { uploading?: boolean; downloading?: boolean };
+  downloadProgress?: { downloadedFraction: number } | null;
 };
 
 function fromSdk(status: SdkStatus | undefined): Omit<SyncStatusView, 'queued'> {
@@ -34,6 +37,7 @@ function fromSdk(status: SdkStatus | undefined): Omit<SyncStatusView, 'queued'> 
     downloading: status?.dataFlowStatus?.downloading ?? false,
     hasSynced: status?.hasSynced,
     lastSyncedAt: status?.lastSyncedAt ?? null,
+    progress: status?.downloadProgress?.downloadedFraction ?? null,
   };
 }
 
@@ -47,6 +51,7 @@ export function useSyncStatus(): SyncStatusView {
     downloading: false,
     hasSynced: undefined,
     lastSyncedAt: null,
+    progress: null,
     queued: 0,
   });
 

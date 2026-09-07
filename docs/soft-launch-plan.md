@@ -526,6 +526,17 @@ and re-download, which is exactly what the merge hit first.
    (getDirectory throws) so Safari must be measured on the phone via the
    switch, which falls back to IndexedDB when OPFS is unavailable. Verdict
    so far: OPFS is not a win; the size and the sign-out wipe are the fix.
+   **Phone readings (Matthew, production, 567 records): 23.6 s IndexedDB,
+   23.5 s OPFS — engine irrelevant.** Cause pinned: 23 filings from Jul 27
+   carry their PDF inline (avg 190 KB, max 480 KB = 7.6 MB); filings since
+   Jul 29 already keep the PDF in R2 with a pointer. Fix (plan artifact
+   742b52b4, all Build; Matthew: R2 is already in use for attachments):
+   server boot migration of the legacy PDFs to R2 (`legacyPdfs.ts`,
+   `/health.legacyInlinePdfs` → 0, `/health.files`), Sign Out keeps the
+   company's copy (`shotlog-replica-cid`; another company clears it; "Sign
+   out & clear this device" in Profile), chip shows "Downloading — N%" until
+   the first download completes, Settings line says where filed PDFs live,
+   storage-engine selector removed. harness52.
    Side find: Vite HMR could leave two PowerSync instances on one file
    (app import vs harness import) — hangs WebKit, inflated earlier numbers;
    the singleton now lives on globalThis.

@@ -127,6 +127,19 @@ export function setViewRole(role: string | null): void {
   window.location.assign('/');
 }
 
+/** The company this session belongs to — the `cid` claim of the access
+ *  token (the same claim the sync buckets are keyed by). null when signed out. */
+export function sessionCompanyId(): string | null {
+  try {
+    const tok = localStorage.getItem(LS_KEYS.accessToken);
+    if (!tok) return null;
+    const payload = JSON.parse(atob(tok.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { cid?: string };
+    return payload.cid ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export function getSession() {
   return {
     serverUrl: localStorage.getItem(LS_KEYS.serverUrl) ?? '',

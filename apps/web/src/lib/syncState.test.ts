@@ -28,6 +28,15 @@ describe('deriveSyncState', () => {
     expect(deriveSyncState(base).kind).toBe('synced');
   });
 
+  it('never says Synced while the first download is still running', () => {
+    const s = deriveSyncState({ ...base, hasSynced: false, progress: 0.62 });
+    expect(s.kind).toBe('syncing');
+    expect(s.short).toBe('62%');
+    expect(s.label).toMatch(/Downloading company data — 62%/);
+    expect(deriveSyncState({ ...base, hasSynced: false }).short).toBe('Downloading');
+    expect(deriveSyncState({ ...base, hasSynced: true }).kind).toBe('synced');
+  });
+
   it('connected + queued shows the count', () => {
     const s = deriveSyncState({ ...base, queued: 3 });
     expect(s.kind).toBe('syncing');
