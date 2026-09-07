@@ -18,7 +18,8 @@ jobs:
       # The server typechecks against the GENERATED Prisma client (dev machines
       # have it from `prisma migrate`; a fresh runner does not) — without this
       # every Prisma type is `any` and typecheck fails before anything runs
-      - run: npx prisma generate --schema apps/server/prisma/schema.prisma
+      # (the prisma CLI is a server devDependency, not hoisted — run it in that workspace)
+      - run: npm exec -w apps/server -- prisma generate
       # Shared must be built first — web and server typecheck against its dist
       - run: npm run build -w packages/shared
       - run: npm run typecheck
