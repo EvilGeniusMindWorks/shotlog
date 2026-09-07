@@ -135,8 +135,10 @@ walkthrough per account, "About this screen" coach sheet, first-week
 card, empty-state sweep, Settings Help. S4 ✅ shipped 2026-09-06
 (harness40 46/46; audit sweep max 2.1 screens): office queue home, People
 one-line rows, daily-report collapse, jobs/customers/sites rows, driller
-cap, catalog + costing windowing, records manager R-A. Next: S5 launch
-gates (ops, not code).
+cap, catalog + costing windowing, records manager R-A. S5 🟡 started
+2026-09-06: audit 12 → 4 (transitive, accepted), engineer packet
+(docs/usbm-curve-signoff.md) and runbook (docs/soft-launch-runbook.md)
+written; the remaining gates are Matthew's decisions D1–D4 + Resend.
 
 ## Runs alongside (not gated on rounds)
 

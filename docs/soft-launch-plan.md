@@ -279,6 +279,16 @@ Re-run `audit-sweep.mjs`; gate: no screen > 3 for any persona.
 - Cohort + cadence: who gets invited first, and a weekly "feedback
   review" ritual with Mark.
 
+#### S5 status — 2026-09-06 (started; the gates are Matthew's to close)
+
+| Gate | State | Notes |
+|---|---|---|
+| `npm audit --omit=dev` | 🟡 12 → **4** (1 moderate, 3 high), all transitive | Fixed by in-range updates: react-router/react-router-dom (11 advisories), postcss (4), postcss-selector-parser, uuid, qs, picomatch. **Remaining, no upstream fix yet:** `dompurify` ≤3.4.12 via jspdf 4.2.1 (latest — DOMPurify runs on our own generated PDF text, not user HTML); `deepmerge-ts` <8 via prisma 6.19.3's CLI config (deploy-time tool, not on the request path; Prisma 7/8 is the fix and stays deferred per plan). Re-check monthly. |
+| USBM RI 8507 curve sign-off | ❌ packet ready | **docs/usbm-curve-signoff.md** — what the app computes, what it does not (structure type never chosen → drywall always; state/local limits planning-side only; MA "540 CMR" citation looks wrong; air overpressure unchecked), the 30 vs 40 Hz question, 7 questions, signature block. Reference page copy corrected in S5 to stop claiming state/local limits are active. |
+| Test-user decision | ❌ Matthew | Recommendation in the runbook: keep dev as the permanent test bed, never point a real device at it. |
+| Cohort + cadence | ❌ Matthew | **docs/soft-launch-runbook.md** — gates, staggered invite order (Mark → Evette → one blaster + one driller → rest → shop), first-day script, what to watch daily, weekly review with Mark, decisions D1–D4. |
+| Resend key | ❌ Matthew | since July (docs/resend-setup.md) |
+
 ---
 
 ## Open questions for Matthew

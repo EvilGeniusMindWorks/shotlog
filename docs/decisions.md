@@ -72,7 +72,11 @@ information; amend with a dated entry when one changes.
 
 | 2026-09-06 | Round S4 shipped (harness40 46/46; S1/S2/S3 regressions green; audit sweep max 2.1 screens). In-round calls: **office home** serves the office BUCKET, the admin role keeps the Company view (costing windowed 10) — one bucket, two homes by role; "sent back, waiting" = draft day + `sendBackNote` (the only marker); expiring window is **90 days** (the study's number, not the plan's 30); "Approve all" time cards shows only to roles holding approve_days (office does not by default); the **operation chip's "company default"** is the mode of the company's jobs (no settings field exists); records manager previews PDFs in the browser's own viewer via iframe (no pdf.js dependency — R-B can swap it if iOS first-page-only bites); **Print** opens the selected PDFs in tabs (capped at 6) rather than merging; DocList stays for job/person pages only; walkthrough auto-run is home-only | follows from the approved study; recorded for future rounds |
 
+| 2026-09-06 | Round S5 started (launch gates). Done: prod audit 12 → 4 via in-range updates (react-router, postcss, uuid, qs, picomatch); the 4 left are transitive with no upstream fix (dompurify via jspdf 4.2.1 = latest; deepmerge-ts via Prisma 6 CLI config, deploy-time only) — **accepted for the soft launch, re-check monthly**; engineer review packet written (docs/usbm-curve-signoff.md); runbook written (docs/soft-launch-runbook.md); Reference page no longer claims state/local limits are active (they are planning-side only, and the MA citation is suspect). Findings for the engineer: the seismo badge never uses the plaster curve (structure type is not chosen per shot); air overpressure is unchecked | Claude; decisions D1–D4 below are Matthew's |
+
 ## Open (waiting on Mark / Matthew)
+
+- **S5 decisions (runbook §5):** D1 test users (recommend: keep dev as the test bed); D2 who reviews the USBM packet + whether badges get an "advisory" label until signed (recommend: yes, one-hour change); D3 cohort order (recommend staggered); D4 weekly cadence (recommend Mark + Evette, 30 min).
 
 - **Office queue + records labels (S4):** section titles and status labels are mine — read the office home and Records once and mark what rings false. Evette's walkthrough still governs the office home.
 

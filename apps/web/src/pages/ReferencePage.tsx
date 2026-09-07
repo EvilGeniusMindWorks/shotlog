@@ -207,9 +207,9 @@ export function ReferencePage() {
             </CardHeader>
             <CardContent className="space-y-2">
               {[
-                ['Federal', 'USBM RI 8507 + OSMRE — always active', true],
-                ['State', 'Auto-mapped from the job address (e.g. MA 540 CMR)', true],
-                ['Local / Municipal', 'Configured per job — most restrictive wins', false],
+                ['Federal', 'USBM RI 8507 (frequency curve) + OSMRE (distance limits) — what every badge is checked against today', true],
+                ['State', 'Shot designer only: a flat 2.0 in/s cap on Massachusetts jobs (citation under engineer review). Seismo badges do not apply state limits yet', false],
+                ['Local / Municipal', 'Shot designer only: a per-job limit typed on the job. Seismo badges do not apply it yet', false],
               ].map(([tier, desc, active]) => (
                 <div
                   key={tier as string}
@@ -220,8 +220,9 @@ export function ReferencePage() {
                 </div>
               ))}
               <p className="text-xs text-gray-400">
-                Every shot is evaluated against the full stack for its job's location — the most
-                restrictive threshold wins.
+                Badges are advisory: they compare the reading against the federal curve and
+                distance limits with a warning band at 80%. They do not replace the permit's
+                conditions or the blaster's judgment.
               </p>
             </CardContent>
           </Card>
