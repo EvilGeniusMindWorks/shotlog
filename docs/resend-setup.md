@@ -99,6 +99,31 @@ A health marker so the People page can say honestly when email is off, a
 branded HTML invite template, and the forgot-password email on the same
 channel. None of that needs anything more from you.
 
+## Your setup — decided 2026-09-06
+
+- **Sending domain: `shotlog.evilgenius.io`.** Checked that day: the name
+  has no A, CNAME or MX record, so nothing collides; Resend's records all
+  sit *under* it and the bare name stays free for a website later.
+- **DNS lives at GoDaddy** (ns21/ns22.domaincontrol.com). GoDaddy's
+  "Name" field wants only the part before `evilgenius.io`:
+  `resend._domainkey.shotlog` (DKIM TXT), `send.shotlog` (MX + SPF TXT),
+  `_dmarc.shotlog` (optional DMARC TXT). Paste values exactly as Resend
+  shows them; no trailing dot.
+- **Root DMARC is `p=reject` (relaxed alignment)** and it also governs
+  subdomains. That is fine once Resend's DKIM record is in place (the
+  signature domain and the From domain are both `shotlog.evilgenius.io`,
+  so they align) — but it means an unverified first test would be
+  *rejected*, not just spam-foldered. Do step 4 before step 8.
+- **Railway values:**
+  `INVITE_FROM = ShotLog <invites@shotlog.evilgenius.io>` and the
+  `RESEND_API_KEY`. Optionally `FEEDBACK_TO` / `PLATFORM_ADMIN_EMAILS`
+  (Round S3) if you want feedback mail somewhere other than your login
+  email.
+- **Replies:** the subdomain has no mailbox, so a crew member who hits
+  Reply gets a bounce. Options: add a `REPLY_TO` setting to the server so
+  replies go to a real inbox, or leave it and rely on the in-app feedback
+  composer (Round S3) as the reply channel.
+
 ## If something goes wrong
 
 - **Resend says "domain not verified" after an hour**: re-check the
