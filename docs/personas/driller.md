@@ -108,3 +108,7 @@ report (solo submit) · My Records · jobs list
 - ✅ "About this screen": My Drilling home, Drilling tab, drill log (shot and plan), rig checklist, my records.
 - ✅ First-week card: sign once · walkthrough · file a rig checklist · log holes · enter hours — ticks itself from the driller's own records.
 - ✅ Empty states name who to ask when there is no plan yet (the blaster) and how to start a drill-only day.
+
+## Clutter sweep + records (Round S4, 2026-09-06)
+
+- ✅ "Yesterday needs you" is capped at 5 ranked rows (sent-back first) + "N more on the Drilling tab" — the trio never sinks below the fold.

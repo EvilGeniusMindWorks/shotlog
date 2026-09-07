@@ -132,8 +132,11 @@ shipped 2026-09-06 (harness38 38/38) with its design amended first
 (feedback = server table + offline outbox, platform-admin-only triage —
 see decisions.md). S2 ✅ shipped 2026-09-06 (harness39 34/34): role-aware
 walkthrough per account, "About this screen" coach sheet, first-week
-card, empty-state sweep, Settings Help. Next: S4 clutter (+ records
-manager R-A) → S5 gates.
+card, empty-state sweep, Settings Help. S4 ✅ shipped 2026-09-06
+(harness40 46/46; audit sweep max 2.1 screens): office queue home, People
+one-line rows, daily-report collapse, jobs/customers/sites rows, driller
+cap, catalog + costing windowing, records manager R-A. Next: S5 launch
+gates (ops, not code).
 
 ## Runs alongside (not gated on rounds)
 

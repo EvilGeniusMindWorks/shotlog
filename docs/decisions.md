@@ -70,7 +70,11 @@ information; amend with a dated entry when one changes.
 
 | 2026-09-06 | Round S2 shipped (harness39 34/34; S1/S3 regressions green). In-round calls: coach sheet lives ONLY behind the ? menu (no per-page header buttons — no shared header exists and one consistent door is easier to teach); the tour auto-run is suppressed by the legacy `shotlog-tour-done` localStorage key too (dev/harness affordance, harmless in prod); Skip counts as done (nagging a skipper is worse than a missed tour — it stays one tap away); first-week manual ticks and Hide are per DEVICE (no server field — cheap to revisit); the walkthrough card pins to the bottom edge when its target is taller than the viewport | follows from amended S2 design; recorded for future rounds |
 
+| 2026-09-06 | Round S4 shipped (harness40 46/46; S1/S2/S3 regressions green; audit sweep max 2.1 screens). In-round calls: **office home** serves the office BUCKET, the admin role keeps the Company view (costing windowed 10) — one bucket, two homes by role; "sent back, waiting" = draft day + `sendBackNote` (the only marker); expiring window is **90 days** (the study's number, not the plan's 30); "Approve all" time cards shows only to roles holding approve_days (office does not by default); the **operation chip's "company default"** is the mode of the company's jobs (no settings field exists); records manager previews PDFs in the browser's own viewer via iframe (no pdf.js dependency — R-B can swap it if iOS first-page-only bites); **Print** opens the selected PDFs in tabs (capped at 6) rather than merging; DocList stays for job/person pages only; walkthrough auto-run is home-only | follows from the approved study; recorded for future rounds |
+
 ## Open (waiting on Mark / Matthew)
+
+- **Office queue + records labels (S4):** section titles and status labels are mine — read the office home and Records once and mark what rings false. Evette's walkthrough still governs the office home.
 
 - **Tour + coach copy review (S2):** drafted from the charters in the DrillingWork voice, not from crew interviews — read `components/guidance/coach.ts` and `tourScripts.ts` once and mark what rings false.
 

@@ -232,7 +232,19 @@ sees the tab, marks done with a note; company admin (non-platform) has
 no tab and gets 403; Settings has the Help card; email hook records
 `email-off` in dev.
 
-### S4 — Clutter sweep (web only)
+### S4 — Clutter sweep (web only) — STARTED 2026-09-06
+
+**Before build (2026-09-06):** inputs all settled — office queue re-review
+"looks good", jobs rows per the study's three calls, records manager R-A
+"looks right". Default calls, flagged for check-off: (a) the office queue
+derives "sent back awaiting resubmit" from draft days carrying a
+`sendBackNote` (the only marker that exists); (b) time cards to approve =
+company-wide `status: filed`; (c) expiring = customer COI + site permits
+within 30 days or past due; (d) the costing table and compliance monitor
+move to the ADMIN home only, windowed 10 + Show all; (e) R-A ships the
+manager core (facet filters · sortable/groupable list · multi-select ·
+inline PDF preview wide / preview sheet phone · bulk ZIP/CSV · versions +
+SHA shown); saved views, audit pack curation and tags stay R-B/R-C.
 
 1. **Office home**: Evette's queue, not the costing table — Approvals
    waiting · sent-back awaiting resubmit · time cards to approve ·
@@ -436,3 +448,61 @@ in the DrillingWork voice from the charters, not from crew interviews.
 Harness note: `tourDoneAt` has no unset endpoint on purpose; harness39
 uses a fresh account for the auto-run and resets dinis via SQL (comment in
 the file). Dev users other than blaster/dinis were backfilled done.
+
+## Round S4 — Clutter sweep + records manager R-A — ✅ SHIPPED 2026-09-06 (harness40 46/46; harness37/38/39 regressions green; audit sweep max 2.1 screens)
+
+1. ✅ **Office home = Evette's queue** (`components/dashboard/OfficeHome.tsx`,
+   study §1): five live counters that scroll to their section · Approvals
+   oldest-first with what is attached (submitter, days waiting, shots, time
+   cards, checklist ✓, drill log ✓, "seismo missing") and **Review** deep-
+   linking to Approvals with the row highlighted · **Sent back, waiting**
+   (draft days carrying a send-back note — invisible to the office before)
+   · **Time cards to approve** grouped by day+job with "Approve all" for
+   roles holding approve_days · **Expiring ≤ 90 d** (customer COI + site
+   permits, past-due first) · **Open incidents** · **Never submitted** (drafts
+   older than 3 days). Office rail gains **People** (read-only roster).
+   The admin keeps the Company view; its costing table is windowed 10 +
+   Show all. Provisional until Evette's walkthrough.
+2. ✅ **Admin › People**: one-line rows (name · email · role chip · login
+   pill · expiry · ⋯), 15 + Show all; role select and every action live
+   behind ⋯. 44 px rows; 4.4 screens → 1.1.
+3. ✅ **Daily Report tab**: an empty section is ONE dashed "+ Add" row
+   (`EmptyAddRow`); on a locked day empty sections are absent, and Notes
+   hides when empty. ~4.1 screens @430 → 1.3.
+4. ✅ **Jobs · Customers · Sites rows** (Matthew's three calls): number ·
+   name (two lines) · customer · town, ST; right column last worked +
+   day count from a shared `lib/jobActivity.ts`; status chip only when not
+   active, operation chip only when not the company's usual one, blue
+   **"starts <date>"** for upcoming start/target dates; Sort: Last worked
+   (default) · Scheduled · Name · Customer · Job number; tap opens,
+   **long-press / right-click** peeks — the ⓘ button is gone. Customers
+   windowed to 15 and sorted by last worked, same for Sites.
+5. ✅ **Driller strip** capped at 5 after ranking (sent-back first, newest
+   first) + "N more on the Drilling tab". ✅ **Catalog** 15 per manufacturer
+   tab + Show all.
+6. ✅ **Records manager R-A** (`components/records/RecordsManager.tsx`,
+   study §3) replaces the Filed/All lenses and My Records: facets with live
+   counts (kind · status incl. Sent back / Approved-not-filed · job ·
+   customer · site · person · dates) · search · group by date/job/kind ·
+   sortable columns on wide · multi-select with select-all-in-group · bulk
+   **Download ZIP** (folder per job/date + index.csv with SHA-256), **CSV
+   index**, **Print** (opens PDFs, capped at 6) · inline **PDF preview**
+   (browser viewer in an iframe; device copy first, R2 second; truthful
+   "not reachable from this device" fallback) · preview meta: filed by,
+   **version chain**, **integrity** (SHA-256 · size · device/R2) · live
+   records preview as a summary card with "Open live record". Three panes
+   on wide, list + preview sheet on phone. Audit stays as its own lens;
+   Binder export stays. `SubmissionSummary` and `DocRow` gained the
+   hierarchy/person/integrity fields the facets need. DocList remains only
+   for the job and person pages.
+7. ✅ Audit gate re-run (`audit-sweep.mjs`): every persona screen ≤ 2.1
+   (office `/` 1.8, admin `/` 1.0, People 1.1, records 1.7, jobs 1.3).
+
+Fixed in-round: the walkthrough auto-ran on every deep link for an account
+that never finished it and yanked the person home — it now auto-runs only
+when landing on the home screen. The phone preview sheet also rendered
+(hidden) on desktop and fetched the PDF twice — one preview per viewport.
+Not done (R-B/R-C): saved views, audit-pack curation, tags, attachments as
+rows, wide-screen table for jobs (the row already works at both widths).
+Copy review for Matthew: the office queue section titles and the records
+status labels.

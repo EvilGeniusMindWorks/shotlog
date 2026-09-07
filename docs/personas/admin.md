@@ -46,3 +46,8 @@ Company) · customers/sites/jobs setup · everything else read
 - ✅ Walkthrough: Company home → People → Roles → Records → Help.
 - ✅ "About this screen": People, Roles, Company home, Feedback (platform admin only), plus everything the other roles get.
 - ✅ First-week card: walkthrough · invite a person · read Roles once · check company details · try View as.
+
+## Clutter sweep + records (Round S4, 2026-09-06)
+
+- ✅ People: one-line rows, 15 + Show all, actions behind ⋯ (4.4 screens → 1.1). Catalog 15 per manufacturer tab. Company home keeps the costing table, windowed 10 + Show all.
+- ✅ Records manager (shared with Office) — job 8's lifecycle work stays as recorded in deletion-pattern.md.

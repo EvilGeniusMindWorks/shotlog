@@ -41,6 +41,8 @@ const EMPTY_FORM: ProductForm = {
 export function AdminCatalogPage() {
   const { online } = useOutletContext<{ online: boolean }>();
   const manufacturers = useLiveQuery(() => db.manufacturers.toArray()) ?? [];
+  // S4: 15 products per manufacturer tab, the rest behind one tap
+  const [showAllProducts, setShowAllProducts] = useState(false);
   const products = useLiveQuery(() => db.productCatalog.toArray()) ?? [];
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showRetired, setShowRetired] = useState(false);
@@ -225,7 +227,10 @@ export function AdminCatalogPage() {
           )}
 
           <div className="divide-y divide-gray-100 rounded-xl border border-gray-200 bg-white">
-            {productsOf(current.id, current.name).map((p) => (
+            {(showAllProducts
+              ? productsOf(current.id, current.name)
+              : productsOf(current.id, current.name).slice(0, 15)
+            ).map((p) => (
               <div key={p.id} className={p.isActive ? 'p-3' : 'p-3 opacity-50'}>
                 <div className="flex items-center gap-2 flex-wrap">
                   <div className="min-w-0 flex-1">
@@ -270,6 +275,15 @@ export function AdminCatalogPage() {
                 )}
               </div>
             ))}
+            {!showAllProducts && productsOf(current.id, current.name).length > 15 && (
+              <button
+                className="w-full text-left px-3 py-2.5 text-xs text-gray-400 hover:text-navy"
+                onClick={() => setShowAllProducts(true)}
+                data-catalog-more
+              >
+                Show all {productsOf(current.id, current.name).length} products ▸
+              </button>
+            )}
             {productsOf(current.id, current.name).length === 0 && (
               <p className="p-4 text-sm text-gray-400">No products match.</p>
             )}

@@ -545,9 +545,19 @@ export function DrillerHome() {
       {priorLogs.length > 0 && (
         <div className="rounded-xl border border-gray-200 border-l-4 border-l-safety-orange bg-white p-3">
           <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
-            Yesterday needs you
+            Yesterday needs you · {priorLogs.length}
           </p>
-          {priorLogs.map(({ log, context, holes }) => (
+          {/* Capped AFTER ranking (S4 — mirrors the blaster strip): newest
+              unsigned first, sent-back ahead of the rest; the trio must
+              never sink below the fold behind a backlog */}
+          {[...priorLogs]
+            .sort(
+              (a, b) =>
+                Number(Boolean(b.log.reopenNote)) - Number(Boolean(a.log.reopenNote)) ||
+                (b.log.date ?? b.log.createdAt).localeCompare(a.log.date ?? a.log.createdAt),
+            )
+            .slice(0, 5)
+            .map(({ log, context, holes }) => (
             <button
               key={log.id}
               className="w-full flex items-center gap-2 py-1.5 text-left hover:bg-gray-50 rounded-lg"
@@ -564,6 +574,15 @@ export function DrillerHome() {
               <span className="text-gray-300">›</span>
             </button>
           ))}
+          {priorLogs.length > 5 && (
+            <button
+              className="w-full text-left px-1 py-1.5 text-xs text-gray-400 hover:text-navy"
+              data-driller-strip-more
+              onClick={() => navigate('/drilling')}
+            >
+              {priorLogs.length - 5} more on the Drilling tab ▸
+            </button>
+          )}
         </div>
       )}
 
@@ -1101,6 +1120,9 @@ export function MechanicHome() {
 
 export function AdminHome() {
   const navigate = useNavigate();
+  // S4: the costing table is windowed (10 + Show all) — 52 unwindowed
+  // rows made this the 4.3-screen offender in the clutter audit
+  const [showAllCosting, setShowAllCosting] = useState(false);
   const costing = useLiveQuery(async () => {
     const jobs = await db.jobs.filter((j) => j.isActive).toArray();
     const days = await db.blastDays.toArray();
@@ -1249,7 +1271,7 @@ export function AdminHome() {
               </tr>
             </thead>
             <tbody>
-              {(costing ?? []).map((r) => (
+              {(showAllCosting ? (costing ?? []) : (costing ?? []).slice(0, 10)).map((r) => (
                 <tr key={r.job.id} className="border-b border-gray-50">
                   <td className="py-2 pr-3">
                     <p className="font-medium">{r.job.name}</p>
@@ -1279,6 +1301,15 @@ export function AdminHome() {
             </tbody>
           </table>
         </div>
+        {!showAllCosting && (costing ?? []).length > 10 && (
+          <button
+            className="w-full text-left px-1 py-2 text-xs text-gray-400 hover:text-navy"
+            onClick={() => setShowAllCosting(true)}
+            data-costing-more
+          >
+            Show all {(costing ?? []).length} jobs ▸
+          </button>
+        )}
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white p-3">

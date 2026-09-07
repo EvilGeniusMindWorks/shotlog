@@ -181,6 +181,12 @@ export interface SubmissionSummary {
   assetCount: number;
   createdAt: string;
   meta?: Record<string, unknown>;
+  /** Hierarchy stamps + integrity facts (records manager, Round S4) */
+  customerId?: string;
+  siteId?: string;
+  pdfSha256?: string;
+  pdfSize?: number;
+  storageStatus?: 'device' | 'stored';
 }
 
 export async function listSubmissionSummaries(): Promise<SubmissionSummary[]> {
@@ -189,6 +195,8 @@ export async function listSubmissionSummaries(): Promise<SubmissionSummary[]> {
     jobId: string | null; version: number; title: string; date: string;
     submittedBy: string; submittedByUserId: string; assetCount: number | null;
     createdAt: string; metaJson: string | null;
+    customerId: string | null; siteId: string | null; pdfSha256: string | null;
+    pdfSize: number | null; storageStatus: string | null;
   }>(
     `SELECT id,
             json_extract(payload,'$.type')              AS type,
@@ -202,7 +210,12 @@ export async function listSubmissionSummaries(): Promise<SubmissionSummary[]> {
             json_extract(payload,'$.submittedByUserId') AS submittedByUserId,
             json_array_length(payload,'$.assets')       AS assetCount,
             json_extract(payload,'$.createdAt')         AS createdAt,
-            json_extract(payload,'$.meta')              AS metaJson
+            json_extract(payload,'$.meta')              AS metaJson,
+            json_extract(payload,'$.customerId')        AS customerId,
+            json_extract(payload,'$.siteId')            AS siteId,
+            json_extract(payload,'$.pdfSha256')         AS pdfSha256,
+            json_extract(payload,'$.pdfSize')           AS pdfSize,
+            json_extract(payload,'$.storageStatus')     AS storageStatus
      FROM records WHERE table_name = 'submissions'`,
   );
   return rows.map((r) => ({
@@ -213,6 +226,11 @@ export async function listSubmissionSummaries(): Promise<SubmissionSummary[]> {
     assetCount: r.assetCount ?? 0,
     createdAt: r.createdAt,
     meta: r.metaJson ? (JSON.parse(r.metaJson) as Record<string, unknown>) : undefined,
+    customerId: r.customerId ?? undefined,
+    siteId: r.siteId ?? undefined,
+    pdfSha256: r.pdfSha256 ?? undefined,
+    pdfSize: r.pdfSize ?? undefined,
+    storageStatus: r.storageStatus === 'stored' || r.storageStatus === 'device' ? r.storageStatus : undefined,
   }));
 }
 

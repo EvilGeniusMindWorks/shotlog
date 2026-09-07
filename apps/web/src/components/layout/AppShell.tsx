@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   Sun,
   AlertTriangle,
+  Users,
   Wrench,
 } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
@@ -90,6 +91,9 @@ function navItemsForRole() {
       { to: '/records', icon: FolderArchive, label: 'Records' },
       { to: '/jobs', icon: Briefcase, label: 'Jobs' },
       { to: '/admin/incidents', icon: AlertTriangle, label: 'Incidents' },
+      // S4 (office study): a read-only roster so Evette can look up a
+      // license or phone number without the Admin door
+      { to: '/admin/people', icon: Users, label: 'People' },
       settings,
     ];
 
@@ -252,11 +256,13 @@ export function AppShell() {
   const [touring, setTouring] = useState(false);
   const navigate = useNavigate();
   // Walkthrough: anyone can ask for it (startTour from Help/Settings); it
-  // also auto-runs ONCE per account, a beat after the first home render
+  // also auto-runs ONCE per account, a beat after the first HOME render —
+  // never on a deep link (its first step would yank the person home)
   useEffect(() => {
     const open = () => setTouring(true);
     window.addEventListener(START_TOUR_EVENT, open);
-    const auto = shouldAutoRunTour() ? window.setTimeout(open, 900) : 0;
+    const auto =
+      shouldAutoRunTour() && window.location.pathname === '/' ? window.setTimeout(open, 900) : 0;
     return () => {
       window.removeEventListener(START_TOUR_EVENT, open);
       window.clearTimeout(auto);

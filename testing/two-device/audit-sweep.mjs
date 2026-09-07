@@ -11,6 +11,8 @@ async (page) => {
       localStorage.setItem('shotlog-server-url', 'http://localhost:4000');
       localStorage.setItem('shotlog-pin', 'x');
       localStorage.setItem('shotlog-last-active', String(Date.now()));
+      localStorage.setItem('shotlog-tour-done', '1');
+      localStorage.setItem('shotlog-first-week-hidden', '1');
     `);
     return ctx;
   };

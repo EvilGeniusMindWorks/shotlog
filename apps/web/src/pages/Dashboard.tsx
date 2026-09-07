@@ -13,6 +13,7 @@ import { ListSkeleton } from '@/components/ui/skeleton';
 import { cn, formatDate } from '@/lib/utils';
 import { NewBlastDayDialog } from '@/components/forms/NewBlastDayDialog';
 import { AdminHome, DrillerHome, MechanicHome } from '@/components/dashboard/RoleCards';
+import { OfficeHome } from '@/components/dashboard/OfficeHome';
 import { BlasterHome } from '@/components/dashboard/BlasterHome';
 import { MonthDayList } from '@/components/dashboard/MonthDayList';
 import { ProfileNagCard } from '@/components/onboarding/ProfileNagCard';
@@ -177,11 +178,13 @@ export function Dashboard() {
         <MechanicHome />
       </>
     );
+  // Office bucket: the admin keeps the Company view (costing, compliance);
+  // everyone else on that bucket gets Evette's queue (S4, office study)
   if (home === 'office')
     return (
       <>
         {strip}
-        <AdminHome />
+        {getSessionUser()?.role === 'admin' ? <AdminHome /> : <OfficeHome />}
       </>
     );
   return (

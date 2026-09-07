@@ -10,6 +10,24 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { canEditApprovedDay } from '@/lib/perms';
+
+/** S4 (I3): an empty section is ONE row, not a card of nothing — tap to add
+ *  the first line. On a locked day an empty section is simply absent. */
+function EmptyAddRow({ title, label, onAdd }: { title: string; label: string; onAdd: () => void }) {
+  return (
+    <button
+      className="w-full flex items-center justify-between rounded-xl border border-dashed border-gray-300 bg-white px-4 py-2.5 text-sm hover:bg-gray-50"
+      onClick={onAdd}
+      data-empty-add={title}
+    >
+      <span className="text-gray-500">{title}</span>
+      <span className="text-navy font-medium flex items-center gap-1">
+        <Plus className="h-4 w-4" /> {label}
+      </span>
+    </button>
+  );
+}
 
 import { straightTime, equipmentHoursUsed } from '@shotlog/shared';
 
@@ -47,6 +65,10 @@ export function DailyReportForm({ blastDay, dailyReport, blastLog, shots }: Prop
     [dailyReport.id]
   ) ?? [];
 
+  // Filed/approved days are read-only for field roles: empty sections hide
+  // entirely instead of stacking four screens of empty cards (S4, I3)
+  const locked = blastDay.status !== 'draft' && !canEditApprovedDay();
+
   // Shared data from Blast Log
   const totalHoles = shots.reduce((s, sh) => s + sh.totals.numHoles, 0);
   const totalFootage = shots.reduce((s, sh) => s + sh.totals.totalDrillFootage, 0);
@@ -83,12 +105,14 @@ export function DailyReportForm({ blastDay, dailyReport, blastLog, shots }: Prop
       <WorkForceSection
         dailyReportId={dailyReport.id}
         entries={workforce}
+        locked={locked}
       />
 
       {/* Equipment */}
       <EquipmentSection
         dailyReportId={dailyReport.id}
         entries={equipmentEntries}
+        locked={locked}
       />
 
       {/* Materials */}
@@ -96,6 +120,7 @@ export function DailyReportForm({ blastDay, dailyReport, blastLog, shots }: Prop
         title="Materials / Onsite Repairs / Fuel"
         dailyReportId={dailyReport.id}
         entries={materials}
+        locked={locked}
         tableName="materialEntries"
         fields={['vendor', 'description', 'unit', 'total']}
         fieldLabels={['Vendor', 'Description', 'Unit', 'Total ($)']}
@@ -107,13 +132,15 @@ export function DailyReportForm({ blastDay, dailyReport, blastLog, shots }: Prop
         title="Subcontractors / Rentals / Fire Detail"
         dailyReportId={dailyReport.id}
         entries={subcontractors}
+        locked={locked}
         tableName="subcontractorEntries"
         fields={['vendor', 'description', 'hours', 'total']}
         fieldLabels={['Vendor', 'Description', 'Hours', 'Total ($)']}
         fieldTypes={['text', 'text', 'number', 'number']}
       />
 
-      {/* Notes */}
+      {/* Notes — hidden on a locked day when there are none */}
+      {!(locked && !dailyReport.notes) && (
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Notes</CardTitle>
@@ -129,6 +156,7 @@ export function DailyReportForm({ blastDay, dailyReport, blastLog, shots }: Prop
           />
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }
@@ -136,9 +164,11 @@ export function DailyReportForm({ blastDay, dailyReport, blastLog, shots }: Prop
 function WorkForceSection({
   dailyReportId,
   entries,
+  locked,
 }: {
   dailyReportId: string;
   entries: WorkForceEntry[];
+  locked?: boolean;
 }) {
   // Roster-linked rows: picking a member stamps crewMemberId + name so the
   // person history page can trace worked days reliably (mirror of pickAsset).
@@ -213,6 +243,9 @@ function WorkForceSection({
     void deleteWithTombstone('workForceEntries', id);
   };
 
+  if (entries.length === 0) {
+    return locked ? null : <EmptyAddRow title="Work Force" label="Add worker" onAdd={() => void addEntry()} />;
+  }
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -327,9 +360,11 @@ function WorkForceSection({
 function EquipmentSection({
   dailyReportId,
   entries,
+  locked,
 }: {
   dailyReportId: string;
   entries: EquipmentEntry[];
+  locked?: boolean;
 }) {
   const addEntry = async () => {
     const now = nowISO();
@@ -384,6 +419,9 @@ function EquipmentSection({
     items: entries.filter((e) => e.category === cat.value),
   }));
 
+  if (entries.length === 0) {
+    return locked ? null : <EmptyAddRow title="Equipment / Assets" label="Add equipment" onAdd={() => void addEntry()} />;
+  }
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -485,6 +523,7 @@ function GenericLineItems({
   fields,
   fieldLabels,
   fieldTypes,
+  locked,
 }: {
   title: string;
   dailyReportId: string;
@@ -493,6 +532,7 @@ function GenericLineItems({
   fields: string[];
   fieldLabels: string[];
   fieldTypes: string[];
+  locked?: boolean;
 }) {
   const table = db[tableName] as typeof db.materialEntries;
 
@@ -519,6 +559,9 @@ function GenericLineItems({
     table.delete(id);
   };
 
+  if (entries.length === 0) {
+    return locked ? null : <EmptyAddRow title={title} label="Add" onAdd={() => void addEntry()} />;
+  }
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">

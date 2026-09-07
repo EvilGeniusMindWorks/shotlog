@@ -2,8 +2,8 @@
 // decisions. Data arrives via sync (live), decisions go through REST so
 // the supervisor gets an immediate, truthful result (409 if a colleague
 // beat them to it).
-import { useState } from 'react';
-import { Link, useOutletContext } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useOutletContext, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, Undo2 } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { authedFetch } from '@/lib/session';
@@ -15,6 +15,17 @@ export function AdminApprovalsPage() {
   const { online } = useOutletContext<{ online: boolean }>();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Deep link from the office queue ("Review"): highlight + scroll to the day
+  const [params] = useSearchParams();
+  const focusDay = params.get('day');
+  useEffect(() => {
+    if (!focusDay) return;
+    const t = window.setTimeout(
+      () => document.getElementById(`approval-${focusDay}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }),
+      400,
+    );
+    return () => window.clearTimeout(t);
+  }, [focusDay]);
 
   const submitted =
     useLiveQuery(() =>
@@ -65,7 +76,12 @@ export function AdminApprovalsPage() {
         </h3>
         <div className="divide-y divide-gray-100 rounded-xl border border-gray-200 bg-white">
           {submitted.map((day) => (
-            <div key={day.id} className="p-3 flex items-center gap-3 flex-wrap">
+            <div
+              key={day.id}
+              id={`approval-${day.id}`}
+              className={`p-3 flex items-center gap-3 flex-wrap ${focusDay === day.id ? 'ring-2 ring-inset ring-safety-orange rounded-lg' : ''}`}
+              data-approval-row={day.id}
+            >
               <div className="min-w-0 flex-1">
                 <Link to={`/blast-day/${day.id}`} className="font-medium text-sm hover:underline">
                   {jobName(day.jobId)}

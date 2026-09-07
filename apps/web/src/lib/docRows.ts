@@ -27,6 +27,12 @@ export interface DocRow {
   /** id used to look up filed office copies (submissions.sourceId) */
   sourceId: string;
   jobId?: string;
+  /** Records manager facets (Round S4): who, and the hierarchy scope */
+  person?: string;
+  customerId?: string;
+  siteId?: string;
+  /** Draft day carrying an office send-back note (awaiting resubmit) */
+  sentBack?: boolean;
 }
 
 export const DOC_KIND_LABEL: Record<DocKind, string> = {
@@ -55,18 +61,23 @@ export async function buildDocRows(opts: {
   const company = scope === 'company';
   const out: DocRow[] = [];
 
-  const jobs = new Map(
-    (await projectTable<{ name: string | null }>('jobs', { name: 'name' })).map((j) => [
-      j.id,
-      j.name ?? '',
-    ]),
-  );
+  const jobRows = await projectTable<{
+    name: string | null;
+    customerId: string | null;
+    siteId: string | null;
+  }>('jobs', { name: 'name', customerId: 'customerId', siteId: 'siteId' });
+  const jobs = new Map(jobRows.map((j) => [j.id, j.name ?? '']));
+  const scopeOf = (jobId: string | null | undefined) => {
+    const j = jobId ? jobRows.find((x) => x.id === jobId) : undefined;
+    return { customerId: j?.customerId ?? undefined, siteId: j?.siteId ?? undefined };
+  };
   const days = await projectTable<{
     name: string | null;
     date: string;
     jobId: string;
     status: string;
-  }>('blastDays', { name: 'name', date: 'date', jobId: 'jobId', status: 'status' });
+    sendBackNote: string | null;
+  }>('blastDays', { name: 'name', date: 'date', jobId: 'jobId', status: 'status', sendBackNote: 'sendBackNote' });
   const dayById = new Map(days.map((d) => [d.id, d]));
 
   // Drill logs — projected (signature blobs stay in the store)
@@ -129,6 +140,8 @@ export async function buildDocRows(opts: {
       to: drillLogRoute(log as unknown as DrillLog),
       sourceId: log.id,
       jobId: log.jobId,
+      person: log.drillerName ?? undefined,
+      ...scopeOf(log.jobId),
     });
   }
 
@@ -178,6 +191,8 @@ export async function buildDocRows(opts: {
       to: `/drill-checklist-print/${c.id}`,
       sourceId: c.id,
       jobId: c.jobId ?? undefined,
+      person: c.drillerName ?? undefined,
+      ...scopeOf(c.jobId),
     });
   }
 
@@ -227,6 +242,8 @@ export async function buildDocRows(opts: {
       to: `/incident/${i.id}`,
       sourceId: i.id,
       jobId: i.jobId ?? undefined,
+      person: i.reportedByName ?? undefined,
+      ...scopeOf(i.jobId),
     });
   }
 
@@ -279,6 +296,9 @@ export async function buildDocRows(opts: {
           to: `/blast-day/${day.id}`,
           sourceId: log.id,
           jobId: day.jobId,
+          person: log.blasterName ?? undefined,
+          sentBack: Boolean(day.sendBackNote),
+          ...scopeOf(day.jobId),
         });
       }
       if (reportMatches) {
@@ -293,6 +313,9 @@ export async function buildDocRows(opts: {
           to: `/blast-day/${day.id}`,
           sourceId: report?.id ?? day.id,
           jobId: day.jobId,
+          person: log?.blasterName ?? undefined,
+          sentBack: Boolean(day.sendBackNote),
+          ...scopeOf(day.jobId),
         });
       }
     }

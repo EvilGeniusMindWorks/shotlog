@@ -58,13 +58,15 @@ const RULES: CoachRule[] = [
     pattern: '/',
     bucket: 'office',
     entry: {
-      title: 'Company',
-      what: 'What the crews filed, and the state of each job.',
+      title: 'Office',
+      what: 'Your queue: what needs your hands today, in the order it needs them.',
       steps: [
-        'Latest filings on top — open one to review the PDF.',
-        'Approvals live under Admin › Approvals; Records is the full record book.',
-        'Job costing rows roll up days, footage and pounds per job.',
+        'Five counters on top — tap one to jump to its section.',
+        'Approvals are oldest first and show what is attached, so you can spot a missing seismo before opening.',
+        'Sent back shows what you bounced and is still waiting on the field; time cards group by day.',
+        'Expiring merges customer COIs and site permits within 90 days. Never submitted = drafts older than 3 days.',
       ],
+      ask: 'Job costing and latest filings moved to the admin home and Records.',
     },
   },
   {
@@ -287,11 +289,11 @@ const RULES: CoachRule[] = [
     pattern: '/records',
     entry: {
       title: 'Records',
-      what: 'Filed copies — write-once PDFs with their checksum and history.',
+      what: 'The record system: every document, filed or not, with its PDF, versions and integrity hash.',
       steps: [
-        'Filter by job, customer, type or date; search finds anything.',
-        'Sent-back days are in the Filed lens with the office note.',
-        'Binder export gathers a job or date range for an inspector.',
+        'Filters on the left (kind · status · job · customer · site · person · dates) show live counts.',
+        'Tap a row to preview the filed PDF; tick rows to download a ZIP, export a CSV index, or print.',
+        'Group by date, job or kind; sort any column. Binder export packs a date range for an inspector.',
       ],
     },
   },

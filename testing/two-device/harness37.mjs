@@ -190,6 +190,9 @@ async (page) => {
     // Use an existing no-login roster person (Adam Routier in the dev seed)
     await P6.getByPlaceholder(/Search by name/).fill('Adam');
     await P6.waitForTimeout(800);
+    // S4: row actions live behind ⋯ on the one-line row
+    await P6.locator('[data-person-row] [data-person-more]').first().click();
+    await P6.waitForTimeout(300);
     await P6.getByRole('button', { name: /re-?invite$/i }).first().click();
     await P6.waitForTimeout(400);
     await P6.locator('input[type="email"]').last().fill(`s1-invitee-${stamp}@test.local`);

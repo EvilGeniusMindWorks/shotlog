@@ -127,3 +127,9 @@ page · customer/site/job create (new) · contacts · My Records · reference
 - ✅ "About this screen" from the ? menu on every screen the blaster touches: day hub (per view: blast log, daily report, readiness, drilling review), shot designer, seismo, file, drill plan, jobs, records, profile.
 - ✅ First-week card on the home: license · sign once · walkthrough · start a day · file a day — ticks itself from the blaster's own records.
 - ✅ Empty states say the next action (today band, month list, job days, drilling review, drill logs on a shot).
+
+## Clutter sweep + records (Round S4, 2026-09-06)
+
+- ✅ Daily Report tab: empty sections are one "+ Add" row; locked days hide them (~4 screens → 1.3 on a phone).
+- ✅ Jobs rows answer "which job, when did we last work it": number · name · customer · town · last worked · day count; chips only when they say something; long-press peeks.
+- ✅ My records is the records manager on a phone: list + preview sheet.

@@ -12,7 +12,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import {
-  AlertTriangle, Check, Copy, KeyRound, Link2, Mail, Plus, Send, UserX, UserCheck,
+  AlertTriangle, Check, Copy, KeyRound, Link2, Mail, MoreHorizontal, Plus, Send, UserX, UserCheck,
 } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { authedFetch, getSessionUser, type UserLicense } from '@/lib/session';
@@ -143,6 +143,8 @@ function PersonRow({
   const navigate = useNavigate();
   const ROLE_OPTIONS = useRoleOptions();
   const [panel, setPanel] = useState<RowPanel>('none');
+  // S4: rows are one line; role edit + actions live behind ⋯
+  const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // invite state
@@ -250,26 +252,27 @@ function PersonRow({
     });
   };
 
+  const roleLabel = ROLE_OPTIONS.find((o) => o.value === role)?.label ?? role;
+  const showTools = open || panel !== 'none';
   return (
-    <div className={member.isActive ? 'p-3' : 'p-3 opacity-60'}>
-      <div className="flex items-center gap-2 flex-wrap">
-        <div className="min-w-0 flex-1">
-          <button
-            className="font-medium text-sm truncate text-left hover:underline"
-            title="Open person page"
-            onClick={() => navigate(`/crew/${member.id}`)}
-          >
+    <div
+      className={`${member.isActive ? '' : 'opacity-60'} ${panel !== 'none' ? 'pb-3 [&>.mt-3]:mx-3' : ''}`}
+      data-person-row={member.id}
+    >
+      {/* One-line row (S4): name · email · role · login · expiry · ⋯ */}
+      <div className="flex items-center gap-2 px-3 min-h-[44px]">
+        <button
+          className="min-w-0 flex-1 text-left py-1.5"
+          title="Open person page"
+          onClick={() => navigate(`/crew/${member.id}`)}
+        >
+          <span className="block font-medium text-sm truncate hover:underline">
             {member.name}
             {isSelf && <span className="text-gray-400 font-normal"> (you)</span>}
-          </button>
-          {user && <p className="text-xs text-gray-400 truncate">{user.email}</p>}
-        </div>
-        <Select
-          value={role}
-          disabled={Boolean(user) && (!isAdmin || !online)}
-          onChange={(e) => changeRole(e.target.value)}
-          options={[{ value: '', label: 'Role…' }, ...ROLE_OPTIONS]}
-        />
+          </span>
+          {user && <span className="block text-[11px] text-gray-400 truncate">{user.email}</span>}
+        </button>
+        {roleLabel && <Badge variant="secondary" className="capitalize hidden sm:inline-flex">{roleLabel}</Badge>}
         {user ? (
           <Badge variant="synced">login</Badge>
         ) : pendingInvite ? (
@@ -279,6 +282,28 @@ function PersonRow({
         )}
         {!member.isActive && <Badge variant="local">deactivated</Badge>}
         <ExpiryChip licenses={user?.licenses} />
+        <button
+          className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${showTools ? 'bg-gray-100 text-navy' : 'text-gray-400 hover:text-navy hover:bg-gray-100'}`}
+          aria-label="More"
+          aria-expanded={showTools}
+          data-person-more
+          onClick={() => {
+            if (showTools) setPanel('none');
+            setOpen(!showTools);
+          }}
+        >
+          <MoreHorizontal className="h-4 w-4" />
+        </button>
+      </div>
+
+      {showTools && (
+      <div className="px-3 pb-3 flex items-center gap-2 flex-wrap" data-person-tools>
+        <Select
+          value={role}
+          disabled={Boolean(user) && (!isAdmin || !online)}
+          onChange={(e) => changeRole(e.target.value)}
+          options={[{ value: '', label: 'Role…' }, ...ROLE_OPTIONS]}
+        />
         <div className="flex items-center gap-1">
           {isAdmin && !user && member.isActive && (
             <>
@@ -312,6 +337,7 @@ function PersonRow({
             ))}
         </div>
       </div>
+      )}
 
       {panel === 'invite' && !inviteLink && (
         <div className="mt-3 rounded-lg bg-gray-50 p-3 flex items-end gap-2 flex-wrap">
@@ -410,7 +436,7 @@ function PersonRow({
         </div>
       )}
 
-      {error && <p className="mt-2 text-sm text-violation">{error}</p>}
+      {error && <p className="mt-2 px-3 pb-2 text-sm text-violation">{error}</p>}
     </div>
   );
 }
@@ -428,6 +454,9 @@ export function AdminPeoplePage() {
   const [adding, setAdding] = useState(false);
   const [addForm, setAddForm] = useState({ name: '', role: '' });
   const [showInactive, setShowInactive] = useState(false);
+  // S4: 15 rows + Show all (search shows everyone) — Baystate's 24-person
+  // roster was 4.4 screens of 3-line blocks
+  const [showAll, setShowAll] = useState(false);
 
   const loadDirectory = useCallback(async () => {
     if (!isAdmin) return; // /users is admin-only; supervisors run roster-only
@@ -520,7 +549,7 @@ export function AdminPeoplePage() {
       )}
 
       <div className="divide-y divide-gray-100 rounded-xl border border-gray-200 bg-white">
-        {visible.map((p) => (
+        {(showAll || q ? visible : visible.slice(0, 15)).map((p) => (
           <PersonRow
             key={p.id}
             member={p}
@@ -532,6 +561,15 @@ export function AdminPeoplePage() {
             onDirectory={loadDirectory}
           />
         ))}
+        {!showAll && !q && visible.length > 15 && (
+          <button
+            className="w-full text-left px-3 py-2.5 text-xs text-gray-400 hover:text-navy"
+            onClick={() => setShowAll(true)}
+            data-people-more
+          >
+            Show all {visible.length} people ▸
+          </button>
+        )}
         {visible.length === 0 && (
           <p className="p-4 text-sm text-gray-400">
             {search ? 'Nobody matches.' : 'No people yet — add your roster above.'}

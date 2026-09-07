@@ -59,3 +59,10 @@ Incidents · People (read) · company/customer/site pages · export surfaces
 - ✅ "About this screen": Company home, Approvals, Records, Incidents, incident page.
 - ✅ First-week card: walkthrough · approve or send back a day · open Records · look at Incidents.
 - ✅ Empty states on Approvals and Records say what lands there and from whom.
+
+## Clutter sweep + records (Round S4, 2026-09-06)
+
+- ✅ Office home is now the QUEUE the charter asked for: awaiting approval (oldest first, with what is attached) · sent back, waiting · time cards to approve · expiring COI/permits (90 d) · open incidents · never submitted (>3 days). Job costing and latest filings moved to the admin home and Records. Provisional until Evette's walkthrough.
+- ✅ Records is a record system: facets with counts, inline PDF preview, versions + SHA-256, multi-select → ZIP / CSV index / print. Audit pack curation and saved views are R-B (jobs 5 and 8 stay 🟡 until then).
+- ✅ Office rail gains People (read-only roster) for license/phone lookups.
+- 🟡 Job 6 (compliance clocks) now SURFACES on the home; job 7 ("missing paperwork") is the "never submitted" section — both provisional.
