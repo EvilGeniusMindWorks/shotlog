@@ -952,3 +952,25 @@ ALERT_TO (+ LOADTEST_EMAIL · LOADTEST_PASSWORD), a probe user in People.
    Reference 3 · Something's wrong 6 — 59 pages, 30 screenshots, every
    page a draft until Matthew marks it reviewed (the Draft banner carries
    Send feedback).
+
+**Sync load — photos out of records (2026-09-08; decisions.md) — ✅ SHIPPED (harness58 9/9; 19 green after a stale day-view selector was fixed):**
+1. `SeismoReading.printoutAttachmentId`; the capture form stores the printout
+   through `addAttachmentFiles(readingId, 'seismo_reading', …, 'photo')` — device
+   media + thumb + metadata record; the background uploader moves the binary
+   to R2. `printoutImage` is never written again (kept in the type for legacy
+   rows and print/PDF fallbacks).
+2. The reading card shows the attachment's thumb (or the legacy inline image);
+   tap opens the full photo through the attachment resolver (device → R2).
+3. Server `legacyImages.ts`: boot migration (and `POST /platform/migrations/
+   inline-images`) for `seismoReadings.printoutImage.__blob` → R2 key
+   `c/<cid>/a/seismo-photo-<readingId>/printout.<ext>` + an `attachments`
+   record (kind photo, storageStatus stored, sha256, size), and for
+   `attachments.data.__blob` → R2 under the app's key, `data: null`,
+   `storageStatus: 'stored'`. /health reports `legacyInlineImages`.
+4. After deploy: run the migration, then **compact the bucket in PowerSync
+   Cloud** so cold downloads stop replaying the old blob versions; re-measure
+   with the size probe (target ≈ 1 MB per full download).
+5. Harness 58: a reading with a photo syncs metadata-only (no `__blob` in the
+   record), the thumb shows on both devices, the other device's open falls
+   back truthfully without R2; the migration endpoint answers (skipped
+   without R2 locally); the seismo nudges still count photos.

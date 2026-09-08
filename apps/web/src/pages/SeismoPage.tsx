@@ -10,6 +10,8 @@ import {
   type InstantelReading,
 } from '@shotlog/shared';
 import { scanSeismoPrintout } from '@/lib/seismoScan';
+import { addAttachmentFiles, getAttachmentBlob, useAttachmentSummaries, type AttachmentSummary } from '@/lib/attachments';
+import { VideoLightbox } from '@/components/media/VideoLightbox';
 import { useJobContext } from '@/lib/jobContext';
 import { ComplianceSheet } from '@/components/records/ComplianceSheet';
 import type { SeismoReading, Shot } from '@/db/schema';
@@ -108,6 +110,23 @@ export function SeismoPage() {
 function ReadingCard({ reading, shot }: { reading: SeismoReading; shot: Shot }) {
   const [imgUrl, setImgUrl] = useState<string | null>(null);
   const [showWhy, setShowWhy] = useState(false);
+  // The printout as an attachment (2026-09-08): thumb from the record,
+  // full image on demand — device copy first, file storage second
+  const photos = useAttachmentSummaries([reading.id]) ?? [];
+  const photo: AttachmentSummary | undefined =
+    photos.find((a) => a.id === reading.printoutAttachmentId) ?? photos.find((a) => a.mimeType.startsWith('image/'));
+  const [lightbox, setLightbox] = useState<{ summary: AttachmentSummary; blob: Blob } | null>(null);
+  const [opening, setOpening] = useState(false);
+  const openPhoto = async () => {
+    if (!photo || opening) return;
+    setOpening(true);
+    try {
+      const blob = await getAttachmentBlob(photo);
+      if (blob) setLightbox({ summary: photo, blob });
+    } finally {
+      setOpening(false);
+    }
+  };
   // The local bylaw, when the site has one — the explainer leads with it
   const ctx = useJobContext(
     useLiveQuery(async () => {
@@ -128,14 +147,39 @@ function ReadingCard({ reading, shot }: { reading: SeismoReading; shot: Shot }) 
   const maxPPV = Math.max(reading.ppvTran, reading.ppvVert, reading.ppvLong);
 
   return (
+    <>
+      {lightbox && (
+        <VideoLightbox
+          target={{ mode: 'existing', summary: lightbox.summary }}
+          blob={lightbox.blob}
+          canEdit={false}
+          onClose={() => setLightbox(null)}
+        />
+      )}
     <Card>
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
-          {imgUrl ? (
+          {photo ? (
+            <button
+              type="button"
+              className="w-20 h-20 rounded-md border border-gray-200 shrink-0 overflow-hidden bg-gray-50 flex items-center justify-center"
+              onClick={() => void openPhoto()}
+              title={photo.localOnly ? `Full photo on ${photo.originName ?? "the capturing"} device` : 'Open the printout'}
+              data-seismo-photo={photo.id}
+              data-seismo-photo-status={photo.storageStatus ?? 'device'}
+            >
+              {photo.thumb ? (
+                <img src={photo.thumb} alt={`Graph ${reading.graphNumber} printout`} className="w-full h-full object-cover" />
+              ) : (
+                <Camera className="h-6 w-6 text-gray-400" />
+              )}
+            </button>
+          ) : imgUrl ? (
             <img
               src={imgUrl}
               alt={`Graph ${reading.graphNumber} printout`}
               className="w-20 h-20 object-cover rounded-md border border-gray-200 shrink-0"
+              data-seismo-photo-legacy
             />
           ) : (
             <div className="w-20 h-20 rounded-md border border-dashed border-gray-300 flex items-center justify-center text-gray-300 shrink-0">
@@ -198,6 +242,7 @@ function ReadingCard({ reading, shot }: { reading: SeismoReading; shot: Shot }) 
         />
       )}
     </Card>
+    </>
   );
 }
 
@@ -333,12 +378,19 @@ function AddReadingForm({
       sensorCheckPassed: true,
       calibrationDate: '',
       complianceStatus: compliance?.overall ?? 'compliant',
-      printoutImage: photo,
+      // The printout never rides the record (2026-09-08): it becomes an
+      // attachment — compressed, thumb in the record, binary on the device
+      // then in file storage
+      printoutImage: null,
       createdAt: now,
       updatedAt: now,
       syncStatus: 'local',
     };
     await db.seismoReadings.add(reading);
+    if (photo) {
+      const [attachmentId] = await addAttachmentFiles(reading.id, 'seismo_reading', [photo], 'photo');
+      if (attachmentId) await db.seismoReadings.update(reading.id, { printoutAttachmentId: attachmentId, updatedAt: nowISO() });
+    }
     onDone();
   };
 

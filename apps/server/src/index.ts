@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { TABLE_PERMISSIONS } from '@shotlog/shared';
-import { authRouter, ensureAdminUser } from './auth.js';
+import { authRouter, ensureAdminUser, requireAuth, requirePlatformAdmin } from './auth.js';
 import { adminRouter } from './admin.js';
 import { enrollRouter, invitesRouter } from './enrollment.js';
 import { powersyncRouter } from './powersync.js';
@@ -14,6 +14,7 @@ import { companiesRouter } from './companies.js';
 import { emailEnabled } from './email.js';
 import { filesConfigured } from './files.js';
 import { countLegacyInlinePdfs, migrateLegacyInlinePdfs } from './legacyPdfs.js';
+import { countLegacyInlineImages, migrateLegacyInlineImages } from './legacyImages.js';
 import { seedCompanyReference } from './seed.js';
 
 const app = express();
@@ -25,6 +26,7 @@ app.get('/health', async (_req, res) => {
   // Filed copies still carrying their PDF inline — watched reaching zero
   // after the boot migration (legacyPdfs.ts); null when the DB is unreachable
   const legacyInlinePdfs = await countLegacyInlinePdfs().catch(() => null);
+  const legacyInlineImages = await countLegacyInlineImages().catch(() => null);
   // `tables` surfaces the permission matrix size — a cheap deploy marker
   // proving which @shotlog/shared build this server is running. `commit`
   // (Railway-injected) pins the exact build even when the matrix is
@@ -41,7 +43,15 @@ app.get('/health', async (_req, res) => {
     // Truthful file-storage status — Settings says where filed PDFs live
     files: filesConfigured(),
     legacyInlinePdfs,
+    legacyInlineImages,
   });
+});
+
+// On-demand run of the inline-image move (platform admin) — the boot run
+// covers production; this is for a re-run after storage is configured
+app.post('/platform/migrations/inline-images', requireAuth, requirePlatformAdmin, async (_req, res) => {
+  const result = await migrateLegacyInlineImages();
+  res.json(result);
 });
 
 app.use('/auth', authRouter);
@@ -66,8 +76,11 @@ async function main() {
   app.listen(port, () => {
     console.log(`ShotLog sync server listening on :${port}`);
   });
-  // Move legacy inline PDFs to file storage (idempotent, logs a summary)
-  void migrateLegacyInlinePdfs().catch((err) => console.error('[legacy-pdfs]', err));
+  // Move legacy inline PDFs, then inline images, to file storage (idempotent, logs a summary)
+  void migrateLegacyInlinePdfs()
+    .catch((err) => console.error('[legacy-pdfs]', err))
+    .then(() => migrateLegacyInlineImages())
+    .catch((err) => console.error('[legacy-images]', err));
 }
 
 void main();

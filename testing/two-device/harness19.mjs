@@ -194,7 +194,8 @@ async (page) => {
         attachmentTypes: types, updatedAt: new Date().toISOString(),
       });
     });
-    await second.goto(`http://localhost:5199/blast-day/${ids.dayId}`);
+    // S8a: the day opens on its spine; the attachments card (and its type picker) lives on the blast-log view
+    await second.goto(`http://localhost:5199/blast-day/${ids.dayId}?view=blast-log`);
     const permitShown = await waitFor(second, async () =>
       document.body.innerText.includes('Permit'), null, 30000);
     ok('custom type "Permit" in picker on second device', permitShown);

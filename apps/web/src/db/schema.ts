@@ -435,7 +435,13 @@ export interface SeismoReading extends BaseRecord {
   sensorCheckPassed: boolean;
   calibrationDate: string; // ISO date
   complianceStatus: 'compliant' | 'warning' | 'violation';
-  printoutImage: Blob | null; // camera capture of the seismograph printout
+  /** LEGACY inline capture — new readings never write it (2026-09-08: four raw
+   *  captures were 13.7 MB of the company's 18.8 MB sync). Kept for old rows
+   *  until the server moves them to file storage. */
+  printoutImage: Blob | null;
+  /** The printout as an attachment (kind photo, parentType seismo_reading):
+   *  thumb in the record, binary on the device then in R2 */
+  printoutAttachmentId?: string;
 }
 
 // ══════════════════════════════════════════════════════
