@@ -204,6 +204,12 @@ const sdkLogger: PowerSyncLogger = {
   log(record) {
     const name = record.level >= LogLevels.error ? 'error' : record.level >= LogLevels.warn ? 'warn' : record.level >= LogLevels.info ? 'info' : 'debug';
     const line = `sdk ${name}: ${record.message}${record.error ? ` — ${record.error instanceof Error ? record.error.message : String(record.error)}` : ''}`;
+    // Safari has no SharedWorker: the SDK says so twice on every open. A fact,
+    // not an event — console only, never the sync log.
+    if (/Multiple tab/i.test(record.message)) {
+      if (syncDebugOn()) console.log('[PowerSync]', record.message);
+      return;
+    }
     if (record.level >= LogLevels.warn) console.warn('[PowerSync]', record.message, record.error ?? '');
     else if (syncDebugOn()) console.log('[PowerSync]', record.message);
     if (record.level >= LogLevels.warn || syncDebugOn()) logSyncEvent(line.slice(0, 300));
