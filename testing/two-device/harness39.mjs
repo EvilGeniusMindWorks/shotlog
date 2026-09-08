@@ -200,8 +200,8 @@ async (page) => {
     await P4.locator('[data-tour-skip]').click();
     await P4.waitForTimeout(500);
     await P4.locator('aside [data-help-button]').click();
-    await P4.locator('[data-help-from]').waitFor({ timeout: 8000 });
-    ok('desktop Help & feedback opens the guide with About this screen / Walkthrough / Send feedback', (await P4.locator('[data-help-coach]').count()) === 1 && (await P4.locator('[data-help-walkthrough]').count()) === 1 && (await P4.locator('[data-help-feedback]').count()) === 1);
+    await P4.locator('[data-help-submenu]').waitFor({ timeout: 3000 });
+    ok('desktop Help & feedback sub-menu has About this screen / Walkthrough / Send feedback', (await P4.locator('[data-help-coach]').count()) === 1 && (await P4.locator('[data-help-walkthrough]').count()) === 1 && (await P4.locator('[data-help-feedback]').count()) === 1);
     await P4.locator('[data-help-coach]').click();
     ok('Records coach', /Records/.test(await P4.locator('[data-coach-sheet] h2').innerText()));
     await c4.close();

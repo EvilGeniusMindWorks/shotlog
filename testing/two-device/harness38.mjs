@@ -180,8 +180,8 @@ async (page) => {
     await signIn(P2, 'mark@baystateblasting.com', 'dev-password-123');
     // the sidebar row opens the guide (2026-09-08) with Send feedback on the page
     await P2.locator('aside [data-help-button]').click();
-    await P2.locator('[data-help-from]').waitFor({ timeout: 8000 });
-    ok('sidebar Help & feedback opens the guide with Send feedback on the page', (await P2.locator('[data-help-feedback]').count()) === 1);
+    await P2.locator('[data-help-submenu]').waitFor({ timeout: 3000 });
+    ok('sidebar Help & feedback expands an inline sub-menu with Send feedback', (await P2.locator('[data-help-feedback]').count()) === 1);
     await P2.keyboard.press('Escape');
     await P2.goto(`${WEB}/admin`);
     await P2.waitForTimeout(2000);

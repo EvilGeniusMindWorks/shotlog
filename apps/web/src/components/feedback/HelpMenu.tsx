@@ -119,29 +119,61 @@ export function HelpMenu({
   const guidePage = helpForRoute(location.pathname, location.search);
   const sheet = coaching && coach ? <CoachSheet entry={coach} guide={guidePage ? { title: guidePage.title, to: helpPath(guidePage) } : null} onClose={() => setCoaching(false)} /> : null;
 
-  // Wide screens (Matthew, 2026-09-08: "can it open like the other items?"):
-  // the sidebar row navigates to the guide, opened at this screen's page with
-  // the About-this-screen notes, Walkthrough and Send feedback on that page.
-  // The phone header keeps the compact ? popover.
+  // Wide screens (Matthew, 2026-09-08): the sidebar row expands an INLINE
+  // sub-menu under it — About this screen · Help guide · Walkthrough · Send
+  // feedback — the way the Jobs sub-items used to; no floating popup, no
+  // navigating away to reach feedback. It stays open while you are in the guide.
   if (variant === 'sidebar') {
     const onGuide = location.pathname.startsWith('/help');
+    const expanded = open || onGuide;
+    const sub = 'w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-[13px] text-left transition-colors text-navy-200 hover:text-white hover:bg-white/5';
     return (
-      <button
-        className={cn(
-          'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-          onGuide ? 'bg-white/10 text-white' : 'text-navy-200 hover:text-white hover:bg-white/5',
+      <div ref={ref}>
+        <button
+          className={cn(
+            'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+            expanded ? 'bg-white/10 text-white' : 'text-navy-200 hover:text-white hover:bg-white/5',
+          )}
+          aria-expanded={expanded}
+          data-help-button
+          onClick={() => setOpen((o) => !o)}
+        >
+          <CircleHelp className="h-5 w-5" />
+          Help &amp; feedback
+        </button>
+        {expanded && (
+          <div className="ml-9 space-y-0.5 pb-1 pt-0.5" data-help-menu data-help-submenu>
+            {coach && (
+              <button className={sub} data-help-coach onClick={() => setCoaching(true)}>
+                <Info className="h-3.5 w-3.5 opacity-70" /> About this screen
+              </button>
+            )}
+            <button
+              className={cn(sub, onGuide && 'text-white bg-white/10 font-medium')}
+              data-help-guide
+              onClick={() => {
+                const p = helpForRoute(location.pathname, location.search);
+                const from = encodeURIComponent(location.pathname + location.search);
+                navigate(onGuide ? location.pathname : `${p ? helpPath(p) : '/help'}?from=${from}`);
+              }}
+            >
+              <BookOpen className="h-3.5 w-3.5 opacity-70" /> Help guide
+            </button>
+            {screenTour && (
+              <button className={sub} data-help-screen-tour={screenTour} onClick={() => startScreenTour(screenTour)}>
+                <Footprints className="h-3.5 w-3.5 opacity-70" /> Show me {SCREEN_TOUR_TITLE[screenTour]}
+              </button>
+            )}
+            <button className={sub} data-help-walkthrough onClick={onWalkthrough}>
+              <Route className="h-3.5 w-3.5 opacity-70" /> Walkthrough
+            </button>
+            <button className={sub} data-help-feedback onClick={() => openFeedbackComposer()}>
+              <MessageSquarePlus className="h-3.5 w-3.5 opacity-70" /> Send feedback
+            </button>
+          </div>
         )}
-        data-help-button
-        aria-current={onGuide ? 'page' : undefined}
-        onClick={() => {
-          const p = helpForRoute(location.pathname, location.search);
-          const from = encodeURIComponent(location.pathname + location.search);
-          navigate(`${p ? helpPath(p) : '/help'}?from=${from}`);
-        }}
-      >
-        <CircleHelp className="h-5 w-5" />
-        Help &amp; feedback
-      </button>
+        {sheet}
+      </div>
     );
   }
 
