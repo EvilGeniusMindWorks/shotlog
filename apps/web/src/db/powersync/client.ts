@@ -39,7 +39,25 @@ class ShotLogConnector implements PowerSyncBackendConnector {
       return { endpoint: import.meta.env.VITE_POWERSYNC_URL ?? 'http://localhost:8095', token };
     }
     try {
-      const res = await authedFetch('/powersync/token');
+      // S8c: probe with the token in hand BEFORE authedFetch's refresh — a
+      // person moved to another company (go-live) gets 401 company_moved and
+      // their refresh token is gone, so the refresh path would only say
+      // "session expired". Drop the session (the PIN stays: same person,
+      // same device); the next sign-in resets the replica for the new company.
+      const { serverUrl } = getSession();
+      let res = await fetch(`${serverUrl}/powersync/token`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('shotlog-access-token') ?? ''}` },
+      });
+      if (res.status === 401) {
+        const body = (await res.clone().json().catch(() => null)) as { error?: string } | null;
+        if (body?.error === 'company_moved') {
+          logSyncEvent('account moved to another company — sign in again');
+          for (const k of ['shotlog-access-token', 'shotlog-refresh-token', 'shotlog-user-info']) localStorage.removeItem(k);
+          window.location.assign('/');
+          await new Promise(() => undefined); // the reload takes it from here
+        }
+        res = await authedFetch('/powersync/token');
+      }
       if (!res.ok) throw new Error(`powersync token failed (${res.status})`);
       const { token, endpoint } = (await res.json()) as { token: string; endpoint: string };
       return { endpoint: import.meta.env.VITE_POWERSYNC_URL ?? endpoint, token };

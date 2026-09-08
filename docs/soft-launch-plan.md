@@ -803,7 +803,7 @@ status labels.
 | 1 | Invite email, testing mode (`INVITE_MODE`) | Build | S8a | ✅ shipped 2026-09-07 (harness53 26/26) |
 | 7 | Jobs = drill-down (details first, windowed lists, nav stays *Jobs*; Wide 1 · Pages; flat list dropped) | Build | S8b | ✅ shipped 2026-09-07 (harness55 45/45; 40/41/43/53 green) |
 | 9 | Equipment: four grouped tabs + type chips + search + filter chips; repair queue leaves the admin page | Build | S8b | ✅ shipped 2026-09-07 (harness55 45/45) |
-| 3 | Alpha / Beta / Production companies + platform-admin switcher; go-live moves people | Build | S8c | queued |
+| 3 | Alpha / Beta / Production companies + platform-admin switcher; go-live moves people | Build | S8c | ✅ shipped 2026-09-07 (harness56 26/26; 41/49 green) |
 | 2 | Help guide — Markdown in repo, built into the app at /help, hosted at the app URL | Deferred until the UI settles (outline kept) | — | queued |
 | 4 | Load / soak test — manual overnight GitHub Action vs a staging copy; p50/p95, delivery lag, error rate | Build | S8d | queued |
 | 5 | Connectivity probe every 10 min (health, sign-in, sync token, manifest); email on fail + recover | Build | S8d | queued |
@@ -867,3 +867,52 @@ in decisions.md 2026-09-07) — ✅ SHIPPED 2026-09-07 (harness55 45/45):**
    search hits with paths, + New site/job preset, tabs/chips/search/filters
    with a live repair ticket; 40/41/43 + audit-sweep updated for the new
    landing.
+
+**S8c — Alpha / Beta / Production companies (plan artifact 57e5b772; calls in
+decisions.md 2026-09-07) — ✅ SHIPPED 2026-09-07 (harness56 26/26):**
+1. **Environment on the company** (`Company.environment`: alpha · beta ·
+   production · sandbox; the existing company defaults to production until
+   renamed). The session carries `environment` + `companyId`; the sidebar and
+   phone header show an ALPHA / BETA tag beside the company name (production:
+   none; the sandbox keeps its rehearsal bar). Names per Matthew: "Baystate
+   Blasting (Alpha)", "(Beta)".
+2. **Twins.** `User.platformRootId` marks a platform admin's hidden admin
+   account in another company (`<local>+c-<cid8>@<domain>`, random password,
+   born onboarded, tours done, licenses/signature copied). `requirePlatformAdmin`
+   and the session's `platformAdmin` resolve through the root. Twins never
+   appear in People or in Move lists; they cannot sign in by password.
+3. **Server `/platform/companies`** (requireAuth + requirePlatformAdmin):
+   `GET /` list (id, name, environment, createdAt, people, records, current),
+   `POST /` create {name, environment, fromCompanyId?} (copies reference data
+   — the rehearsal `copyCompanyData` — and rewrites the copied companySettings
+   name; seeds catalog/manufacturers when empty), `PATCH /:id` {name?,
+   environment?} (Company.name + the synced companySettings.companyName),
+   `POST /:id/switch` → twin session, `POST /:id/move-people` {userIds}
+   (must belong to the caller's company, not twins/roots; moves the account,
+   re-links or copies the crewMembers record, revokes refresh tokens),
+   `DELETE /:id` (never production, never the current company, never the
+   sandbox; wipes records, audit, feedback, invites, users incl. twins).
+4. **Web:** `lib/companies.ts` (list/create/rename/switch/move/delete; the
+   switch stores the twin session, carries the device PIN to the twin,
+   `resetLocalReplica()`, reloads), Settings **Company card** (platform admin,
+   not in rehearsal: select + Manage companies link), **Admin › Companies**
+   (platform tab; list, New company form, Rename, Switch here, Move people
+   here sheet with the current company's people, Delete with typed name).
+5. **Invites by environment:** `inviteMail` takes `mode`; enrollment picks
+   production copy for a production company, testing otherwise, unless
+   `INVITE_MODE` is set explicitly.
+6. Harness 56: as Mark — create "(Beta)" from the current company, switch
+   (name + tag, no Set-PIN, no Alpha day on the device), invite from Beta and
+   enroll a tester on a second device (company Beta, no Alpha record), create
+   a production company from Beta, move the tester, tester signs in again
+   (production, roster linked), switch back, delete both; 403s for a company
+   admin.
+7. Built in-round: a moved person's device still held a valid access token
+   for the old company, so `/powersync/token` now refuses a token whose
+   company is no longer the account's (`company_moved`) and the client
+   probes it before any refresh, drops the session (PIN kept) and shows the
+   sign-in — "each device signs in once" is literally true.
+   **Matthew's next moves:** Admin › Companies → Rename the current company
+   to "Baystate Blasting (Alpha)" (environment Alpha) → New company
+   "Baystate Blasting (Beta)" from Alpha's reference data → Settings ›
+   Company → switch → send the beta invites from there.

@@ -44,6 +44,10 @@ export interface SessionUser {
   name: string;
   role: string;
   company: string;
+  /** S8c: the company id and its environment (alpha · beta · production ·
+   *  sandbox) — the header tag; twins carry the platform-admin marker */
+  companyId?: string;
+  environment?: 'alpha' | 'beta' | 'production' | 'sandbox';
   licenses?: UserLicense[];
   /** Signature on file — PNG data URL */
   signature?: string | null;

@@ -38,6 +38,7 @@ import { screenTourFor, type ScreenTourKey } from '@/components/guidance/tourScr
 import { HelpMenu } from '@/components/feedback/HelpMenu';
 import { RehearsalBar } from '@/components/rehearsal/RehearsalBar';
 import { ShotLogLogo } from '@/components/brand/ShotLogLogo';
+import { EnvTag } from '@/pages/admin/AdminCompaniesPage';
 
 /** Dev-only: `window.shotlogCrash()` throws during render so the harness
  *  can prove the root error boundary catches it (never shipped in prod) */
@@ -311,7 +312,13 @@ export function AppShell() {
               <span className="block text-sm font-semibold truncate">
                 {displayName || 'Set up profile'}
               </span>
-              <span className="block text-[11px] text-navy-200 truncate">{displaySub}</span>
+              <span className="block text-[11px] text-navy-200 truncate">
+                {displaySub}
+                {/* S8c: Alpha / Beta tag beside the company name (production: none) */}
+                {session?.environment && session.environment !== 'production' && session.environment !== 'sandbox' && (
+                  <EnvTag environment={session.environment} className="ml-1.5" />
+                )}
+              </span>
             </span>
           </NavLink>
         </div>
@@ -331,7 +338,12 @@ export function AppShell() {
         {/* Mobile header */}
         {/* side padding = 1 rem + the device's side inset (landscape corners) */}
         <header className="lg:hidden bg-navy text-white pl-[calc(1rem+var(--sal))] pr-[calc(1rem+var(--sar))] py-3 shadow-md flex items-center justify-between shrink-0">
-          <Wordmark compact />
+          <div className="flex items-center gap-2 min-w-0">
+            <Wordmark compact />
+            {session?.environment && session.environment !== 'production' && session.environment !== 'sandbox' && (
+              <EnvTag environment={session.environment} />
+            )}
+          </div>
           <div className="flex items-center gap-1">
             <HelpMenu
               variant="header"

@@ -43,8 +43,15 @@ architecture decisions account for the separation BEFORE it's urgent.
    due, an open incident — so every role has real work in front of them.
    The copy is made fresh on every Start and wiped on End; the source
    company is never written.
-1. ❌ Tenant management: onboard a new blasting company (company record,
-   first admin, seeded catalog/roles), suspend, offboard
+1. 🟡 Tenant management: onboard a new blasting company (company record,
+   first admin, seeded catalog/roles), suspend, offboard.
+   **S8c (2026-09-07):** companies carry an environment (alpha · beta ·
+   production · sandbox); Admin › Companies (platform tab) creates one from
+   another's reference data or empty, renames, deletes non-production ones,
+   and **moves people** between companies (go-live); Settings › Company
+   switches the platform admin between companies through hidden admin twins
+   (`User.platformRootId`). The first admin of a new company is a moved
+   person or an invite sent from inside it. Suspend/offboard still open.
 2. ❌ Cross-tenant support: see a company's health (sync status, errors,
    version adoption), impersonate WITH consent/audit for support
 3. ❌ Platform configuration: feature flags per tenant, plan/billing
@@ -71,3 +78,18 @@ architecture decisions account for the separation BEFORE it's urgent.
 
 - touch a tenant's data invisibly — platform access is consented and audited
 - redeploy to onboard a customer
+
+## Round S8c (2026-09-07) — environments
+
+- Matthew: "Baystate Blasting (Alpha)" for his own testing, "(Beta)" for the
+  testers he is about to onboard, plain "Baystate Blasting" at go-live. The
+  tag goes AFTER the name.
+- One switch in Settings (platform admin only) moves the device between
+  companies; the header/sidebar show the company's name with an ALPHA / BETA
+  tag; invites go to the company you are in and the mail follows its
+  environment (testing invitation vs the real one).
+- Go-live = New company (production, from Beta's reference data) → Move
+  people → each moved device signs in once. Beta stays as the test bed, so
+  the pre-invite clean-up of test days is unnecessary.
+- Never: a production company deleted from a button; a twin visible in a
+  company's People; a company admin seeing the switcher or other companies.

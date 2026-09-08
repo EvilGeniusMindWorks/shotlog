@@ -18,6 +18,8 @@ import { getRealSessionUser, getSessionUser } from '@/lib/session';
 import { myHomeDashboard } from '@/lib/perms';
 import { FEEDBACK_OUTBOX_EVENT, outboxCount } from '@/lib/feedback';
 import { REHEARSAL_ROLES, rehearsalRole, startRehearsal } from '@/lib/rehearsal';
+import { listCompanies, switchCompany, type CompanySummary } from '@/lib/companies';
+import { EnvTag } from '@/pages/admin/AdminCompaniesPage';
 import {
   COPY_SECTIONS,
   getCopySections,
@@ -240,6 +242,60 @@ function HelpCard() {
   );
 }
 
+/** Platform admin only (Round S8c): which company this device is in.
+ *  Switching mints a session for the hidden admin twin there, carries the
+ *  PIN over, clears this device's copy and downloads the other company. */
+function CompanyCard() {
+  const me = getRealSessionUser();
+  const [companies, setCompanies] = useState<CompanySummary[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const show = Boolean(me?.platformAdmin) && !rehearsalRole();
+  useEffect(() => {
+    if (!show) return;
+    listCompanies().then(setCompanies).catch(() => setCompanies([]));
+  }, [show]);
+  if (!show) return null;
+  const current = companies?.find((c) => c.current);
+  return (
+    <Card data-company-card>
+      <CardHeader>
+        <CardTitle className="text-base">Company</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-gray-500">
+          Platform admin only. Switching clears this device's copy of the current company and downloads the other one; invites you send afterwards go there.
+        </p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Select
+            className="flex-1 min-w-[200px]"
+            value={current?.id ?? ''}
+            disabled={!companies || busy}
+            data-company-select
+            onChange={(e) => {
+              const id = e.target.value;
+              if (!id || id === current?.id) return;
+              setBusy(true);
+              void switchCompany(id).catch((err: Error) => {
+                showToast(err.message);
+                setBusy(false);
+              });
+            }}
+            options={(companies ?? []).map((c) => ({
+              value: c.id,
+              label: `${c.name}${c.environment === 'sandbox' ? ' — rehearsal only' : c.environment === 'production' ? '' : ` (${c.environment})`}`,
+              disabled: c.environment === 'sandbox',
+            }))}
+          />
+          {current && <EnvTag environment={current.environment} />}
+        </div>
+        <p className="text-xs text-gray-400">
+          {busy ? 'Switching — clearing this device\'s copy, then downloading…' : <Link to="/admin/companies" className="text-safety-orange underline" data-company-manage>Manage companies ›</Link>}
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
 /** Platform admin only (Round S6): become a brand-new person of a role in
  *  the sandbox company — PIN, welcome, walkthrough, their home — to judge
  *  the experience as often as you like. End wipes the sandbox. */
@@ -313,6 +369,7 @@ export function SettingsPage() {
       <PreferencesCard />
       <HelpCard />
       <InstallCard always />
+      <CompanyCard />
       <RehearsalCard />
       <DataDeviceCard />
       {MANAGER_ROLES.includes(role) && (

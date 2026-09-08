@@ -10,6 +10,7 @@ import { auditRouter } from './audit.js';
 import { usersRouter } from './users.js';
 import { feedbackRouter } from './feedback.js';
 import { rehearsalRouter } from './rehearsal.js';
+import { companiesRouter } from './companies.js';
 import { emailEnabled } from './email.js';
 import { filesConfigured } from './files.js';
 import { countLegacyInlinePdfs, migrateLegacyInlinePdfs } from './legacyPdfs.js';
@@ -55,6 +56,7 @@ app.use('/feedback', feedbackRouter);
 // Platform-level (vendor) routes — gated by the platform-admin marker, not
 // by any company role. First occupant: rehearsal mode (Round S6).
 app.use('/platform/rehearsal', rehearsalRouter);
+app.use('/platform/companies', companiesRouter);
 
 const port = Number(process.env.PORT ?? 4000);
 

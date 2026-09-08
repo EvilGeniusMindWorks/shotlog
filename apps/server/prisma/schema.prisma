@@ -19,6 +19,9 @@ datasource db {
 model Company {
   id        String       @id @default(uuid())
   name      String
+  /// alpha | beta | production | sandbox (Round S8c) — drives the header
+  /// tag and which invite email a company sends
+  environment String     @default("production")
   createdAt DateTime     @default(now())
   users     User[]
   records   SyncRecord[]
@@ -53,11 +56,16 @@ model User {
   toursDone     Json           @default("[]")
   companyId     String
   company       Company        @relation(fields: [companyId], references: [id])
+  /// Round S8c: set on a platform admin's hidden admin twin in another
+  /// company — points at the real account. Twins have no password and are
+  /// hidden from People; sessions come only from the company switch.
+  platformRootId String?
   createdAt     DateTime       @default(now())
   refreshTokens RefreshToken[]
   passwordResets PasswordReset[]
 
   @@index([companyId])
+  @@index([platformRootId])
 }
 
 /// Self-service password reset: /auth/forgot mints one (hashed at rest,

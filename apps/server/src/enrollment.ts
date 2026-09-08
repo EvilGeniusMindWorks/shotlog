@@ -91,6 +91,7 @@ invitesRouter.post('/', async (req: AuthedRequest, res: Response) => {
           to: email,
           name,
           company: company?.name ?? 'Your company',
+          mode: company?.environment === 'production' ? 'production' : 'testing',
           role,
           invitedBy: inviter?.name ?? 'Your company admin',
           link,

@@ -22,6 +22,7 @@ const TABS: { to: string; label: string; cap: string | null; platform?: boolean 
   { to: '/admin/roles', label: 'Roles', cap: null }, // admin only
   { to: '/admin/company', label: 'Company', cap: 'manage_company' },
   { to: '/admin/feedback', label: 'Feedback', cap: null, platform: true },
+  { to: '/admin/companies', label: 'Companies', cap: null, platform: true },
 ];
 
 export function AdminLayout() {

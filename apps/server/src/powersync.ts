@@ -55,7 +55,15 @@ const ONE_PER_PARENT: Record<string, string> = {
 
 export const powersyncRouter = Router();
 
-powersyncRouter.get('/token', requireAuth, (req: AuthedRequest, res) => {
+powersyncRouter.get('/token', requireAuth, async (req: AuthedRequest, res) => {
+  // S8c: a person moved to another company (go-live) still holds an access
+  // token for the old one for up to an hour — refuse to sync it, the device
+  // signs in once and downloads the new company
+  const user = await prisma.user.findUnique({ where: { id: req.userId as string }, select: { companyId: true } });
+  if (!user || user.companyId !== req.companyId) {
+    res.status(401).json({ error: 'company_moved' });
+    return;
+  }
   // 12h (was 1h): the SDK re-fetches credentials on expiry, and every refetch
   // that hits a slow server response flips the stream to "disconnected" —
   // hourly flaps read as the app "going offline" in the field. The token only

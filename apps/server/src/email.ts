@@ -100,9 +100,13 @@ export function inviteMail(opts: {
   invitedBy: string;
   link: string;
   ttlDays: number;
+  /** S8c: the company's environment decides — alpha/beta test, production real;
+   *  an explicit INVITE_MODE env still overrides */
+  mode?: 'testing' | 'production';
 }): Mail {
   const first = opts.name.split(' ')[0] || opts.name;
-  if (INVITE_MODE === 'testing') return testingInviteMail(opts, first);
+  const mode = process.env.INVITE_MODE ? INVITE_MODE : (opts.mode ?? INVITE_MODE);
+  if (mode === 'testing') return testingInviteMail(opts, first);
   const blurb = roleBlurb(opts.role);
   const steps = [
     'Tap the button below and choose a password.',

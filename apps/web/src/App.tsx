@@ -44,6 +44,7 @@ import { AdminRolesPage } from '@/pages/admin/AdminRolesPage';
 import { UndoToastHost } from '@/components/ui/undo-toast';
 import { FeedbackHost } from '@/components/feedback/FeedbackComposer';
 import { AdminFeedbackPage } from '@/pages/admin/AdminFeedbackPage';
+import { AdminCompaniesPage } from '@/pages/admin/AdminCompaniesPage';
 import { EquipmentLocatorPage } from '@/pages/EquipmentLocatorPage';
 import { DrillingPage } from '@/pages/DrillingPage';
 
@@ -133,6 +134,7 @@ export function App() {
             <Route path="roles" element={<AdminRolesPage />} />
             <Route path="company" element={<AdminCompanyPage />} />
             <Route path="feedback" element={<AdminFeedbackPage />} />
+            <Route path="companies" element={<AdminCompaniesPage />} />
           </Route>
         </Route>
         <Route path="/blast-day/:id/submit" element={<SubmitDayPage />} />

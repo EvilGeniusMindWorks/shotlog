@@ -139,4 +139,5 @@ channel. None of that needs anything more from you.
 | Variable | Value | Effect |
 |---|---|---|
 | `INVITE_MODE` | `testing` (default) | The invite reads as an invitation to try ShotLog during testing — "feel free to give it a shot", feedback through the app's ? menu, no role assignment sentence, "expect rough edges". |
-| `INVITE_MODE` | `production` | The set-up-your-account wording with the one-line role sentence. Set this at go-live. |
+| `INVITE_MODE` | `production` | The set-up-your-account wording with the one-line role sentence. |
+| `INVITE_MODE` unset | — | **S8c (default):** the company's environment decides — an Alpha or Beta company sends the testing invitation, a Production company sends the real one. Set the variable only to force one wording everywhere. |

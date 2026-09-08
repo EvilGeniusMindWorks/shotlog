@@ -54,8 +54,11 @@ const COPIED_TABLES = [
 
 export async function ensureSandbox(): Promise<{ id: string; name: string }> {
   const existing = await prisma.company.findFirst({ where: { name: SANDBOX_COMPANY_NAME } });
-  if (existing) return existing;
-  return prisma.company.create({ data: { name: SANDBOX_COMPANY_NAME } });
+  if (existing) {
+    if (existing.environment !== 'sandbox') await prisma.company.update({ where: { id: existing.id }, data: { environment: 'sandbox' } });
+    return existing;
+  }
+  return prisma.company.create({ data: { name: SANDBOX_COMPANY_NAME, environment: 'sandbox' } });
 }
 
 /** True when the request's company is the sandbox */
@@ -109,7 +112,7 @@ async function resetFirstRun(cid: string): Promise<void> {
 /** Copy one company's reference data into another. People lose their
  *  login link (nobody can sign in as them); machines lose their usual
  *  operator (a login in the source company). The source is only read. */
-async function copyCompanyData(fromCid: string, toCid: string): Promise<number> {
+export async function copyCompanyData(fromCid: string, toCid: string): Promise<number> {
   const rows = await prisma.record.findMany({
     where: { companyId: fromCid, tableName: { in: [...COPIED_TABLES] } },
   });

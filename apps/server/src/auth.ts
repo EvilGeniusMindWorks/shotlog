@@ -39,6 +39,13 @@ export function isPlatformAdminEmail(email: string): boolean {
   return PLATFORM_ADMIN_EMAILS.has(email.trim().toLowerCase());
 }
 
+/** A twin's email is the root's with a "+c-<id>" tag (companies.ts) — strip
+ *  it ONLY for twins so an invited plus-address never gains the marker */
+export function isPlatformAdminUser(user: { email: string; platformRootId?: string | null }): boolean {
+  if (!user.platformRootId) return isPlatformAdminEmail(user.email);
+  return isPlatformAdminEmail(user.email.replace(/\+c-[0-9a-f]+@/i, '@'));
+}
+
 export function platformAdminEmails(): string[] {
   return [...PLATFORM_ADMIN_EMAILS];
 }
@@ -51,9 +58,9 @@ export async function requirePlatformAdmin(
 ): Promise<void> {
   const user = await prisma.user.findUnique({
     where: { id: req.userId ?? '' },
-    select: { email: true, isActive: true },
+    select: { email: true, isActive: true, platformRootId: true },
   });
-  if (!user || !user.isActive || !isPlatformAdminEmail(user.email)) {
+  if (!user || !user.isActive || !isPlatformAdminUser(user)) {
     res.status(403).json({ error: 'platform admin only' });
     return;
   }
@@ -108,7 +115,8 @@ type SessionUserRow = {
   onboardedAt: Date | null;
   tourDoneAt: Date | null;
   toursDone: unknown;
-  company: { name: string };
+  platformRootId?: string | null;
+  company: { name: string; environment?: string };
 };
 
 function publicUser(user: SessionUserRow) {
@@ -118,6 +126,9 @@ function publicUser(user: SessionUserRow) {
     name: user.name,
     role: user.role,
     company: user.company.name,
+    companyId: user.companyId,
+    // alpha | beta | production | sandbox (S8c) — the header tag
+    environment: user.company.environment ?? 'production',
     licenses: user.licenses,
     signature: user.signature,
     pinHash: user.pinHash,
@@ -126,7 +137,7 @@ function publicUser(user: SessionUserRow) {
     tourDoneAt: user.tourDoneAt?.toISOString() ?? null,
     toursDone: Array.isArray(user.toursDone) ? (user.toursDone as string[]) : [],
     // Vendor-level marker (feedback triage) — never a company role
-    platformAdmin: isPlatformAdminEmail(user.email),
+    platformAdmin: isPlatformAdminUser(user),
   };
 }
 

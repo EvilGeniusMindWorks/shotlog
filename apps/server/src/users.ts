@@ -114,7 +114,8 @@ async function syncCrewForUser(
 /** List the company's users (licenses included for expiry surfacing) */
 usersRouter.get('/', async (req: AuthedRequest, res: Response) => {
   const users = await prisma.user.findMany({
-    where: { companyId: req.companyId! },
+    // S8c: a platform admin's hidden twins never show in a company's People
+    where: { companyId: req.companyId!, platformRootId: null },
     select: {
       id: true,
       email: true,
