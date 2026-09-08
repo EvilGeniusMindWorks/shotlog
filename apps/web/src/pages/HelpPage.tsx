@@ -132,27 +132,43 @@ function Results({ query }: { query: string }) {
 }
 
 function Toc({ section, page }: { section?: string; page?: string }) {
+  // One section open at a time (Matthew: "fully expanded and scrolls forever"):
+  // the current section, or the one you tap; the others show their count.
+  const [open, setOpen] = useState<string | null>(section ?? null);
+  useEffect(() => {
+    if (section) setOpen(section);
+  }, [section]);
   return (
-    <nav className="space-y-3" data-help-toc>
+    <nav className="space-y-1" data-help-toc>
       {SECTIONS.map((s) => {
         const pages = pagesOf(s.id);
         if (pages.length === 0) return null;
+        const isOpen = open === s.id;
         return (
-          <div key={s.id}>
-            <Link to={`/help/${s.id}`} className={`block text-[11px] font-semibold uppercase tracking-wider ${section === s.id ? 'text-navy' : 'text-gray-400'}`}>
-              {s.title}
-            </Link>
-            <div className="mt-1 space-y-0.5">
-              {pages.map((p) => (
-                <Link
-                  key={p.slug}
-                  to={helpPath(p)}
-                  className={`block rounded-md px-2 py-1 text-sm ${section === s.id && page === p.slug ? 'bg-navy/10 text-navy font-medium' : 'text-gray-700 hover:bg-gray-100'} ${p.status === 'planned' ? 'opacity-50' : ''}`}
-                >
-                  {p.title}
-                </Link>
-              ))}
-            </div>
+          <div key={s.id} data-help-toc-section={s.id} data-open={isOpen ? '1' : '0'}>
+            <button
+              type="button"
+              className={`w-full flex items-center gap-1 rounded-md px-2 py-1.5 text-left text-[12px] font-semibold uppercase tracking-wider ${section === s.id ? 'text-navy' : 'text-gray-500 hover:text-gray-800'}`}
+              onClick={() => setOpen(isOpen ? null : s.id)}
+              aria-expanded={isOpen}
+            >
+              <ChevronRight className={`h-3.5 w-3.5 shrink-0 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
+              <span className="flex-1">{s.title}</span>
+              <span className="text-[11px] font-normal normal-case tracking-normal text-gray-400">{pages.length}</span>
+            </button>
+            {isOpen && (
+              <div className="ml-4 mb-2 space-y-0.5 border-l border-gray-200 pl-2">
+                {pages.map((p) => (
+                  <Link
+                    key={p.slug}
+                    to={helpPath(p)}
+                    className={`block rounded-md px-2 py-1 text-sm ${section === s.id && page === p.slug ? 'bg-navy/10 text-navy font-medium' : 'text-gray-700 hover:bg-gray-100'} ${p.status === 'planned' ? 'opacity-50' : ''}`}
+                  >
+                    {p.title}
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         );
       })}
@@ -176,7 +192,7 @@ export function HelpPage() {
     document.title = page ? `${page.title} · ShotLog help` : sec ? `${sec.title} · ShotLog help` : 'ShotLog help guide';
   }, [page, sec]);
 
-  const back = page ? `/help/${page.section}` : section ? '/help' : signedIn ? '/' : null;
+  const back = page ? `/help/${page.section}` : section ? '/help' : null;
   const q = query.trim();
 
   return (
@@ -193,15 +209,13 @@ export function HelpPage() {
             <span className="font-semibold">Help guide</span>
           </Link>
           <div className="flex-1" />
-          {signedIn ? (
-            <Link to="/" className="text-sm text-navy-200 hover:text-white underline" data-help-to-app>
-              Back to ShotLog
-            </Link>
-          ) : (
-            <Link to="/" className="text-sm text-navy-200 hover:text-white underline" data-help-to-app>
-              Sign in
-            </Link>
-          )}
+          {/* A real navigation, not a router Link: opened cold (the installed
+              app restoring /help, or the invitation's link) the guide runs in
+              the public shell, whose router has no "/" — a Link would stay
+              on the guide. A full load boots the signed-in app properly. */}
+          <a href="/" className="text-sm text-navy-200 hover:text-white underline" data-help-to-app>
+            {signedIn ? 'Back to ShotLog' : 'Sign in'}
+          </a>
         </div>
       </header>
 

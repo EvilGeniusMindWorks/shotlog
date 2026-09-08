@@ -48,7 +48,10 @@ async (page, lib) => {
     const P1 = await c1.newPage();
     await P1.goto(`${WEB}/help/blaster/filing-the-day`);
     await P1.locator('[data-help-article="filing-the-day"]').waitFor({ timeout: 15000 });
-    R.ok('the TOC shows every section', (await P1.locator('[data-help-toc] a').count()) > 40);
+    R.ok('the TOC lists every section, with only the current one open', (await P1.locator('[data-help-toc-section]').count()) === 9 && (await P1.locator('[data-help-toc-section][data-open="1"]').count()) === 1 && (await P1.locator('[data-help-toc-section="blaster"] a').count()) === 14);
+    await P1.locator('[data-help-toc-section="shop"] button').click();
+    await sleep(200);
+    R.ok('tapping another section opens it and closes the current one', (await P1.locator('[data-help-toc-section="shop"][data-open="1"]').count()) === 1 && (await P1.locator('[data-help-toc-section="blaster"][data-open="1"]').count()) === 0);
     R.ok('On this page sits on the right', (await P1.locator('[data-help-onthis-wide] a').count()) >= 3);
     R.ok('the article has real headings and a tip', /Before you file/.test(await P1.locator('[data-help-article]').innerText()) && (await P1.locator('.help-doc blockquote').count()) >= 1);
     await c1.close();
