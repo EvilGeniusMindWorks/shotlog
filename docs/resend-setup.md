@@ -133,3 +133,10 @@ channel. None of that needs anything more from you.
   `INVITE_FROM` uses the verified subdomain, not a Gmail or other address.
 - **"Invite emailed" but nothing arrives**: Resend → **Emails** shows
   every send with its delivery status and the bounce reason if any.
+
+## Invite wording (S8, 2026-09-07)
+
+| Variable | Value | Effect |
+|---|---|---|
+| `INVITE_MODE` | `testing` (default) | The invite reads as an invitation to try ShotLog during testing — "feel free to give it a shot", feedback through the app's ? menu, no role assignment sentence, "expect rough edges". |
+| `INVITE_MODE` | `production` | The set-up-your-account wording with the one-line role sentence. Set this at go-live. |
