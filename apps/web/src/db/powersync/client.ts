@@ -152,6 +152,24 @@ export function setStorageEngine(engine: StorageEngine): void {
   }
 }
 
+/** Safari keeps a reloaded page's worker — and its OPFS file lock — alive
+ *  for a while after the page is gone. The next page opens fine, gets its
+ *  checkpoint from the server in 150 ms, then waits ~20 s to WRITE it
+ *  (Matthew's Mac, 2026-09-08: "checkpoint 18.5 s · 0 of 0 ops"; the one
+ *  reload where the old page had disconnected first took 4 ms). Release the
+ *  database on the way out. A page parked in the back-forward cache keeps
+ *  running with its handles, so those are left alone. */
+function releaseOnUnload(ps: PowerSyncDatabase): void {
+  let released = false;
+  const release = (e?: PageTransitionEvent) => {
+    if (released || (e && 'persisted' in e && e.persisted)) return;
+    released = true;
+    void ps.close({ disconnect: true }).catch(() => undefined);
+  };
+  window.addEventListener('pagehide', release);
+  window.addEventListener('beforeunload', () => release());
+}
+
 /** Set by fetchCredentials: how long the last sync-token request took */
 let lastTokenMs = 0;
 
@@ -340,6 +358,7 @@ export function getPowerSync(): PowerSyncDatabase {
     logSyncEvent(`storage engine: ${engine === 'opfs' ? 'OPFS' : 'IndexedDB'}`);
     watchFirstSync(instance, engine);
     watchConnects(instance);
+    releaseOnUnload(instance);
     if (engine === 'idb') scheduleEngineHandover(instance);
     // Connect only once a session (or dev override) exists — otherwise the
     // SDK would loop on credential failures behind the login screen.
