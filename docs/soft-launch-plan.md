@@ -824,3 +824,15 @@ status labels.
    as the overview (it used to disappear).
 5. A plan whose logs are all complete says **ready to review** on the day
    spine (was "in progress" until accepted).
+
+**S8a follow-up (2) — two more small points (2026-09-07) — ✅ SHIPPED 166bc3f
+(harness54 19/19, harness53 27/27):**
+1. Driller: **Mark complete · N holes** sits under the signature at the
+   bottom of the log too (same flow as the header button), and once
+   complete that spot reads "Marked complete — the blaster reviews it
+   from the day". No scrolling back to the top after signing.
+2. Feedback page: the screenshot preview uses the full width of the page
+   (up to a readable max) and scrolls inside its own frame so a tall
+   phone capture is no longer a narrow strip and does not push the list
+   down; "Open full size" and "Download" sit above it, tap opens the
+   viewer as before.
