@@ -9,7 +9,7 @@ import { authedFetch, getSession } from '@/lib/session';
 import { exportAllData } from '@/lib/export';
 import { resetLocalReplica } from '@/db/powersync/client';
 import { useSyncStatus } from '@/db/powersync/useSyncStatus';
-import { getSyncLog } from '@/lib/syncLog';
+import { getSyncLog, setSyncDebug, syncDebugOn } from '@/lib/syncLog';
 import { IconChip, SectionCard } from '@/components/ui/section-card';
 import { Button } from '@/components/ui/button';
 
@@ -45,6 +45,12 @@ export function DataDeviceCard() {
       .then((j: { configured?: boolean } | null) => setFilesOk(j ? Boolean(j.configured) : null))
       .catch(() => setFilesOk(null));
   }, [session.loggedIn]);
+  const [debug, setDebug] = useState(syncDebugOn);
+  const [copied, setCopied] = useState(false);
+  const copyLog = () => {
+    const text = getSyncLog().map((e) => `${e.at} ${e.msg}`).join('\n');
+    void navigator.clipboard?.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => undefined);
+  };
   const firstSync = [...getSyncLog()].reverse().find((e) => e.msg.startsWith('first sync done'));
   const lastConnect = [...getSyncLog()].reverse().find((e) => e.msg.startsWith('connect:'));
 
@@ -89,6 +95,15 @@ export function DataDeviceCard() {
               : "Filed PDFs stay on the device that filed them — file storage isn't set up on the server yet."}
           </p>
         )}
+        <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500" data-sync-diagnostics>
+          <label className="flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" checked={debug} data-sync-debug onChange={(e) => { setSyncDebug(e.target.checked); setDebug(e.target.checked); }} />
+            Sync diagnostics (records what the sync client does — reload after turning it on)
+          </label>
+          <button type="button" className="underline text-navy" onClick={copyLog} data-sync-log-copy>
+            {copied ? 'Copied' : 'Copy sync log'}
+          </button>
+        </div>
         {firstSync && (
           <p className="text-[11px] text-gray-400" data-first-sync>
             Last first sync: {firstSync.msg.replace('first sync done: ', '')} · {new Date(firstSync.at).toLocaleString()}

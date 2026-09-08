@@ -12,9 +12,11 @@ import {
   WASQLiteVFS,
   column,
   type PowerSyncBackendConnector,
+  LogLevels,
+  type PowerSyncLogger,
 } from '@powersync/web';
 import { authedFetch, getSession, sessionCompanyId } from '@/lib/session';
-import { logSyncEvent } from '@/lib/syncLog';
+import { logSyncEvent, syncDebugOn } from '@/lib/syncLog';
 import { defaultEngineFor, type StorageEngine as PolicyEngine } from '@/lib/storageEnginePolicy';
 import type { SqlAdapter } from './adapter';
 
@@ -153,6 +155,19 @@ export function setStorageEngine(engine: StorageEngine): void {
 /** Set by fetchCredentials: how long the last sync-token request took */
 let lastTokenMs = 0;
 
+/** The SDK's own log, into the sync log: warnings and errors always; every
+ *  line when Sync diagnostics is on (Settings › Data & device) — the way to
+ *  read a slow connect after the fact on a device I cannot drive. */
+const sdkLogger: PowerSyncLogger = {
+  log(record) {
+    const name = record.level >= LogLevels.error ? 'error' : record.level >= LogLevels.warn ? 'warn' : record.level >= LogLevels.info ? 'info' : 'debug';
+    const line = `sdk ${name}: ${record.message}${record.error ? ` — ${record.error instanceof Error ? record.error.message : String(record.error)}` : ''}`;
+    if (record.level >= LogLevels.warn) console.warn('[PowerSync]', record.message, record.error ?? '');
+    else if (syncDebugOn()) console.log('[PowerSync]', record.message);
+    if (record.level >= LogLevels.warn || syncDebugOn()) logSyncEvent(line.slice(0, 300));
+  },
+};
+
 /** Where does a "Syncing…" spell go? Every connect cycle after the first
  *  download is timed in three parts — the token request, the stream
  *  opening, and the checkpoint (downloading → done) — and logged as one
@@ -162,6 +177,7 @@ function watchConnects(ps: PowerSyncDatabase): void {
   let connectingAt: number | null = null;
   let connectedAt: number | null = null;
   let downloadingAt: number | null = null;
+  let opsAtStart: number | null = null;
   let wasConnected = false;
   ps.registerListener({
     statusChanged: (status) => {
@@ -171,12 +187,17 @@ function watchConnects(ps: PowerSyncDatabase): void {
         connectedAt = performance.now();
         wasConnected = true;
       }
-      if (status.connected && dl && downloadingAt === null) downloadingAt = performance.now();
+      if (status.connected && dl && downloadingAt === null) {
+        downloadingAt = performance.now();
+        opsAtStart = status.downloadProgress?.totalOperations ?? null;
+      }
       if (status.connected && !dl && downloadingAt !== null && status.hasSynced === true) {
         const now = performance.now();
         const fmt = (ms: number) => (ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(1)} s`);
         const stream = connectedAt !== null && connectingAt !== null ? fmt(connectedAt - connectingAt) : '?';
-        logSyncEvent(`connect: token ${fmt(lastTokenMs)} · stream ${stream} · checkpoint ${fmt(now - downloadingAt)}`);
+        const done = status.downloadProgress?.downloadedOperations ?? opsAtStart;
+        logSyncEvent(`connect: token ${fmt(lastTokenMs)} · stream ${stream} · checkpoint ${fmt(now - downloadingAt)}${opsAtStart !== null ? ` · ${done ?? opsAtStart} of ${opsAtStart} ops` : ''}`);
+        opsAtStart = null;
         downloadingAt = null;
         connectingAt = null;
         connectedAt = null;
@@ -309,6 +330,7 @@ export function getPowerSync(): PowerSyncDatabase {
     g.__shotlogPowerSyncOpenedAt = openedAt;
     instance = new PowerSyncDatabase({
       schema,
+      logger: sdkLogger,
       database:
         engine === 'opfs'
           ? { dbFilename: DB_FILENAME, vfs: WASQLiteVFS.OPFSCoopSyncVFS }
