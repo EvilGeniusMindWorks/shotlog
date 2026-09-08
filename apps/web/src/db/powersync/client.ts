@@ -417,6 +417,10 @@ export async function reconnectPowerSync(): Promise<void> {
   if (!getSession().loggedIn && !import.meta.env.VITE_POWERSYNC_TOKEN_URL) return;
   const ps = getPowerSync();
   if (ps.currentStatus?.connected) return;
+  // A nudge during the boot connect aborts it ("Failed to connect WebSocket",
+  // a flash of Retrying) — the SDK is already trying; leave a fresh attempt
+  // alone for its first half minute
+  if (ps.currentStatus?.connecting && performance.now() - powerSyncOpenedAt() < 30000) return;
   const now = Date.now();
   if (now - lastReconnectAt < 5000) return;
   lastReconnectAt = now;

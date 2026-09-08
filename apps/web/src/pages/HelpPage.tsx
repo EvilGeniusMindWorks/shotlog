@@ -176,7 +176,7 @@ function Toc({ section, page }: { section?: string; page?: string }) {
   );
 }
 
-export function HelpPage() {
+export function HelpPage({ standalone = false }: { standalone?: boolean } = {}) {
   const { section, page: slug } = useParams<{ section?: string; page?: string }>();
   const location = useLocation();
   const navigate = useNavigate();
@@ -213,9 +213,15 @@ export function HelpPage() {
               app restoring /help, or the invitation's link) the guide runs in
               the public shell, whose router has no "/" — a Link would stay
               on the guide. A full load boots the signed-in app properly. */}
-          <a href="/" className="text-sm text-navy-200 hover:text-white underline" data-help-to-app>
-            {signedIn ? 'Back to ShotLog' : 'Sign in'}
-          </a>
+          {standalone ? (
+            <a href="/" className="text-sm text-navy-200 hover:text-white underline" data-help-to-app>
+              {signedIn ? 'Back to ShotLog' : 'Sign in'}
+            </a>
+          ) : (
+            <Link to="/" className="text-sm text-navy-200 hover:text-white underline" data-help-to-app>
+              Back to ShotLog
+            </Link>
+          )}
         </div>
       </header>
 

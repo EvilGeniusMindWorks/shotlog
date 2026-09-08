@@ -4,7 +4,7 @@
 // (ps_crud), watched live. Status transitions land in the rolling sync log.
 import { useEffect, useState } from 'react';
 import { logSyncEvent } from '@/lib/syncLog';
-import { getPowerSync } from './client';
+import { getPowerSync, powerSyncOpenedAt } from './client';
 
 export interface SyncStatusView {
   connected: boolean;
@@ -29,10 +29,15 @@ type SdkStatus = {
   downloadProgress?: { downloadedFraction: number } | null;
 };
 
+/** The SDK reports neither connected nor connecting for a moment after boot
+ *  (and after the first attempt is retried) — that gap read as "Retrying" on
+ *  every open (Matthew, 2026-09-08). Within the first seconds it is connecting. */
+const BOOT_GRACE_MS = 8000;
 function fromSdk(status: SdkStatus | undefined): Omit<SyncStatusView, 'queued'> {
+  const booting = !status?.connected && performance.now() - powerSyncOpenedAt() < BOOT_GRACE_MS;
   return {
     connected: status?.connected ?? false,
-    connecting: status?.connecting ?? false,
+    connecting: (status?.connecting ?? false) || booting,
     uploading: status?.dataFlowStatus?.uploading ?? false,
     downloading: status?.dataFlowStatus?.downloading ?? false,
     hasSynced: status?.hasSynced,
@@ -46,7 +51,7 @@ let lastLoggedConnected: boolean | null = null;
 export function useSyncStatus(): SyncStatusView {
   const [view, setView] = useState<SyncStatusView>({
     connected: false,
-    connecting: false,
+    connecting: true,
     uploading: false,
     downloading: false,
     hasSynced: undefined,

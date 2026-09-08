@@ -101,10 +101,10 @@ export function App() {
       <BrowserRouter>
         <FeedbackHost />
         <Routes>
-          <Route path="/help" element={<HelpPage />} />
-          <Route path="/help/:section" element={<HelpPage />} />
-          <Route path="/help/:section/:page" element={<HelpPage />} />
-          <Route path="*" element={<HelpPage />} />
+          <Route path="/help" element={<HelpPage standalone />} />
+          <Route path="/help/:section" element={<HelpPage standalone />} />
+          <Route path="/help/:section/:page" element={<HelpPage standalone />} />
+          <Route path="*" element={<HelpPage standalone />} />
         </Routes>
       </BrowserRouter>
     );
