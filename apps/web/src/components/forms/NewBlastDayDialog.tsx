@@ -273,6 +273,20 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork, onOpen
               </span>
               <span className="text-gray-400">›</span>
             </button>
+            {job && (
+              <button
+                type="button"
+                className="mt-1 text-xs text-gray-500 underline underline-offset-2"
+                data-day-job-clear
+                onClick={() => {
+                  setJobId('');
+                  setSiteId('');
+                  setCustomerId('');
+                }}
+              >
+                Choose a different customer, site or job
+              </button>
+            )}
             {!job && recent.length > 0 && (
               <div className="mt-2">
                 <p className="text-[11px] text-gray-400 mb-1">Recent</p>
@@ -469,7 +483,11 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork, onOpen
                 </>
               ) : level === 'sites' ? (
                 <>
-                  <p className="text-xs text-gray-500" data-pick-crumb="sites">{customerName(customerId)}</p>
+                  <p className="text-xs text-gray-500 flex items-center gap-1" data-pick-crumb="sites">
+                    <button type="button" className="underline" data-pick-crumb-customers onClick={() => { setCustomerId(''); setSiteId(''); setJobId(''); }}>All customers</button>
+                    <span>›</span>
+                    <span className="font-medium text-gray-700">{customerName(customerId)}</span>
+                  </p>
                   <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Site</p>
                   {sitesOfCustomer.map((st) => {
                     const n = jobs.filter((j) => j.siteId === st.id).length;
@@ -494,7 +512,13 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork, onOpen
                 </>
               ) : (
                 <>
-                  <p className="text-xs text-gray-500" data-pick-crumb="jobs">{customerName(customerId)} › {siteName(siteId)}</p>
+                  <p className="text-xs text-gray-500 flex items-center gap-1 flex-wrap" data-pick-crumb="jobs">
+                    <button type="button" className="underline" data-pick-crumb-customers onClick={() => { setCustomerId(''); setSiteId(''); setJobId(''); }}>All customers</button>
+                    <span>›</span>
+                    <button type="button" className="underline" data-pick-crumb-sites onClick={() => { setSiteId(''); setJobId(''); }}>{customerName(customerId)}</button>
+                    <span>›</span>
+                    <span className="font-medium text-gray-700">{siteName(siteId)}</span>
+                  </p>
                   <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Job</p>
                   {jobsOfSite.map((j) => (
                     <button key={j.id} className="w-full text-left rounded-lg border border-gray-200 px-3 py-2.5 hover:bg-gray-50" data-choose-job={j.id} onClick={() => { pickJob(j.id); setShowPicker(false); }}>

@@ -33,6 +33,8 @@ export function PhaseSpine({
                 (p.state === 'now' ? 'border-safety-orange' : 'border-gray-200')
               }
               onClick={() => onOpen(p.view, p.to)}
+              data-phase={p.key}
+              data-phase-chip={p.chip}
             >
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm">{p.label}</p>

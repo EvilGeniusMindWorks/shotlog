@@ -10,6 +10,9 @@ import { canDrillLogTransition } from '@/lib/perms';
 import { getSessionUser } from '@/lib/session';
 import { formatDate, nowISO } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { PatternGrid } from '@/components/design/PatternGrid';
+import { getPlanHoles, planToDiagram } from '@/hooks/useDrillPlans';
+import { hasDrillPlan, parseDiagram, type ShotDiagram } from '@/lib/shotDiagram';
 
 export const DRILLER_COLORS = ['#2d4a75', '#b7791f', '#2f855a', '#805ad5', '#c05621', '#319795'];
 
@@ -66,11 +69,39 @@ export function MergedDrillingView({
     merged.sort((a, b) =>
       a.hole.holeNumber.localeCompare(b.hole.holeNumber, undefined, { numeric: true }),
     );
-    return { logs, drillers: [...drillers.values()], merged };
-  }, [day.id, shots.map((s) => s.drillPlanId ?? '').join(',')]);
+    // S8a follow-up: the review draws the pattern in the plan's own shape —
+    // one grid per shot that has a plan (standalone plan or the shot's own)
+    const patterns: { shot: Shot; diagram: ShotDiagram; fallbackDepth: number; holes: MergedHole[] }[] = [];
+    for (const shot of shots) {
+      let diagram: ShotDiagram | null = null;
+      if (shot.drillPlanId) {
+        const p = await db.drillPlans.get(shot.drillPlanId);
+        if (p && (getPlanHoles(p)?.length ?? 0) > 0) diagram = planToDiagram(p);
+      }
+      if (!diagram) {
+        const d = parseDiagram(shot.designPlan.shotDiagramData);
+        if (hasDrillPlan(d)) diagram = d;
+      }
+      if (!diagram) continue;
+      const mine = merged.filter((m) => m.log.shotId === shot.id || (shot.drillPlanId && m.log.drillPlanId === shot.drillPlanId));
+      patterns.push({ shot, diagram, fallbackDepth: shot.totals.avgDrillDepth || 0, holes: mine });
+    }
+    const placed = new Set(patterns.flatMap((p) => p.holes.map((m) => m.hole.id)));
+    return { logs, drillers: [...drillers.values()], merged, patterns, unplaced: merged.filter((m) => !placed.has(m.hole.id)) };
+    // shots arrive a beat after the day — the query must re-run when they do
+  }, [day.id, shots.map((s) => `${s.id}:${s.drillPlanId ?? ''}:${s.updatedAt}`).join(',')]);
 
   if (!data) return <p className="text-sm text-gray-400 p-4 text-center">Loading…</p>;
-  const { logs, drillers, merged } = data;
+  const { logs, drillers, merged, patterns, unplaced } = data;
+  const cellFor = (m: MergedHole | undefined, sel: MergedHole | null) => ({
+    className:
+      (m?.hole.skipped ? 'border-2 border-dashed border-gray-400 ' : m ? 'text-white ' : 'border border-gray-300 text-gray-400 bg-white ') +
+      (m && sel?.hole.id === m.hole.id ? 'ring-2 ring-navy ring-offset-1' : ''),
+    style: m && !m.hole.skipped ? { background: m.hole.conditions.length > 0 ? '#dd6b20' : m.color } : undefined,
+    sub: m && !m.hole.skipped ? initials(m.log.drillerName || '') : undefined,
+    title: m ? `H-${m.hole.holeNumber} · ${m.log.drillerName}${m.hole.skipped ? ' — skipped' : ` · ${m.hole.actualDepth} ft`}` : 'not drilled yet',
+    disabled: !m,
+  });
   const drilledCount = merged.filter((m) => !m.hole.skipped).length;
   const skippedCount = merged.length - drilledCount;
   const hazards = merged.filter((m) => m.hole.conditions.length > 0 && !m.hole.skipped);
@@ -110,8 +141,27 @@ export function MergedDrillingView({
           )}
           {skippedCount > 0 && <span> · {skippedCount} skipped</span>}
         </p>
-        <div className="grid grid-cols-10 gap-1.5 mb-2">
-          {merged.map((m) => (
+        {patterns.map(({ shot, diagram, fallbackDepth, holes }) => {
+          const byNumber = new Map(holes.map((m) => [m.hole.holeNumber.trim(), m]));
+          return (
+            <div key={shot.id} className="mb-2">
+              {patterns.length > 1 && <p className="text-xs text-gray-500 mb-1">Shot {shot.shotNumber}</p>}
+              <PatternGrid
+                testId="review"
+                diagram={diagram}
+                fallbackDepth={fallbackDepth}
+                cell={(p) => cellFor(byNumber.get(String(p.n)), selected)}
+                onTap={(p) => {
+                  const m = byNumber.get(String(p.n));
+                  if (m) setSelected(selected?.hole.id === m.hole.id ? null : m);
+                }}
+              />
+            </div>
+          );
+        })}
+        <div className={`grid grid-cols-10 gap-1.5 mb-2 ${patterns.length > 0 && unplaced.length === 0 ? 'hidden' : ''}`}>
+          {unplaced.length > 0 && patterns.length > 0 && <p className="col-span-10 text-[11px] text-gray-400">Off-plan holes:</p>}
+          {(patterns.length > 0 ? unplaced : merged).map((m) => (
             <button
               key={m.hole.id}
               title={`H-${m.hole.holeNumber}${m.hole.skipped ? ' — skipped' : ''}`}

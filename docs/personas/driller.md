@@ -174,3 +174,7 @@ report (solo submit) · My Records · jobs list
   ask: "No drill plans yet. Ask the blaster for the job's drill plan — they
   send it to you from the job page and it shows up here. Your rig checklist
   and hours work without one."
+- **S8a follow-up (2026-09-07):** the log's hole grid IS the blaster's
+  pattern (same rows × columns, planned depth under each open hole); row
+  handles and "Select all open" log many holes in one tap; the logged list
+  is windowed (latest 8) — the grid is the overview.

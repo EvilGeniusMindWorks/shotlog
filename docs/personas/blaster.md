@@ -206,3 +206,7 @@ page · customer/site/job create (new) · contacts · My Records · reference
   this customer / site" details come FIRST (above the list — lists get
   long), no super-long scrolling lists (windowed, searchable), and he wants
   to see the wide-screen version before build.
+- **S8a follow-up (2026-09-07):** the drilling review draws the same
+  pattern shape as the plan (per shot), driller initials on each hole,
+  hazards orange, off-plan holes below; a plan whose logs are all complete
+  shows *ready to review* on the day spine.

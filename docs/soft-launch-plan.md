@@ -807,3 +807,20 @@ status labels.
 | 2 | Help guide — Markdown in repo, built into the app at /help, hosted at the app URL | Deferred until the UI settles (outline kept) | — | queued |
 | 4 | Load / soak test — manual overnight GitHub Action vs a staging copy; p50/p95, delivery lag, error rate | Build | S8d | queued |
 | 5 | Connectivity probe every 10 min (health, sign-in, sync token, manifest); email on fail + recover | Build | S8d | queued |
+
+**S8a follow-up — Matthew's second pass (2026-09-07, six notes):**
+1. Job picker: "Choose a different customer, site or job" under a chosen
+   job clears it; the picker's crumb (All customers › customer › site) is
+   tappable to go back up a level.
+2 · 6. The driller's log grid and the blaster's review grid now draw the
+   pattern in the plan's OWN rows × columns (`PatternGrid`, one component
+   for both), unused positions as faint dashes, off-plan holes below. They
+   were a fixed ten-per-row wrap of hole numbers — Matthew: "a 7 × 11
+   plan… not a 7 × 11 grid".
+3. Multi-hole completion: row handles (R1, R2…) select a whole row, "Select
+   all open (N)" selects the rest; one tap logs them to plan.
+4. Logged holes are a windowed list (latest 8, "Show all N"), newest first,
+   with a totals line; the pattern grid stays on screen after completion
+   as the overview (it used to disappear).
+5. A plan whose logs are all complete says **ready to review** on the day
+   spine (was "in progress" until accepted).

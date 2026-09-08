@@ -132,8 +132,9 @@ export function useDayPhases(
         key: 'drilling',
         label: 'Drilling',
         sub: `${holeCount}${plannedHoles ? `/${plannedHoles}` : ''} holes · ${drillerNames.length} driller${drillerNames.length === 1 ? '' : 's'}${hazardCount > 0 ? ` · ${hazardCount} hazards` : ''}`,
-        chip: allAccepted ? 'accepted' : 'in progress',
-        chipVariant: allAccepted ? 'compliant' : 'warning',
+        // S8a follow-up (Matthew): a finished plan says so — not "in progress"
+        chip: allAccepted ? 'accepted' : allComplete ? 'ready to review' : 'in progress',
+        chipVariant: allAccepted ? 'compliant' : allComplete ? 'submitted' : 'warning',
         state: allAccepted ? 'done' : 'now',
         view: 'drilling',
       });

@@ -11,7 +11,7 @@ import { useLiveQuery, db } from '@/db';
 import { addHole, aggregateDrilling, drilledHoleNumbers, getShotPlan, nextHoleNumber } from '@/hooks/useDrillLogs';
 import { getPlanHoles, planDrilledHoleNumbers, planToDiagram } from '@/hooks/useDrillPlans';
 import { parseDiagram } from '@/lib/shotDiagram';
-import { DrillPlanDiagram } from '@/components/design/DrillPlanDiagram';
+import { PatternGrid } from '@/components/design/PatternGrid';
 import { AttachmentsCard } from '@/components/forms/AttachmentsCard';
 import { useSubmissions } from '@/lib/archive';
 import { findCrewId } from '@/lib/personHistory';
@@ -121,7 +121,8 @@ export function DrillLogPage() {
   const [showDetail, setShowDetail] = useState(false);
   const [angle, setAngle] = useState('0');
   const [subdrill, setSubdrill] = useState('');
-  const [showMap, setShowMap] = useState(true);
+  // S8a follow-up: the logged-holes list is windowed (newest first)
+  const [showAllHoles, setShowAllHoles] = useState(false);
   // Handoff-note prompts: driller → blaster at complete, blaster → driller at reopen
   const [notePrompt, setNotePrompt] = useState<'complete' | 'reopen' | null>(null);
   const [noteText, setNoteText] = useState('');
@@ -180,6 +181,7 @@ export function DrillLogPage() {
   const locked = log.status === 'accepted' && !canEditAcceptedLog();
   const editable = !locked && log.status !== 'accepted';
   const footage = holes.reduce((s, h) => s + h.actualDepth, 0);
+  const recentHoles = [...holes].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const planHole = plan?.find((p) => String(p.n) === holeNumber.trim());
   // The driller drills the LENGTH — for kicked holes that's longer than the
   // vertical depth, so it is the plan target everywhere on this page
@@ -519,56 +521,74 @@ export function DrillLogPage() {
                 {/* Round 3: the batch-first grid — tap to select open holes,
                     then one tap logs them all to plan. Deviations are
                     ordinary: skip and add-off-plan sit right beside it. */}
-                {remaining.length > 0 && (
-                  <>
-                    <div className="grid grid-cols-10 gap-1.5 mb-1">
-                      {plan!.map((p) => {
-                        const n = String(p.n);
-                        const isSkipped = (drilling?.skipped ?? []).includes(n);
-                        const isOpen = remaining.some((r) => String(r.n) === n);
-                        const isSel = selected.has(n);
-                        const hasHazard = holes.some(
-                          (h) => h.holeNumber.trim() === n && h.conditions.length > 0,
-                        );
-                        return (
-                          <button
-                            key={p.n}
-                            type="button"
-                            title={`H-${n} · plan ${+(p.holeLength || p.depth).toFixed(1)} ft${isSkipped ? ' — skipped' : ''}`}
-                            className={
-                              'aspect-square rounded-full min-h-[28px] text-[10px] font-mono font-bold ' +
-                              (isSkipped
-                                ? 'border-2 border-dashed border-gray-400 text-gray-400'
-                                : isSel
-                                  ? 'bg-safety-orange text-white ring-2 ring-orange-200'
-                                  : isOpen
-                                    ? 'bg-gray-200 text-gray-500'
-                                    : hasHazard
-                                      ? 'bg-safety-orange/90 text-white'
-                                      : 'bg-navy text-white')
-                            }
-                            onClick={() => {
-                              if (!isOpen || isSkipped) return;
-                              setSelected((prev) => {
-                                const next = new Set(prev);
-                                if (next.has(n)) next.delete(n);
-                                else next.add(n);
-                                return next;
-                              });
-                            }}
-                          >
-                            {p.n}
+                {/* S8a follow-up: the pattern in the pattern's own shape (rows ×
+                    cols from the plan), always on screen; tap holes, a row
+                    handle, or "all open" to select; one tap logs them to plan */}
+                {(() => {
+                  const openNumbers = remaining.filter((r) => !(drilling?.skipped ?? []).includes(String(r.n))).map((r) => String(r.n));
+                  const toggle = (ns: string[]) =>
+                    setSelected((prev) => {
+                      const next = new Set(prev);
+                      const allIn = ns.length > 0 && ns.every((n) => next.has(n));
+                      for (const n of ns) allIn ? next.delete(n) : next.add(n);
+                      return next;
+                    });
+                  const diagram = drillPlan ? planToDiagram(drillPlan) : parseDiagram(shot!.designPlan.shotDiagramData);
+                  return (
+                    <>
+                      {openNumbers.length > 0 && (
+                        <div className="flex items-center gap-2 mb-1.5 text-xs">
+                          <button type="button" className="rounded-md border border-gray-300 px-2 py-1 font-medium text-navy" data-select-all-open onClick={() => toggle(openNumbers)}>
+                            {openNumbers.every((n) => selected.has(n)) ? 'Clear' : `Select all open (${openNumbers.length})`}
                           </button>
-                        );
-                      })}
-                    </div>
-                    <p className="text-[11px] text-gray-400 mb-1">
-                      ● drilled · <span className="text-safety-orange">● hazard</span> · ○ open —
-                      tap open holes to select{selected.size > 0 && ` · ${selected.size} selected`}.
-                      Off-plan hole? Type any number below — ordinary entry.
-                    </p>
-                  </>
-                )}
+                          {selected.size > 0 && (
+                            <button type="button" className="text-gray-400 underline" onClick={() => setSelected(new Set())}>clear</button>
+                          )}
+                          <span className="text-gray-400">· R1, R2… selects a row</span>
+                        </div>
+                      )}
+                      <PatternGrid
+                        testId="log"
+                        diagram={diagram}
+                        fallbackDepth={shot?.totals.avgDrillDepth || 0}
+                        onTapRow={(_, rowHoles) => toggle(rowHoles.map((h) => String(h.n)).filter((n) => openNumbers.includes(n)))}
+                        onTap={(p) => {
+                          const n = String(p.n);
+                          if (!openNumbers.includes(n)) return;
+                          toggle([n]);
+                        }}
+                        cell={(p) => {
+                          const n = String(p.n);
+                          const isSkipped = (drilling?.skipped ?? []).includes(n);
+                          const isOpen = openNumbers.includes(n);
+                          const isSel = selected.has(n);
+                          const hasHazard = holes.some((h) => h.holeNumber.trim() === n && h.conditions.length > 0);
+                          const depth = +(p.holeLength || p.depth).toFixed(1);
+                          return {
+                            sub: isOpen ? `${depth}` : undefined,
+                            title: `H-${n} · plan ${depth} ft${isSkipped ? ' — skipped' : ''}`,
+                            disabled: !isOpen,
+                            className: isSkipped
+                              ? 'border-2 border-dashed border-gray-400 text-gray-400'
+                              : isSel
+                                ? 'bg-safety-orange text-white ring-2 ring-orange-200'
+                                : isOpen
+                                  ? 'bg-gray-100 border border-gray-300 text-gray-600'
+                                  : hasHazard
+                                    ? 'bg-safety-orange/90 text-white'
+                                    : 'bg-navy text-white',
+                          };
+                        }}
+                        extras={(drilling?.extras ?? []).map((n) => ({ label: n, className: 'bg-navy text-white', title: `H-${n} — not on the plan` }))}
+                      />
+                      <p className="text-[11px] text-gray-400 mt-1 mb-1">
+                        ● drilled · <span className="text-safety-orange">● hazard</span> · ○ open (planned ft) —
+                        tap open holes, a row handle, or "all open" to select{selected.size > 0 && ` · ${selected.size} selected`}.
+                        Off-plan hole? Type any number below — ordinary entry.
+                      </p>
+                    </>
+                  );
+                })()}
 
                 {selected.size > 0 && (() => {
                   const picks = sortedSelection();
@@ -736,39 +756,22 @@ export function DrillLogPage() {
           </div>
         )}
 
-        {/* The blaster's pattern map — read-only reference; tap targets a hole */}
-        {plan && (shot || drillPlan) && (
-          <div className="rounded-xl border border-gray-200 bg-white p-3">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                Pattern plan
-              </p>
-              <button
-                className="text-xs text-gray-400 underline"
-                onClick={() => setShowMap(!showMap)}
-              >
-                {showMap ? 'Hide' : 'Show'}
-              </button>
+        {/* Holes drilled — newest first, windowed (S8a follow-up: 77 rows is not a list) */}
+        <div className="rounded-xl border border-gray-200 bg-white divide-y divide-gray-100" data-holes-list>
+          {holes.length > 0 && (
+            <div className="flex items-center justify-between px-3 py-2 text-xs text-gray-500">
+              <span>
+                {holes.length} hole{holes.length === 1 ? '' : 's'} · {footage.toFixed(0)} ft
+                {holes.filter((h) => h.conditions.length > 0).length > 0 && ` · ${holes.filter((h) => h.conditions.length > 0).length} with conditions`}
+              </span>
+              {holes.length > 8 && (
+                <button className="underline text-navy" data-holes-show-all onClick={() => setShowAllHoles(!showAllHoles)}>
+                  {showAllHoles ? 'Show latest 8' : `Show all ${holes.length}`}
+                </button>
+              )}
             </div>
-            {showMap && (
-              <DrillPlanDiagram
-                diagram={
-                  drillPlan
-                    ? planToDiagram(drillPlan)
-                    : parseDiagram(shot!.designPlan.shotDiagramData)
-                }
-                fallbackDepth={shot?.totals.avgDrillDepth || 0}
-                drilled={drilled}
-                selected={holeNumber.trim()}
-                onTapHole={editable ? (n) => setHoleNumber(String(n)) : undefined}
-              />
-            )}
-          </div>
-        )}
-
-        {/* Holes drilled */}
-        <div className="rounded-xl border border-gray-200 bg-white divide-y divide-gray-100">
-          {holes.map((h) => (
+          )}
+          {(showAllHoles ? recentHoles : recentHoles.slice(0, 8)).map((h) => (
             <div key={h.id} className="flex items-center gap-3 px-3 py-2">
               <span className="font-mono font-bold text-navy w-10">{h.holeNumber}</span>
               <div className="flex-1 min-w-0 text-sm">
