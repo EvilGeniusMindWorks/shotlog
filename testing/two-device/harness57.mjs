@@ -29,7 +29,8 @@ async (page, lib) => {
     R.ok('back goes up one level', true);
     await P0.goto(`${WEB}/help/driller/the-drill-log`);
     await P0.locator('[data-help-article="the-drill-log"]').waitFor({ timeout: 8000 });
-    R.ok('a next-batch page says it is planned', (await P0.locator('[data-help-status="planned"]').count()) === 1);
+    const all = await P0.evaluate(async () => { const { HELP_PAGES } = await import('/src/help/index.ts'); return { n: HELP_PAGES.length, planned: HELP_PAGES.filter((p) => p.status === 'planned').length, sections: new Set(HELP_PAGES.map((p) => p.section)).size }; });
+    R.ok(`every page is written: ${all.n} pages in ${all.sections} sections, none planned`, all.n >= 59 && all.planned === 0 && all.sections === 9);
     await P0.goto(`${WEB}/help`);
     await P0.locator('[data-help-search]').locator('visible=true').first().fill('pin');
     await sleep(400);

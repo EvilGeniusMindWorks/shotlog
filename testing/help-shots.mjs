@@ -130,3 +130,135 @@ await shot(P, 'install-card', { selector: '[data-install-card]' });
 await ctx.close();
 await browser.close();
 console.log('done →', OUT);
+
+// ── batch two: driller, shop, supervisor ────────────────────────────────
+{
+  const b2 = await chromium.launch();
+  const cd = await mkCtx(b2, { viewport: VIEW, deviceScaleFactor: 1.5 });
+  const D = await cd.newPage();
+  await signIn(D, 'dinis');
+  await skipTours(D);
+  // A real pattern for the drill-log shot: the blaster lays a 3 × 4 plan and
+  // sends it to Dinis; Dinis logs the first row, then it is cleaned up
+  const cb = await mkCtx(b2, { viewport: VIEW });
+  const B = await cb.newPage();
+  await signIn(B, 'blaster');
+  await skipTours(B);
+  const made = await B.evaluate(async () => {
+    const { db } = await import('/src/db/index.ts');
+    const { createBlastDay } = await import('/src/hooks/useBlastDay.ts');
+    const { createDrillLog } = await import('/src/hooks/useDrillLogs.ts');
+    const { serializeDiagram, emptyDiagram } = await import('/src/lib/shotDiagram.ts');
+    const { nowISO } = await import('/src/lib/utils.ts');
+    const jobs = (await db.jobs.filter((j) => !j.archivedAt && j.isActive).toArray()).sort((a, b) => a.name.localeCompare(b.name));
+    const id = await createBlastDay(jobs[0].id, undefined, undefined, { typeOfWork: 'drill_to_blast', name: 'Help guide screenshot day' });
+    const log = await db.blastLogs.where('blastDayId').equals(id).first();
+    const shot = await db.shots.where('blastLogId').equals(log.id).first();
+    const d = { ...emptyDiagram(3, 4), plan: { defaultDepth: 20, overrides: { 5: { depth: 0 } } } };
+    await db.shots.update(shot.id, { designPlan: { ...shot.designPlan, shotDiagramData: serializeDiagram(d) }, updatedAt: nowISO() });
+    const fresh = await db.shots.get(shot.id);
+    const crew = await db.crewMembers.filter((c) => c.isActive && c.userId).toArray();
+    const dinis = crew.find((c) => /dinis/i.test(c.name)) ?? crew[0];
+    const logId = await createDrillLog(fresh, id, jobs[0].id, { userId: dinis.userId, name: dinis.name });
+    return { day: id, logId };
+  });
+  await lib.waitForUpload(B);
+  await cb.close();
+  await D.goto(`${WEB}/blast-day/${made.day}/drill-log/${made.logId}`);
+  await D.locator('[data-pattern-grid="log"]').waitFor({ timeout: 20000 });
+  await D.locator('[data-pattern-row="0"]').click();
+  await sleep(200);
+  await D.getByRole('button', { name: /Log 4 as planned/ }).click();
+  await sleep(1200);
+  await D.evaluate(() => window.scrollTo(0, 0));
+  await shot(D, 'drill-log');
+  await D.goto(`${WEB}/`);
+  await D.locator('main').waitFor({ timeout: 15000 });
+  await sleep(800);
+  await shot(D, 'driller-home');
+  await D.goto(`${WEB}/drilling`);
+  await D.locator('main').waitFor({ timeout: 15000 });
+  await sleep(800);
+  await shot(D, 'drilling');
+  await lib.cleanupAsAdmin(b2, { days: [made.day], drillLogs: [made.logId] }).catch((e) => console.log('cleanup', e.message));
+  const rig = await D.evaluate(async () => { const { db } = await import('/src/db/index.ts'); const r = (await db.equipment.toArray()).find((e) => e.category === 'rock_drill' && e.isActive); return r?.id ?? null; });
+  if (rig) {
+    await D.goto(`${WEB}/drill-checklist/${rig}`);
+    await D.locator('main').waitFor({ timeout: 15000 });
+    await sleep(800);
+    await shot(D, 'checklist');
+  }
+  await cd.close();
+
+  const cm = await mkCtx(b2, { viewport: VIEW, deviceScaleFactor: 1.5 });
+  const M = await cm.newPage();
+  await signIn(M, 'mechanic');
+  await skipTours(M);
+  await M.goto(`${WEB}/`);
+  await M.locator('main').waitFor({ timeout: 15000 });
+  await sleep(800);
+  await shot(M, 'shop');
+  await M.goto(`${WEB}/admin/equipment`);
+  await M.locator('[data-equip-tabs]').waitFor({ timeout: 15000 });
+  await shot(M, 'fleet');
+  if (rig) {
+    await M.goto(`${WEB}/equipment/${rig}`);
+    await M.locator('main').waitFor({ timeout: 15000 });
+    await sleep(800);
+    await shot(M, 'machine');
+  }
+  await M.goto(`${WEB}/equipment-locator`);
+  await M.locator('main').waitFor({ timeout: 15000 });
+  await sleep(1500);
+  await shot(M, 'locator');
+  await cm.close();
+
+  const cs = await mkCtx(b2, { viewport: VIEW, deviceScaleFactor: 1.5 });
+  const S = await cs.newPage();
+  await signIn(S, 'supervisor');
+  await skipTours(S);
+  await S.goto(`${WEB}/admin/approvals`);
+  await S.locator('main').waitFor({ timeout: 15000 });
+  await sleep(800);
+  await shot(S, 'approvals');
+  await cs.close();
+  await b2.close();
+  console.log('batch two shots done');
+}
+
+// ── batch three: office, admin ──────────────────────────────────────────
+{
+  const b3 = await chromium.launch();
+  const co = await mkCtx(b3, { viewport: VIEW, deviceScaleFactor: 1.5 });
+  const O = await co.newPage();
+  await signIn(O, 'office');
+  await skipTours(O);
+  await O.goto(`${WEB}/`);
+  await O.locator('main').waitFor({ timeout: 15000 });
+  await sleep(1200);
+  await shot(O, 'office-home');
+  await O.goto(`${WEB}/records`);
+  await O.locator('[data-records-manager]').waitFor({ timeout: 15000 }).catch(() => undefined);
+  await sleep(1500);
+  await shot(O, 'records-office');
+  await O.goto(`${WEB}/admin/people`);
+  await O.locator('main').waitFor({ timeout: 15000 });
+  await sleep(800);
+  await shot(O, 'people');
+  await co.close();
+  const ca = await mkCtx(b3, { viewport: VIEW, deviceScaleFactor: 1.5 });
+  const A = await ca.newPage();
+  await signIn(A, 'mark');
+  await skipTours(A);
+  await A.goto(`${WEB}/admin/catalog`);
+  await A.locator('main').waitFor({ timeout: 15000 });
+  await sleep(800);
+  await shot(A, 'catalog');
+  await A.goto(`${WEB}/admin/roles`);
+  await A.locator('main').waitFor({ timeout: 15000 });
+  await sleep(800);
+  await shot(A, 'roles');
+  await ca.close();
+  await b3.close();
+  console.log('batch three shots done');
+}

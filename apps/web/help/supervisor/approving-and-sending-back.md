@@ -3,7 +3,23 @@ title: Approving and sending back
 order: 3
 screens: /admin/approvals
 updated: September 2026
-status: planned
+status: draft
 ---
 
-Approve, or send back with a note the blaster sees on the Dashboard.
+Approving locks the day for good. Sending back returns it to the blaster with your note.
+
+## Approve
+
+On **Admin › Approvals**, tap **Approve** on the day. It moves to the approved list and stays locked.
+
+## Send back
+
+Tap **Send back** and write what needs fixing — one line is enough: "crew missing Ray", "shot 2 not signed". The day returns to the blaster's Dashboard with your note on it. When they file again it is version 2, and both versions are kept with the note.
+
+## Reopening
+
+An approved day can be unlocked if it must, from the day itself. Use it rarely; sending back before approving is the cleaner path.
+
+## Related
+
+[Reviewing a day](/help/supervisor/reviewing-a-day) · [A day sent back](/help/blaster/a-day-sent-back)

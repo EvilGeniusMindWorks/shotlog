@@ -804,7 +804,7 @@ status labels.
 | 7 | Jobs = drill-down (details first, windowed lists, nav stays *Jobs*; Wide 1 · Pages; flat list dropped) | Build | S8b | ✅ shipped 2026-09-07 (harness55 45/45; 40/41/43/53 green) |
 | 9 | Equipment: four grouped tabs + type chips + search + filter chips; repair queue leaves the admin page | Build | S8b | ✅ shipped 2026-09-07 (harness55 45/45) |
 | 3 | Alpha / Beta / Production companies + platform-admin switcher; go-live moves people | Build | S8c | ✅ shipped 2026-09-07 (harness56 26/26; 41/49 green) |
-| 2 | Help guide — Markdown in repo, built into the app at /help (public), search, About-this-screen links, real screenshots | Build (plan 16b5f92f accepted 2026-09-08) | H1–H3 | ✅ H1 shipped 2026-09-08 (frame + Start here + Blaster, 21 pages, 16 screenshots; harness57 20/20; 38/39 green) · H2, H3 next |
+| 2 | Help guide — Markdown in repo, built into the app at /help (public), search, About-this-screen links, real screenshots | Build (plan 16b5f92f accepted 2026-09-08) | H1–H3 | ✅ COMPLETE 2026-09-08 — all 59 pages in 9 sections written as drafts, 30 real screenshots (harness57 20/20; 38/39 green); Matthew's review flips pages to reviewed |
 | 4 | Load / soak test — manual overnight GitHub Action, throwaway company on the named API; p50/p95, delivery lag, error rate | Build | S8d | ✅ shipped 2026-09-08 (docs/ops-probe-and-load.md; local dress rehearsal green) |
 | 5 | Connectivity probe every 10 min (health, sign-in, sync token, sync service, web, manifest); email on fail + recover | Build | S8d | ✅ shipped 2026-09-08 (needs the four GitHub secrets — Matthew) |
 
@@ -947,6 +947,8 @@ ALERT_TO (+ LOADTEST_EMAIL · LOADTEST_PASSWORD), a probe user in People.
 5. Harness 57: public /help without sign-in, search, a page with headings,
    draft/planned banners, the three doors, route → page mapping.
    **H1 ✅ 2026-09-08:** frame + 21 draft pages (Start here 7, Blaster 14) +
-   38 planned stubs + 16 real screenshots. Matthew reads batch one at /help
-   on the dev build (or the live app once deployed) and marks pages
-   reviewed via feedback; then H2.
+   16 real screenshots. **H2 + H3 ✅ same day** (Matthew: "complete the help
+   docs"): Driller 7 · Supervisor 4 · Shop 5 · Office 7 · Admin 6 ·
+   Reference 3 · Something's wrong 6 — 59 pages, 30 screenshots, every
+   page a draft until Matthew marks it reviewed (the Draft banner carries
+   Send feedback).

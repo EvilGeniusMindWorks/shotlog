@@ -270,7 +270,9 @@ export function HelpPage() {
                 })}
               </div>
               <p className="text-xs text-gray-400">
-                {HELP_PAGES.filter((p) => p.status !== 'planned').length} pages written · {HELP_PAGES.filter((p) => p.status === 'planned').length} in the next batches
+                {HELP_PAGES.length} pages
+                {HELP_PAGES.some((p) => p.status === 'planned') ? ` · ${HELP_PAGES.filter((p) => p.status === 'planned').length} still to write` : ''}
+                {HELP_PAGES.some((p) => p.status === 'draft') ? ' · drafts under review' : ''}
               </p>
             </div>
           )}
