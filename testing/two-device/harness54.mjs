@@ -67,12 +67,15 @@ async (page, lib) => {
     await P1.locator('[data-holes-show-all]').click();
     await sleep(200);
     R.ok('Show all expands it', /Show latest 8/.test(await P1.locator('[data-holes-list]').innerText()));
-    // complete the log
+    // complete the log from the BOTTOM of the page, next to the signature (no scroll back to the top)
+    R.ok('Mark complete sits under the signature at the bottom', (await P1.locator('[data-log-complete-bottom]').count()) === 1 && /11 holes/.test(await P1.locator('[data-log-complete-bottom]').innerText()));
     await P1.evaluate(async (logId) => {
       const { db } = await import('/src/db/index.ts');
       const { nowISO } = await import('/src/lib/utils.ts');
       await db.drillLogs.update(logId, { status: 'complete', updatedAt: nowISO() });
     }, logId);
+    await P1.waitForFunction(() => document.querySelector('[data-log-complete-done]'), null, { timeout: 5000 }).catch(() => undefined);
+    R.ok('once complete, the bottom says so', (await P1.locator('[data-log-complete-done]').count()) === 1);
   });
 
   await R.section('the day spine says ready to review; the review grid is the pattern shape', async () => {

@@ -236,20 +236,38 @@ export function AdminFeedbackPage() {
                     <dd className="col-span-1 sm:col-span-2 text-gray-700">{r.notified === 'sent' ? 'sent' : r.notified === 'failed' ? 'FAILED' : 'email off'}</dd>
                   </dl>
 
+                  {/* The preview uses the width it has and scrolls inside its own
+                      frame (a tall phone screenshot was a narrow strip — Matthew) */}
                   {d?.screenshot && (
-                    <button
-                      type="button"
-                      className="block text-left"
-                      title="Open the screenshot"
-                      data-screenshot-open
-                      onClick={() => {
-                        setFit(true);
-                        setViewer({ id: r.id, src: d.screenshot as string });
-                      }}
-                    >
-                      <img src={d.screenshot} alt="Screenshot" className="max-h-[50vh] rounded-lg border border-gray-200 bg-white" data-feedback-screenshot-img />
-                      <span className="block text-[11px] text-gray-400 mt-1">Tap to open full size · Download inside</span>
-                    </button>
+                    <div className="space-y-1" data-screenshot-preview>
+                      <div className="flex items-center gap-2 text-[11px] text-gray-400">
+                        <span>Screenshot · scroll inside · </span>
+                        <button
+                          type="button"
+                          className="underline text-navy"
+                          data-screenshot-open
+                          onClick={() => {
+                            setFit(true);
+                            setViewer({ id: r.id, src: d.screenshot as string });
+                          }}
+                        >
+                          Open full size
+                        </button>
+                        <span>·</span>
+                        <button type="button" className="underline text-navy" onClick={() => void downloadShot(d.screenshot as string, r.id)}>
+                          Download
+                        </button>
+                      </div>
+                      <div
+                        className="w-full max-w-3xl max-h-[60vh] overflow-auto rounded-lg border border-gray-200 bg-white cursor-zoom-in"
+                        onClick={() => {
+                          setFit(true);
+                          setViewer({ id: r.id, src: d.screenshot as string });
+                        }}
+                      >
+                        <img src={d.screenshot} alt="Screenshot" className="w-full h-auto block" data-feedback-screenshot-img />
+                      </div>
+                    </div>
                   )}
                   {viewer && viewer.id === r.id && (
                     <div className="fixed inset-0 z-[100] bg-black/85 flex flex-col" data-screenshot-viewer onClick={() => setViewer(null)}>

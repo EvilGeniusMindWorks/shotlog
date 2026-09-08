@@ -174,6 +174,8 @@ async (page, lib) => {
     await P4.goto(`${WEB}/admin/feedback?id=${feedbackId}`);
     await P4.locator('[data-screenshot-open]').waitFor({ timeout: 10000 });
     R.ok('the inline preview is a button, not a link to a blank tab', (await P4.locator('a[href^="data:"]').count()) === 0);
+    const pv = await P4.evaluate(() => { const f = document.querySelector('[data-screenshot-preview] .overflow-auto'); const img = f?.querySelector('img'); return { frame: f?.getBoundingClientRect().width ?? 0, img: img?.getBoundingClientRect().width ?? 0, scrolls: f ? getComputedStyle(f).overflowY === 'auto' : false }; });
+    R.ok(`the preview fills its frame (${Math.round(pv.img)} of ${Math.round(pv.frame)} px) and scrolls inside it`, pv.frame > 300 && Math.abs(pv.img - pv.frame) < 4 && pv.scrolls);
     await P4.locator('[data-screenshot-open]').click();
     await P4.locator('[data-screenshot-viewer]').waitFor({ timeout: 5000 });
     R.ok('the viewer opens with the full image, Fit / Actual size and Download', (await P4.locator('[data-screenshot-full]').count()) === 1 && (await P4.locator('[data-screenshot-fit]').count()) === 1 && (await P4.locator('[data-screenshot-download]').count()) === 1);

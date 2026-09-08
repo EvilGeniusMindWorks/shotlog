@@ -888,13 +888,30 @@ export function DrillLogPage() {
           </div>
         )}
 
-        {/* Driller signature (part of marking complete) */}
-        <div className="rounded-xl border border-gray-200 bg-white p-4">
-          <Label className="text-xs">Driller signature — {log.drillerName || me?.name}</Label>
-          <SignatureField
-            value={log.signatureImage}
-            onChange={(blob) => void update({ signatureImage: blob })}
-          />
+        {/* Driller signature (part of marking complete) — and Mark complete right
+            here, so nobody scrolls back to the top after signing (Matthew, S8a) */}
+        <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-3">
+          <div>
+            <Label className="text-xs">Driller signature — {log.drillerName || me?.name}</Label>
+            <SignatureField
+              value={log.signatureImage}
+              onChange={(blob) => void update({ signatureImage: blob })}
+            />
+          </div>
+          {log.status === 'open' && canDrillLogTransition('open', 'complete') && (
+            <Button
+              className="w-full"
+              size="lg"
+              disabled={holes.length === 0}
+              data-log-complete-bottom
+              onClick={() => { setNoteText(''); setNotePrompt('complete'); }}
+            >
+              <Check className="h-4 w-4 mr-1" /> Mark complete{holes.length > 0 ? ` · ${holes.length} holes` : ''}
+            </Button>
+          )}
+          {log.status === 'complete' && (
+            <p className="text-sm text-green-700 text-center" data-log-complete-done>✓ Marked complete — the blaster reviews it from the day.</p>
+          )}
         </div>
       </div>
     </div>
