@@ -39,6 +39,7 @@ async function get(url, init = {}) {
 async function run() {
   let accessToken = null;
   let endpoint = null;
+  let syncToken = null;
   await check('API health', async () => {
     const r = await get(`${API}/health`);
     const j = await r.json().catch(() => null);
@@ -63,12 +64,65 @@ async function run() {
     const j = await r.json().catch(() => null);
     if (r.status !== 200 || !j?.token) throw new Error(`status ${r.status}`);
     endpoint = j.endpoint;
+    syncToken = j.token;
     return endpoint;
   });
   if (PROBE) await check('Sync service', async () => {
     if (!endpoint) throw new Error('no endpoint');
     const r = await get(`${endpoint}/probes/liveness`);
     if (r.status !== 200) throw new Error(`status ${r.status}`);
+  });
+  // The number the field feels. Two passes over a real sync stream as this
+  // account: COLD (no local state — a fresh device's first sync) and WARM
+  // (the device already holds the bucket up to op N — every later open).
+  // Each is timed from the "checkpoint" line to "checkpoint_complete", the
+  // span the app reports as "checkpoint" in Data & device.
+  const streamOnce = async (buckets, label) => {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 60000);
+    try {
+      const res = await fetch(`${endpoint}/sync/stream`, { method: 'POST', headers: { Authorization: `Token ${syncToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ buckets, include_checksum: true, raw_data: true, client_id: `probe-${label}` }), signal: ctrl.signal });
+      if (!res.ok || !res.body) throw new Error(`stream ${res.status}`);
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      let t0 = null;
+      let ops = 0;
+      let bucket = null;
+      let lastOp = '0';
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) throw new Error('stream ended before checkpoint_complete');
+        buf += dec.decode(value, { stream: true });
+        let nl;
+        while ((nl = buf.indexOf('\n')) >= 0) {
+          const line = buf.slice(0, nl);
+          buf = buf.slice(nl + 1);
+          if (!line.trim()) continue;
+          let o;
+          try { o = JSON.parse(line); } catch { continue; }
+          if (o.checkpoint) { t0 = performance.now(); bucket = o.checkpoint.buckets?.[0] ?? null; }
+          if (o.data) { ops += o.data.data.length; lastOp = o.data.data[o.data.data.length - 1]?.op_id ?? lastOp; }
+          if (o.checkpoint_complete || o.partial_checkpoint_complete) {
+            ctrl.abort();
+            return { ms: t0 === null ? 0 : Math.round(performance.now() - t0), ops, bucket, lastOp };
+          }
+        }
+      }
+    } finally {
+      clearTimeout(t);
+    }
+  };
+  let cold = null;
+  if (PROBE) await check('Sync cold', async () => {
+    if (!endpoint || !syncToken) throw new Error('no token');
+    cold = await streamOnce([], 'cold');
+    return `${cold.ms} ms · ${cold.ops} ops streamed · bucket holds ${cold.bucket?.count ?? '?'} ops`;
+  });
+  if (PROBE) await check('Sync warm', async () => {
+    if (!endpoint || !syncToken || !cold?.bucket) throw new Error('no cold pass');
+    const warm = await streamOnce([{ name: cold.bucket.bucket, after: cold.lastOp }], 'warm');
+    return `${warm.ms} ms · ${warm.ops} ops streamed (device already at op ${cold.lastOp})`;
   });
   await check('Web app', async () => {
     const r = await get(`${WEB}/`);
