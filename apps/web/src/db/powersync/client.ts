@@ -13,11 +13,12 @@ import {
   column,
   type PowerSyncBackendConnector,
   LogLevels,
+  SyncStreamConnectionMethod,
   type PowerSyncLogger,
 } from '@powersync/web';
 import { authedFetch, getSession, sessionCompanyId } from '@/lib/session';
 import { logSyncEvent, syncDebugOn } from '@/lib/syncLog';
-import { defaultEngineFor, type StorageEngine as PolicyEngine } from '@/lib/storageEnginePolicy';
+import { defaultEngineFor, type StorageEngine as PolicyEngine, isAppleWebKit } from '@/lib/storageEnginePolicy';
 import type { SqlAdapter } from './adapter';
 
 const schema = new Schema({
@@ -170,6 +171,29 @@ function releaseOnUnload(ps: PowerSyncDatabase): void {
   window.addEventListener('beforeunload', () => release());
 }
 
+/** Safari and the HTTP sync stream (Matthew's Mac, 2026-09-08): the server
+ *  sends the checkpoint line and, right behind it, the tiny "complete" line.
+ *  Safari sometimes holds that second small chunk until more bytes arrive —
+ *  the server's keepalive, 20 s later — so the chip read "Syncing…" for
+ *  20 s with 0 ops on most opens and 4 ms on the lucky ones where both
+ *  lines shared a packet. WebSocket frames are delivered as they arrive.
+ *  Override with localStorage 'shotlog-sync-transport' = http | ws. */
+function syncTransport(): SyncStreamConnectionMethod {
+  let pref: string | null = null;
+  try {
+    pref = localStorage.getItem('shotlog-sync-transport');
+  } catch {
+    /* ignore */
+  }
+  if (pref === 'ws') return SyncStreamConnectionMethod.WEB_SOCKET;
+  if (pref === 'http') return SyncStreamConnectionMethod.HTTP;
+  return isAppleWebKit(navigator.userAgent, navigator.platform, navigator.maxTouchPoints) ? SyncStreamConnectionMethod.WEB_SOCKET : SyncStreamConnectionMethod.HTTP;
+}
+function connectOptions() {
+  const connectionMethod = syncTransport();
+  return { connectionMethod };
+}
+
 /** Set by fetchCredentials: how long the last sync-token request took */
 let lastTokenMs = 0;
 
@@ -214,7 +238,7 @@ function watchConnects(ps: PowerSyncDatabase): void {
         const fmt = (ms: number) => (ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(1)} s`);
         const stream = connectedAt !== null && connectingAt !== null ? fmt(connectedAt - connectingAt) : '?';
         const done = status.downloadProgress?.downloadedOperations ?? opsAtStart;
-        logSyncEvent(`connect: token ${fmt(lastTokenMs)} · stream ${stream} · checkpoint ${fmt(now - downloadingAt)}${opsAtStart !== null ? ` · ${done ?? opsAtStart} of ${opsAtStart} ops` : ''}`);
+        logSyncEvent(`connect: token ${fmt(lastTokenMs)} · stream ${stream} · checkpoint ${fmt(now - downloadingAt)}${opsAtStart !== null ? ` · ${done ?? opsAtStart} of ${opsAtStart} ops` : ''} · ${syncTransport() === SyncStreamConnectionMethod.WEB_SOCKET ? 'ws' : 'http'}`);
         opsAtStart = null;
         downloadingAt = null;
         connectingAt = null;
@@ -363,7 +387,7 @@ export function getPowerSync(): PowerSyncDatabase {
     // Connect only once a session (or dev override) exists — otherwise the
     // SDK would loop on credential failures behind the login screen.
     if (getSession().loggedIn || import.meta.env.VITE_POWERSYNC_TOKEN_URL) {
-      void instance.connect(new ShotLogConnector());
+      void instance.connect(new ShotLogConnector(), connectOptions());
     }
   }
   return instance;
@@ -371,7 +395,7 @@ export function getPowerSync(): PowerSyncDatabase {
 
 /** Call after login: starts (or restarts) replication with fresh credentials. */
 export async function connectPowerSync(): Promise<void> {
-  await getPowerSync().connect(new ShotLogConnector());
+  await getPowerSync().connect(new ShotLogConnector(), connectOptions());
   noteReplicaCompany();
 }
 
@@ -391,7 +415,7 @@ export async function reconnectPowerSync(): Promise<void> {
   if (now - lastReconnectAt < 5000) return;
   lastReconnectAt = now;
   logSyncEvent('reconnect nudge');
-  await ps.connect(new ShotLogConnector());
+  await ps.connect(new ShotLogConnector(), connectOptions());
 }
 
 /**
