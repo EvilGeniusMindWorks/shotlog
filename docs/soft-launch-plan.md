@@ -974,3 +974,5 @@ ALERT_TO (+ LOADTEST_EMAIL · LOADTEST_PASSWORD), a probe user in People.
    record), the thumb shows on both devices, the other device's open falls
    back truthfully without R2; the migration endpoint answers (skipped
    without R2 locally); the seismo nudges still count photos.
+
+**Sync load, part two (2026-09-08) — ✅ SHIPPED (harness59 5/5):** the images that stay inside records are made small — the site-sketch snapshot is capped at 1280 px / JPEG 0.7 (`lib/imageCompress.ts`, ~10 KB instead of ~35, and it is re-sent on every shot edit) and signatures are cropped to the ink, downscaled to ≤600 px and flattened to two colours (~3 KB instead of ~15). Existing records are not rewritten (0.6 MB, fades as old days age out). Next lever when history grows: partial sync with Sync Streams (reference + recent days for everyone; an archive stream for office/admin), scheduled after the beta invites.

@@ -1,3 +1,4 @@
+import { encodeCanvasJpeg } from '@/lib/imageCompress';
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -127,10 +128,10 @@ async function captureSnapshot(
       ctx.fillText(label, p.x - w / 2, p.y + 23);
     }
 
-    // JPEG: satellite imagery compresses ~8× better than PNG at this quality
-    return await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.85),
-    );
+    // JPEG: satellite imagery compresses ~8× better than PNG. Capped at
+    // 1280 px / 0.7 (sync-volume round, 2026-09-08): this snapshot rides in
+    // the shot record and is re-sent on every shot edit — ~10 KB, not ~35.
+    return await encodeCanvasJpeg(canvas);
   } catch {
     return null; // tainted canvas or transient failure — skip this snapshot
   }

@@ -1,3 +1,4 @@
+import { compactSignature } from '@/lib/imageCompress';
 import { useEffect, useRef, useState } from 'react';
 import SignaturePad from 'signature_pad';
 import { PenLine, X } from 'lucide-react';
@@ -56,10 +57,17 @@ export function SignatureField({
       setSigning(false);
       return;
     }
-    canvasRef.current?.toBlob((blob) => {
+    // Cropped to the ink and downscaled (sync-volume round, 2026-09-08): a
+    // signature rides in every signed record, ~3 KB instead of ~15
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      setSigning(false);
+      return;
+    }
+    void compactSignature(canvas).then((blob) => {
       if (blob) onChange(blob);
       setSigning(false);
-    }, 'image/png');
+    });
   };
 
   if (signing) {
