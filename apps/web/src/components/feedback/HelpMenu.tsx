@@ -2,8 +2,9 @@
 // on desktop, icon button in the phone header. "About this screen" appears
 // whenever the coach map knows the current route (Round S2).
 import { useEffect, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
-import { CircleHelp, Footprints, Info, MessageSquarePlus, Route } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { BookOpen, CircleHelp, Footprints, Info, MessageSquarePlus, Route } from 'lucide-react';
+import { helpForRoute, helpPath } from '@/help';
 import { cn } from '@/lib/utils';
 import { openFeedbackComposer } from './FeedbackComposer';
 import { coachFor } from '@/components/guidance/coach';
@@ -22,6 +23,7 @@ export function HelpMenu({
   const [coaching, setCoaching] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const location = useLocation();
+  const navigate = useNavigate();
   const coach = coachFor(location.pathname, location.search, tourBucket());
   const screenTour = screenTourFor(location.pathname, location.search, tourBucket());
 
@@ -80,6 +82,18 @@ export function HelpMenu({
       <button
         role="menuitem"
         className={item}
+        data-help-guide
+        onClick={() => {
+          setOpen(false);
+          const p = helpForRoute(location.pathname, location.search);
+          navigate(p ? helpPath(p) : '/help');
+        }}
+      >
+        <BookOpen className="h-4 w-4 text-gray-500" /> Help guide
+      </button>
+      <button
+        role="menuitem"
+        className={item}
         data-help-walkthrough
         onClick={() => {
           setOpen(false);
@@ -102,7 +116,8 @@ export function HelpMenu({
     </div>
   );
 
-  const sheet = coaching && coach ? <CoachSheet entry={coach} onClose={() => setCoaching(false)} /> : null;
+  const guidePage = helpForRoute(location.pathname, location.search);
+  const sheet = coaching && coach ? <CoachSheet entry={coach} guide={guidePage ? { title: guidePage.title, to: helpPath(guidePage) } : null} onClose={() => setCoaching(false)} /> : null;
 
   if (variant === 'sidebar')
     return (

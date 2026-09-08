@@ -73,3 +73,8 @@ cutover gate they were written for.
 
 - `node testing/probe/probe.mjs` — the uptime probe (local stack by default; `API_URL`/`WEB_URL` to aim it). Scheduled every 10 min by `.github/workflows/uptime-probe.yml`.
 - `DEVICES=4 MINUTES=1 node testing/load/loadtest.mjs` — the load / soak test against the local stack (platform admin = mark). Manual workflow: `.github/workflows/load-test.yml`. Details: docs/ops-probe-and-load.md.
+
+## Help guide screenshots
+
+- `node testing/help-shots.mjs [names…]` — re-captures the guide's screenshots from the dev app at phone width into `apps/web/public/help-img/`. Run it whenever a screen changes.
+- harness39 (walkthrough) needs the driller's tour reset first: `UPDATE "User" SET "tourDoneAt"=NULL WHERE email='dinis@test.local'` (other harnesses' skipTours mark it done).

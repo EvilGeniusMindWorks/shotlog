@@ -22,6 +22,7 @@ import { AdminCatalogPage } from '@/pages/admin/AdminCatalogPage';
 import { AdminCompanyPage } from '@/pages/admin/AdminCompanyPage';
 import { AdminEquipmentPage } from '@/pages/admin/AdminEquipmentPage';
 import { EnrollPage } from '@/pages/EnrollPage';
+import { HelpPage } from '@/pages/HelpPage';
 import { ResetPage } from '@/pages/ResetPage';
 import { DrillLogPage } from '@/pages/DrillLogPage';
 import { DrillPlanPage } from '@/pages/DrillPlanPage';
@@ -92,6 +93,22 @@ export function App() {
       </BrowserRouter>
     );
   }
+  // The help guide is public too (the invitation links it; a tester can read
+  // it on a laptop while holding the tablet). Signed in, it is also routed
+  // below so the ? menu opens it without a reload.
+  if (path === '/help' || path.startsWith('/help/')) {
+    return (
+      <BrowserRouter>
+        <FeedbackHost />
+        <Routes>
+          <Route path="/help" element={<HelpPage />} />
+          <Route path="/help/:section" element={<HelpPage />} />
+          <Route path="/help/:section/:page" element={<HelpPage />} />
+          <Route path="*" element={<HelpPage />} />
+        </Routes>
+      </BrowserRouter>
+    );
+  }
   return (
     <AuthGate>
     <UndoToastHost />
@@ -137,6 +154,9 @@ export function App() {
             <Route path="companies" element={<AdminCompaniesPage />} />
           </Route>
         </Route>
+        <Route path="/help" element={<HelpPage />} />
+        <Route path="/help/:section" element={<HelpPage />} />
+        <Route path="/help/:section/:page" element={<HelpPage />} />
         <Route path="/blast-day/:id/submit" element={<SubmitDayPage />} />
         <Route path="/blast-day/:id/drill-log/:logId/submit" element={<SubmitDrillLogPage />} />
         <Route path="/jobs/:jobId/drill-plan/:planId/log/:logId/submit" element={<SubmitDrillLogPage />} />

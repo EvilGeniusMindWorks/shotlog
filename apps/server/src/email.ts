@@ -152,7 +152,7 @@ function testingInviteMail(
   const text =
     `Hi ${first},\n\n${intro}\n\n${ask}\n\n${feedback}\n\nTo get started:\n` +
     steps.map((s, i) => `${i + 1}. ${s}`).join('\n') +
-    `\n\nSet up my account: ${opts.link}\n\nThanks for helping us get this right.\n\n` +
+    `\n\nSet up my account: ${opts.link}\n\nThere is a short guide you can read any time, even before signing in: ${APP_URL}/help/start-here\n\nThanks for helping us get this right.\n\n` +
     `This is a test version: expect rough edges, and expect changes as feedback comes in. The link works once and expires in ${opts.ttlDays} days. If you were not expecting this, you can ignore it.`;
   return {
     to: opts.to,

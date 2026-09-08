@@ -1,11 +1,13 @@
 // "About this screen" bottom sheet (Round S2): 3–5 bullets for the current
 // route from the coach map. Opened from the ? menu on every screen.
-import { X } from 'lucide-react';
+import { BookOpen, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { openFeedbackComposer } from '@/components/feedback/FeedbackComposer';
 import type { CoachEntry } from './coach';
 
-export function CoachSheet({ entry, onClose }: { entry: CoachEntry; onClose: () => void }) {
+export function CoachSheet({ entry, guide, onClose }: { entry: CoachEntry; guide?: { title: string; to: string } | null; onClose: () => void }) {
+  const navigate = useNavigate();
   return (
     <div
       className="fixed inset-0 z-[95] bg-black/40 flex items-end sm:items-center justify-center"
@@ -35,6 +37,19 @@ export function CoachSheet({ entry, onClose }: { entry: CoachEntry; onClose: () 
           ))}
         </ol>
         {entry.ask && <p className="text-sm text-gray-500 border-l-2 border-gray-200 pl-3">{entry.ask}</p>}
+        {guide && (
+          <button
+            type="button"
+            className="flex items-center gap-2 text-sm text-navy underline"
+            data-coach-guide
+            onClick={() => {
+              onClose();
+              navigate(guide.to);
+            }}
+          >
+            <BookOpen className="h-4 w-4" /> Read more in the guide: {guide.title}
+          </button>
+        )}
         <div className="flex gap-2">
           <Button className="flex-1" onClick={onClose}>
             Got it

@@ -227,6 +227,11 @@ function HelpCard() {
             <Route className="h-4 w-4 mr-1.5" /> Walkthrough
           </Button>
           <Button variant="outline" asChild>
+            <Link to="/help" data-settings-help-guide>
+              <BookOpen className="h-4 w-4 mr-1.5" /> Help guide
+            </Link>
+          </Button>
+          <Button variant="outline" asChild>
             <Link to="/reference">
               <BookOpen className="h-4 w-4 mr-1.5" /> Reference
             </Link>

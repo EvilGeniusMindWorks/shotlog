@@ -804,7 +804,7 @@ status labels.
 | 7 | Jobs = drill-down (details first, windowed lists, nav stays *Jobs*; Wide 1 · Pages; flat list dropped) | Build | S8b | ✅ shipped 2026-09-07 (harness55 45/45; 40/41/43/53 green) |
 | 9 | Equipment: four grouped tabs + type chips + search + filter chips; repair queue leaves the admin page | Build | S8b | ✅ shipped 2026-09-07 (harness55 45/45) |
 | 3 | Alpha / Beta / Production companies + platform-admin switcher; go-live moves people | Build | S8c | ✅ shipped 2026-09-07 (harness56 26/26; 41/49 green) |
-| 2 | Help guide — Markdown in repo, built into the app at /help, hosted at the app URL | Deferred until the UI settles (outline kept) | — | queued |
+| 2 | Help guide — Markdown in repo, built into the app at /help (public), search, About-this-screen links, real screenshots | Build (plan 16b5f92f accepted 2026-09-08) | H1–H3 | ✅ H1 shipped 2026-09-08 (frame + Start here + Blaster, 21 pages, 16 screenshots; harness57 20/20; 38/39 green) · H2, H3 next |
 | 4 | Load / soak test — manual overnight GitHub Action, throwaway company on the named API; p50/p95, delivery lag, error rate | Build | S8d | ✅ shipped 2026-09-08 (docs/ops-probe-and-load.md; local dress rehearsal green) |
 | 5 | Connectivity probe every 10 min (health, sign-in, sync token, sync service, web, manifest); email on fail + recover | Build | S8d | ✅ shipped 2026-09-08 (needs the four GitHub secrets — Matthew) |
 
@@ -930,3 +930,23 @@ reconnects; red above 2 % errors or 30 s p95 lag. No staging deployment
 exists: the data is isolated, the server is the real one — run it at
 night. **Matthew:** secrets PROBE_EMAIL · PROBE_PASSWORD · RESEND_API_KEY ·
 ALERT_TO (+ LOADTEST_EMAIL · LOADTEST_PASSWORD), a probe user in People.
+
+**Help guide (plan artifact 16b5f92f, accepted 2026-09-08; calls in decisions.md):**
+1. Frame: `apps/web/help/**/*.md` + `src/help/index.ts` (glob import, frontmatter,
+   section order, `helpForRoute`), `pages/HelpPage.tsx` at `/help` and
+   `/help/:section/:page` (public, own header; phone sections › pages › page;
+   wide TOC · page · on-this-page; search), `marked` renderer + `.help-doc`
+   styles, draft / planned banners.
+2. Doors: ? menu *Help guide*; Settings › Help *Help guide*; About this screen
+   "Read more in the guide"; the invitation email links Start here.
+3. Screenshots: `testing/help-shots.mjs` captures named screens from the dev
+   app at phone width into `apps/web/public/help-img/`.
+4. Batches: H1 Start here + Blaster (this round) · H2 Driller + Shop +
+   Supervisor · H3 Office + Admin + Reference + Something's wrong. Pages of
+   later batches exist as *planned* stubs so the whole structure shows.
+5. Harness 57: public /help without sign-in, search, a page with headings,
+   draft/planned banners, the three doors, route → page mapping.
+   **H1 ✅ 2026-09-08:** frame + 21 draft pages (Start here 7, Blaster 14) +
+   38 planned stubs + 16 real screenshots. Matthew reads batch one at /help
+   on the dev build (or the live app once deployed) and marks pages
+   reviewed via feedback; then H2.
