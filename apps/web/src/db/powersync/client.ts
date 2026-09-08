@@ -45,6 +45,7 @@ class ShotLogConnector implements PowerSyncBackendConnector {
       // "session expired". Drop the session (the PIN stays: same person,
       // same device); the next sign-in resets the replica for the new company.
       const { serverUrl } = getSession();
+      const tokenAt = performance.now();
       let res = await fetch(`${serverUrl}/powersync/token`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('shotlog-access-token') ?? ''}` },
       });
@@ -60,6 +61,7 @@ class ShotLogConnector implements PowerSyncBackendConnector {
       }
       if (!res.ok) throw new Error(`powersync token failed (${res.status})`);
       const { token, endpoint } = (await res.json()) as { token: string; endpoint: string };
+      lastTokenMs = Math.round(performance.now() - tokenAt);
       return { endpoint: import.meta.env.VITE_POWERSYNC_URL ?? endpoint, token };
     } catch (err) {
       logSyncEvent(`token fetch failed: ${err instanceof Error ? err.message : 'error'}`);
@@ -146,6 +148,45 @@ export function setStorageEngine(engine: StorageEngine): void {
   } catch {
     /* private mode */
   }
+}
+
+/** Set by fetchCredentials: how long the last sync-token request took */
+let lastTokenMs = 0;
+
+/** Where does a "Syncing…" spell go? Every connect cycle after the first
+ *  download is timed in three parts — the token request, the stream
+ *  opening, and the checkpoint (downloading → done) — and logged as one
+ *  line the Data & device card shows (Matthew's Mac: 20 s of Syncing on
+ *  every open while the first sync took 1 s). */
+function watchConnects(ps: PowerSyncDatabase): void {
+  let connectingAt: number | null = null;
+  let connectedAt: number | null = null;
+  let downloadingAt: number | null = null;
+  let wasConnected = false;
+  ps.registerListener({
+    statusChanged: (status) => {
+      const dl = Boolean(status.dataFlowStatus?.downloading);
+      if (status.connecting && !status.connected && !wasConnected && connectingAt === null) connectingAt = performance.now();
+      if (status.connected && !wasConnected) {
+        connectedAt = performance.now();
+        wasConnected = true;
+      }
+      if (status.connected && dl && downloadingAt === null) downloadingAt = performance.now();
+      if (status.connected && !dl && downloadingAt !== null && status.hasSynced === true) {
+        const now = performance.now();
+        const fmt = (ms: number) => (ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(1)} s`);
+        const stream = connectedAt !== null && connectingAt !== null ? fmt(connectedAt - connectingAt) : '?';
+        logSyncEvent(`connect: token ${fmt(lastTokenMs)} · stream ${stream} · checkpoint ${fmt(now - downloadingAt)}`);
+        downloadingAt = null;
+        connectingAt = null;
+        connectedAt = null;
+      }
+      if (!status.connected && !status.connecting) {
+        wasConnected = false;
+        connectingAt = null;
+      }
+    },
+  });
 }
 
 /** Log the first completed download on this device (how long, how many)
@@ -276,6 +317,7 @@ export function getPowerSync(): PowerSyncDatabase {
     g.__shotlogPowerSync = instance;
     logSyncEvent(`storage engine: ${engine === 'opfs' ? 'OPFS' : 'IndexedDB'}`);
     watchFirstSync(instance, engine);
+    watchConnects(instance);
     if (engine === 'idb') scheduleEngineHandover(instance);
     // Connect only once a session (or dev override) exists — otherwise the
     // SDK would loop on credential failures behind the login screen.

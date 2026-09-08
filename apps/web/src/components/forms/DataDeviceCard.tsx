@@ -46,6 +46,7 @@ export function DataDeviceCard() {
       .catch(() => setFilesOk(null));
   }, [session.loggedIn]);
   const firstSync = [...getSyncLog()].reverse().find((e) => e.msg.startsWith('first sync done'));
+  const lastConnect = [...getSyncLog()].reverse().find((e) => e.msg.startsWith('connect:'));
 
   const syncLine = !session.loggedIn
     ? 'Not connected — data is device-local only'
@@ -91,6 +92,11 @@ export function DataDeviceCard() {
         {firstSync && (
           <p className="text-[11px] text-gray-400" data-first-sync>
             Last first sync: {firstSync.msg.replace('first sync done: ', '')} · {new Date(firstSync.at).toLocaleString()}
+          </p>
+        )}
+        {lastConnect && (
+          <p className="text-[11px] text-gray-400" data-last-connect>
+            Last connect: {lastConnect.msg.replace('connect: ', '')} · {new Date(lastConnect.at).toLocaleString()}
           </p>
         )}
         <p className="text-[11px] text-gray-300 font-mono">Build {__BUILD_ID__}</p>
