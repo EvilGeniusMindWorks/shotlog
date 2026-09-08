@@ -1,16 +1,21 @@
-// One customer, on the adaptive record shell: company & billing, contacts,
-// sites, jobs, compliance & terms. Tabs on wide screens, one collapsible
-// scroll on phones — same sections either way.
+// One customer, on the adaptive record shell — S8b drill-down: the About
+// cards (Company & billing · Contacts · Compliance & terms) come FIRST,
+// then the customer's SITES (windowed, "+ New site" here), then the full
+// sections to edit. Wide screens: the same page, cards across the top.
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { createSite } from '@/lib/jobContext';
+import { relativeDay, rollUp, useJobActivity, type JobActivityMap } from '@/lib/jobActivity';
+import { ListRow, dayCount } from '@/components/jobs/ListRow';
+import { WindowedList } from '@/components/jobs/WindowedList';
+import { permitStatus, townOf } from '@/lib/siteFacts';
 import { MapPin, Plus, Trash2 } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { can } from '@/lib/perms';
 import { useDraftRecord } from '@/hooks/useDraftRecord';
 import { LifecycleMenu } from '@/components/records/LifecycleMenu';
 import { formatDate, generateId, nowISO } from '@/lib/utils';
-import type { Customer, CustomerContact, CustomerStatus } from '@/db/schema';
+import type { Customer, CustomerContact, CustomerStatus, Job, Site } from '@/db/schema';
 import { AddressFields, emptyAddress } from '@/components/forms/AddressFields';
 import { RecordShell } from '@/components/layout/RecordShell';
 import { Badge } from '@/components/ui/badge';
@@ -75,12 +80,13 @@ export function CustomerPage() {
     useLiveQuery(
       async () =>
         id
-          ? (await db.jobs.filter((j) => j.customerId === id).toArray()).sort((a, b) =>
+          ? (await db.jobs.filter((j) => j.customerId === id && !j.archivedAt).toArray()).sort((a, b) =>
               b.updatedAt.localeCompare(a.updatedAt),
             )
           : [],
       [id],
     ) ?? [];
+  const activity = useJobActivity();
 
   if (!customer) return <div className="p-4 text-center text-gray-500">Loading…</div>;
 
@@ -89,13 +95,12 @@ export function CustomerPage() {
   const coiDays = daysUntil(customer.coiExpires);
   const contacts = customer.customerContacts ?? [];
   const primary = contacts.find((c) => c.isPrimary) ?? contacts[0];
+  const coiText = coiDays === undefined ? 'no COI on file' : coiDays < 0 ? 'COI expired' : `COI ${coiDays} d`;
+  const billingTown = townOf(customer.billing ?? {});
 
   return (
     <RecordShell
-      breadcrumb={[
-        { label: 'Jobs', to: '/jobs' },
-        { label: 'Customers', to: '/jobs?lens=customers' },
-      ]}
+      breadcrumb={[{ label: 'Jobs', to: '/jobs' }]}
       title={customer.name}
       badge={
         customer.archivedAt ? (
@@ -112,11 +117,12 @@ export function CustomerPage() {
           record={customer}
           label={customer.name}
           kind="customer"
-          onDeleted={() => navigate('/jobs?lens=customers')}
+          onDeleted={() => navigate('/jobs')}
         />
       }
       subline={[
         TYPE_OPTIONS.find((t) => t.value === customer.customerType)?.label,
+        billingTown,
         customer.phone,
       ]
         .filter(Boolean)
@@ -127,11 +133,30 @@ export function CustomerPage() {
         { label: 'Open jobs', value: String(openJobs) },
         { label: 'COI', value: coiDays === undefined ? '—' : coiDays < 0 ? 'EXP' : `${coiDays}d` },
       ]}
+      aboutCards
+      list={
+        <SitesList
+          customer={customer}
+          sites={sites}
+          jobs={jobs}
+          activity={activity}
+          isAdmin={isAdmin}
+          onOpenSite={(sid) => navigate(`/sites/${sid}`)}
+          onOpenJob={(jid) => navigate(`/jobs/${jid}`)}
+        />
+      }
       sections={[
         {
           id: 'company',
           label: 'Company & billing',
-          summary: [customer.billing?.city, customer.billing?.state].filter(Boolean).join(', ') || customer.billingAddress || customer.phone || '—',
+          summary: billingTown || customer.billingAddress || customer.phone || '—',
+          about: (
+            <>
+              {[TYPE_OPTIONS.find((t) => t.value === customer.customerType)?.label, customer.phone].filter(Boolean).join(' · ') || 'type and phone not set'}
+              <br />
+              {[billingTown || customer.billingAddress, customer.paymentTerms].filter(Boolean).join(' · ') || 'no billing address'}
+            </>
+          ),
           render: () => <CompanyCard customer={customer} readOnly={!isAdmin} />,
         },
         {
@@ -139,45 +164,16 @@ export function CustomerPage() {
           label: 'Contacts',
           count: contacts.length,
           summary: primary ? `${primary.name}${primary.phone ? ` · ${primary.phone}` : ''}` : 'none yet',
+          about: primary ? (
+            <>
+              {primary.name}{primary.role ? ` · ${primary.role}` : ''}
+              <br />
+              {primary.phone || primary.email || '—'}
+            </>
+          ) : (
+            'none yet'
+          ),
           render: () => <ContactsCard customer={customer} readOnly={!isAdmin} />,
-        },
-        {
-          id: 'sites',
-          label: 'Sites',
-          count: sites.length,
-          summary: sites.map((s) => s.name).slice(0, 2).join(', ') || 'none yet',
-          render: () => (
-            <SitesCard customerId={customer.id} sites={sites} jobs={jobs} isAdmin={isAdmin} />
-          ),
-        },
-        {
-          id: 'jobs',
-          label: 'Jobs',
-          count: jobs.length,
-          summary: `${openJobs} open`,
-          render: () => (
-            <div className="space-y-2">
-              {jobs.map((j) => (
-                <button
-                  key={j.id}
-                  className="w-full flex items-center justify-between border border-gray-200 rounded-lg p-3 text-left hover:bg-gray-50 min-h-[44px]"
-                  onClick={() => navigate(`/jobs/${j.id}`)}
-                >
-                  <span className="min-w-0">
-                    <span className="block text-sm font-medium truncate">
-                      {j.jobNumber ? `${j.jobNumber} · ` : ''}
-                      {j.name}
-                    </span>
-                    <span className="block text-xs text-gray-400">{formatDate(j.createdAt.slice(0, 10))}</span>
-                  </span>
-                  <Badge variant={(j.jobStatus ?? (j.isActive ? 'active' : 'complete')) === 'active' ? 'compliant' : 'draft'}>
-                    {j.jobStatus ?? (j.isActive ? 'active' : 'inactive')}
-                  </Badge>
-                </button>
-              ))}
-              {jobs.length === 0 && <p className="text-sm text-gray-400">No jobs for this customer yet — add one from Jobs.</p>}
-            </div>
-          ),
         },
         {
           id: 'compliance',
@@ -189,11 +185,146 @@ export function CustomerPage() {
           ]
             .filter(Boolean)
             .join(' · ') || '—',
-          defaultOpen: false,
+          about: (
+            <>
+              <span className={coiDays === undefined || coiDays < 30 ? 'text-amber-700' : ''}>{coiText}</span>
+              {customer.w9OnFile ? ' · W-9 on file' : ''}
+              <br />
+              {[customer.paymentTerms, customer.poRequired ? 'PO required' : undefined, customer.taxExempt ? 'tax exempt' : undefined].filter(Boolean).join(' · ') || 'terms not set'}
+            </>
+          ),
           render: () => <ComplianceCard customer={customer} readOnly={!isAdmin} />,
         },
       ]}
     />
+  );
+}
+
+/** The customer's sites — the drill-down's second level. Sorted by last
+ *  worked; "+ New site" lives here with the customer already set. */
+function SitesList({
+  customer,
+  sites,
+  jobs,
+  activity,
+  isAdmin,
+  onOpenSite,
+  onOpenJob,
+}: {
+  customer: Customer;
+  sites: Site[];
+  jobs: Job[];
+  activity: JobActivityMap | undefined;
+  isAdmin: boolean;
+  onOpenSite: (id: string) => void;
+  onOpenJob: (id: string) => void;
+}) {
+  const navigate = useNavigate();
+  const [adding, setAdding] = useState(false);
+  const [site, setSite] = useState({ name: '', addr: emptyAddress(), kFactor: 180 });
+  const jobsAt = (sid: string) => jobs.filter((j) => j.siteId === sid);
+  const loose = jobs.filter((j) => !j.siteId);
+  const rows = sites
+    .filter((s) => !s.archivedAt)
+    .map((s) => ({ s, a: rollUp(activity, jobsAt(s.id).map((j) => j.id)) }))
+    .sort((x, y) => (y.a.lastWorked ?? '').localeCompare(x.a.lastWorked ?? '') || x.s.name.localeCompare(y.s.name));
+  const form = adding ? (
+    <div className="rounded-xl border border-gray-200 bg-white p-3 space-y-3" data-new-site-form>
+      <p className="text-sm font-semibold">New site for {customer.name}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="sm:col-span-2">
+          <Label className="text-xs">Site name</Label>
+          <Input
+            value={site.name}
+            placeholder="defaults to address"
+            onChange={(e) => setSite({ ...site, name: e.target.value })}
+            data-new-site-name
+          />
+        </div>
+        <AddressFields value={site.addr} onChange={(addr) => setSite({ ...site, addr })} />
+        <div>
+          <Label className="text-xs">Site K</Label>
+          <Input
+            type="number"
+            inputMode="decimal"
+            value={site.kFactor || ''}
+            onChange={(e) => setSite({ ...site, kFactor: parseFloat(e.target.value) || 0 })}
+          />
+        </div>
+      </div>
+      <div className="flex justify-end gap-2">
+        <Button size="sm" variant="outline" onClick={() => setAdding(false)}>
+          Cancel
+        </Button>
+        <Button
+          size="sm"
+          disabled={!site.addr.street1.trim() && !site.name.trim()}
+          data-new-site-create
+          onClick={() =>
+            void createSite(customer.id, {
+              name: site.name,
+              address: site.addr.street1,
+              street2: site.addr.street2?.trim() || undefined,
+              city: site.addr.city,
+              state: site.addr.state,
+              zip: site.addr.zip?.trim() || undefined,
+              kFactor: site.kFactor,
+            }).then((sid) => navigate(`/sites/${sid}`))
+          }
+        >
+          Create site
+        </Button>
+      </div>
+    </div>
+  ) : undefined;
+  return (
+    <div className="space-y-3" data-customer-sites>
+      <WindowedList
+        label="Sites"
+        testId="sites"
+        items={rows}
+        matches={(r, q) => [r.s.name, r.s.city, r.s.address].some((v) => v?.toLowerCase().includes(q))}
+        filterPlaceholder="Filter sites…"
+        action={
+          isAdmin && !adding ? (
+            <Button size="sm" variant="outline" onClick={() => setAdding(true)} data-new-site>
+              <Plus className="h-4 w-4 mr-1" /> New site
+            </Button>
+          ) : undefined
+        }
+        form={form}
+        empty={<>No sites yet — tap New site. A site carries the address, state, Site K and permits every job here inherits.</>}
+        render={({ s, a }) => {
+          const n = jobsAt(s.id).length;
+          const permit = permitStatus(s);
+          return (
+            <ListRow
+              key={s.id}
+              testId={s.id}
+              title={s.name}
+              sub={[townOf(s), `K ${s.kFactor}`, permit.text].filter(Boolean).join(' · ')}
+              chips={permit.warn ? <Badge variant="warning">{permit.text}</Badge> : undefined}
+              right={relativeDay(a.lastWorked)}
+              rightSub={`${n} job${n === 1 ? '' : 's'}`}
+              onTap={() => onOpenSite(s.id)}
+            />
+          );
+        }}
+      />
+      {loose.length > 0 && (
+        <div className="space-y-1" data-customer-loose-jobs>
+          <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Jobs not tied to a site · {loose.length}</p>
+          <div className="rounded-xl border border-gray-200 overflow-hidden">
+            {loose.slice(0, 15).map((j) => {
+              const a = activity?.get(j.id) ?? { days: 0 };
+              return (
+                <ListRow key={j.id} testId={j.id} number={j.jobNumber} title={j.name} sub={[townOf(j), j.jobStatus ?? (j.isActive ? 'active' : 'inactive')].filter(Boolean).join(' · ')} right={relativeDay(a.lastWorked)} rightSub={dayCount(a.days)} onTap={() => onOpenJob(j.id)} />
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -308,98 +439,6 @@ function ContactsCard({ customer, readOnly }: { customer: Customer; readOnly: bo
           }
         >
           <Plus className="h-4 w-4 mr-1" /> Add contact
-        </Button>
-      )}
-    </div>
-  );
-}
-
-function SitesCard({
-  customerId,
-  sites,
-  jobs,
-  isAdmin,
-}: {
-  customerId: string;
-  sites: { id: string; name: string; city: string; state: string; kFactor: number }[];
-  jobs: { siteId?: string }[];
-  isAdmin: boolean;
-}) {
-  const navigate = useNavigate();
-  const [adding, setAdding] = useState(false);
-  const [site, setSite] = useState({ name: '', addr: emptyAddress(), kFactor: 180 });
-  return (
-    <div className="space-y-2">
-      {adding && (
-        <div className="rounded-lg border border-gray-200 p-3 space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="sm:col-span-2">
-              <Label className="text-xs">Site name</Label>
-              <Input
-                value={site.name}
-                placeholder="defaults to address"
-                onChange={(e) => setSite({ ...site, name: e.target.value })}
-              />
-            </div>
-            <AddressFields value={site.addr} onChange={(addr) => setSite({ ...site, addr })} />
-            <div>
-              <Label className="text-xs">Site K</Label>
-              <Input
-                type="number"
-                inputMode="decimal"
-                value={site.kFactor || ''}
-                onChange={(e) => setSite({ ...site, kFactor: parseFloat(e.target.value) || 0 })}
-              />
-            </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button size="sm" variant="outline" onClick={() => setAdding(false)}>
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              disabled={!site.addr.street1.trim() && !site.name.trim()}
-              onClick={() =>
-                void createSite(customerId, {
-                  name: site.name,
-                  address: site.addr.street1,
-                  street2: site.addr.street2?.trim() || undefined,
-                  city: site.addr.city,
-                  state: site.addr.state,
-                  zip: site.addr.zip?.trim() || undefined,
-                  kFactor: site.kFactor,
-                }).then((sid) => navigate(`/sites/${sid}`))
-              }
-            >
-              Create Site
-            </Button>
-          </div>
-        </div>
-      )}
-      {sites.map((s) => (
-        <button
-          key={s.id}
-          className="w-full flex items-center justify-between border border-gray-200 rounded-lg p-3 text-left hover:bg-gray-50 min-h-[44px]"
-          onClick={() => navigate(`/sites/${s.id}`)}
-        >
-          <span className="min-w-0">
-            <span className="block text-sm font-medium truncate">{s.name}</span>
-            <span className="text-xs text-gray-400 flex items-center gap-1">
-              <MapPin className="h-3 w-3" />
-              {[s.city, s.state].filter(Boolean).join(', ') || '—'} · K {s.kFactor}
-            </span>
-          </span>
-          <Badge variant="secondary">{jobs.filter((j) => j.siteId === s.id).length} jobs</Badge>
-        </button>
-      ))}
-      {sites.length === 0 && !adding && (
-        <p className="text-sm text-gray-400">
-          No sites yet — add one here, or they're created automatically with jobs.
-        </p>
-      )}
-      {isAdmin && !adding && (
-        <Button size="sm" variant="outline" onClick={() => setAdding(true)}>
-          <Plus className="h-4 w-4 mr-1" /> New Site
         </Button>
       )}
     </div>

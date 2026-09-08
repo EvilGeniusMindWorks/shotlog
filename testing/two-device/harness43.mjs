@@ -160,11 +160,17 @@ async (page) => {
     // ── B. Jobs lens + Settings + Profile ───────────────────────────────
     await P1.goto(`${WEB}/jobs`);
     await P1.waitForTimeout(1500);
-    const seg = (await P1.locator('[data-lens-tabs] button').allInnerTexts()).join(' · ');
-    ok(`lens tabs read Customers · Sites · Jobs (${seg})`, seg === 'Customers · Sites · Jobs');
-    await P1.getByRole('button', { name: /New Job/ }).click();
+    ok('S8b: Jobs lands on the customers list (no lens tabs)', (await P1.locator('[data-customers-list]').count()) === 1 && (await P1.locator('[data-lens-tabs]').count()) === 0);
+    const siteId = await P1.evaluate(async () => {
+      const { db } = await import('/src/db/index.ts');
+      const s = (await db.sites.toArray()).find((x) => !x.archivedAt && x.customerId);
+      return s?.id ?? '';
+    });
+    await P1.goto(`${WEB}/sites/${siteId}`);
+    await P1.locator('[data-new-job]').waitFor({ timeout: 8000 });
+    await P1.locator('[data-new-job]').click();
     await P1.locator('[data-new-job-form]').waitFor({ timeout: 5000 });
-    ok('the Jobs lens uses the same New job form (customer/site first)', await order(P1, ['[data-new-job-form] [data-pick-customer]', '[data-new-job-name]']));
+    ok('a site\'s + New job uses the same New job form (customer/site first)', await order(P1, ['[data-new-job-form] [data-pick-customer]', '[data-new-job-name]']));
     await P1.goto(`${WEB}/settings`);
     await P1.locator('[data-settings-page]').waitFor({ timeout: 8000 });
     const settings = await P1.locator('[data-settings-page]').innerText();

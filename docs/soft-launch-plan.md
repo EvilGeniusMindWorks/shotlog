@@ -801,8 +801,8 @@ status labels.
 | 8 | Feedback screenshot viewer (data URL cannot open in a tab) | Build | S8a | ✅ shipped 2026-09-07 (harness53 26/26) |
 | 6 | Driller note: ask the blaster for the plan | Build | S8a | ✅ shipped 2026-09-07 (harness53 26/26) |
 | 1 | Invite email, testing mode (`INVITE_MODE`) | Build | S8a | ✅ shipped 2026-09-07 (harness53 26/26) |
-| 7 | Jobs = drill-down (details first, windowed lists, nav stays *Jobs*; wide-screen mock first) | Build | S8b | queued |
-| 9 | Equipment tabs by type; repair queue leaves the admin page | Build | S8b | queued |
+| 7 | Jobs = drill-down (details first, windowed lists, nav stays *Jobs*; Wide 1 · Pages; flat list dropped) | Build | S8b | ✅ shipped 2026-09-07 (harness55 45/45; 40/41/43/53 green) |
+| 9 | Equipment: four grouped tabs + type chips + search + filter chips; repair queue leaves the admin page | Build | S8b | ✅ shipped 2026-09-07 (harness55 45/45) |
 | 3 | Alpha / Beta / Production companies + platform-admin switcher; go-live moves people | Build | S8c | queued |
 | 2 | Help guide — Markdown in repo, built into the app at /help, hosted at the app URL | Deferred until the UI settles (outline kept) | — | queued |
 | 4 | Load / soak test — manual overnight GitHub Action vs a staging copy; p50/p95, delivery lag, error rate | Build | S8d | queued |
@@ -836,3 +836,34 @@ status labels.
    phone capture is no longer a narrow strip and does not push the list
    down; "Open full size" and "Download" sit above it, tap opens the
    viewer as before.
+
+**S8b — Jobs drill-down + Equipment (plan artifact e4e0cbad, two drafts; calls
+in decisions.md 2026-09-07) — ✅ SHIPPED 2026-09-07 (harness55 45/45):**
+1. **Jobs lands on Customers.** `/jobs` = the customers list (windowed 15,
+   Show all, lifecycle filter), recent-job chips on top, one search box that
+   finds customers, sites and jobs (name · town · job number) and shows each
+   hit's path. "+ New customer" here only. The Customers · Sites · Jobs
+   switch, the sidebar sub-items and the flat jobs list are gone; `?lens=`
+   links still open the customers list.
+2. **Customer page, details first.** Identity + four numbers, then About
+   cards (Company & billing · Contacts · Compliance & terms — tap opens that
+   section), then **Sites** (windowed 15, filter box, "+ New site" inline
+   with the customer set). Wide: the same page, About cards in a row, the
+   list with columns below (RecordShell `aboutCards` + `list`).
+3. **Site page, details first.** Identity + numbers, About cards (Ground ·
+   Jurisdiction & permits · Access & safety · Contacts), then **Jobs at this
+   site** (windowed, "+ New job" with customer and site preset). Job page
+   unchanged.
+4. **Equipment.** Tabs All · Drilling · Trucks & trailers · Machines · Blast
+   gear with counts (only groups that have an asset; legacy buckets fold in
+   with a "legacy — set the type" mark), type chips inside a tab, search by
+   code/description/make/model/plate/serial across all groups, filter chips
+   Active · In shop · Retired · Repair open · Out of service · Due ≤30 d
+   that stack; header reads "N of M" when filtered; "+ New" presets the
+   type; Import stays; the repair queue block is removed (shop home keeps
+   it); the mechanic's Fleet item opens this same page.
+5. Copy: the Jobs tour step and "About this screen" describe the levels.
+6. Harness 55 (phone + wide): three levels, About-first order, windowing,
+   search hits with paths, + New site/job preset, tabs/chips/search/filters
+   with a live repair ticket; 40/41/43 + audit-sweep updated for the new
+   landing.

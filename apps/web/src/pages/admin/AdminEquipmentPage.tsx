@@ -1,13 +1,17 @@
-// Equipment registry: full asset identity + compliance dates, grouped by
-// category, with a bulk-paste importer for "CODE  Description" lists.
-// Writable by admin/supervisor/mechanic (the matrix enforces server-side).
+// Equipment registry: full asset identity + compliance dates, with a
+// bulk-paste importer for "CODE  Description" lists. S8b (Matthew: "group
+// the types so it's not such a long list… search and filter… by repair
+// status"): four grouped tabs with counts, type chips inside a tab, search
+// across groups, stacking filter chips. The repair queue is NOT here — it
+// is the shop's list (shop home). Writable by admin/supervisor/mechanic
+// (the matrix enforces server-side); the mechanic's Fleet item opens this.
 import { useMemo, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import { AlertTriangle, ClipboardCheck, Pencil, Plus, Upload, Wrench } from 'lucide-react';
+import { AlertTriangle, ClipboardCheck, Pencil, Plus, Upload } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
-import { resolveTicket, useOpenTickets } from '@/hooks/useMaintenance';
-import type { RepairTicket } from '@/db/schema';
-import { generateId, nowISO, formatDate } from '@/lib/utils';
+import { useOpenTickets } from '@/hooks/useMaintenance';
+import { generateId, nowISO } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import type { Equipment, EquipmentCategory, EquipmentStatus } from '@/db/schema';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -34,6 +38,29 @@ export const EQUIPMENT_CATEGORIES: { value: EquipmentCategory; label: string }[]
   { value: 'equip_drill', label: 'Drills/Equipment (legacy)' },
   { value: 'mats_seismo', label: 'Mats/Seismo (legacy)' },
 ];
+
+/** S8b grouping B: nothing is "miscellaneous"; the seismograph's calibration
+ *  sits with the mats, not next to a crusher. Legacy buckets fold in. */
+export const EQUIPMENT_GROUPS: { id: string; label: string; cats: EquipmentCategory[] }[] = [
+  { id: 'drilling', label: 'Drilling', cats: ['rock_drill', 'compressor', 'bore_tracking', 'equip_drill'] },
+  { id: 'trucks', label: 'Trucks & trailers', cats: ['pickup', 'service_truck', 'trailer', 'fuel_trailer', 'vehicle'] },
+  { id: 'machines', label: 'Machines', cats: ['crusher', 'conveyor', 'excavator', 'tractor'] },
+  { id: 'blast', label: 'Blast gear', cats: ['blast_mats', 'seismograph', 'mats_seismo'] },
+];
+const LEGACY_CATS: EquipmentCategory[] = ['vehicle', 'equip_drill', 'mats_seismo'];
+type FilterKey = 'active' | 'in_shop' | 'retired' | 'repair' | 'oos' | 'due';
+const FILTERS: { key: FilterKey; label: string }[] = [
+  { key: 'active', label: 'Active' },
+  { key: 'in_shop', label: 'In shop' },
+  { key: 'retired', label: 'Retired' },
+  { key: 'repair', label: 'Repair open' },
+  { key: 'oos', label: 'Out of service' },
+  { key: 'due', label: 'Due ≤30 d' },
+];
+const NO_FILTERS: Record<FilterKey, boolean> = { active: false, in_shop: false, retired: false, repair: false, oos: false, due: false };
+const TAB_KEY = 'shotlog-equipment-tab';
+export const categoryLabel = (c: EquipmentCategory) => EQUIPMENT_CATEGORIES.find((x) => x.value === c)?.label ?? c;
+export const groupOf = (c: EquipmentCategory) => EQUIPMENT_GROUPS.find((g) => g.cats.includes(c))?.id ?? 'machines';
 
 const STATUS_OPTIONS: { value: EquipmentStatus; label: string }[] = [
   { value: 'active', label: 'Active' },
@@ -82,110 +109,187 @@ function DueChip({ label, date }: { label: string; date?: string }) {
   );
 }
 
-function RepairQueue({ equipment }: { equipment: { id: string; assetNumber: string; description: string }[] }) {
-  const tickets = useOpenTickets();
-  const [resolvingId, setResolvingId] = useState<string | null>(null);
-  const [note, setNote] = useState('');
-  if (tickets.length === 0) return null;
-  const assetOf = (id: string) => equipment.find((e) => e.id === id);
-  const resolve = async (ticket: RepairTicket) => {
-    await resolveTicket(ticket, note);
-    setResolvingId(null);
-    setNote('');
-  };
-  return (
-    <section className="rounded-xl border-2 border-orange-200 bg-white">
-      <h3 className="text-xs font-semibold text-safety-orange uppercase tracking-wider px-3 pt-3 flex items-center gap-1.5">
-        <Wrench className="h-3.5 w-3.5" /> Repair queue ({tickets.length})
-      </h3>
-      <div className="divide-y divide-gray-100">
-        {tickets.map((t) => {
-          const asset = assetOf(t.equipmentId);
-          return (
-            <div key={t.id} className="p-3">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-mono text-sm text-navy shrink-0">{asset?.assetNumber ?? '?'}</span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium">“{t.description}”</p>
-                  <p className="text-xs text-gray-400">
-                    {t.openedByName} · {formatDate(t.createdAt.slice(0, 10))} ·{' '}
-                    {t.sourceType === 'drill_checklist' ? 'daily checklist' : 'manual'}
-                  </p>
-                </div>
-                {t.outOfService && <Badge variant="violation">out of service</Badge>}
-                <Button size="sm" variant={resolvingId === t.id ? 'ghost' : 'outline'}
-                  onClick={() => setResolvingId(resolvingId === t.id ? null : t.id)}>
-                  {resolvingId === t.id ? 'Cancel' : 'Resolve'}
-                </Button>
-              </div>
-              {resolvingId === t.id && (
-                <div className="mt-2 flex items-end gap-2">
-                  <div className="flex-1">
-                    <Label className="text-xs">What was done</Label>
-                    <Input value={note} onChange={(e) => setNote(e.target.value)}
-                      placeholder="e.g. replaced hydraulic hose, compressor clutch rebuilt" />
-                  </div>
-                  <Button size="sm" disabled={!note.trim()} onClick={() => void resolve(t)}>
-                    Mark resolved
-                  </Button>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
 export function AdminEquipmentPage() {
   const { online } = useOutletContext<{ online: boolean }>();
   const navigate = useNavigate();
   const equipment = useLiveQuery(() => db.equipment.toArray()) ?? [];
   const openTickets = useOpenTickets();
-  const ticketedAssets = useMemo(
-    () => new Set(openTickets.map((t) => t.equipmentId)),
-    [openTickets],
-  );
-  const [showRetired, setShowRetired] = useState(false);
+  // asset id → whether any open ticket has it out of service
+  const ticketed = useMemo(() => {
+    const m = new Map<string, boolean>();
+    for (const t of openTickets) m.set(t.equipmentId, (m.get(t.equipmentId) ?? false) || t.outOfService);
+    return m;
+  }, [openTickets]);
+  const [tab, setTab] = useState<string>(() => {
+    try {
+      return localStorage.getItem(TAB_KEY) ?? 'all';
+    } catch {
+      return 'all';
+    }
+  });
+  const [type, setType] = useState<EquipmentCategory | null>(null);
+  const [q, setQ] = useState('');
+  const [filters, setFilters] = useState<Record<FilterKey, boolean>>(NO_FILTERS);
   const [adding, setAdding] = useState(false);
   const [importing, setImporting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const grouped = useMemo(() => {
-    const visible = equipment
-      .filter((e) => e.isActive)
-      .filter((e) => showRetired || (e.status ?? 'active') !== 'retired')
-      .sort((a, b) => a.assetNumber.localeCompare(b.assetNumber, undefined, { numeric: true }));
-    return EQUIPMENT_CATEGORIES.map((cat) => ({
-      ...cat,
-      items: visible.filter((e) => e.category === cat.value),
-    })).filter((g) => g.items.length > 0);
-  }, [equipment, showRetired]);
+  const pickTab = (id: string) => {
+    setTab(id);
+    setType(null);
+    try {
+      localStorage.setItem(TAB_KEY, id);
+    } catch {
+      /* private mode */
+    }
+  };
+  const needle = q.trim().toLowerCase();
+  const searching = needle.length > 0;
+  const anyFilter = FILTERS.some((f) => filters[f.key]);
+  const dueDays = (e: Equipment): number | null => {
+    const ds = [daysUntil(e.dotInspectionDue), daysUntil(e.calibrationDue)].filter((d): d is number => d !== null);
+    return ds.length ? Math.min(...ds) : null;
+  };
+  // Search + filter chips (status · repair · due), before tabs: the tab
+  // counts follow so the office sees where the filtered items sit
+  const passes = (e: Equipment): boolean => {
+    if (!e.isActive) return false;
+    if (searching && ![e.assetNumber, e.description, e.make, e.model, e.plate, e.serialNumber].some((v) => v?.toLowerCase().includes(needle))) return false;
+    const st: EquipmentStatus = e.status ?? 'active';
+    const picked = (['active', 'in_shop', 'retired'] as const).filter((k) => filters[k]);
+    const allowed: EquipmentStatus[] = picked.length ? picked : ['active', 'in_shop'];
+    if (!allowed.includes(st)) return false;
+    if (filters.repair && !ticketed.has(e.id)) return false;
+    if (filters.oos && !ticketed.get(e.id)) return false;
+    if (filters.due) {
+      const d = dueDays(e);
+      if (d === null || d > 30) return false;
+    }
+    return true;
+  };
+  const matched = equipment
+    .filter(passes)
+    .sort((a, b) => a.assetNumber.localeCompare(b.assetNumber, undefined, { numeric: true }));
+  const present = equipment.filter((e) => e.isActive);
+  const tabs = [
+    { id: 'all', label: 'All', count: matched.length },
+    ...EQUIPMENT_GROUPS.filter((g) => present.some((e) => g.cats.includes(e.category))).map((g) => ({
+      id: g.id,
+      label: g.label,
+      count: matched.filter((e) => g.cats.includes(e.category)).length,
+    })),
+  ];
+  const curTab = tabs.some((t) => t.id === tab) ? tab : 'all';
+  const group = EQUIPMENT_GROUPS.find((g) => g.id === curTab);
+  // Searching spans every group so nothing hides behind a tab
+  const rows = matched.filter((e) => (searching || !group || group.cats.includes(e.category)) && (!type || searching || e.category === type));
+  const typeChips = group && !searching ? group.cats.filter((c) => matched.some((e) => e.category === c)) : [];
+  const total = present.filter((e) => (e.status ?? 'active') !== 'retired').length;
+  const filtered = searching || anyFilter;
+  const newCategory: EquipmentCategory | undefined = type ?? group?.cats[0];
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" data-equipment-page>
       <div className="flex items-center gap-2 flex-wrap">
-        <label className="flex items-center gap-1.5 text-sm text-gray-500">
-          <input type="checkbox" checked={showRetired} onChange={(e) => setShowRetired(e.target.checked)} />
-          show retired
-        </label>
+        <h3 className="text-base font-semibold text-gray-900" data-equipment-count>
+          Equipment · {filtered ? `${matched.length} of ${total}` : total}
+        </h3>
+        <Input
+          className="h-8 text-sm flex-1 min-w-[160px] max-w-[280px]"
+          placeholder="Search code, description, make, plate…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          data-equip-search
+        />
         <div className="flex-1" />
-        <Button variant="outline" onClick={() => setImporting(!importing)}>
-          <Upload className="h-4 w-4 mr-1" /> Bulk Import
+        <Button variant="outline" size="sm" onClick={() => setImporting(!importing)} data-equip-import>
+          <Upload className="h-4 w-4 mr-1" /> Import list
         </Button>
-        <Button onClick={() => setAdding(!adding)}>
-          <Plus className="h-4 w-4 mr-1" /> Add Asset
+        <Button size="sm" onClick={() => setAdding(!adding)} data-equip-new>
+          <Plus className="h-4 w-4 mr-1" /> New{newCategory ? ` · ${categoryLabel(newCategory).replace(/s$/, '').replace(/ \(legacy\)$/, '')}` : ''}
         </Button>
       </div>
 
-      <RepairQueue equipment={equipment} />
+      {/* Grouped tabs, like Catalog by manufacturer */}
+      <div className="flex gap-1 border-b border-gray-200 overflow-x-auto items-center" data-equip-tabs>
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => pickTab(t.id)}
+            data-equip-tab={t.id}
+            data-count={t.count}
+            className={cn(
+              'px-3 py-2 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors',
+              curTab === t.id && !searching
+                ? 'border-safety-orange text-safety-orange'
+                : 'border-transparent text-gray-500 hover:text-gray-800',
+            )}
+          >
+            {t.label}
+            <span className="ml-1 text-xs opacity-70">{t.count}</span>
+          </button>
+        ))}
+        {searching && <span className="ml-2 text-[11px] text-gray-400 whitespace-nowrap">searching all groups</span>}
+      </div>
+
+      {typeChips.length > 1 && (
+        <div className="flex flex-wrap gap-1.5" data-equip-types>
+          {typeChips.map((c) => (
+            <button
+              key={c}
+              type="button"
+              data-equip-type={c}
+              onClick={() => setType(type === c ? null : c)}
+              className={cn(
+                'inline-flex items-center min-h-[30px] px-2.5 rounded-full border text-xs font-medium',
+                type === c ? 'bg-navy text-white border-navy' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50',
+              )}
+            >
+              {categoryLabel(c)} <span className="ml-1 opacity-70">{matched.filter((e) => e.category === c).length}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center gap-1.5" data-equip-filters>
+        <span className="text-[11px] text-gray-400 mr-1">Filter</span>
+        {FILTERS.map((f) => (
+          <button
+            key={f.key}
+            type="button"
+            data-equip-filter={f.key}
+            aria-pressed={filters[f.key]}
+            onClick={() => setFilters({ ...filters, [f.key]: !filters[f.key] })}
+            className={cn(
+              'inline-flex items-center min-h-[30px] px-2.5 rounded-full border text-xs font-medium',
+              filters[f.key] ? 'bg-navy text-white border-navy' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50',
+            )}
+          >
+            {f.label}
+          </button>
+        ))}
+        {filtered && (
+          <button
+            type="button"
+            className="inline-flex items-center min-h-[30px] px-2.5 rounded-full border border-dashed border-gray-300 text-xs text-navy"
+            onClick={() => {
+              setFilters(NO_FILTERS);
+              setQ('');
+            }}
+            data-equip-clear
+          >
+            Clear
+          </button>
+        )}
+      </div>
 
       {importing && <BulkImport existing={equipment} onDone={() => setImporting(false)} />}
       {adding && (
         <EquipmentForm
-          title="New asset"
+          title={`New asset${newCategory ? ` — ${categoryLabel(newCategory)}` : ''}`}
           online={online}
+          initialCategory={newCategory}
           onSave={async (values) => {
             const now = nowISO();
             await db.equipment.put({
@@ -201,69 +305,78 @@ export function AdminEquipmentPage() {
         />
       )}
 
-      {grouped.map((group) => (
-        <section key={group.value}>
-          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 mt-3">
-            {group.label} ({group.items.length})
-          </h3>
-          <div className="divide-y divide-gray-100 rounded-xl border border-gray-200 bg-white">
-            {group.items.map((item) => (
-              <div key={item.id} className={(item.status ?? 'active') === 'retired' ? 'p-3 opacity-50' : 'p-3'}>
-                <div className="flex items-center gap-2 flex-wrap">
-                  {/* Name area → the asset's history page */}
-                  <button
-                    className="flex items-center gap-2 min-w-0 flex-1 text-left hover:bg-gray-50 rounded-lg -m-1 p-1"
-                    onClick={() => navigate(`/equipment/${item.id}`)}
-                  >
-                    <span className="font-mono text-sm text-navy shrink-0 w-16">{item.assetNumber}</span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">{item.description}</p>
-                      <p className="text-xs text-gray-400 truncate">
-                        {[item.make, item.year, item.model].filter(Boolean).join(' ') || '—'}
-                        {item.serialNumber && ` · SN ${item.serialNumber}`}
-                        {item.plate && ` · ${item.plate}`}
-                        {typeof item.hourMeter === 'number' && ` · ${item.hourMeter} hrs`}
-                      </p>
-                    </div>
-                  </button>
-                  {(item.status ?? 'active') !== 'active' && (
-                    <Badge variant={item.status === 'in_shop' ? 'warning' : 'local'}>
-                      {item.status === 'in_shop' ? 'in shop' : 'retired'}
-                    </Badge>
-                  )}
-                  <DueChip label="DOT" date={item.dotInspectionDue} />
-                  <DueChip label="calibration" date={item.calibrationDue} />
-                  {ticketedAssets.has(item.id) && <Badge variant="warning">repair open</Badge>}
-                  {(item.category === 'rock_drill' || item.category === 'equip_drill') && (
-                    <Button variant="ghost" size="icon" title="Daily checklist"
-                      onClick={() => navigate(`/drill-checklist/${item.id}`)}>
-                      <ClipboardCheck className="h-4 w-4 text-gray-400" />
-                    </Button>
-                  )}
-                  <Button variant="ghost" size="icon" title="Edit"
-                    onClick={() => setEditingId(editingId === item.id ? null : item.id)}>
-                    <Pencil className="h-4 w-4 text-gray-400" />
-                  </Button>
-                </div>
-                {editingId === item.id && (
-                  <EquipmentForm
-                    title={`Edit — ${item.assetNumber}`}
-                    online={online}
-                    initial={item}
-                    onSave={async (values) => {
-                      await db.equipment.update(item.id, { ...values, updatedAt: nowISO() });
-                      setEditingId(null);
-                    }}
-                  />
+      <div className="divide-y divide-gray-100 rounded-xl border border-gray-200 bg-white" data-equip-list>
+        {rows.map((item) => {
+          const oos = ticketed.get(item.id);
+          const legacy = LEGACY_CATS.includes(item.category);
+          return (
+            <div key={item.id} className={(item.status ?? 'active') === 'retired' ? 'p-3 opacity-50' : 'p-3'} data-equip-row={item.assetNumber} data-equip-cat={item.category}>
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Name area → the asset's history page */}
+                <button
+                  className="flex items-center gap-2 min-w-0 flex-1 text-left hover:bg-gray-50 rounded-lg -m-1 p-1"
+                  onClick={() => navigate(`/equipment/${item.id}`)}
+                >
+                  <span className="font-mono text-sm text-navy shrink-0 w-16">{item.assetNumber}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{item.description}</p>
+                    <p className="text-xs text-gray-400 truncate">
+                      {categoryLabel(item.category).replace(' (legacy)', '')}
+                      {legacy && <span className="italic"> · legacy — set the type</span>}
+                      {[item.make, item.year, item.model].filter(Boolean).length > 0 && ` · ${[item.make, item.year, item.model].filter(Boolean).join(' ')}`}
+                      {item.serialNumber && ` · SN ${item.serialNumber}`}
+                      {item.plate && ` · ${item.plate}`}
+                      {typeof item.hourMeter === 'number' && ` · ${item.hourMeter} hrs`}
+                    </p>
+                  </div>
+                </button>
+                {(item.status ?? 'active') !== 'active' && (
+                  <Badge variant={item.status === 'in_shop' ? 'warning' : 'local'}>
+                    {item.status === 'in_shop' ? 'in shop' : 'retired'}
+                  </Badge>
                 )}
+                <DueChip label="DOT" date={item.dotInspectionDue} />
+                <DueChip label="calibration" date={item.calibrationDue} />
+                {ticketed.has(item.id) && (
+                  <Badge variant={oos ? 'violation' : 'warning'} data-equip-repair>
+                    {oos ? 'out of service' : 'repair open'}
+                  </Badge>
+                )}
+                {(item.category === 'rock_drill' || item.category === 'equip_drill') && (
+                  <Button variant="ghost" size="icon" title="Daily checklist"
+                    onClick={() => navigate(`/drill-checklist/${item.id}`)}>
+                    <ClipboardCheck className="h-4 w-4 text-gray-400" />
+                  </Button>
+                )}
+                <Button variant="ghost" size="icon" title="Edit"
+                  onClick={() => setEditingId(editingId === item.id ? null : item.id)}>
+                  <Pencil className="h-4 w-4 text-gray-400" />
+                </Button>
               </div>
-            ))}
-          </div>
-        </section>
-      ))}
-      {grouped.length === 0 && (
-        <p className="text-sm text-gray-400 p-4">No equipment yet — add assets or bulk import a list.</p>
-      )}
+              {editingId === item.id && (
+                <EquipmentForm
+                  title={`Edit — ${item.assetNumber}`}
+                  online={online}
+                  initial={item}
+                  onSave={async (values) => {
+                    await db.equipment.update(item.id, { ...values, updatedAt: nowISO() });
+                    setEditingId(null);
+                  }}
+                />
+              )}
+            </div>
+          );
+        })}
+        {rows.length === 0 && (
+          <p className="text-sm text-gray-400 p-4" data-equip-empty>
+            {present.length === 0
+              ? 'No equipment yet — add assets or import a list.'
+              : filtered
+                ? 'Nothing matches — clear a filter.'
+                : 'Nothing in this group.'}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -288,18 +401,21 @@ interface FormValues {
 function EquipmentForm({
   title,
   initial,
+  initialCategory,
   online,
   onSave,
 }: {
   title: string;
   initial?: Equipment;
+  /** S8b: "+ New" on a tab presets the group's type */
+  initialCategory?: EquipmentCategory;
   online: boolean;
   onSave: (values: FormValues) => Promise<void>;
 }) {
   const [form, setForm] = useState<FormValues>({
     assetNumber: initial?.assetNumber ?? '',
     description: initial?.description ?? '',
-    category: initial?.category ?? 'pickup',
+    category: initial?.category ?? initialCategory ?? 'pickup',
     status: initial?.status ?? 'active',
     make: initial?.make ?? '',
     model: initial?.model ?? '',

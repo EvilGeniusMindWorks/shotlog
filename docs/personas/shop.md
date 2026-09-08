@@ -111,3 +111,7 @@ Shop home (queue + PM due) · repair ticket · equipment list + detail
   end-of-day meter at drill-log sign-complete ("drill log · end of day");
   it also moves the registry meter forward. Corrections still win. The
   shop files no time cards for now.
+- **S8b (2026-09-07):** the admin Equipment page no longer carries the repair
+  queue — the shop home is the queue's one place. The Fleet nav item opens
+  the equipment list with its new grouped tabs, search and filters (Repair
+  open · Out of service are one tap).

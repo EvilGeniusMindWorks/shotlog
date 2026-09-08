@@ -24,16 +24,16 @@ export interface CustomerSitePick {
   kFactor: number;
 }
 
-export function emptyPick(initial?: { customerId?: string; siteId?: string }): CustomerSitePick {
+export function emptyPick(initial?: Partial<CustomerSitePick>): CustomerSitePick {
   return {
     customerId: initial?.customerId,
     siteId: initial?.siteId,
-    customerName: '',
-    siteName: '',
-    address: '',
-    city: '',
-    state: '',
-    kFactor: 180,
+    customerName: initial?.customerName ?? '',
+    siteName: initial?.siteName ?? '',
+    address: initial?.address ?? '',
+    city: initial?.city ?? '',
+    state: initial?.state ?? '',
+    kFactor: initial?.kFactor ?? 180,
   };
 }
 

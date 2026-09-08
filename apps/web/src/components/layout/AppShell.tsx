@@ -134,50 +134,8 @@ function useViewableRoles(): { key: string; name: string }[] {
   return out;
 }
 
-// Jobs-section sub-items (nav decision: lenses one level deep in the
-// sidebar, never individual records). Shown while the user is anywhere
-// inside the section — the lens lists or a customer/site/job record.
-const JOBS_SUBITEMS = [
-  { to: '/jobs', label: 'All jobs', lens: null },
-  { to: '/jobs?lens=customers', label: 'Customers', lens: 'customers' },
-  { to: '/jobs?lens=sites', label: 'Sites', lens: 'sites' },
-];
-
-function JobsSubNav() {
-  const location = useLocation();
-  const inSection =
-    location.pathname.startsWith('/jobs') ||
-    location.pathname.startsWith('/customers') ||
-    location.pathname.startsWith('/sites');
-  if (!inSection) return null;
-  const lens = new URLSearchParams(location.search).get('lens');
-  const activeLens =
-    location.pathname === '/jobs'
-      ? lens
-      : location.pathname.startsWith('/customers')
-        ? 'customers'
-        : location.pathname.startsWith('/sites')
-          ? 'sites'
-          : null;
-  return (
-    <div className="ml-9 space-y-0.5 pb-1">
-      {JOBS_SUBITEMS.map((s) => (
-        <NavLink
-          key={s.label}
-          to={s.to}
-          className={cn(
-            'block px-3 py-1.5 rounded-md text-[13px] transition-colors',
-            activeLens === s.lens
-              ? 'text-white bg-white/10 font-medium'
-              : 'text-navy-200 hover:text-white hover:bg-white/5',
-          )}
-        >
-          {s.label}
-        </NavLink>
-      ))}
-    </div>
-  );
-}
+// S8b: the Jobs section is a drill-down (Customers › sites › jobs), so the
+// former sidebar sub-items (All jobs · Customers · Sites) are gone.
 
 /** Sidebar entry into role impersonation — built-ins + custom roles */
 function ViewAsSelect() {
@@ -316,7 +274,6 @@ export function AppShell() {
                 <item.icon className="h-5 w-5" />
                 {item.label}
               </NavLink>
-              {item.to === '/jobs' && <JobsSubNav />}
             </div>
           ))}
           <HelpMenu

@@ -72,3 +72,8 @@ Company) · customers/sites/jobs setup · everything else read
 
 - ✅ People: one-line rows, 15 + Show all, actions behind ⋯ (4.4 screens → 1.1). Catalog 15 per manufacturer tab. Company home keeps the costing table, windowed 10 + Show all.
 - ✅ Records manager (shared with Office) — job 8's lifecycle work stays as recorded in deletion-pattern.md.
+
+## Round S8b (2026-09-07)
+
+- Equipment: grouped tabs (Drilling · Trucks & trailers · Machines · Blast gear) with counts, type chips, search across groups, filter chips (status · repair · due ≤30 d), "+ New" presets the type, Import stays. The repair queue is no longer on this page — it is the shop's list (shop home). Legacy buckets show a "legacy — set the type" mark until re-typed.
+- Jobs: lands on Customers; About cards first on customer and site pages; lists windowed; the flat jobs list and the lens switch are gone (search + recent chips).

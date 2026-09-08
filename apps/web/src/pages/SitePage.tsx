@@ -1,8 +1,18 @@
-// One site, on the adaptive record shell: the PLACE. Ground facts every job
+// One site, on the adaptive record shell: the PLACE. S8b drill-down: the
+// About cards (Ground · Jurisdiction & permits · Access & safety · Contacts)
+// come FIRST, then the JOBS at this site (windowed, "+ New job" here with
+// customer and site preset), then the full sections to edit. Ground facts every job
 // here inherits (address, state, Site K, rock), jurisdiction & permits with
 // expiry countdowns, access & safety notes, the offline contact sheet, and
 // the jobs run at this site.
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { relativeDay, useJobActivity, type JobActivityMap } from '@/lib/jobActivity';
+import { ListRow, StartsChip, dayCount } from '@/components/jobs/ListRow';
+import { WindowedList } from '@/components/jobs/WindowedList';
+import { NewJobForm } from '@/components/forms/NewJobForm';
+import { permitStatus } from '@/lib/siteFacts';
+import { todayISO } from '@/lib/utils';
 import { Plus, Trash2 } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { can } from '@/lib/perms';
@@ -32,12 +42,13 @@ export function SitePage() {
     useLiveQuery(
       async () =>
         id
-          ? (await db.jobs.filter((j) => j.siteId === id).toArray()).sort((a, b) =>
+          ? (await db.jobs.filter((j) => j.siteId === id && !j.archivedAt).toArray()).sort((a, b) =>
               b.updatedAt.localeCompare(a.updatedAt),
             )
           : [],
       [id],
     ) ?? [];
+  const activity = useJobActivity();
 
   if (!site) return <div className="p-4 text-center text-gray-500">Loading…</div>;
 
@@ -52,12 +63,7 @@ export function SitePage() {
     <RecordShell
       breadcrumb={[
         { label: 'Jobs', to: '/jobs' },
-        ...(customer
-          ? [
-              { label: 'Customers', to: '/jobs?lens=customers' },
-              { label: customer.name, to: `/customers/${customer.id}` },
-            ]
-          : [{ label: 'Sites', to: '/jobs?lens=sites' }]),
+        ...(customer ? [{ label: customer.name, to: `/customers/${customer.id}` }] : []),
       ]}
       title={site.name}
       badge={
@@ -71,7 +77,7 @@ export function SitePage() {
           record={site}
           label={site.name}
           kind="site"
-          onDeleted={() => navigate('/jobs?lens=sites')}
+          onDeleted={() => navigate(customer ? `/customers/${customer.id}` : '/jobs')}
         />
       }
       subline={[customer?.name, [site.city, site.state].filter(Boolean).join(', ')]
@@ -93,11 +99,20 @@ export function SitePage() {
         },
         { label: 'State', value: site.state || '—' },
       ]}
+      aboutCards
+      list={<JobsAtSite site={site} customerName={customer?.name ?? ''} jobs={jobs} activity={activity} />}
       sections={[
         {
           id: 'ground',
           label: 'Ground',
           summary: [site.address, site.rockType, `K ${site.kFactor}`].filter(Boolean).join(' · '),
+          about: (
+            <>
+              K {site.kFactor}{site.rockType ? ` · ${site.rockType}` : ''}
+              <br />
+              {[site.overburden ? `overburden ${site.overburden}` : undefined, site.waterConditions].filter(Boolean).join(' · ') || [site.address, site.city].filter(Boolean).join(', ') || '—'}
+            </>
+          ),
           render: () => <GroundCard site={site} readOnly={!isAdmin} />,
         },
         {
@@ -112,6 +127,13 @@ export function SitePage() {
             ]
               .filter(Boolean)
               .join(' · ') || '—',
+          about: (
+            <>
+              <span className={permitStatus(site).warn ? 'text-amber-700' : ''}>{permitStatus(site).text}</span>
+              <br />
+              {[site.jurisdiction, site.localRegName].filter(Boolean).join(' · ') || 'jurisdiction not set'}
+            </>
+          ),
           render: () => <JurisdictionCard site={site} readOnly={!isAdmin} />,
         },
         {
@@ -119,7 +141,12 @@ export function SitePage() {
           label: 'Access & safety',
           summary:
             [site.accessNotes, site.standingHazards].filter(Boolean).join(' · ').slice(0, 60) || '—',
-          defaultOpen: false,
+          about: (
+            <>
+              {site.accessNotes || 'no access notes'}
+              {site.standingHazards ? <><br />⚠ {site.standingHazards}</> : null}
+            </>
+          ),
           render: () => <AccessCard site={site} readOnly={!isAdmin} />,
         },
         {
@@ -127,6 +154,15 @@ export function SitePage() {
           label: 'Contacts',
           count: contacts.length || undefined,
           summary: contacts[0] ? `${contacts[0].name}${contacts[0].phone ? ` · ${contacts[0].phone}` : ''}` : 'none yet',
+          about: contacts[0] ? (
+            <>
+              {contacts[0].name}
+              <br />
+              {contacts[0].phone || '—'}{contacts.length > 1 ? ` · +${contacts.length - 1} more` : ''}
+            </>
+          ) : (
+            'jobsite · FD · police — work offline'
+          ),
           render: () => (
             <JobContactsCard
               job={{ id: site.id, contacts, contactNotes: site.contactNotes } as unknown as Job}
@@ -135,43 +171,76 @@ export function SitePage() {
             />
           ),
         },
-        {
-          id: 'jobs',
-          label: 'Jobs at this site',
-          count: jobs.length,
-          summary: `${jobs.filter((j) => (j.jobStatus ? j.jobStatus === 'active' : j.isActive)).length} open`,
-          render: () => (
-            <div className="space-y-2">
-              {jobs.map((j) => (
-                <button
-                  key={j.id}
-                  className="w-full flex items-center justify-between border border-gray-200 rounded-lg p-3 text-left hover:bg-gray-50 min-h-[44px]"
-                  onClick={() => navigate(`/jobs/${j.id}`)}
-                >
-                  <span className="text-sm font-medium truncate">
-                    {j.jobNumber ? `${j.jobNumber} · ` : ''}
-                    {j.name}
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <span className="text-xs text-gray-400">{formatDate(j.createdAt.slice(0, 10))}</span>
-                    <Badge variant={j.isActive ? 'compliant' : 'draft'}>
-                      {j.jobStatus ?? (j.isActive ? 'active' : 'inactive')}
-                    </Badge>
-                  </span>
-                </button>
-              ))}
-              {jobs.length === 0 && (
-                <p className="text-sm text-gray-400">No jobs at this site yet — add one from Jobs and pick this site.</p>
-              )}
-              <p className="text-xs text-gray-400">
-                Site K calibration (from measured seismo readings) lives on each job's page —
-                applying a calibrated K there updates THIS site, so every job here inherits it.
-              </p>
-            </div>
-          ),
-        },
       ]}
     />
+  );
+}
+
+/** The jobs at this site — the drill-down's third level; "+ New job" here
+ *  starts the one New job form with customer and site already set. */
+function JobsAtSite({ site, customerName, jobs, activity }: { site: Site; customerName: string; jobs: Job[]; activity: JobActivityMap | undefined }) {
+  const navigate = useNavigate();
+  const [adding, setAdding] = useState(false);
+  const canCreate = can('jobs', 'PUT');
+  const today = todayISO();
+  const rows = jobs
+    .map((j) => ({ j, a: activity?.get(j.id) ?? { days: 0 } }))
+    .sort((x, y) => (y.a.lastWorked ?? '').localeCompare(x.a.lastWorked ?? '') || y.j.updatedAt.localeCompare(x.j.updatedAt));
+  return (
+    <div className="space-y-2" data-site-jobs>
+      <WindowedList
+        label="Jobs at this site"
+        testId="jobs"
+        items={rows}
+        matches={(r, q) => [r.j.name, r.j.jobNumber].some((v) => v?.toLowerCase().includes(q))}
+        filterPlaceholder="Filter jobs…"
+        action={
+          canCreate && !adding ? (
+            <Button size="sm" variant="outline" onClick={() => setAdding(true)} data-new-job>
+              <Plus className="h-4 w-4 mr-1" /> New job
+            </Button>
+          ) : undefined
+        }
+        form={
+          adding ? (
+            <div className="rounded-xl border border-gray-200 bg-white p-3">
+              <NewJobForm
+                title={`New job at ${site.name}`}
+                initial={{ customerId: site.customerId, siteId: site.id, customerName, siteName: site.name, address: site.address, city: site.city, state: site.state, kFactor: site.kFactor }}
+                onCreated={(jid) => navigate(`/jobs/${jid}`)}
+                onCancel={() => setAdding(false)}
+              />
+            </div>
+          ) : undefined
+        }
+        empty={<>No jobs at this site yet — tap New job; the customer and site are already set.</>}
+        render={({ j, a }) => {
+          const status = j.jobStatus ?? (j.isActive ? 'active' : 'complete');
+          const start = [j.startDate, j.targetDate].filter((x): x is string => Boolean(x && x >= today)).sort()[0];
+          const chips = [
+            status !== 'active' ? <Badge key="s" variant={status === 'complete' ? 'approved' : 'warning'}>{status.replace('_', ' ')}</Badge> : null,
+            start ? <StartsChip key="d" date={start} /> : null,
+          ].filter(Boolean);
+          return (
+            <ListRow
+              key={j.id}
+              testId={j.id}
+              number={j.jobNumber}
+              title={j.name}
+              sub={[j.operation, j.customerPO ? `PO ${j.customerPO}` : undefined].filter(Boolean).join(' · ')}
+              chips={chips.length ? chips : undefined}
+              right={relativeDay(a.lastWorked)}
+              rightSub={dayCount(a.days)}
+              onTap={() => navigate(`/jobs/${j.id}`)}
+            />
+          );
+        }}
+      />
+      <p className="text-xs text-gray-400">
+        Site K calibration (from measured seismo readings) lives on each job's page — applying a
+        calibrated K there updates THIS site, so every job here inherits it.
+      </p>
+    </div>
   );
 }
 

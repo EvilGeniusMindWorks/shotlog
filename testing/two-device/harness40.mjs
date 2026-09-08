@@ -89,12 +89,13 @@ async (page) => {
     // jobs rows @430
     await P1.goto(`${WEB}/jobs`);
     await P1.waitForTimeout(2500);
-    const rows = P1.locator('[data-jobs-list] [data-list-row]');
-    ok('jobs list windowed to 15 with Show all', (await rows.count()) <= 15 && (await P1.locator('[data-jobs-more]').count()) === 1);
-    ok('no ⓘ buttons on job rows', (await P1.locator('[data-jobs-list] svg.lucide-info').count()) === 0);
-    const listText = await P1.locator('[data-jobs-list]').innerText();
+    // S8b: Jobs lands on CUSTOMERS (same row shape, windowed the same way)
+    const rows = P1.locator('[data-customers-list] [data-list-row]');
+    ok('customers list windowed to 15 with Show all', (await rows.count()) <= 15 && (await P1.locator('[data-customers-more]').count()) === 1);
+    ok('no ⓘ buttons on rows', (await P1.locator('[data-customers-list] svg.lucide-info').count()) === 0);
+    const listText = await P1.locator('[data-customers-list]').innerText();
     ok('"active" chip is silent under the Active filter', !/\bactive\b/.test(listText));
-    ok('rows show last worked + day count', /Today|Yesterday|d ago|days?|no days/.test(listText));
+    ok('rows show last worked + day/open count', /Today|Yesterday|d ago|days?|no days|open/.test(listText));
     // long-press → peek sheet
     const first = rows.first();
     const box = await first.boundingBox();
@@ -107,17 +108,10 @@ async (page) => {
     await P1.keyboard.press('Escape');
     await P1.mouse.click(5, 5);
     await P1.waitForTimeout(300);
-    await P1.locator('[data-jobs-sort]').selectOption('name');
-    await P1.waitForTimeout(400);
-    const t0 = (await rows.nth(0).innerText()).split('\n')[0];
-    const t1 = (await rows.nth(1).innerText()).split('\n')[0];
-    ok('Sort: Name orders rows alphabetically', t0.localeCompare(t1) <= 0);
-    await P1.locator('[data-jobs-sort]').selectOption('scheduled');
-    await P1.waitForTimeout(300);
-    ok('Scheduled sort option exists', true);
+    ok('S8b: no sort menu, no lens switch — the levels are the switch', (await P1.locator('[data-jobs-sort]').count()) === 0 && (await P1.locator('[data-lens-tabs]').count()) === 0);
     await P1.goto(`${WEB}/jobs?lens=customers`);
     await P1.waitForTimeout(2000);
-    ok('customers lens: same row, windowed to 15', (await P1.locator('[data-customers-list] [data-list-row]').count()) <= 15 && (await P1.locator('[data-customers-more]').count()) === 1);
+    ok('an old ?lens=customers link still lands on the customers list', (await P1.locator('[data-customers-list] [data-list-row]').count()) <= 15 && (await P1.locator('[data-customers-more]').count()) === 1);
     // phone records: My records → tap → preview sheet
     await P1.goto(`${WEB}/records`);
     await P1.waitForTimeout(3000);

@@ -72,11 +72,14 @@ async (page) => {
     ok('first-week card is back (device dismissal cleared)', (await P1.locator('[data-first-week]').count()) === 1);
     await P1.goto(`${WEB}/jobs`);
     await P1.waitForTimeout(3000);
-    ok('sandbox starts empty (no jobs)', /No jobs yet/.test(await P1.locator('main').innerText()));
+    ok('sandbox starts empty (no customers)', /No customers yet/.test(await P1.locator('main').innerText()));
     await P1.locator('[data-rehearsal-sample]').click();
     await P1.getByText(/Added a week/).waitFor({ timeout: 20000 });
     await P1.waitForTimeout(4000); // sync down
-    ok('sample jobs appear (S7a: two)', (await P1.locator('[data-jobs-list] [data-list-row]').count()) === 2 && /Ledgeville/.test(await P1.locator('[data-jobs-list]').innerText()));
+    await P1.locator('[data-jobs-search]').fill('Ledgeville');
+    await P1.waitForTimeout(500);
+    ok('sample jobs appear (S7a: two, found by search)', (await P1.locator('[data-jobs-results] [data-list-row]').count()) >= 2 && /Ledgeville/.test(await P1.locator('[data-jobs-results]').innerText()));
+    await P1.locator('[data-jobs-search]').fill('');
     const dayId = await P1.evaluate(async () => {
       const { db } = await import('/src/db/index.ts');
       const { createBlastDay } = await import('/src/hooks/useBlastDay.ts');
@@ -130,7 +133,7 @@ async (page) => {
     // after the account switch the replica must be Baystate's, fully synced
     await P2.goto(`${WEB}/jobs`);
     await P2.waitForTimeout(5000);
-    const jobsBack = await P2.locator('[data-jobs-list] [data-list-row]').count();
+    const jobsBack = await P2.locator('[data-customers-list] [data-list-row]').count();
     ok(`Baystate data re-downloaded after End (${jobsBack} jobs visible)`, jobsBack > 0);
     // Sync panel: Reset local data → clean replica → data comes back
     P2.on('dialog', (d) => d.accept());
@@ -140,7 +143,7 @@ async (page) => {
     await P2.waitForTimeout(6000);
     await P2.goto(`${WEB}/jobs`);
     await P2.waitForTimeout(5000);
-    ok('Reset local data clears and re-downloads the company', (await P2.locator('[data-jobs-list] [data-list-row]').count()) > 0 && (await P2.locator('[data-sync-first]').count()) === 0);
+    ok('Reset local data clears and re-downloads the company', (await P2.locator('[data-customers-list] [data-list-row]').count()) > 0 && (await P2.locator('[data-sync-first]').count()) === 0);
     // The boot-time delete path (what a wedged replica falls back to):
     // flag → reload → the database is deleted before PowerSync opens → fresh download
     await P2.evaluate(() => localStorage.setItem('shotlog-replica-reset-pending', '1'));
@@ -150,7 +153,7 @@ async (page) => {
     const flagCleared = await P2.evaluate(() => localStorage.getItem('shotlog-replica-reset-pending'));
     await P2.goto(`${WEB}/jobs`);
     await P2.waitForTimeout(5000);
-    ok('boot-time reset deletes the database and the company re-downloads', /deleted at boot/.test(bootLog) && flagCleared === null && (await P2.locator('[data-jobs-list] [data-list-row]').count()) > 0);
+    ok('boot-time reset deletes the database and the company re-downloads', /deleted at boot/.test(bootLog) && flagCleared === null && (await P2.locator('[data-customers-list] [data-list-row]').count()) > 0);
     await c2.close();
   } catch (e) {
     results.push(`ERROR ${e.message}`);

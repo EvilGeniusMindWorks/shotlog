@@ -210,3 +210,8 @@ page · customer/site/job create (new) · contacts · My Records · reference
   pattern shape as the plan (per shot), driller initials on each hole,
   hazards orange, off-plan holes below; a plan whose logs are all complete
   shows *ready to review* on the day spine.
+- **S8b (2026-09-07, calls in):** Jobs lands on Customers; the customer and
+  site pages put the About cards first, then the list; wide screens use the
+  same pages (Pages, not columns). The flat jobs list is gone — recent chips
+  and the search box (customers · sites · jobs, with paths) are the way to a
+  known job. Lists windowed to 15.

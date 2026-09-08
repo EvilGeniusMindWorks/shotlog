@@ -47,7 +47,7 @@ export const TOUR_SCRIPTS: Record<TourBucket, TourStep[]> = {
       route: '/jobs',
       selector: '[data-tour="nav-/jobs"]',
       title: 'Jobs',
-      body: 'Every job carries its customer, site, K factor and defaults, so you never re-type them. Small job? Set the customer, site and job up yourself right here.',
+      body: 'Jobs starts with your customers: tap a customer for its sites, a site for its jobs. Recent jobs sit on top, and the search box finds any customer, site or job. Small job? Set them up yourself, level by level.',
     },
     {
       route: '/records',

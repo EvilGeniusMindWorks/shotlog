@@ -5,7 +5,7 @@
 //   · COMPACT (Option B) phones + portrait tablets: one scroll of
 //                       collapsible cards whose closed headers show a summary
 // The mode is width + orientation with a per-device override in Settings.
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ChevronDown, ChevronRight } from 'lucide-react';
 
@@ -64,6 +64,8 @@ export interface RecordSection {
   /** Lighter stand-in for the Overview grid — use when render() is
    *  expensive (full-history scans) so Overview stays instant */
   preview?: () => ReactNode;
+  /** S8b About card body (two short lines); falls back to `summary` */
+  about?: ReactNode;
 }
 
 interface Props {
@@ -74,14 +76,47 @@ interface Props {
   stats?: { label: string; value: string }[];
   actions?: ReactNode;
   sections: RecordSection[];
+  /** S8b drill-down ("details first"): the sections become a row of About
+   *  cards under the header — tap one to open that section — and `list`
+   *  (the children: a customer's sites, a site's jobs) renders right after
+   *  them. Compact: cards · list · collapsed sections. Wide: the same, on
+   *  the Overview tab; the tab bar still opens any section in full. */
+  aboutCards?: boolean;
+  list?: ReactNode;
 }
 
-export function RecordShell({ breadcrumb, title, badge, subline, stats, actions, sections }: Props) {
+export function RecordShell({ breadcrumb, title, badge, subline, stats, actions, sections, aboutCards, list }: Props) {
   const navigate = useNavigate();
   const mode = useLayoutMode();
   const [tab, setTab] = useState('overview');
   const [open, setOpen] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(sections.map((s) => [s.id, s.defaultOpen ?? true])),
+    Object.fromEntries(sections.map((s) => [s.id, s.defaultOpen ?? !aboutCards])),
+  );
+  const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  /** Compact: an About card opens its section and scrolls to it */
+  const openSection = (id: string) => {
+    setOpen((o) => ({ ...o, [id]: true }));
+    window.setTimeout(() => sectionRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 30);
+  };
+  const aboutGrid = (onOpen: (id: string) => void) => (
+    <div className={aboutCards ? 'flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 snap-x lg:grid lg:grid-cols-4 lg:overflow-visible lg:mx-0 lg:px-0' : ''} data-about-cards>
+      {sections.map((s) => (
+        <button
+          key={s.id}
+          type="button"
+          className="shrink-0 w-[46%] sm:w-[31%] lg:w-auto snap-start text-left rounded-xl border border-gray-200 bg-white px-3 py-2.5 hover:bg-gray-50 active:bg-gray-100"
+          onClick={() => onOpen(s.id)}
+          data-about-card={s.id}
+        >
+          <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider truncate">
+            {s.label}
+            {s.count !== undefined ? ` · ${s.count}` : ''}
+          </p>
+          <div className="text-xs text-gray-700 mt-0.5 line-clamp-2 min-h-[2rem]">{s.about ?? s.summary ?? '—'}</div>
+          <p className="text-[11px] text-safety-orange font-medium mt-1">Open ›</p>
+        </button>
+      ))}
+    </div>
   );
   const upTo = breadcrumb.length ? breadcrumb[breadcrumb.length - 1].to : undefined;
 
@@ -158,7 +193,12 @@ export function RecordShell({ breadcrumb, title, badge, subline, stats, actions,
       <div>
         {header}
         <div className="p-4 max-w-4xl mx-auto">
-          {tab === 'overview' ? (
+          {tab === 'overview' && aboutCards ? (
+            <div className="space-y-4">
+              {aboutGrid(setTab)}
+              {list}
+            </div>
+          ) : tab === 'overview' ? (
             <div className="grid gap-4 md:grid-cols-2 items-start">
               {sections.map((s) => (
                 <div key={s.id} className="rounded-xl border border-gray-200 bg-white p-4">
@@ -201,10 +241,15 @@ export function RecordShell({ breadcrumb, title, badge, subline, stats, actions,
             ))}
           </div>
         )}
+        {aboutCards && aboutGrid(openSection)}
+        {aboutCards && list}
+        {aboutCards && sections.length > 0 && (
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider pt-2">Details</p>
+        )}
         {sections.map((s) => {
           const isOpen = open[s.id] ?? true;
           return (
-            <div key={s.id} className="rounded-xl border border-gray-200 bg-white">
+            <div key={s.id} className="rounded-xl border border-gray-200 bg-white scroll-mt-3" ref={(el) => { sectionRefs.current[s.id] = el; }} data-record-section={s.id}>
               <button
                 className="w-full flex items-center gap-2 px-4 py-3 text-left"
                 onClick={() => setOpen({ ...open, [s.id]: !isOpen })}

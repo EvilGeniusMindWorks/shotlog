@@ -120,11 +120,11 @@ const RULES: CoachRule[] = [
     pattern: '/jobs',
     entry: {
       title: 'Jobs',
-      what: 'Long-running jobs with their customer, site, K factor and defaults — so days never re-type them.',
+      what: 'Customers › sites › jobs. A job carries its customer, site, K factor and defaults — so days never re-type them.',
       steps: [
-        'Active jobs show by default; search finds anything, archived included.',
-        'Customers and Sites lenses are the same records from the other side.',
-        'Small job with no office setup yet? Add the customer, site and job here and start work.',
+        'Tap a customer to see its sites; tap a site to see its jobs. The About cards on each page come first — tap one to open that section.',
+        'Recent jobs sit on top as chips; the search box finds any customer, site or job by name, town or job number.',
+        'Small job with no office setup yet? New customer here, then New site and New job on their pages.',
       ],
     },
   },

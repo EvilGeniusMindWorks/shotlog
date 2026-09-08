@@ -27,8 +27,10 @@ export function NewJobForm({
   onCancel,
   title = 'New job',
 }: {
-  /** Customer / site already chosen upstream (the day dialog's cascade) */
-  initial?: { customerId?: string; siteId?: string };
+  /** Customer / site already chosen upstream (the day dialog's cascade, a
+   *  site's "+ New job") — pass the site's facts too so the job's legacy
+   *  customer/address/K fields are filled */
+  initial?: Partial<CustomerSitePick>;
   onCreated: (jobId: string) => void;
   onCancel: () => void;
   title?: string;

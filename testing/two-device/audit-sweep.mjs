@@ -107,7 +107,7 @@ async (page) => {
       {
         name: 'admin', email: 'mark@baystateblasting.com', pass: 'dev-password-123',
         routes: ['/', '/admin/people', '/admin/approvals', '/admin/catalog', '/admin/roles',
-          '/admin/company', '/jobs', '/jobs?lens=customers', '/jobs?lens=sites', '/records',
+          '/admin/company', '/jobs', '/records',
           `/jobs/${ids.busiestJobId}`, `/customers/${ids.customerId}`, `/sites/${ids.siteId}`],
       },
     ];

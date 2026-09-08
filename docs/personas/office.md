@@ -97,3 +97,11 @@ Incidents · People (read) · company/customer/site pages · export surfaces
 - **Alpha / Beta / Production companies (S8c):** the platform admin gets a
   company switcher; testers are invited into Beta; go-live moves people to
   the production company.
+- **Jobs section (S8b):** Customers › customer (About first, then Sites) ›
+  site (About first, then Jobs) › job. Search finds any of the three by name,
+  town or job number. "What jobs does Richmond have?" = tap Richmond: sites
+  with job counts; one more tap for the jobs.
+- **Equipment (S8b, reworked):** four grouped tabs (Drilling · Trucks &
+  trailers · Machines · Blast gear), type chips inside a tab, search, and
+  stacking filter chips incl. **Repair open** and **Out of service** so the
+  office can drop the list to the items that matter; "N of M" in the header.
