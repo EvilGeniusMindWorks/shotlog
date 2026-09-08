@@ -544,7 +544,7 @@ export function BlastDayPage() {
           locked days (it's navigation, not editing). */}
       {view === 'hub' && blastLog && phaseModel && (
         <div className="p-4 max-w-5xl mx-auto space-y-3" data-tour="day-spine">
-          <PhaseSpine model={phaseModel} onOpen={setView} />
+          <PhaseSpine model={phaseModel} onOpen={(v, to) => (to ? navigate(to) : setView(v))} />
           <PreBlastCard />
         </div>
       )}
@@ -578,7 +578,10 @@ export function BlastDayPage() {
             day={blastDay}
             blastLog={blastLog}
             shots={shots}
-            onConfirmed={() => setView('blast-log')}
+            // S8: the confirmed design flows into the timing built on the drilled pattern
+            onConfirmed={() =>
+              shots[0] ? navigate(`/blast-day/${blastDay.id}/design/${shots[0].id}?mode=timing&from=drilling`) : setView('blast-log')
+            }
           />
         )}
         {view === 'blast-log' && blastLog && (

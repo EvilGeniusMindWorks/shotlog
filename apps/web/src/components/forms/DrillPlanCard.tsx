@@ -132,7 +132,8 @@ function ShotPlanRow({
         <Button
           size="sm"
           variant="outline"
-          onClick={() => navigate(`/blast-day/${blastDayId}/design/${shot.id}`)}
+          data-build-plan={shot.id}
+          onClick={() => navigate(`/blast-day/${blastDayId}/design/${shot.id}?mode=plan`)}
         >
           {plan ? 'Plan ›' : 'Build plan ›'}
         </Button>

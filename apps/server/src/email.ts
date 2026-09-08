@@ -9,6 +9,10 @@
 const RESEND_API_KEY = process.env.RESEND_API_KEY ?? '';
 const FROM = process.env.INVITE_FROM ?? 'ShotLog <onboarding@resend.dev>';
 export const APP_URL = (process.env.APP_URL ?? 'https://shotlog-app.vercel.app').replace(/\/$/, '');
+/** 'testing' (default until go-live): the invite reads as an invitation to
+ *  try the app and send feedback; 'production': the set-up-your-account
+ *  wording. Matthew, S8: "less ordering them — more polite". */
+export const INVITE_MODE: 'testing' | 'production' = process.env.INVITE_MODE === 'production' ? 'production' : 'testing';
 
 /** True when the server can send mail at all (key present) */
 export function emailEnabled(): boolean {
@@ -98,6 +102,7 @@ export function inviteMail(opts: {
   ttlDays: number;
 }): Mail {
   const first = opts.name.split(' ')[0] || opts.name;
+  if (INVITE_MODE === 'testing') return testingInviteMail(opts, first);
   const blurb = roleBlurb(opts.role);
   const steps = [
     'Tap the button below and choose a password.',
@@ -120,6 +125,42 @@ export function inviteMail(opts: {
       steps: steps.map(esc),
       cta: { label: 'Set up my account', url: opts.link },
       footer: `The link works once and expires in ${opts.ttlDays} days. If you were not expecting this, you can ignore it.`,
+    }),
+  };
+}
+
+/** Testing-period invite (S8, Matthew's wording): an invitation, feedback
+ *  through the app only, no assignment sentence, honest about rough edges. */
+function testingInviteMail(
+  opts: { to: string; name: string; company: string; invitedBy: string; link: string; ttlDays: number },
+  first: string,
+): Mail {
+  const steps = [
+    'Tap the button below and choose a password.',
+    'Pick a 6-digit PIN so the app opens on your device even without signal.',
+    'When it offers, add ShotLog to your home screen so it opens like any other app.',
+  ];
+  const intro = `${opts.invitedBy} has invited you to try ShotLog, a new app ${opts.company} is testing for the paperwork we do every day — blast logs, drill logs, rig checklists and daily reports. It is built to work in the field, with or without signal.`;
+  const ask =
+    'Feel free to give it a shot and see whether it makes filling out your daily compliance documents quicker and easier. There is no wrong way to use it, and nothing you do in it during testing is a problem.';
+  const feedback =
+    'If something is confusing, wrong, or missing, we would genuinely like to know. The ? menu in the app has Send feedback — a couple of words is plenty, and a screenshot goes with it automatically.';
+  const text =
+    `Hi ${first},\n\n${intro}\n\n${ask}\n\n${feedback}\n\nTo get started:\n` +
+    steps.map((s, i) => `${i + 1}. ${s}`).join('\n') +
+    `\n\nSet up my account: ${opts.link}\n\nThanks for helping us get this right.\n\n` +
+    `This is a test version: expect rough edges, and expect changes as feedback comes in. The link works once and expires in ${opts.ttlDays} days. If you were not expecting this, you can ignore it.`;
+  return {
+    to: opts.to,
+    subject: 'An invitation to try ShotLog',
+    text,
+    html: layout({
+      company: opts.company,
+      title: `Hi ${esc(first)}`,
+      intro: `${esc(intro)}<br><br>${esc(ask)}<br><br>${esc(feedback).replace('? menu', '<b>?</b> menu').replace('Send feedback', '<i>Send feedback</i>')}<br><br><b>To get started:</b>`,
+      steps: steps.map(esc),
+      cta: { label: 'Set up my account', url: opts.link },
+      footer: `Thanks for helping us get this right.<br><br>This is a test version: expect rough edges, and expect changes as feedback comes in. The link works once and expires in ${opts.ttlDays} days. If you were not expecting this, you can ignore it.`,
     }),
   };
 }

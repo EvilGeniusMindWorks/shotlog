@@ -82,14 +82,18 @@ export function SendToDrillersModal({
   jobId,
   alreadyAssigned,
   onClose,
+  onSent,
 }: {
   shot: Shot;
   blastDayId: string;
   jobId: string;
   alreadyAssigned: Set<string>;
   onClose: () => void;
+  /** S8: called after logs were created (the plan page returns to the day) */
+  onSent?: (count: number) => void;
 }) {
-  const crew = useLiveQuery(() => db.crewMembers.filter((c) => c.isActive).toArray()) ?? [];
+  const crewQuery = useLiveQuery(() => db.crewMembers.filter((c) => c.isActive).toArray());
+  const crew = crewQuery ?? [];
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [sending, setSending] = useState(false);
   // Drillers first, then the rest of the enrolled crew, then not-enrolled
@@ -101,16 +105,22 @@ export function SendToDrillersModal({
 
   const send = async () => {
     setSending(true);
+    let n = 0;
     for (const c of crew) {
       if (!c.userId || !picked.has(c.id)) continue;
       await createDrillLog(shot, blastDayId, jobId, { userId: c.userId, name: c.name });
+      n++;
     }
+    onSent?.(n);
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-      <div className="w-full sm:max-w-sm bg-white rounded-t-xl sm:rounded-xl p-4 max-h-[80vh] overflow-auto">
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-[60] p-0 sm:p-4">
+      {/* S8: header and Send stay put; only the crew list scrolls (Matthew:
+          "I have to scroll the whole list of drillers to get to the send button").
+          z-[60]: the sheet covers the mobile nav (z-50) instead of hiding under it. */}
+      <div className="w-full sm:max-w-sm bg-white rounded-t-xl sm:rounded-xl p-4 pb-[max(1rem,var(--sab))] max-h-[80vh] flex flex-col" data-send-drillers>
         <div className="flex items-center justify-between mb-1">
           <p className="font-bold">Send drill plan to…</p>
           <Button variant="ghost" size="icon" onClick={onClose}>
@@ -120,7 +130,7 @@ export function SendToDrillersModal({
         <p className="text-xs text-gray-400 mb-2">
           Each person gets this shot in their queue with the plan attached.
         </p>
-        <div className="space-y-1">
+        <div className="space-y-1 overflow-auto flex-1 min-h-0 pr-1">
           {sorted.map((c) => {
             const assigned = c.userId ? alreadyAssigned.has(c.userId) : false;
             const disabled = !c.userId || assigned;
@@ -152,7 +162,8 @@ export function SendToDrillersModal({
               </label>
             );
           })}
-          {sorted.length === 0 && (
+          {crewQuery === undefined && <p className="text-sm text-gray-400 py-2">Loading the roster…</p>}
+          {crewQuery !== undefined && sorted.length === 0 && (
             <p className="text-sm text-gray-400 py-2">No active crew on the roster yet.</p>
           )}
         </div>

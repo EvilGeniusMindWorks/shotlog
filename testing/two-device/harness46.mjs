@@ -141,8 +141,11 @@ async (page) => {
     // ── 2. driller: the new-day dialog never prefills a blasting type; copy blank ─
     await P1.locator('[data-tour="fab"]').click();
     await P1.locator('[data-new-day-dialog]').waitFor({ timeout: 5000 });
-    await P1.locator(`[data-day-job] option[value="${jobId}"]`).waitFor({ state: 'attached', timeout: 5000 });
-    await P1.locator('[data-day-job]').selectOption(jobId);
+    // S8 Option B: the Job row opens a picker; search finds the job by id
+    await P1.locator('[data-day-job]').click();
+    await P1.locator('[data-pick-search]').fill(jobId);
+    await P1.locator(`[data-choose-job="${jobId}"]`).waitFor({ timeout: 5000 });
+    await P1.locator(`[data-choose-job="${jobId}"]`).click();
     await P1.waitForTimeout(700);
     ok("the job's last day was Drill to Blast, but the driller is prefilled Drill Only", /Drill Only/.test(await selectedChip(P1)) && !/Drill to Blast/.test(await selectedChip(P1)));
     ok('Copy from previous is offered but starts blank', (await P1.locator('[data-day-copy]').count()) === 1 && (await P1.locator('[data-day-copy]').inputValue()) === '');

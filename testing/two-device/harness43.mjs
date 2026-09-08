@@ -65,13 +65,17 @@ async (page) => {
     }, tag);
     await openDialog(P1);
     const dlg = P1.locator('[data-new-day-dialog]');
-    ok('dialog order: Name → Customer → Site → Job → Date → Type of work',
-      await order(P1, ['[data-day-name]', '[data-day-customer]', '[data-day-site]', '[data-day-job]', '[data-day-date]', '[data-new-day-dialog] button.bg-navy']));
-    await P1.locator(`[data-day-customer] option[value="${fx.customerId}"]`).waitFor({ state: 'attached', timeout: 5000 });
-    await P1.locator('[data-day-customer]').selectOption(fx.customerId);
+    // S8 Option B: Name first, then ONE Job row that opens the Customer › Site › Job picker
+    ok('dialog order: Name → Job → Date → Type of work',
+      await order(P1, ['[data-day-name]', '[data-day-job]', '[data-day-date]', '[data-new-day-dialog] button.bg-navy']));
+    await P1.locator('[data-day-job]').click();
+    await P1.locator('[data-job-picker]').waitFor({ timeout: 5000 });
+    ok('the picker opens on Customer', (await P1.locator('[data-job-picker]').getAttribute('data-pick-level')) === 'customers');
+    await P1.locator(`[data-choose-customer="${fx.customerId}"]`).waitFor({ timeout: 5000 });
+    await P1.locator(`[data-choose-customer="${fx.customerId}"]`).click();
     await P1.waitForTimeout(800);
-    ok('a customer with one site fills the site in', (await P1.locator('[data-day-site]').inputValue()) === fx.siteId);
-    ok('a site with one job fills the job in', (await P1.locator('[data-day-job]').inputValue()) === fx.jobId);
+    ok('a customer with one site fills the site in', (await P1.locator('[data-day-job]').getAttribute('data-day-site-id')) === fx.siteId);
+    ok('a site with one job fills the job in — and the picker closes', (await P1.locator('[data-day-job]').getAttribute('data-day-job-id')) === fx.jobId && (await P1.locator('[data-job-picker]').count()) === 0);
     ok('type of work follows the role for a job with no days and no default (Drill to Blast)', /Drill to Blast/.test(await selectedChip(P1)));
     ok('Copy from previous is absent for a job with no days', (await P1.locator('[data-day-copy]').count()) === 0);
     // The job's own default type takes over
@@ -81,7 +85,8 @@ async (page) => {
     }, fx.jobId);
     await P1.keyboard.press('Escape');
     await openDialog(P1);
-    await P1.locator('[data-day-customer]').selectOption(fx.customerId);
+    await P1.locator('[data-day-job]').click();
+    await P1.locator(`[data-choose-customer="${fx.customerId}"]`).click();
     await P1.waitForTimeout(600);
     ok("the job's default type of work prefills (Drill to Excavate)", /Drill to Excavate/.test(await selectedChip(P1)));
     await P1.locator('[data-day-name]').fill('S7b first day');
@@ -101,7 +106,7 @@ async (page) => {
     await P1.locator(`[data-recent-job="${fx.jobNumber}"]`).waitFor({ timeout: 5000 });
     await P1.locator(`[data-recent-job="${fx.jobNumber}"]`).click();
     await P1.waitForTimeout(600);
-    ok('a Recent chip selects the job and fills customer + site', (await P1.locator('[data-day-job]').inputValue()) === fx.jobId && (await P1.locator('[data-day-customer]').inputValue()) === fx.customerId);
+    ok('a Recent chip selects the job and fills customer + site', (await P1.locator('[data-day-job]').getAttribute('data-day-job-id')) === fx.jobId && (await P1.locator('[data-day-job]').getAttribute('data-day-customer-id')) === fx.customerId);
     ok("the job's LAST day beats its default (Drill to Excavate, not Blasting)", /Drill to Excavate/.test(await selectedChip(P1)));
     // S7 follow-up (Matthew): copying is opt-in — the select starts blank
     ok('Copy from previous is offered but starts BLANK', (await P1.locator('[data-day-copy]').count()) === 1 && (await P1.locator('[data-day-copy]').inputValue()) === '');
@@ -110,7 +115,10 @@ async (page) => {
     ok('non-blasting type: only Crew & Equipment is offered to copy', (await dlg.locator('input[type="checkbox"]').count()) === 1);
     ok('same-date warning shows for a second day today', /already has a work day on this date/.test(await dlg.innerText()));
     // New job from inside the dialog: Customer → Site → Job, customer carried over
-    await P1.locator('[data-day-job]').selectOption('__new');
+    // + New job lives inside the picker, at the site level, customer and site carried over
+    await P1.locator('[data-day-job]').click();
+    await P1.locator('[data-job-picker]').waitFor({ timeout: 5000 });
+    await P1.locator('[data-pick-new-job]').click();
     await P1.locator('[data-new-job-form]').waitFor({ timeout: 5000 });
     await P1.locator(`[data-new-job-form] [data-pick-customer] option[value="${fx.customerId}"]`).waitFor({ state: 'attached', timeout: 5000 });
     await P1.waitForTimeout(300);
@@ -125,9 +133,9 @@ async (page) => {
       return (await db.jobs.toArray()).find((j) => j.name === `S7b second job ${tag}`);
     }, tag);
     ok('the new job exists under the same customer + site with its default type', Boolean(newJob) && newJob.customerId === fx.customerId && newJob.siteId === fx.siteId && newJob.defaultTypeOfWork === 'crushing' && /^\d\d-\d{3}$/.test(newJob.jobNumber ?? ''));
-    await P1.locator(`[data-day-job] option[value="${newJob?.id}"]`).waitFor({ state: 'attached', timeout: 5000 });
+    await P1.waitForFunction((id) => document.querySelector('[data-day-job]')?.getAttribute('data-day-job-id') === id, newJob?.id, { timeout: 6000 }).catch(() => undefined);
     await P1.waitForTimeout(400);
-    ok('the dialog now has the new job selected and its default type', (await P1.locator('[data-day-job]').inputValue()) === newJob?.id && /Crushing/.test(await selectedChip(P1)));
+    ok('the dialog now has the new job selected and its default type', (await P1.locator('[data-day-job]').getAttribute('data-day-job-id')) === newJob?.id && /Crushing/.test(await selectedChip(P1)) && (await P1.locator('[data-job-picker]').count()) === 0);
     await P1.keyboard.press('Escape');
     // Device preference: what a new day starts as
     await P1.goto(`${WEB}/settings`);
@@ -142,7 +150,8 @@ async (page) => {
       const { db } = await import('/src/db/index.ts');
       return (await db.customers.toArray()).find((c) => c.name === `S7b Plain Co ${tag}`)?.id;
     }, tag);
-    await P1.locator('[data-day-customer]').selectOption(plainCustomer);
+    await P1.locator('[data-day-job]').click();
+    await P1.locator(`[data-choose-customer="${plainCustomer}"]`).click();
     await P1.waitForTimeout(600);
     ok("the device's default type of work applies when job and last day say nothing (Hauling)", /Hauling/.test(await selectedChip(P1)));
     await P1.keyboard.press('Escape');

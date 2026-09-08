@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Check, Grid3x3, Layers3, Map as MapIcon, Ruler } from 'lucide-react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, Check, Grid3x3, Layers3, Map as MapIcon, Ruler, Send } from 'lucide-react';
+import { applyAsDrilled, drilledSince } from '@/lib/shotDiagram';
+import { getShotPlan, useShotDrilling } from '@/hooks/useDrillLogs';
+import { SendToDrillersModal } from '@/components/forms/DrillingSection';
+import type { DrilledOverlay } from '@/components/design/ShotDiagramEditor';
 import { useLiveQuery, db } from '@/db';
 import { useJobContext } from '@/lib/jobContext';
 import { nowISO } from '@/lib/utils';
@@ -33,6 +37,10 @@ import { ComplianceSheet } from '@/components/records/ComplianceSheet';
 
 export function DesignPlanPage() {
   const { id, shotId } = useParams<{ id: string; shotId: string }>();
+  // S8: ?mode=plan opens the drill plan first (Build plan); ?mode=timing&from=drilling
+  // opens the timing built on the drilled pattern (after the readiness review)
+  const [params] = useSearchParams();
+  const modeParam = params.get('mode');
   const shot = useLiveQuery(() => (shotId ? db.shots.get(shotId) : undefined), [shotId]);
   const blastDay = useLiveQuery(() => (id ? db.blastDays.get(id) : undefined), [id]);
   const job = useLiveQuery(
@@ -57,6 +65,8 @@ export function DesignPlanPage() {
       shot={shot}
       job={job}
       siblings={siblings.filter((s) => s.id !== shot.id)}
+      mode={modeParam === 'plan' ? 'plan' : modeParam === 'timing' ? 'timing' : undefined}
+      fromDrilling={params.get('from') === 'drilling'}
     />
   );
 }
@@ -66,13 +76,53 @@ function DesignPlanInner({
   shot,
   job,
   siblings,
+  mode,
+  fromDrilling,
 }: {
   blastDayId: string;
   shot: Shot;
   job: Job | undefined;
   siblings: Shot[];
+  mode?: 'plan' | 'timing';
+  fromDrilling?: boolean;
 }) {
   const navigate = useNavigate();
+  // S8 — plan first: opened from "Build plan" the page shows ONLY the
+  // pattern, in plan mode, with a pinned footer (Send to drillers / Done);
+  // the rest of the shot design is one tap away. Matthew: "I had the drill
+  // plan complete — there was nothing to do!"
+  const planFirst = mode === 'plan';
+  const [showRest, setShowRest] = useState(!planFirst);
+  const [editorMode, setEditorMode] = useState<'timing' | 'plan'>(mode ?? 'timing');
+  const [showSend, setShowSend] = useState(false);
+  const drilling = useShotDrilling(shot.id);
+  const planHoles = getShotPlan(shot);
+  // Hole conditions from every log on this shot, keyed by hole number
+  const conditionsByNumber = useLiveQuery(async () => {
+    const logs = await db.drillLogs.where('shotId').equals(shot.id).toArray();
+    const out = new Map<string, string[]>();
+    for (const log of logs) {
+      for (const h of await db.drillLogHoles.where('drillLogId').equals(log.id).toArray()) {
+        if (h.conditions.length > 0) out.set(h.holeNumber.trim(), h.conditions.map((c) => c.code));
+      }
+    }
+    return out;
+  }, [shot.id]);
+  // The drilled pattern as the timing editor sees it (grid positions)
+  const drilledOverlay: (DrilledOverlay & { undrilledIdx: number[]; drilledCount: number; wet: number }) | undefined =
+    drilling && drilling.logs.length > 0 && planHoles
+      ? (() => {
+          const missing = new Set([...drilling.undrilled, ...drilling.skipped]);
+          const undrilledIdx = planHoles.filter((p) => missing.has(String(p.n))).map((p) => p.idx);
+          const conditions = new Map<number, string[]>();
+          for (const p of planHoles) {
+            const c = conditionsByNumber?.get(String(p.n));
+            if (c && c.length) conditions.set(p.idx, c);
+          }
+          return { undrilled: new Set(undrilledIdx), conditions, undrilledIdx, drilledCount: drilling.totalHoles, wet: drilling.wetHoles };
+        })()
+      : undefined;
+  const alreadyAssigned = new Set((drilling?.logs ?? []).map((l) => l.drillerUserId).filter(Boolean));
   const ctx = useJobContext(job?.id);
   const explosiveUsage = useLiveQuery(
     () => db.explosiveUsages.where('blastLogId').equals(shot.blastLogId).first(),
@@ -134,6 +184,25 @@ function DesignPlanInner({
     window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(flush, 400);
   };
+
+  // Arriving from the readiness review with no timing yet: build it on the
+  // drilled pattern once (undrilled positions out, snapshot recorded)
+  const builtRef = useRef(false);
+  useEffect(() => {
+    if (!fromDrilling || builtRef.current || !drilledOverlay) return;
+    if (diagram.wires.length === 0 && !diagram.asDrilled) {
+      builtRef.current = true;
+      handleChange(applyAsDrilled(diagram, drilledOverlay.undrilledIdx, drilledOverlay.drilledCount));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fromDrilling, drilledOverlay?.undrilledIdx.length, drilledOverlay?.drilledCount]);
+  const asDrilledState: 'none' | 'current' | 'stale' = !drilledOverlay
+    ? 'none'
+    : !diagram.asDrilled
+      ? 'none'
+      : drilledSince(diagram, drilledOverlay.undrilledIdx, drilledOverlay.drilledCount)
+        ? 'stale'
+        : 'current';
 
   const handleSiteChange = (next: SiteDiagram) => {
     setSiteDiagram(next);
@@ -245,8 +314,8 @@ function DesignPlanInner({
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="flex-1 min-w-0">
-            <h2 className="font-bold text-lg leading-tight truncate">
-              Design Plan — Shot #{shot.shotNumber}
+            <h2 className="font-bold text-lg leading-tight truncate" data-design-title>
+              {planFirst && editorMode === 'plan' ? 'Drill plan' : 'Design Plan'} — Shot #{shot.shotNumber}
             </h2>
             <p className="text-xs text-navy-200 truncate">
               {[job?.name, shot.time, shot.totals.numHoles > 0 && `${shot.totals.numHoles} holes`]
@@ -301,8 +370,33 @@ function DesignPlanInner({
         </div>
       </div>
 
-      {/* 2×2 panel grid (wireframe §5) */}
-      <div className="p-4 max-w-6xl mx-auto grid grid-cols-1 xl:grid-cols-2 gap-4 items-start pb-12">
+      {/* S8: the drilled pattern under the timing — built from drilling */}
+      {editorMode === 'timing' && drilledOverlay && (
+        <div className="px-4 pt-3 max-w-6xl mx-auto">
+          {asDrilledState === 'current' ? (
+            <p className="text-xs font-medium text-green-800 bg-green-50 border border-green-200 rounded-lg px-3 py-2" data-as-drilled="current">
+              ✓ Built from drilling · {drilledOverlay.drilledCount} of {planHoles?.length ?? 0} planned holes drilled
+              {drilledOverlay.undrilledIdx.length > 0 ? ` · ${drilledOverlay.undrilledIdx.length} not drilled (greyed)` : ''}
+              {drilledOverlay.wet > 0 ? ` · ${drilledOverlay.wet} wet` : ''}
+            </p>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-safety-orange bg-orange-50 border border-orange-200 rounded-lg px-3 py-2" data-as-drilled={asDrilledState}>
+              <span className="flex-1">
+                {asDrilledState === 'stale'
+                  ? 'Drilling changed since you wired — the pattern below differs from what you built on.'
+                  : `${drilledOverlay.drilledCount} holes drilled — build the timing on the drilled pattern.`}
+              </span>
+              <Button size="sm" variant="outline" data-use-drilled onClick={() => handleChange(applyAsDrilled(diagram, drilledOverlay.undrilledIdx, drilledOverlay.drilledCount))}>
+                {asDrilledState === 'stale' ? 'Use the drilled pattern' : 'Build timing from drilling'}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 2×2 panel grid (wireframe §5); plan-first shows the pattern alone */}
+      <div className={`p-4 max-w-6xl mx-auto grid grid-cols-1 gap-4 items-start ${showRest ? 'xl:grid-cols-2 pb-12' : 'pb-40'}`}>
+        {showRest && (
         <Panel
           icon={<IconChip tint="green"><MapIcon className="h-4 w-4" /></IconChip>}
           title="Site Diagram"
@@ -324,10 +418,11 @@ function DesignPlanInner({
             onClone={cloneSiteTo}
           />
         </Panel>
+        )}
 
         <Panel
           icon={<IconChip tint="navy"><Grid3x3 className="h-4 w-4" /></IconChip>}
-          title="Shot Diagram"
+          title={planFirst && editorMode === 'plan' ? 'Drill plan — the pattern' : 'Shot Diagram'}
           subtitle={
             times.size > 0
               ? `${times.size} holes timed · ${diagram.wires.length} wires`
@@ -340,9 +435,23 @@ function DesignPlanInner({
             cloneTargets={cloneTargets}
             onClone={cloneDiagramTo}
             designDepth={shot.totals.avgDrillDepth || undefined}
+            initialMode={editorMode}
+            onModeChange={setEditorMode}
+            drilled={drilledOverlay}
           />
         </Panel>
 
+        {!showRest && (
+          <button
+            className="text-sm text-navy underline underline-offset-2 justify-self-start"
+            data-show-rest
+            onClick={() => setShowRest(true)}
+          >
+            Show the rest of the shot design — site map, compliance, typical column
+          </button>
+        )}
+
+        {showRest && (<>
         <Panel
           icon={<IconChip tint="red"><Ruler className="h-4 w-4" /></IconChip>}
           title="Structure & Compliance"
@@ -368,7 +477,52 @@ function DesignPlanInner({
         >
           <TypicalColumnBuilder shotId={shot.id} />
         </Panel>
+        </>)}
       </div>
+
+      {/* S8: pinned footer on the plan-first page — the one next step */}
+      {planFirst && (
+        <div
+          className="fixed left-0 right-0 lg:left-56 bottom-[calc(3.5rem+max(0.5rem,var(--sab)))] lg:bottom-0 z-30 bg-white border-t border-gray-200 px-4 py-3"
+          data-plan-footer={planHoles && planHoles.length > 0 ? (alreadyAssigned.size > 0 ? 'sent' : 'ready') : 'empty'}
+        >
+          <div className="max-w-6xl mx-auto flex flex-wrap items-center gap-3">
+            <p className="text-sm flex-1 min-w-[180px]">
+              {planHoles && planHoles.length > 0 ? (
+                <>
+                  <b>Plan ready · {planHoles.length} holes</b>
+                  <span className="text-gray-500">
+                    {' · '}
+                    {alreadyAssigned.size > 0
+                      ? `sent to ${alreadyAssigned.size} driller${alreadyAssigned.size === 1 ? '' : 's'}`
+                      : 'not sent to a driller yet'}
+                  </span>
+                </>
+              ) : (
+                <span className="text-gray-500">Set a depth and paint the pattern — holes appear as you go.</span>
+              )}
+            </p>
+            {planHoles && planHoles.length > 0 && (
+              <Button variant="safety" data-plan-send onClick={() => setShowSend(true)}>
+                <Send className="h-4 w-4 mr-1" /> {alreadyAssigned.size > 0 ? 'Send to more' : 'Send to drillers'}
+              </Button>
+            )}
+            <Button variant="outline" data-plan-done onClick={() => { flush(); navigate(`/blast-day/${blastDayId}`); }}>
+              Done for now
+            </Button>
+          </div>
+        </div>
+      )}
+      {showSend && (
+        <SendToDrillersModal
+          shot={shot}
+          blastDayId={blastDayId}
+          jobId={job?.id ?? ''}
+          alreadyAssigned={alreadyAssigned}
+          onClose={() => setShowSend(false)}
+          onSent={() => { flush(); navigate(`/blast-day/${blastDayId}`); }}
+        />
+      )}
     </div>
   );
 }

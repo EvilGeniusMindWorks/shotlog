@@ -199,8 +199,11 @@ async (page) => {
     await P3.locator('[data-tour="fab"]').waitFor({ timeout: 10000 });
     await P3.locator('[data-tour="fab"]').click();
     await P3.locator('[data-new-day-dialog]').waitFor({ timeout: 5000 });
-    await P3.locator(`[data-day-job] option[value="${jobId}"]`).waitFor({ state: 'attached', timeout: 5000 });
-    await P3.locator('[data-day-job]').selectOption(jobId);
+    // S8 Option B: the Job row opens a picker; search finds the job by id
+    await P3.locator('[data-day-job]').click();
+    await P3.locator('[data-pick-search]').fill(jobId);
+    await P3.locator(`[data-choose-job="${jobId}"]`).waitFor({ timeout: 5000 });
+    await P3.locator(`[data-choose-job="${jobId}"]`).click();
     await P3.waitForTimeout(600);
     ok('the dialog says today\'s day exists and who started it', /already has a work day/.test(await P3.locator('[data-day-exists]').innerText()) && /started by/.test(await P3.locator('[data-day-exists]').innerText()));
     await P3.locator('[data-day-open-existing]').click();

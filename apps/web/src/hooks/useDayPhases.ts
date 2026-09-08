@@ -4,6 +4,7 @@
 import { db, useLiveQuery } from '@/db';
 import type { BlastDay, BlastLog, DrillLog, Shot } from '@/db/schema';
 import { getSessionUser } from '@/lib/session';
+import { getShotPlan } from '@/hooks/useDrillLogs';
 
 export type PhaseKey = 'drilling' | 'readiness' | 'shots' | 'seismo' | 'timecards' | 'file';
 export type PhaseState = 'done' | 'now' | 'todo' | 'later';
@@ -17,6 +18,8 @@ export interface DayPhase {
   state: PhaseState;
   /** BlastDayPage ?view= target */
   view: string;
+  /** S8: a full route to open instead of a day view (the plan page) */
+  to?: string;
 }
 
 export interface DayPhaseModel {
@@ -59,7 +62,18 @@ export function useDayPhases(
     }
     const drillerNames = [...new Set(logs.map((l) => l.drillerName).filter(Boolean))];
     const allAccepted = logs.length > 0 && logs.every((l) => l.status === 'accepted');
+    const allComplete = logs.length > 0 && logs.every((l) => l.status !== 'open');
     const hasDrilling = logs.length > 0;
+    // S8: before any drilling, the plan itself is the phase — build it,
+    // then send it (Matthew: "there was nothing to do!")
+    const plannedHoles = shots.reduce((a, s) => a + (getShotPlan(s)?.length ?? 0), 0);
+    const hasPlan = plannedHoles > 0;
+    const drillingDay = day.typeOfWork !== 'blasting';
+    const firstShot = shots[0];
+    // A blaster who went straight to loading (holes entered, or signed) has
+    // skipped the plan on purpose — the spine is a map, not a gate: the plan
+    // phase steps aside instead of nagging
+    const shotStarted = shots.some((s) => s.totals.numHoles > 0 || Boolean(s.signatureImage));
 
     // ── shots (per-shot sign-off, model (a); a log-level signature covers
     // single-blaster days that never used the per-shot row) ──
@@ -87,11 +101,37 @@ export function useDayPhases(
     const review = blastLog.readinessReview;
     const phases: DayPhase[] = [];
 
+    if (!hasDrilling && drillingDay && firstShot) {
+      phases.push(
+        !hasPlan
+          ? {
+              key: 'drilling',
+              label: 'Drill plan',
+              sub: 'no plan yet — lay the pattern, then send it',
+              chip: shotStarted ? 'skipped' : 'to do',
+              chipVariant: shotStarted ? 'secondary' : 'warning',
+              state: shotStarted ? 'later' : 'now',
+              view: 'blast-log',
+              to: `/blast-day/${day.id}/design/${firstShot.id}?mode=plan`,
+            }
+          : {
+              key: 'drilling',
+              label: 'Drill plan',
+              sub: `${plannedHoles} holes planned · not sent to a driller yet`,
+              chip: shotStarted ? 'not sent' : 'ready',
+              chipVariant: shotStarted ? 'secondary' : 'warning',
+              state: shotStarted ? 'later' : 'now',
+              view: 'blast-log',
+              to: `/blast-day/${day.id}/design/${firstShot.id}?mode=plan`,
+            },
+      );
+    }
+
     if (hasDrilling) {
       phases.push({
         key: 'drilling',
         label: 'Drilling',
-        sub: `${holeCount} holes · ${drillerNames.length} driller${drillerNames.length === 1 ? '' : 's'}${hazardCount > 0 ? ` · ${hazardCount} hazards` : ''}`,
+        sub: `${holeCount}${plannedHoles ? `/${plannedHoles}` : ''} holes · ${drillerNames.length} driller${drillerNames.length === 1 ? '' : 's'}${hazardCount > 0 ? ` · ${hazardCount} hazards` : ''}`,
         chip: allAccepted ? 'accepted' : 'in progress',
         chipVariant: allAccepted ? 'compliant' : 'warning',
         state: allAccepted ? 'done' : 'now',
@@ -178,13 +218,19 @@ export function useDayPhases(
       : current.key === 'shots' && firstUnsigned
         ? `Continue — Shot ${firstUnsigned.shotNumber}`
         : current.key === 'drilling'
-          ? 'Continue — drilling review'
+          ? !hasDrilling
+            ? hasPlan
+              ? 'Send the plan to drillers'
+              : 'Build the drill plan'
+            : allComplete
+              ? 'Review drilling & build timing'
+              : `Drilling — ${drillerNames.slice(0, 2).join(', ') || 'in progress'} ${holeCount}${plannedHoles ? `/${plannedHoles}` : ''}`
           : current.key === 'readiness'
-            ? 'Continue — readiness review'
+            ? 'Confirm design & build timing'
             : current.key === 'timecards'
               ? 'Continue — my time card'
               : 'Continue — report & file';
 
     return { phases, current, continueLabel };
-  }, [day?.id, day?.status, day?.updatedAt, blastLog?.id, blastLog?.updatedAt, shots.map((s) => s.id + (s.signatureImage ? 's' : '')).join(',')]);
+  }, [day?.id, day?.status, day?.updatedAt, blastLog?.id, blastLog?.updatedAt, shots.map((s) => s.id + (s.signatureImage ? 's' : '') + s.updatedAt).join(',')]);
 }

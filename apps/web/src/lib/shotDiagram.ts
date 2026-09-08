@@ -45,6 +45,16 @@ export interface ShotDiagram {
   interHoleMs: number;
   /** Per-hole drilling plan (depths/angles) — the Blaster→Driller handoff */
   plan?: DrillPlan;
+  /** S8: the drilled pattern the timing was built on — undrilled grid
+   *  positions (excluded from wiring) and how many holes were in, so a
+   *  later drilling change can be flagged ("changed since you wired") */
+  asDrilled?: AsDrilled;
+}
+
+export interface AsDrilled {
+  at: string; // ISO
+  undrilled: number[]; // grid idx
+  drilledCount: number;
 }
 
 /** Standard MS delay series offered for leads (wireframe's set) */
@@ -78,6 +88,7 @@ export function parseDiagram(json: string | null): ShotDiagram {
       start: parsed.start,
       interHoleMs: parsed.interHoleMs ?? DEFAULT_INTER_HOLE_MS,
       plan: parsed.plan,
+      asDrilled: parsed.asDrilled,
     };
   } catch {
     return emptyDiagram();
@@ -175,6 +186,23 @@ export function seedDiagramFromPlan(plan: {
     plan: { defaultDepth: plan.defaultDepth, overrides },
   };
   return serializeDiagram(diagram);
+}
+
+/** Rebuild the timing base on the drilled pattern: wires touching an
+ *  undrilled position go, a start on one is cleared, and the snapshot is
+ *  recorded. Timing on drilled holes is kept. */
+export function applyAsDrilled(d: ShotDiagram, undrilled: number[], drilledCount: number): ShotDiagram {
+  const gone = new Set(undrilled);
+  const wires = d.wires.filter((w) => !gone.has(w.from) && !gone.has(w.to));
+  const start = d.start && gone.has(d.start.hole) ? undefined : d.start;
+  return { ...d, wires, start, asDrilled: { at: new Date().toISOString(), undrilled: [...undrilled].sort((a, b) => a - b), drilledCount } };
+}
+
+/** Has drilling moved since the timing was built on it? */
+export function drilledSince(d: ShotDiagram, undrilled: number[], drilledCount: number): boolean {
+  if (!d.asDrilled) return false;
+  const a = [...undrilled].sort((x, y) => x - y).join(',');
+  return a !== d.asDrilled.undrilled.join(',') || drilledCount !== d.asDrilled.drilledCount;
 }
 
 export function serializeDiagram(d: ShotDiagram): string {

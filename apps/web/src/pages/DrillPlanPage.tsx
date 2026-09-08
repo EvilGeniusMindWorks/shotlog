@@ -52,8 +52,9 @@ function DispatchModal({
     onClose();
   };
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-      <div className="w-full sm:max-w-sm bg-white rounded-t-xl sm:rounded-xl p-4 max-h-[80vh] overflow-auto">
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-[60] p-0 sm:p-4">
+      {/* S8: header and Send stay put; only the crew list scrolls; above the mobile nav */}
+      <div className="w-full sm:max-w-sm bg-white rounded-t-xl sm:rounded-xl p-4 pb-[max(1rem,var(--sab))] max-h-[80vh] flex flex-col" data-send-drillers>
         <div className="flex items-center justify-between mb-1">
           <p className="font-bold">Send drill plan to…</p>
           <Button variant="ghost" size="icon" onClick={onClose}>
@@ -64,7 +65,7 @@ function DispatchModal({
           Each person gets today's log for this plan in their queue. They can start
           new logs on later days themselves.
         </p>
-        <div className="space-y-1">
+        <div className="space-y-1 overflow-auto flex-1 min-h-0 pr-1">
           {sorted.map((c) => {
             const assigned = c.userId ? alreadyAssigned.has(c.userId) : false;
             const disabled = !c.userId || assigned;

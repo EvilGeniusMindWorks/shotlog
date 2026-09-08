@@ -4,7 +4,7 @@
 // demand. Company admins never see this tab (decisions 2026-09-06).
 import { useCallback, useEffect, useState } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
-import { Bug, Image as ImageIcon, Lightbulb, MessageCircleQuestion, RefreshCw, Trash2, Zap } from 'lucide-react';
+import { Bug, Download, Image as ImageIcon, Lightbulb, Maximize2, MessageCircleQuestion, Minimize2, RefreshCw, Trash2, X, Zap } from 'lucide-react';
 import { authedFetch } from '@/lib/session';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -58,6 +58,19 @@ export function AdminFeedbackPage() {
   const [meta, setMeta] = useState<{ recipients: string[]; emailEnabled: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(focusId);
+  // S8: the screenshot opens in an in-app viewer — a new tab refuses a data
+  // URL (the blank tab Matthew saw); Download goes through a blob URL
+  const [viewer, setViewer] = useState<{ id: string; src: string } | null>(null);
+  const [fit, setFit] = useState(true);
+  const downloadShot = async (src: string, id: string) => {
+    const blob = await (await fetch(src)).blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `shotlog-feedback-${id}.${blob.type.includes('png') ? 'png' : 'jpg'}`;
+    a.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 5000);
+  };
   const [detail, setDetail] = useState<Record<string, FeedbackDetail>>({});
   const [filter, setFilter] = useState<'open' | 'all'>('open');
 
@@ -224,9 +237,44 @@ export function AdminFeedbackPage() {
                   </dl>
 
                   {d?.screenshot && (
-                    <a href={d.screenshot} target="_blank" rel="noreferrer" className="block">
-                      <img src={d.screenshot} alt="Screenshot" className="max-h-72 rounded-lg border border-gray-200 bg-white" data-feedback-screenshot-img />
-                    </a>
+                    <button
+                      type="button"
+                      className="block text-left"
+                      title="Open the screenshot"
+                      data-screenshot-open
+                      onClick={() => {
+                        setFit(true);
+                        setViewer({ id: r.id, src: d.screenshot as string });
+                      }}
+                    >
+                      <img src={d.screenshot} alt="Screenshot" className="max-h-[50vh] rounded-lg border border-gray-200 bg-white" data-feedback-screenshot-img />
+                      <span className="block text-[11px] text-gray-400 mt-1">Tap to open full size · Download inside</span>
+                    </button>
+                  )}
+                  {viewer && viewer.id === r.id && (
+                    <div className="fixed inset-0 z-[100] bg-black/85 flex flex-col" data-screenshot-viewer onClick={() => setViewer(null)}>
+                      <div className="flex items-center gap-2 px-3 py-2 bg-black/60 text-white shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <span className="text-sm font-medium flex-1 truncate">Screenshot · {r.userName} · {r.viewport}</span>
+                        <Button size="sm" variant="secondary" data-screenshot-fit onClick={() => setFit((v) => !v)}>
+                          {fit ? <Maximize2 className="h-4 w-4 mr-1" /> : <Minimize2 className="h-4 w-4 mr-1" />}
+                          {fit ? 'Actual size' : 'Fit'}
+                        </Button>
+                        <Button size="sm" variant="secondary" data-screenshot-download onClick={() => void downloadShot(viewer.src, viewer.id)}>
+                          <Download className="h-4 w-4 mr-1" /> Download
+                        </Button>
+                        <Button size="sm" variant="ghost" className="text-white" onClick={() => setViewer(null)}>
+                          <X className="h-5 w-5" />
+                        </Button>
+                      </div>
+                      <div className={cn('flex-1 min-h-0 overflow-auto', fit && 'flex items-center justify-center p-4')} onClick={(e) => e.stopPropagation()}>
+                        <img
+                          src={viewer.src}
+                          alt="Screenshot, full size"
+                          className={fit ? 'max-w-full max-h-full object-contain rounded' : 'max-w-none'}
+                          data-screenshot-full
+                        />
+                      </div>
+                    </div>
                   )}
 
                   {d && d.errorLog.length > 0 && (

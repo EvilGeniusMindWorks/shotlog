@@ -170,3 +170,7 @@ report (solo submit) · My Records · jobs list
   the same form.
 - ✅ **Back goes home.** The drill log's back arrow returns a driller to
   their home (the trio), never to the blaster's plan page or day hub.
+- **S8 (accepted 2026-09-07):** with no plan in sight the home says who to
+  ask: "No drill plans yet. Ask the blaster for the job's drill plan — they
+  send it to you from the job page and it shows up here. Your rig checklist
+  and hours work without one."

@@ -38,6 +38,17 @@ interface Props {
   onClone?: (targetShotId: string) => void;
   /** Pattern design depth (ft) — the drill plan's inherited default */
   designDepth?: number;
+  /** S8: open in plan mode ("Build plan") instead of timing */
+  initialMode?: 'timing' | 'plan';
+  onModeChange?: (mode: 'timing' | 'plan') => void;
+  /** S8: the drilled pattern — undrilled grid positions are greyed and
+   *  unwireable in timing mode; hole conditions (W, V, SR…) get a mark */
+  drilled?: DrilledOverlay;
+}
+
+export interface DrilledOverlay {
+  undrilled: Set<number>;
+  conditions: Map<number, string[]>;
 }
 
 /**
@@ -46,14 +57,18 @@ interface Props {
  * wire carries its own delay instead (branching to another row). Every hole
  * shows its cumulative firing time; edits re-time everything downstream.
  */
-export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, designDepth }: Props) {
+export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, designDepth, initialMode, onModeChange, drilled }: Props) {
   const [activeLead, setActiveLead] = useState<number>(DELAY_SERIES[1]); // 17ms
   const [customLead, setCustomLead] = useState('');
   const [leadMode, setLeadMode] = useState(false);
   const [wireSource, setWireSource] = useState<number | null>(null);
   // Drill-plan mode: PAINT model — type the exception once (depth/angle),
   // then tap holes to apply it; empty inputs turn taps into an eraser
-  const [mode, setMode] = useState<'timing' | 'plan'>('timing');
+  const [mode, setModeState] = useState<'timing' | 'plan'>(initialMode ?? 'timing');
+  const setMode = (m: 'timing' | 'plan') => {
+    setModeState(m);
+    onModeChange?.(m);
+  };
   const [paintDepth, setPaintDepth] = useState('');
   const [paintAngle, setPaintAngle] = useState('');
   const [noHole, setNoHole] = useState(false); // brush marks unused grid positions
@@ -128,6 +143,8 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
       paintHole(idx);
       return;
     }
+    // S8: a position the drillers did not put a hole in cannot be wired
+    if (drilled?.undrilled.has(idx)) return;
     // No start yet: first tap sets the initiation hole with the chosen lead.
     // Legacy painted delays are cleared — the timing tree replaces them.
     if (!start) {
@@ -270,7 +287,7 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
   return (
     <div className="space-y-2">
       {/* Mode toggle: timing (delays/wires) vs drill plan (depths/angles) */}
-      <div className="flex gap-2">
+      <div className="flex gap-2" data-diagram-mode={mode}>
         <Button
           variant={mode === 'timing' ? 'default' : 'outline'}
           size="sm"
@@ -597,6 +614,16 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
                   ? DELAY_COLORS[legacyMs] ?? '#1a365d'
                   : 'white';
             const label = t ?? legacyMs;
+            const undrilled = drilled?.undrilled.has(idx) ?? false;
+            const conds = drilled?.conditions.get(idx);
+            if (undrilled) {
+              return (
+                <g key={idx} data-undrilled={idx}>
+                  <circle cx={cx(idx)} cy={cy(idx)} r={HOLE_RADIUS} fill="transparent" stroke="#c53030" strokeWidth={1.5} strokeDasharray="3,3" opacity={0.7} />
+                  <text x={cx(idx)} y={cy(idx) + 4} textAnchor="middle" fontSize={11} fill="#c53030" opacity={0.7} pointerEvents="none">×</text>
+                </g>
+              );
+            }
             return (
               <g key={idx} onClick={() => tapHole(idx)} className="cursor-pointer">
                 <circle cx={cx(idx)} cy={cy(idx)} r={HOLE_SPACING / 2} fill="transparent" />
@@ -629,6 +656,12 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
                   >
                     {label}
                   </text>
+                )}
+                {conds && conds.length > 0 && (
+                  <g pointerEvents="none" data-hole-condition={conds.join(',')}>
+                    <circle cx={cx(idx) + HOLE_RADIUS - 2} cy={cy(idx) - HOLE_RADIUS + 2} r={7} fill="#2b6cb0" stroke="white" strokeWidth={1.5} />
+                    <text x={cx(idx) + HOLE_RADIUS - 2} y={cy(idx) - HOLE_RADIUS + 5} textAnchor="middle" fontSize={8} fontWeight={700} fill="white">{conds[0].slice(0, 2)}</text>
+                  </g>
                 )}
               </g>
             );

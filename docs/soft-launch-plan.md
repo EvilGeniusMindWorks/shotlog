@@ -791,3 +791,19 @@ Not done (R-B/R-C): saved views, audit-pack curation, tags, attachments as
 rows, wide-screen table for jobs (the row already works at both widths).
 Copy review for Matthew: the office queue section titles and the records
 status labels.
+
+## Round S8 — Matthew's eleven (2026-09-07; plan artifact 8d55ab6c, three drafts, all calls in)
+
+| # | Item | Call | Sub-round | Status |
+|---|------|------|-----------|--------|
+| 11 | Drill plan first · pinned Send · Continue states · timing from drilled holes | Build | S8a | ✅ shipped 2026-09-07 (harness53 26/26) |
+| 10 | Start work dialog — Option B (Name first · Job picker sheet · pinned Start) | Build | S8a | ✅ shipped 2026-09-07 (harness53 26/26) |
+| 8 | Feedback screenshot viewer (data URL cannot open in a tab) | Build | S8a | ✅ shipped 2026-09-07 (harness53 26/26) |
+| 6 | Driller note: ask the blaster for the plan | Build | S8a | ✅ shipped 2026-09-07 (harness53 26/26) |
+| 1 | Invite email, testing mode (`INVITE_MODE`) | Build | S8a | ✅ shipped 2026-09-07 (harness53 26/26) |
+| 7 | Jobs = drill-down (details first, windowed lists, nav stays *Jobs*; wide-screen mock first) | Build | S8b | queued |
+| 9 | Equipment tabs by type; repair queue leaves the admin page | Build | S8b | queued |
+| 3 | Alpha / Beta / Production companies + platform-admin switcher; go-live moves people | Build | S8c | queued |
+| 2 | Help guide — Markdown in repo, built into the app at /help, hosted at the app URL | Deferred until the UI settles (outline kept) | — | queued |
+| 4 | Load / soak test — manual overnight GitHub Action vs a staging copy; p50/p95, delivery lag, error rate | Build | S8d | queued |
+| 5 | Connectivity probe every 10 min (health, sign-in, sync token, manifest); email on fail + recover | Build | S8d | queued |

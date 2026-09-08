@@ -447,7 +447,7 @@ export function DrillingWork() {
           <p className="text-sm text-gray-400">
             {workingToday
               ? "Nothing else is waiting — today's pattern is above."
-              : 'No open drill plans. Drilling starts from a plan — the blaster makes one on the job page in seconds, even for a small job, or sends you one directly.'}
+              : 'No drill plans yet. Ask the blaster for the job\'s drill plan — they send it to you from the job page and it shows up here. Your rig checklist and hours work without one.'}
           </p>
         </div>
       )}

@@ -127,7 +127,7 @@ function TodayDayRow({ day, jobLabel }: { day: BlastDay; jobLabel: string }) {
       {model?.current && (
         <button
           className="w-full bg-safety-orange text-white rounded-xl py-2.5 font-bold text-sm hover:bg-orange-600"
-          onClick={() => navigate(`/blast-day/${day.id}?view=${model.current!.view}`)}
+          onClick={() => navigate(model.current!.to ?? `/blast-day/${day.id}?view=${model.current!.view}`)}
         >
           {model.continueLabel}
         </button>

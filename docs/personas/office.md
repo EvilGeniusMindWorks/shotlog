@@ -80,3 +80,20 @@ Incidents · People (read) · company/customer/site pages · export surfaces
   as today. Two offline copies of the same day show a merge strip to the
   day's author and to supervision (the office reads; it does not write days).
 - 🟡 Job 6 (compliance clocks) now SURFACES on the home; job 7 ("missing paperwork") is the "never submitted" section — both provisional.
+
+## Round S8 (2026-09-07)
+
+- **Feedback screenshots** open in an in-app viewer at full width with
+  fit / actual size and Download (a new tab cannot open a data URL — the
+  blank tab Matthew saw); the inline preview grows to half the window.
+- **Invite email in testing mode** (`INVITE_MODE=testing`, the default
+  until go-live): an invitation in Matthew's voice — "feel free to give it
+  a shot" — feedback through the app's ? menu only, no role assignment
+  sentence, "this is a test version, expect rough edges".
+- **Equipment (S8b):** tabs by type like Catalog by manufacturer; the repair
+  queue leaves the admin equipment page (it is the shop's list, not the
+  admin's).
+- **Help guide** deferred until the UI settles (outline kept in the plan).
+- **Alpha / Beta / Production companies (S8c):** the platform admin gets a
+  company switcher; testers are invited into Beta; go-live moves people to
+  the production company.

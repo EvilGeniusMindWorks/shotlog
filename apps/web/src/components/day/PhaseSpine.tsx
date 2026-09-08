@@ -9,7 +9,7 @@ export function PhaseSpine({
   onOpen,
 }: {
   model: DayPhaseModel;
-  onOpen: (view: string) => void;
+  onOpen: (view: string, to?: string) => void;
 }) {
   return (
     <div>
@@ -32,7 +32,7 @@ export function PhaseSpine({
                 'w-full text-left bg-white border rounded-xl px-4 py-3 flex items-center gap-3 hover:bg-gray-50 min-h-[56px] ' +
                 (p.state === 'now' ? 'border-safety-orange' : 'border-gray-200')
               }
-              onClick={() => onOpen(p.view)}
+              onClick={() => onOpen(p.view, p.to)}
             >
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm">{p.label}</p>
@@ -46,7 +46,8 @@ export function PhaseSpine({
       {model.current && (
         <button
           className="w-full bg-safety-orange text-white rounded-xl py-3 font-bold text-sm mt-1 hover:bg-orange-600"
-          onClick={() => onOpen(model.current!.view)}
+          onClick={() => onOpen(model.current!.view, model.current!.to)}
+          data-day-continue
         >
           {model.continueLabel}
         </button>

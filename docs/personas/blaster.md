@@ -177,3 +177,32 @@ page · customer/site/job create (new) · contacts · My Records · reference
   them up before real test users). PIN becomes per account on the device:
   sign-out and enrolling clear it, so a new account on a used browser is
   asked to set one.
+
+## Round S8 — Matthew's eleven (2026-09-07, plan artifact 8d55ab6c)
+
+- **Drill plan first, timing from what was drilled (S8a, accepted):** "Build
+  plan" opens the shot in PLAN mode with timing and explosives folded away;
+  a pinned footer reads *Plan ready · N holes* → **Send to drillers** /
+  *Done for now*. The day's Continue knows every state — *Build the drill
+  plan* → *Send the plan to drillers* → *Drilling — Dinis 14/32* → *Review
+  drilling & build timing* → shots → seismo → file. After drilling, the
+  timing tab opens on the DRILLED pattern: undrilled positions greyed and
+  unwireable, wet/void holes marked, depths carried; the blaster wires,
+  nothing is redrawn. A later drilling change shows as "drilling changed
+  since you wired — review". The Send sheet keeps its header and button
+  pinned; only the crew list scrolls. Matthew: "completely broken … had to
+  back out … nothing to do" — the plan page never knew the plan was done.
+- **Start work at a job (S8a, Option B — picker sheet):** Name first (S7b),
+  then ONE *Job* row that opens a full-height picker: search, Recent chips,
+  then Customer → Site → Job as a drill-down with a crumb; "+ New job here"
+  inside the picker with customer and site already set. Back in the dialog:
+  Job · Date + Type on one row · Copy from previous · a pinned Start. No
+  scrolling to find the button. Matthew rejected a single searchable field
+  ("Customer › Site › Job is the fastest path to refine the list") and a
+  seven-section scroll.
+- **Jobs section (S8b, Option 1 — drill-down):** the nav item stays *Jobs*
+  and lands on customers; tap a customer → its sites; tap a site → its jobs;
+  new customer / site / job only on their own level. Matthew: the "About
+  this customer / site" details come FIRST (above the list — lists get
+  long), no super-long scrolling lists (windowed, searchable), and he wants
+  to see the wide-screen version before build.

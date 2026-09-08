@@ -177,7 +177,8 @@ async (page) => {
     await P4.goto(WEB);
     await P4.waitForTimeout(2500);
     const bhome = await P4.locator('main').innerText();
-    ok('blaster home: today\'s draft at the culvert with a Continue', /Route 3 culvert · 26-007/.test(bhome) && /Continue — Shot 1/.test(bhome));
+    // S8: a fresh drill-to-blast day's first step is the drill plan ("Build the drill plan"); a shot already loaded keeps "Continue — Shot 1"
+    ok('blaster home: today\'s draft at the culvert with a Continue', /Route 3 culvert · 26-007/.test(bhome) && /Build the drill plan|Continue — Shot 1/.test(bhome));
     ok('blaster home: yesterday at the pit, submitted, with the explosives total', /Ledgeville Pit — Phase 1/.test(bhome) && /1 shot · [\d,]+ lbs/.test(bhome) && /submitted/.test(bhome));
     await P4.goto(`${WEB}/days`);
     await P4.waitForTimeout(2500);
