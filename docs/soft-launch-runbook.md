@@ -9,6 +9,7 @@ Everything above them is what to do, in order, once they are made.
 |---|---|---|---|
 | G0 | **Rehearse every role yourself first**: Settings › Rehearse as… (platform admin only) signs you into the sandbox company as a brand-new person of that role — PIN, welcome, walkthrough, empty home. Use *Add sample job* on the bar for something to work with; *End* wipes it. Send feedback from the ? menu as you go; sandbox notes land in Admin › Feedback (never emailed). | ✅ shipped S6 | Matthew |
 | G1 | Resend key + sending domain on Railway (`RESEND_API_KEY`, `INVITE_FROM`) — invites and password resets email | ✅ live 2026-09-07 (shotlog.evilgenius.io) | — |
+| G-probe | Uptime probe every 10 min with DOWN / RECOVERED emails (docs/ops-probe-and-load.md) | workflow shipped 2026-09-08 | Matthew: probe user + 4 GitHub secrets |
 | G2 | Sign out / in once on prod so your session carries `platformAdmin` (Admin › Feedback tab appears); you will also see the walkthrough once | ❌ | Matthew |
 | G3 | `npm audit --omit=dev` clean | see S5 check-off | done in S5 |
 | G4 | USBM RI 8507 curve sign-off — docs/usbm-curve-signoff.md handed to a blasting engineer and signed | ❌ | Matthew → engineer |

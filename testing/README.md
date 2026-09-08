@@ -68,3 +68,8 @@ fails it.
 Older files (`two-device/harness1–3`, `audit-sweep.mjs`, `build1-verify.mjs`)
 predate the runner; `two-device/README.md` describes the original sync
 cutover gate they were written for.
+
+## Ops scripts (S8d)
+
+- `node testing/probe/probe.mjs` — the uptime probe (local stack by default; `API_URL`/`WEB_URL` to aim it). Scheduled every 10 min by `.github/workflows/uptime-probe.yml`.
+- `DEVICES=4 MINUTES=1 node testing/load/loadtest.mjs` — the load / soak test against the local stack (platform admin = mark). Manual workflow: `.github/workflows/load-test.yml`. Details: docs/ops-probe-and-load.md.

@@ -1,0 +1,72 @@
+# Round S8d — the load / soak test. MANUAL ONLY (Matthew: "not all the time
+# or even right now — an overnight"). Runs testing/load/loadtest.mjs against
+# the API you name, inside a throwaway company that is deleted at the end.
+# Never runs on a push, never on a schedule.
+name: Load test (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: API to load (default production — run it at night)
+        default: https://shotlogserver-production.up.railway.app
+        required: true
+      devices:
+        description: Virtual devices (tablets) — 1 to 50
+        default: '10'
+        required: true
+      minutes:
+        description: How long to soak — 1 to 600
+        default: '30'
+        required: true
+      writes_per_min:
+        description: Writes per device per minute — 1 to 60
+        default: '6'
+        required: true
+      keep_company:
+        description: Keep the throwaway company afterwards (for a look)
+        type: boolean
+        default: false
+
+jobs:
+  load:
+    runs-on: ubuntu-latest
+    timeout-minutes: 660
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run
+        env:
+          API_URL: ${{ inputs.api_url }}
+          ADMIN_EMAIL: ${{ secrets.LOADTEST_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.LOADTEST_PASSWORD }}
+          DEVICES: ${{ inputs.devices }}
+          MINUTES: ${{ inputs.minutes }}
+          WRITES_PER_MIN: ${{ inputs.writes_per_min }}
+          KEEP_COMPANY: ${{ inputs.keep_company && '1' || '0' }}
+          OUT: loadtest
+        run: node testing/load/loadtest.mjs
+      - name: Report
+        if: always()
+        run: cat loadtest/report.md >> "$GITHUB_STEP_SUMMARY" || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: loadtest-report
+          path: loadtest/
+      - name: Email the report
+        if: always()
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_TO: ${{ secrets.ALERT_TO }}
+        run: |
+          if [ -z "$RESEND_API_KEY" ] || [ -z "$ALERT_TO" ] || [ ! -f loadtest/report.md ]; then echo "email off"; exit 0; fi
+          node -e '
+            const fs = require("fs");
+            const text = fs.readFileSync("loadtest/report.md", "utf8");
+            fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: "Bearer " + process.env.RESEND_API_KEY, "Content-Type": "application/json" },
+              body: JSON.stringify({ from: "ShotLog <invites@shotlog.evilgenius.io>", to: process.env.ALERT_TO.split(","), subject: "ShotLog load test report", text }) })
+              .then((r) => console.log("email", r.status));
+          '

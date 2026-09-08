@@ -56,8 +56,13 @@ architecture decisions account for the separation BEFORE it's urgent.
    version adoption), impersonate WITH consent/audit for support
 3. ❌ Platform configuration: feature flags per tenant, plan/billing
    eventually
-4. ❌ Operational visibility: server health, storage, failed uploads,
-   audit of platform-level actions
+4. 🟡 Operational visibility: server health, storage, failed uploads,
+   audit of platform-level actions. **S8d (2026-09-08):** an uptime probe
+   every 10 min (API, sign-in, sync token, sync service, web, manifest)
+   with DOWN / RECOVERED emails and a `probe-down` issue as the incident
+   log; a manual overnight load test (virtual devices on real sync streams
+   inside a throwaway company) with p50/p95, delivery lag and error rate.
+   Storage, failed uploads and a platform audit are still open.
 5. ❌ Platform-side user management: additional vendor staff with
    platform roles (support vs engineering vs billing)
 

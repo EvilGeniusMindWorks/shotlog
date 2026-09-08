@@ -1,0 +1,36 @@
+# Round S8d — the connectivity probe. Every 10 minutes: API health, a real
+# sign-in, a sync token, the sync service, the web app and its manifest.
+# One email when it goes down, one when it recovers (state = an open issue
+# labelled probe-down). GitHub's scheduler can run a few minutes late; that
+# is fine for a "is it up" check.
+name: Uptime probe
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Probe
+        env:
+          API_URL: ${{ vars.PROBE_API_URL || 'https://shotlogserver-production.up.railway.app' }}
+          WEB_URL: ${{ vars.PROBE_WEB_URL || 'https://shotlog-app.vercel.app' }}
+          PROBE_EMAIL: ${{ secrets.PROBE_EMAIL }}
+          PROBE_PASSWORD: ${{ secrets.PROBE_PASSWORD }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_TO: ${{ secrets.ALERT_TO }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node testing/probe/probe.mjs

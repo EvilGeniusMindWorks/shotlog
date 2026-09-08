@@ -805,8 +805,8 @@ status labels.
 | 9 | Equipment: four grouped tabs + type chips + search + filter chips; repair queue leaves the admin page | Build | S8b | ✅ shipped 2026-09-07 (harness55 45/45) |
 | 3 | Alpha / Beta / Production companies + platform-admin switcher; go-live moves people | Build | S8c | ✅ shipped 2026-09-07 (harness56 26/26; 41/49 green) |
 | 2 | Help guide — Markdown in repo, built into the app at /help, hosted at the app URL | Deferred until the UI settles (outline kept) | — | queued |
-| 4 | Load / soak test — manual overnight GitHub Action vs a staging copy; p50/p95, delivery lag, error rate | Build | S8d | queued |
-| 5 | Connectivity probe every 10 min (health, sign-in, sync token, manifest); email on fail + recover | Build | S8d | queued |
+| 4 | Load / soak test — manual overnight GitHub Action, throwaway company on the named API; p50/p95, delivery lag, error rate | Build | S8d | ✅ shipped 2026-09-08 (docs/ops-probe-and-load.md; local dress rehearsal green) |
+| 5 | Connectivity probe every 10 min (health, sign-in, sync token, sync service, web, manifest); email on fail + recover | Build | S8d | ✅ shipped 2026-09-08 (needs the four GitHub secrets — Matthew) |
 
 **S8a follow-up — Matthew's second pass (2026-09-07, six notes):**
 1. Job picker: "Choose a different customer, site or job" under a chosen
@@ -916,3 +916,17 @@ decisions.md 2026-09-07) — ✅ SHIPPED 2026-09-07 (harness56 26/26):**
    to "Baystate Blasting (Alpha)" (environment Alpha) → New company
    "Baystate Blasting (Beta)" from Alpha's reference data → Settings ›
    Company → switch → send the beta invites from there.
+
+**S8d — probe + load test — ✅ SHIPPED 2026-09-08** (full write-up:
+docs/ops-probe-and-load.md). `testing/probe/probe.mjs` + the *Uptime probe*
+workflow every 10 min (health · sign-in · sync token · sync service · web ·
+manifest; one DOWN email, one RECOVERED email; state = an open issue
+labelled `probe-down`; signed-in checks read *skipped* until the secrets
+exist). `testing/load/loadtest.mjs` + the manual *Load test* workflow:
+virtual devices = real PowerSync streams over HTTP + the real upload
+endpoint inside a throwaway Beta company on the API you name (deleted at
+the end); upload / delivery-lag / token / health p50-p95-max, error rate,
+reconnects; red above 2 % errors or 30 s p95 lag. No staging deployment
+exists: the data is isolated, the server is the real one — run it at
+night. **Matthew:** secrets PROBE_EMAIL · PROBE_PASSWORD · RESEND_API_KEY ·
+ALERT_TO (+ LOADTEST_EMAIL · LOADTEST_PASSWORD), a probe user in People.
