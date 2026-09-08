@@ -200,7 +200,8 @@ async (page) => {
     await P4.locator('[data-tour-skip]').click();
     await P4.waitForTimeout(500);
     await P4.locator('aside [data-help-button]').click();
-    ok('desktop ? menu has About this screen / Walkthrough / Send feedback', (await P4.locator('[data-help-coach]').count()) === 1 && (await P4.locator('[data-help-walkthrough]').count()) === 1 && (await P4.locator('[data-help-feedback]').count()) === 1);
+    await P4.locator('[data-help-from]').waitFor({ timeout: 8000 });
+    ok('desktop Help & feedback opens the guide with About this screen / Walkthrough / Send feedback', (await P4.locator('[data-help-coach]').count()) === 1 && (await P4.locator('[data-help-walkthrough]').count()) === 1 && (await P4.locator('[data-help-feedback]').count()) === 1);
     await P4.locator('[data-help-coach]').click();
     ok('Records coach', /Records/.test(await P4.locator('[data-coach-sheet] h2').innerText()));
     await c4.close();
@@ -210,6 +211,7 @@ async (page) => {
     const P5 = await c5.newPage();
     await signIn(P5, 'mark@baystateblasting.com', 'dev-password-123');
     await P5.locator('aside [data-help-button]').click();
+    await P5.locator('[data-help-walkthrough]').waitFor({ timeout: 8000 });
     await P5.locator('[data-help-walkthrough]').click();
     await P5.locator('[data-tour-overlay]').waitFor({ timeout: 5000 });
     await P5.locator('[data-tour-next]').click();

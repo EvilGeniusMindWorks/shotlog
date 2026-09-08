@@ -6,6 +6,9 @@ import { useEffect, useMemo, useState, type MouseEvent } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ChevronRight, Search } from 'lucide-react';
 import { ShotLogLogo } from '@/components/brand/ShotLogLogo';
+import { coachFor } from '@/components/guidance/coach';
+import { startTour, tourBucket } from '@/components/layout/Tour';
+import { Footprints, MessageSquarePlus, Info } from 'lucide-react';
 import { getSession } from '@/lib/session';
 import { openFeedbackComposer } from '@/components/feedback/FeedbackComposer';
 import { Input } from '@/components/ui/input';
@@ -194,6 +197,59 @@ export function HelpPage({ standalone = false }: { standalone?: boolean } = {}) 
 
   const back = page ? `/help/${page.section}` : section ? '/help' : null;
   const q = query.trim();
+  // Arrived from a screen (the sidebar's Help & feedback): the About-this-screen
+  // notes, Walkthrough and Send feedback sit above the page
+  const from = new URLSearchParams(location.search).get('from');
+  const fromPath = from ? from.split('?')[0] : null;
+  const fromSearch = from && from.includes('?') ? `?${from.split('?')[1]}` : '';
+  const coach = fromPath ? coachFor(fromPath, fromSearch, tourBucket()) : null;
+  const fromBox = from ? (
+    <div className="rounded-xl border border-navy/20 bg-white p-4 space-y-3" data-coach-sheet data-help-from>
+      <div className="flex items-start gap-3">
+        <Info className="h-5 w-5 text-navy shrink-0 mt-0.5" />
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">About this screen</p>
+          <h2 className="font-bold text-lg leading-tight">{coach?.title ?? 'This screen'}</h2>
+          {coach && <p className="text-sm text-gray-700 mt-1">{coach.what}</p>}
+        </div>
+      </div>
+      {coach && (
+        <ol className="space-y-1.5">
+          {coach.steps.map((s, i) => (
+            <li key={s} className="flex gap-2 text-sm text-gray-700">
+              <span className="text-safety-orange font-bold shrink-0">{i + 1}.</span>
+              <span>{s}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+      {coach?.ask && <p className="text-sm text-gray-500 border-l-2 border-gray-200 pl-3">{coach.ask}</p>}
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm hover:bg-gray-50"
+          data-help-walkthrough
+          onClick={() => {
+            navigate(from);
+            window.setTimeout(startTour, 500);
+          }}
+        >
+          <Footprints className="h-4 w-4 text-gray-500" /> Walkthrough
+        </button>
+        <button
+          type="button"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm hover:bg-gray-50"
+          data-help-feedback
+          onClick={() => openFeedbackComposer({ kind: 'question' })}
+        >
+          <MessageSquarePlus className="h-4 w-4 text-gray-500" /> Send feedback
+        </button>
+        <Link to={from} className="inline-flex items-center rounded-lg px-3 py-1.5 text-sm text-navy underline" data-help-coach>
+          Back to {coach?.title ?? 'that screen'}
+        </Link>
+      </div>
+    </div>
+  ) : null;
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900" data-help-guide>
@@ -243,7 +299,10 @@ export function HelpPage({ standalone = false }: { standalone?: boolean } = {}) 
               <Results query={q} />
             </>
           ) : page ? (
-            <Article page={page} />
+            <div className="space-y-4">
+              {fromBox}
+              <Article page={page} />
+            </div>
           ) : sec ? (
             <div className="space-y-3" data-help-section={sec.id}>
               <div className="lg:hidden">
@@ -263,6 +322,7 @@ export function HelpPage({ standalone = false }: { standalone?: boolean } = {}) 
             </div>
           ) : (
             <div className="space-y-4" data-help-home>
+              {fromBox}
               <div className="lg:hidden">
                 <SearchBox value={query} onChange={setQuery} />
               </div>

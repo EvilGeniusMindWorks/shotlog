@@ -64,18 +64,33 @@ async (page, lib) => {
     await skipTours(P2);
     await P2.goto(`${WEB}/jobs`);
     await P2.locator('[data-customers-list]').waitFor({ timeout: 15000 });
-    await P2.locator('[data-help-button]').first().click();
-    await P2.locator('[data-help-menu]').waitFor({ timeout: 3000 });
-    R.ok('the ? menu has a Help guide entry', (await P2.locator('[data-help-guide]').count()) === 1);
-    await P2.locator('[data-help-coach]').click();
-    await P2.locator('[data-coach-sheet]').waitFor({ timeout: 3000 });
-    R.ok('About this screen offers "Read more in the guide" for Jobs', /Read more in the guide: Jobs, customers and sites/.test(await P2.locator('[data-coach-sheet]').innerText()));
-    await P2.locator('[data-coach-guide]').click();
+    // wide: the sidebar row navigates to the guide at this screen's page, with
+    // About this screen, Walkthrough and Send feedback on the page
+    await P2.locator('aside [data-help-button]').click();
     await P2.locator('[data-help-article="jobs-customers-sites"]').waitFor({ timeout: 8000 });
-    R.ok('it opens the Jobs page of the guide, in the app (no reload)', P2.url().endsWith('/help/blaster/jobs-customers-sites'));
+    R.ok('the sidebar Help & feedback opens the guide at the Jobs page (no popover)', /\/help\/blaster\/jobs-customers-sites\?from=/.test(P2.url()) && (await P2.locator('[data-help-menu]').count()) === 0);
+    R.ok('the page carries About this screen for Jobs, Walkthrough and Send feedback', /Jobs/.test(await P2.locator('[data-coach-sheet] h2').innerText()) && (await P2.locator('[data-help-walkthrough]').count()) === 1 && (await P2.locator('[data-help-feedback]').count()) === 1);
     R.ok('signed in, the header offers Back to ShotLog', (await P2.locator('[data-help-to-app]').innerText()) === 'Back to ShotLog');
-    await P2.locator('[data-help-to-app]').click();
-    await P2.locator('[data-tour="home"], main').first().waitFor({ timeout: 10000 });
+    await P2.locator('[data-help-coach]').click();
+    await P2.waitForURL(/\/jobs$/, { timeout: 8000 });
+    R.ok('"Back to Jobs" returns to the screen (no reload)', P2.url().endsWith('/jobs'));
+    // phone: the header ? popover still has Help guide and About this screen → Read more
+    const c3 = await mkCtx(browser, { viewport: { width: 390, height: 844 } });
+    const P3 = await c3.newPage();
+    await signIn(P3, 'blaster');
+    await skipTours(P3);
+    await P3.goto(`${WEB}/jobs`);
+    await P3.locator('[data-customers-list]').waitFor({ timeout: 15000 });
+    await P3.locator('header [data-help-button]').click();
+    await P3.locator('[data-help-menu]').waitFor({ timeout: 3000 });
+    R.ok('phone: the ? menu has a Help guide entry', (await P3.locator('[data-help-guide]').count()) === 1);
+    await P3.locator('[data-help-coach]').click();
+    await P3.locator('[data-coach-sheet]').waitFor({ timeout: 3000 });
+    R.ok('phone: About this screen offers "Read more in the guide" for Jobs', /Read more in the guide: Jobs, customers and sites/.test(await P3.locator('[data-coach-sheet]').innerText()));
+    await P3.locator('[data-coach-guide]').click();
+    await P3.locator('[data-help-article="jobs-customers-sites"]').waitFor({ timeout: 8000 });
+    R.ok('it opens the Jobs page of the guide in the app', P3.url().includes('/help/blaster/jobs-customers-sites'));
+    await c3.close();
     await P2.goto(`${WEB}/settings`);
     await P2.locator('[data-settings-help-guide]').waitFor({ timeout: 10000 });
     await P2.locator('[data-settings-help-guide]').click();

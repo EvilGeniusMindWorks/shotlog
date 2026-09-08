@@ -178,8 +178,10 @@ async (page) => {
     const c2 = await mkCtx({ viewport: { width: 1280, height: 900 } });
     const P2 = await c2.newPage();
     await signIn(P2, 'mark@baystateblasting.com', 'dev-password-123');
+    // the sidebar row opens the guide (2026-09-08) with Send feedback on the page
     await P2.locator('aside [data-help-button]').click();
-    ok('sidebar ? menu offers Send feedback too', (await P2.locator('[data-help-feedback]').count()) === 1);
+    await P2.locator('[data-help-from]').waitFor({ timeout: 8000 });
+    ok('sidebar Help & feedback opens the guide with Send feedback on the page', (await P2.locator('[data-help-feedback]').count()) === 1);
     await P2.keyboard.press('Escape');
     await P2.goto(`${WEB}/admin`);
     await P2.waitForTimeout(2000);

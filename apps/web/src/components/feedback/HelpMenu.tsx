@@ -119,26 +119,31 @@ export function HelpMenu({
   const guidePage = helpForRoute(location.pathname, location.search);
   const sheet = coaching && coach ? <CoachSheet entry={coach} guide={guidePage ? { title: guidePage.title, to: helpPath(guidePage) } : null} onClose={() => setCoaching(false)} /> : null;
 
-  if (variant === 'sidebar')
+  // Wide screens (Matthew, 2026-09-08: "can it open like the other items?"):
+  // the sidebar row navigates to the guide, opened at this screen's page with
+  // the About-this-screen notes, Walkthrough and Send feedback on that page.
+  // The phone header keeps the compact ? popover.
+  if (variant === 'sidebar') {
+    const onGuide = location.pathname.startsWith('/help');
     return (
-      <div ref={ref} className="relative">
-        <button
-          className={cn(
-            'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-            open ? 'bg-white/10 text-white' : 'text-navy-200 hover:text-white hover:bg-white/5',
-          )}
-          aria-haspopup="menu"
-          aria-expanded={open}
-          data-help-button
-          onClick={() => setOpen((o) => !o)}
-        >
-          <CircleHelp className="h-5 w-5" />
-          Help &amp; feedback
-        </button>
-        {open && items}
-        {sheet}
-      </div>
+      <button
+        className={cn(
+          'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+          onGuide ? 'bg-white/10 text-white' : 'text-navy-200 hover:text-white hover:bg-white/5',
+        )}
+        data-help-button
+        aria-current={onGuide ? 'page' : undefined}
+        onClick={() => {
+          const p = helpForRoute(location.pathname, location.search);
+          const from = encodeURIComponent(location.pathname + location.search);
+          navigate(`${p ? helpPath(p) : '/help'}?from=${from}`);
+        }}
+      >
+        <CircleHelp className="h-5 w-5" />
+        Help &amp; feedback
+      </button>
     );
+  }
 
   return (
     <div ref={ref} className="relative">
