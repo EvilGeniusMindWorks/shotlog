@@ -106,3 +106,7 @@ Lessons from the first run: tell agents explicitly never to run other scripts (o
 - `setup.mjs --force --lean` prunes the copied dev roster to a dozen real-looking names; `seed-hierarchy.mts <cid> --lean-only` does it on an existing company.
 - Briefs for the snapshot chain: `dinis-enrol`, `dinis-after`, `sam-after`; the comparison: `judge-after`.
 - `63` — S9b: suggested meters are real values (checklist starting hours, Mark complete meter, Log a service); Mark complete signs inside the sheet ("Sign and complete"); screen tours do not auto-run after the first day. Precondition: `UPDATE "User" SET "toursDone"='[]' WHERE email='dinis@test.local'`.
+- `64` — compliance badges carry the "advisory" label while the USBM curve is unreviewed (`COMPLIANCE_ADVISORY`).
+- `65` — driller items: a time card's hours from the latest typed times (fast IN then OUT); the checklist's "Not done" state and the Repairs-needed hint.
+- `66` — stray drill logs: no second log on an accepted shot; an empty open log does not move the day's phase; the drill log page's ⋯ › Delete (as an admin).
+- `67` — site map location bar: coordinates in the forms people paste (decimal, N/W prefixed or suffixed, DMS); a new shot opens on the job's address (searched quietly); the structured fallback lists candidates by town; Save as the site's spot → the next shot at the site opens there on imagery; offline says "No signal". The geocoder is stubbed with `context.route` so nothing reaches OpenStreetMap.

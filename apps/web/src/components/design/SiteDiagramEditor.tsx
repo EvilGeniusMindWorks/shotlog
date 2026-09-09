@@ -10,6 +10,8 @@ import {
   type SiteDiagram,
 } from '@/lib/siteDiagram';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { parseCoordinates, searchAddress, formatLatLng, type GeoCandidate } from '@/lib/geo';
 
 type PinMode = 'pan' | 'blast' | 'structure' | 'measure';
 
@@ -48,6 +50,10 @@ interface Props {
   value: SiteDiagram;
   onChange: (d: SiteDiagram) => void;
   jobAddress?: string;
+  /** The site's remembered spot (site.geo) and a way to save one (site-map round, 2026-09-09) */
+  siteSpot?: { lat: number; lng: number } | null;
+  siteName?: string;
+  onSaveSiteSpot?: (spot: { lat: number; lng: number }) => void | Promise<void>;
   onUseClosest?: (distanceFeet: number, label: string) => void;
   /** Called with a rendered PNG of the map + annotations after edits settle */
   onSnapshot?: (blob: Blob) => void;
@@ -141,6 +147,9 @@ export function SiteDiagramEditor({
   value,
   onChange,
   jobAddress,
+  siteSpot,
+  siteName,
+  onSaveSiteSpot,
   onUseClosest,
   onSnapshot,
   cloneTargets,
@@ -152,6 +161,27 @@ export function SiteDiagramEditor({
   const pinsRef = useRef<L.LayerGroup | null>(null);
   const [mode, setMode] = useState<PinMode>('pan');
   const [busy, setBusy] = useState<string | null>(null);
+  // ── Location bar (site-map round): four doors to the spot ──
+  const [where, setWhere] = useState('');
+  const [candidates, setCandidates] = useState<GeoCandidate[] | null>(null);
+  const [fellBack, setFellBack] = useState(false);
+  const [showLatLng, setShowLatLng] = useState(false);
+  const [latText, setLatText] = useState('');
+  const [lngText, setLngText] = useState('');
+  const [gps, setGps] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
+  const gpsWatch = useRef<number | null>(null);
+  const [openedOn, setOpenedOn] = useState<string>(value.center ? "this shot's map" : '');
+  const [online, setOnline] = useState<boolean>(typeof navigator === 'undefined' ? true : navigator.onLine);
+  useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener('online', on);
+    window.addEventListener('offline', off);
+    return () => {
+      window.removeEventListener('online', on);
+      window.removeEventListener('offline', off);
+    };
+  }, []);
   // Transient measure tool: two taps → distance line (not persisted)
   const [measurePts, setMeasurePts] = useState<{ lat: number; lng: number }[]>([]);
   const measureRef = useRef(measurePts);
@@ -206,6 +236,41 @@ export function SiteDiagramEditor({
   };
   const mutateRef = useRef(mutate);
   mutateRef.current = mutate;
+  // Opening order (site-map round): this shot's saved centre → the site's
+  // spot → the job's address (searched once, quietly) → western MA. The site
+  // and the address can arrive a beat after the map mounts — run it again then.
+  const openedRef = useRef<'none' | 'fallback' | 'real'>('none');
+  const openOn = () => {
+    const map = mapRef.current;
+    if (!map || liveRef.current.center || openedRef.current === 'real') return;
+    if (siteSpot) {
+      map.setView([siteSpot.lat, siteSpot.lng], 17);
+      setOpenedOn("the site's spot");
+      if (liveRef.current.baseLayer !== 'satellite') mutateRef.current((cur) => ({ ...cur, baseLayer: 'satellite' }));
+      openedRef.current = 'real';
+      return;
+    }
+    if (jobAddress && navigator.onLine) {
+      openedRef.current = 'real';
+      setOpenedOn("the job's address…");
+      void searchAddress(jobAddress, { limit: 1 }).then(({ candidates: found }) => {
+        if (openedRef.current !== 'real' || liveRef.current.center) return;
+        if (found[0] && mapRef.current) {
+          mapRef.current.setView([found[0].lat, found[0].lng], 16);
+          setOpenedOn("the job's address");
+        } else setOpenedOn('western Massachusetts — the address was not found');
+      });
+      return;
+    }
+    openedRef.current = 'fallback';
+    setOpenedOn(jobAddress ? 'western Massachusetts — no signal to find the address' : 'western Massachusetts — the job has no address yet');
+  };
+  const openOnRef = useRef(openOn);
+  openOnRef.current = openOn;
+  useEffect(() => {
+    openOnRef.current();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [siteSpot?.lat, siteSpot?.lng, jobAddress]);
   scheduleSnapshotRef.current = scheduleSnapshot;
 
   // Create the map once
@@ -221,6 +286,7 @@ export function SiteDiagramEditor({
     pinsRef.current = L.layerGroup().addTo(map);
     // The container can be mid-layout when the map mounts — recalc once settled
     window.setTimeout(() => map.invalidateSize(), 100);
+    if (!v.center) openOnRef.current();
 
     map.on('click', (e: L.LeafletMouseEvent) => {
       const m = modeRef.current;
@@ -387,41 +453,186 @@ export function SiteDiagramEditor({
     mapRef.current?.setView([lat, lng], zoom);
   };
 
-  const findAddress = async () => {
-    if (!jobAddress) return;
-    setBusy('Searching address…');
+  /** The bar's Go: coordinates fly straight there; anything else is searched */
+  const go = async (text = where) => {
+    const q = text.trim();
+    if (!q) return;
+    const coords = parseCoordinates(q);
+    if (coords) {
+      flyTo(coords.lat, coords.lng, 17);
+      setCandidates(null);
+      setOpenedOn(`coordinates ${formatLatLng(coords)}`);
+      return;
+    }
+    if (!online) {
+      setBusy('No signal — search needs one. Coordinates, GPS and the saved spot still work.');
+      window.setTimeout(() => setBusy(null), 2500);
+      return;
+    }
+    setBusy('Searching…');
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(jobAddress)}`,
-        { headers: { Accept: 'application/json' } },
-      );
-      const results = (await res.json()) as { lat: string; lon: string }[];
-      if (results[0]) flyTo(parseFloat(results[0].lat), parseFloat(results[0].lon));
-      else setBusy('Address not found');
+      const { candidates: found, fellBack: fb } = await searchAddress(q);
+      setFellBack(fb);
+      if (found.length === 0) {
+        setCandidates([]);
+      } else if (found.length === 1) {
+        flyTo(found[0].lat, found[0].lng, 16);
+        setCandidates(null);
+        setOpenedOn(found[0].label);
+      } else {
+        setCandidates(found);
+      }
     } catch {
-      setBusy('Search failed — offline?');
+      setBusy('Search failed');
     } finally {
-      window.setTimeout(() => setBusy(null), 1500);
+      setBusy(null);
     }
   };
+  const pick = (c: GeoCandidate) => {
+    flyTo(c.lat, c.lng, 16);
+    setCandidates(null);
+    setOpenedOn(c.label);
+  };
+  const findAddress = () => {
+    if (!jobAddress) return;
+    setWhere(jobAddress);
+    void go(jobAddress);
+  };
+  const goToSiteSpot = () => {
+    if (!siteSpot) return;
+    flyTo(siteSpot.lat, siteSpot.lng, 17);
+    setOpenedOn("the site's spot");
+  };
 
+  /** My GPS: watch for up to ten seconds so the fix can improve; "Use this" takes it */
   const myLocation = () => {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      setBusy('This device has no location service');
+      window.setTimeout(() => setBusy(null), 2000);
+      return;
+    }
+    if (gpsWatch.current != null) navigator.geolocation.clearWatch(gpsWatch.current);
+    setGps(null);
     setBusy('Locating…');
-    navigator.geolocation.getCurrentPosition(
+    gpsWatch.current = navigator.geolocation.watchPosition(
       (pos) => {
-        flyTo(pos.coords.latitude, pos.coords.longitude);
         setBusy(null);
+        setGps({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
       },
-      () => setBusy('Location unavailable'),
-      { enableHighAccuracy: true, timeout: 10_000 },
+      () => {
+        setBusy('Location unavailable');
+        window.setTimeout(() => setBusy(null), 2000);
+      },
+      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 0 },
     );
+    window.setTimeout(() => {
+      if (gpsWatch.current != null) navigator.geolocation.clearWatch(gpsWatch.current);
+      gpsWatch.current = null;
+    }, 10_000);
+  };
+  const useGps = () => {
+    if (!gps) return;
+    flyTo(gps.lat, gps.lng, 17);
+    setOpenedOn(`my GPS (±${Math.round(gps.accuracy)} m)`);
+    setGps(null);
+  };
+  const goLatLng = () => {
+    const c = parseCoordinates(`${latText}, ${lngText}`);
+    if (!c) {
+      setBusy('Latitude and longitude as numbers, e.g. 42.4412 and -72.6321');
+      window.setTimeout(() => setBusy(null), 2500);
+      return;
+    }
+    flyTo(c.lat, c.lng, 17);
+    setOpenedOn(`coordinates ${formatLatLng(c)}`);
+    setShowLatLng(false);
+  };
+  const saveSiteSpot = async () => {
+    if (!onSaveSiteSpot) return;
+    const p = value.blastPin ?? value.center;
+    if (!p) return;
+    await onSaveSiteSpot({ lat: p.lat, lng: p.lng });
+    setBusy(`Saved as ${siteName ? `${siteName}'s` : "the site's"} spot — the next shot here opens on it`);
+    window.setTimeout(() => setBusy(null), 2500);
   };
 
   const closest = closestStructure(value);
 
   return (
     <div className="space-y-2">
+      {/* Location bar — four doors to the spot (site-map round, 2026-09-09) */}
+      <div className="rounded-lg border border-gray-200 bg-gray-50 p-2 space-y-1.5" data-location-bar>
+        <div className="flex items-center gap-2">
+          <Input
+            value={where}
+            placeholder="Address, place, or 42.4412, -72.6321"
+            aria-label="Where is the shot?"
+            data-location-input
+            onChange={(e) => setWhere(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') void go();
+            }}
+          />
+          <Button size="sm" onClick={() => void go()} data-location-go disabled={!where.trim()}>
+            Go
+          </Button>
+        </div>
+        {candidates && candidates.length > 0 && (
+          <div className="rounded-md border border-gray-200 bg-white divide-y divide-gray-100" data-location-candidates>
+            {fellBack && <p className="px-3 py-1 text-[11px] text-gray-500">Found by street and town (the free-text search had nothing)</p>}
+            {candidates.map((c, i) => (
+              <button key={i} type="button" className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50" onClick={() => pick(c)} data-location-candidate={i}>
+                {c.label}
+              </button>
+            ))}
+          </div>
+        )}
+        {candidates && candidates.length === 0 && (
+          <p className="text-xs text-gray-500" data-location-none>
+            Nothing found — try the town on its own, coordinates, or My GPS, then drag the blast pin.
+          </p>
+        )}
+        <div className="flex flex-wrap items-center gap-1.5">
+          {jobAddress && (
+            <Button variant="outline" size="sm" onClick={findAddress} title={jobAddress} data-location-job>
+              <Search className="h-4 w-4 mr-1" /> Job's address
+            </Button>
+          )}
+          {siteSpot && (
+            <Button variant="outline" size="sm" onClick={goToSiteSpot} data-location-site>
+              <MapPin className="h-4 w-4 mr-1" /> {siteName ? `${siteName}'s spot` : "Site's spot"}
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={myLocation} data-location-gps>
+            <Crosshair className="h-4 w-4 mr-1" /> My GPS
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setShowLatLng((v) => !v)} data-location-latlng>
+            Coordinates…
+          </Button>
+          {onSaveSiteSpot && (value.blastPin || value.center) && (
+            <Button variant="outline" size="sm" onClick={() => void saveSiteSpot()} data-location-save-spot>
+              Save as {siteName ? `${siteName}'s` : "the site's"} spot
+            </Button>
+          )}
+        </div>
+        {gps && (
+          <div className="flex items-center gap-2 text-xs text-gray-600" data-location-gps-fix>
+            GPS fix {formatLatLng(gps)} · ±{Math.round(gps.accuracy)} m{gps.accuracy > 30 ? ' — wait a moment for a better one, or' : ' —'}
+            <Button size="sm" className="h-7" onClick={useGps} data-location-gps-use>Use this</Button>
+          </div>
+        )}
+        {showLatLng && (
+          <div className="flex items-center gap-2" data-location-latlng-form>
+            <Input className="w-36" inputMode="decimal" placeholder="Latitude 42.4412" aria-label="Latitude" value={latText} onChange={(e) => setLatText(e.target.value)} data-location-lat />
+            <Input className="w-36" inputMode="decimal" placeholder="Longitude -72.6321" aria-label="Longitude" value={lngText} onChange={(e) => setLngText(e.target.value)} data-location-lng />
+            <Button size="sm" onClick={goLatLng} data-location-latlng-go>Go</Button>
+          </div>
+        )}
+        <p className="text-[11px] text-gray-500" data-location-opened>
+          {openedOn ? `Opened on ${openedOn}.` : ''}{!online ? ' No signal — search needs one; coordinates, GPS and the saved spot work.' : ''} Then drag the blast pin to the exact spot — the pin is what the record keeps.
+        </p>
+      </div>
+
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2">
         <Button
@@ -453,14 +664,6 @@ export function SiteDiagramEditor({
           <Ruler className="h-4 w-4 mr-1" /> Measure
         </Button>
         <div className="flex-1" />
-        {jobAddress && (
-          <Button variant="outline" size="sm" onClick={findAddress} title={jobAddress}>
-            <Search className="h-4 w-4 mr-1" /> Job Address
-          </Button>
-        )}
-        <Button variant="outline" size="sm" onClick={myLocation}>
-          <Crosshair className="h-4 w-4 mr-1" /> My Location
-        </Button>
         <Button
           variant="outline"
           size="sm"

@@ -222,3 +222,4 @@ page · customer/site/job create (new) · contacts · My Records · reference
   grid's Rows/Cols buttons and holes have no accessible names. **S9a batch 1:**
   filing pre-flight (red blocks on an unsigned shot; amber files with notes).
   Batch 3: off-plan badge, seismo Edit + distance line, grid names.
+- **Site map location (2026-09-09):** Matthew's three complaints — only the job's address, "not found" on a valid rural address, no way to use GPS or coordinates — become a location bar with four doors and a site that remembers its spot (decisions.md, plan artifact cec017d7).

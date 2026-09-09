@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { showToast } from '@/components/ui/undo-toast';
+import { can } from '@/lib/perms';
 import { AdvisoryTag } from '@/lib/complianceAdvisory';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Check, Grid3x3, Layers3, Map as MapIcon, Ruler, Send } from 'lucide-react';
@@ -413,6 +415,17 @@ function DesignPlanInner({
             onChange={handleSiteChange}
             jobAddress={
               ctx ? [ctx.address, ctx.city, ctx.state].filter(Boolean).join(', ') : undefined
+            }
+            siteSpot={ctx?.site?.geo ?? null}
+            siteName={ctx?.site?.name}
+            onSaveSiteSpot={
+              ctx?.site && can('sites', 'PATCH')
+                ? async (spot) => {
+                    // the slot the equipment locator already uses; the next shot here opens on it
+                    await db.sites.update(ctx.site!.id, { geo: spot, updatedAt: nowISO() });
+                    showToast(`Saved as ${ctx.site!.name}'s spot`);
+                  }
+                : undefined
             }
             onUseClosest={useClosestForCompliance}
             onSnapshot={saveSnapshot}
