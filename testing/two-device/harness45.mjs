@@ -136,6 +136,18 @@ async (page) => {
     await P2.waitForFunction((s) => document.querySelector('[data-log-end-meter]')?.getAttribute('placeholder') === s, String(start), { timeout: 5000 }).catch(() => undefined);
     ok(`sign-complete asks for the rig's end-of-day meter, prefilled from the ledger (${start})`, (await P2.locator('[data-log-end-meter]').getAttribute('placeholder')) === String(start));
     await P2.locator('[data-log-end-meter]').fill(String(end));
+    // S9b: an unsigned log signs inside the sheet before Complete enables
+    if (await P2.locator('[data-log-complete-signature]').count()) {
+      await P2.locator('[data-log-complete-signature]').getByRole('button', { name: /Tap to sign/ }).click();
+      const canvas = P2.locator('canvas').first();
+      await canvas.waitFor({ timeout: 5000 });
+      const cb = await canvas.boundingBox();
+      await P2.mouse.move(cb.x + 30, cb.y + 40); await P2.mouse.down();
+      for (let i = 1; i <= 20; i++) await P2.mouse.move(cb.x + 30 + i * 8, cb.y + 40 + Math.sin(i / 2) * 15);
+      await P2.mouse.up();
+      await P2.getByRole('button', { name: /Save Signature/ }).click().catch(() => undefined);
+      await P2.waitForFunction(() => { const b = document.querySelector('[data-log-complete-confirm]'); return b && !b.disabled; }, null, { timeout: 8000 }).catch(() => undefined);
+    }
     await P2.locator('[data-log-complete-confirm]').click();
     await P2.waitForTimeout(1000);
     const after = await P2.evaluate(async ({ logId, rigId }) => {

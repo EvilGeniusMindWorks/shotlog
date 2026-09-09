@@ -68,7 +68,8 @@ const STATE_STYLE: Record<CheckState, string> = {
   na: 'bg-gray-100 border-gray-300 text-gray-500',
   skip: 'bg-orange-50 border-orange-300 text-safety-orange',
 };
-const STATE_LABEL: Record<CheckState, string> = { ok: '✓', na: 'N/A', skip: '—' };
+// S9b follow-up: the evaluation's drillers guessed what "—" meant
+const STATE_LABEL: Record<CheckState, string> = { ok: '✓', na: 'N/A', skip: 'Not done' };
 
 function CheckGrid({
   keys,
@@ -80,6 +81,10 @@ function CheckGrid({
   onChange: (key: string, state: CheckState) => void;
 }) {
   return (
+    <div className="space-y-1.5">
+    <p className="text-xs text-gray-500" data-chk-hint>
+      Tap an item to mark it <b>N/A</b> or <b>Not done</b>. Found a fault? Say it under <b>Repairs needed</b> below — that is what opens a shop ticket.
+    </p>
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
       {keys.map((key) => {
         const state = values[key] ?? 'skip';
@@ -91,10 +96,11 @@ function CheckGrid({
             onClick={() => onChange(key, NEXT_STATE[state])}
           >
             <span>{key}</span>
-            <span className="font-bold">{STATE_LABEL[state]}</span>
+            <span className="font-bold" data-chk-state={state}>{STATE_LABEL[state]}</span>
           </button>
         );
       })}
+    </div>
     </div>
   );
 }

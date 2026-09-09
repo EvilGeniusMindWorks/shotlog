@@ -2,7 +2,7 @@
 // their OWN card (mine first, one tap); entering for a NO-LOGIN roster
 // person is allowed, attributed, and gently discouraged. Approvers see
 // approve/pull-back on each card.
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Clock, PenLine, Plus, Trash2 } from 'lucide-react';
 import { db, deleteWithTombstone, useLiveQuery } from '@/db';
 import type { BlastDay, TimeCard } from '@/db/schema';
@@ -162,11 +162,21 @@ export function TimeCardRow({ card, editable }: { card: TimeCard; editable: bool
   const update = (changes: Partial<TimeCard>) =>
     db.timeCards.update(card.id, { ...changes, updatedAt: nowISO() });
 
+  // S9b follow-up (2026-09-09): a second edit before the first write had
+  // round-tripped computed ST against the OLD value — the re-run's driller got
+  // 12.8 h for 06:00–15:00 because the suggested 02:10 IN was still "current".
+  // The latest typed values live in a ref; the record catches up.
+  const latest = useRef({ timeIn: card.timeIn, timeOut: card.timeOut, overtime: card.overtime });
+  useEffect(() => {
+    latest.current = { timeIn: card.timeIn, timeOut: card.timeOut, overtime: card.overtime };
+  }, [card.timeIn, card.timeOut, card.overtime]);
   const setTimes = (field: 'timeIn' | 'timeOut', value: string) => {
-    const timeIn = field === 'timeIn' ? value : card.timeIn;
-    const timeOut = field === 'timeOut' ? value : card.timeOut;
-    const changes: Partial<TimeCard> = { [field]: value };
-    if (timeIn && timeOut) changes.straightTime = calcST(timeIn, timeOut, card.overtime);
+    latest.current = { ...latest.current, [field]: value };
+    const { timeIn, timeOut, overtime } = latest.current;
+    // write BOTH times every time: two quick updates to the same record can
+    // otherwise race in the store and the first field is lost
+    const changes: Partial<TimeCard> = { timeIn, timeOut };
+    if (timeIn && timeOut) changes.straightTime = Math.round(calcST(timeIn, timeOut, overtime) * 10) / 10;
     void update(changes);
   };
 
