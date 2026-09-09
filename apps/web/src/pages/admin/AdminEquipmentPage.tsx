@@ -48,16 +48,21 @@ export const EQUIPMENT_GROUPS: { id: string; label: string; cats: EquipmentCateg
   { id: 'blast', label: 'Blast gear', cats: ['blast_mats', 'seismograph', 'mats_seismo'] },
 ];
 const LEGACY_CATS: EquipmentCategory[] = ['vehicle', 'equip_drill', 'mats_seismo'];
-type FilterKey = 'active' | 'in_shop' | 'retired' | 'repair' | 'oos' | 'due';
+type FilterKey = 'unavailable' | 'active' | 'in_shop' | 'retired' | 'repair' | 'oos' | 'due';
+// S9a: "what's down?" is one question — Unavailable, In shop, Out of service
+// and Repair open OR together (the evaluation's mechanics picked In shop +
+// Out of service and got nothing); Active / Retired are the status group;
+// Due narrows whatever is shown.
 const FILTERS: { key: FilterKey; label: string }[] = [
-  { key: 'active', label: 'Active' },
+  { key: 'unavailable', label: 'Unavailable' },
   { key: 'in_shop', label: 'In shop' },
-  { key: 'retired', label: 'Retired' },
-  { key: 'repair', label: 'Repair open' },
   { key: 'oos', label: 'Out of service' },
+  { key: 'repair', label: 'Repair open' },
+  { key: 'active', label: 'Active' },
+  { key: 'retired', label: 'Retired' },
   { key: 'due', label: 'Due ≤30 d' },
 ];
-const NO_FILTERS: Record<FilterKey, boolean> = { active: false, in_shop: false, retired: false, repair: false, oos: false, due: false };
+const NO_FILTERS: Record<FilterKey, boolean> = { unavailable: false, active: false, in_shop: false, retired: false, repair: false, oos: false, due: false };
 const TAB_KEY = 'shotlog-equipment-tab';
 export const categoryLabel = (c: EquipmentCategory) => EQUIPMENT_CATEGORIES.find((x) => x.value === c)?.label ?? c;
 export const groupOf = (c: EquipmentCategory) => EQUIPMENT_GROUPS.find((g) => g.cats.includes(c))?.id ?? 'machines';
@@ -162,11 +167,23 @@ export function AdminEquipmentPage() {
     if (!e.isActive) return false;
     if (searching && ![e.assetNumber, e.description, e.make, e.model, e.plate, e.serialNumber].some((v) => v?.toLowerCase().includes(needle))) return false;
     const st: EquipmentStatus = e.status ?? 'active';
-    const picked = (['active', 'in_shop', 'retired'] as const).filter((k) => filters[k]);
-    const allowed: EquipmentStatus[] = picked.length ? picked : ['active', 'in_shop'];
-    if (!allowed.includes(st)) return false;
-    if (filters.repair && !ticketed.has(e.id)) return false;
-    if (filters.oos && !ticketed.get(e.id)) return false;
+    const oos = Boolean(ticketed.get(e.id));
+    const inShop = st === 'in_shop';
+    // attention group — OR
+    const attention = (['unavailable', 'in_shop', 'oos', 'repair'] as const).filter((k) => filters[k]);
+    if (attention.length) {
+      const hit =
+        (filters.unavailable && (inShop || oos)) ||
+        (filters.in_shop && inShop) ||
+        (filters.oos && oos) ||
+        (filters.repair && ticketed.has(e.id));
+      if (!hit) return false;
+    }
+    // status group — OR; nothing picked shows the working fleet (active + in shop)
+    const picked = (['active', 'retired'] as const).filter((k) => filters[k]);
+    if (picked.length) {
+      if (!picked.includes(st as 'active' | 'retired') && !(attention.length && inShop)) return false;
+    } else if (st === 'retired') return false;
     if (filters.due) {
       const d = dueDays(e);
       if (d === null || d > 30) return false;

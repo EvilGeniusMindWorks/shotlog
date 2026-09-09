@@ -976,3 +976,21 @@ ALERT_TO (+ LOADTEST_EMAIL · LOADTEST_PASSWORD), a probe user in People.
    without R2 locally); the seismo nudges still count photos.
 
 **Sync load, part two (2026-09-08) — ✅ SHIPPED (harness59 5/5):** the images that stay inside records are made small — the site-sketch snapshot is capped at 1280 px / JPEG 0.7 (`lib/imageCompress.ts`, ~10 KB instead of ~35, and it is re-sent on every shot edit) and signatures are cropped to the ink, downscaled to ≤600 px and flattened to two colours (~3 KB instead of ~15). Existing records are not rewritten (0.6 MB, fades as old days age out). Next lever when history grows: partial sync with Sync Streams (reference + recent days for everyone; an archive stream for office/admin), scheduled after the beta invites.
+
+## Round S9a — the persona evaluation's ten (2026-09-09; plan artifact 566d41aa; report 54adafa1)
+
+Eight agents played Barry / Dinis / Sam / Evette+Tony through one day, with and without the help guide (docs/decisions.md, testing/eval). The guide gave arm A an edge on 2 of 38 tasks; eleven findings hit both arms; Matthew: Build ×10, Go.
+
+| # | Finding | Fix | Batch | Status |
+|---|---|---|---|---|
+| 1 | Repair ticket cannot be resolved (regression since S8b) | `/tickets/:id` screen, three doors, Mark resolved restores Active; guide page corrected | 1 | ✅ shipped 2026-09-09 (harness60 22/22) |
+| 2 | Day files with the shot unsigned, signature then locked | Filing pre-flight: red blocks, amber files with notes the office queue shows | 1 | ✅ shipped (harness60) |
+| 3 | Phone bottom sheets behind the nav (Mark complete, My hours) | every sheet overlay z-60 | 1 | ✅ shipped (harness60) |
+| 6 | No place for end-of-day rig hours | reachable Mark complete field + the daily report's rig row door | 1 | ✅ shipped (harness60) |
+| 4 | Send Back via native prompt(); no reason on the returned day | ask sheet (11 confirm() + 1 prompt() replaced), reason required, `sendBackBy/At`, day banner | 2 | ✅ shipped 2026-09-09 (harness61 13/13) |
+| 5 | Read-only role's edit silently reverts under a green chip | ReadOnlyWrap (disabled fieldset + who-can line); discarded writes toast | 2 | ✅ shipped (harness61) |
+| 7 | Office shown Approve/Send Back it cannot use; supervisor cannot invite | Approvals gated on approve_days with a line; logins follow manage_people | 2 | ✅ shipped (harness61) |
+| 8 | Fleet chips AND — "what's down?" returns nothing | Unavailable · In shop · Out of service · Repair open OR together | 3 | ✅ built (harness62) |
+| 9 | Plan grid buttons/holes unnamed; how to leave a hole out unclear | aria names + keyboard on both grid editors; footer copy | 3 | ✅ built (harness62) |
+| 10 | Off-plan holes invisible; seismo reading not editable, distance elsewhere | off-plan count in the header; Edit on readings; distance line with link | 3 | ✅ built (harness62) |
+| — | Harness: coordinator, numbered refs, dialogs surfaced, snapshot seed, template company | next | 3 | ⏳ |

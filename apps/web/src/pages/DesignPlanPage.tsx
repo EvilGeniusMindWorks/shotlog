@@ -499,7 +499,7 @@ function DesignPlanInner({
                   </span>
                 </>
               ) : (
-                <span className="text-gray-500">Set a depth and paint the pattern — holes appear as you go.</span>
+                <span className="text-gray-500">Set a depth and paint the pattern — holes appear as you go. To leave a position out, pick ⌀ No hole, then tap it.</span>
               )}
             </p>
             {planHoles && planHoles.length > 0 && (

@@ -12,7 +12,7 @@ import { formatDate, nowISO } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { PatternGrid } from '@/components/design/PatternGrid';
 import { getPlanHoles, planToDiagram } from '@/hooks/useDrillPlans';
-import { hasDrillPlan, parseDiagram, type ShotDiagram } from '@/lib/shotDiagram';
+import { hasDrillPlan, materializeDrillPlan, parseDiagram, type ShotDiagram } from '@/lib/shotDiagram';
 
 export const DRILLER_COLORS = ['#2d4a75', '#b7791f', '#2f855a', '#805ad5', '#c05621', '#319795'];
 
@@ -71,7 +71,7 @@ export function MergedDrillingView({
     );
     // S8a follow-up: the review draws the pattern in the plan's own shape —
     // one grid per shot that has a plan (standalone plan or the shot's own)
-    const patterns: { shot: Shot; diagram: ShotDiagram; fallbackDepth: number; holes: MergedHole[] }[] = [];
+    const patterns: { shot: Shot; diagram: ShotDiagram; fallbackDepth: number; holes: MergedHole[]; extras: MergedHole[] }[] = [];
     for (const shot of shots) {
       let diagram: ShotDiagram | null = null;
       if (shot.drillPlanId) {
@@ -84,7 +84,12 @@ export function MergedDrillingView({
       }
       if (!diagram) continue;
       const mine = merged.filter((m) => m.log.shotId === shot.id || (shot.drillPlanId && m.log.drillPlanId === shot.drillPlanId));
-      patterns.push({ shot, diagram, fallbackDepth: shot.totals.avgDrillDepth || 0, holes: mine });
+      const fallbackDepth = shot.totals.avgDrillDepth || 0;
+      // S9a: holes on this shot's logs whose number is not on the plan — the
+      // evaluation's blasters found these only by counting (they were drawn nowhere)
+      const planNumbers = new Set(materializeDrillPlan(diagram, fallbackDepth).map((h) => String(h.n)));
+      const extras = mine.filter((m) => !planNumbers.has(m.hole.holeNumber.trim()));
+      patterns.push({ shot, diagram, fallbackDepth, holes: mine, extras });
     }
     const placed = new Set(patterns.flatMap((p) => p.holes.map((m) => m.hole.id)));
     return { logs, drillers: [...drillers.values()], merged, patterns, unplaced: merged.filter((m) => !placed.has(m.hole.id)) };
@@ -105,6 +110,7 @@ export function MergedDrillingView({
   const drilledCount = merged.filter((m) => !m.hole.skipped).length;
   const skippedCount = merged.length - drilledCount;
   const hazards = merged.filter((m) => m.hole.conditions.length > 0 && !m.hole.skipped);
+  const offPlanCount = unplaced.length + patterns.reduce((n, p) => n + p.extras.length, 0);
   const completable = logs.filter(
     (l) => l.status === 'complete' && canDrillLogTransition('complete', 'accepted'),
   );
@@ -140,8 +146,10 @@ export function MergedDrillingView({
             <span className="text-safety-orange"> · {hazards.length} hazards</span>
           )}
           {skippedCount > 0 && <span> · {skippedCount} skipped</span>}
+          {/* S9a: both evaluation blasters found the off-plan hole only by counting */}
+          {offPlanCount > 0 && <span className="text-navy" data-off-plan-count={offPlanCount}> · {offPlanCount} off-plan</span>}
         </p>
-        {patterns.map(({ shot, diagram, fallbackDepth, holes }) => {
+        {patterns.map(({ shot, diagram, fallbackDepth, holes, extras }) => {
           const byNumber = new Map(holes.map((m) => [m.hole.holeNumber.trim(), m]));
           return (
             <div key={shot.id} className="mb-2">
@@ -155,6 +163,13 @@ export function MergedDrillingView({
                   const m = byNumber.get(String(p.n));
                   if (m) setSelected(selected?.hole.id === m.hole.id ? null : m);
                 }}
+                extras={extras.map((m) => ({
+                  label: `H-${m.hole.holeNumber}`,
+                  title: `H-${m.hole.holeNumber} · ${m.log.drillerName} · ${m.hole.skipped ? 'skipped' : `${m.hole.actualDepth} ft`} — not on the plan`,
+                  className: (m.hole.skipped ? 'border-2 border-dashed border-gray-400 ' : 'text-white ') + (selected?.hole.id === m.hole.id ? 'ring-2 ring-navy ring-offset-1' : ''),
+                  style: m.hole.skipped ? undefined : { background: m.hole.conditions.length > 0 ? '#dd6b20' : m.color },
+                  onTap: () => setSelected(selected?.hole.id === m.hole.id ? null : m),
+                }))}
               />
             </div>
           );

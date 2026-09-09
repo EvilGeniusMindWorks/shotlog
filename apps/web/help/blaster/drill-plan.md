@@ -12,7 +12,7 @@ The drill plan is the pattern: rows and columns of holes with their depths. You 
 
 1. From the day, tap **Continue** (*Build the drill plan*) or the Drill plan phase.
 2. Set **rows × columns** and the **default depth**. The grid draws itself.
-3. Tap a hole to change its depth or mark the position unused (a gap in the pattern keeps its shape).
+3. Type a depth (and kick), then tap holes to paint them. To leave a position out, pick **⌀ No hole** first, then tap it — a gap keeps the pattern's shape. Row handles (R1, R2…) paint a whole row.
 4. When the footer reads **Plan ready**, tap **Send to drillers**.
 
 ![The drill plan](drill-plan.png)

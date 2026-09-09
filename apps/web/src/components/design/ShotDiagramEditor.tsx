@@ -374,7 +374,7 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
                     brush()?.depth !== undefined ? `${brush()!.depth} ft` : '',
                     brush()?.angle !== undefined ? `${brush()!.angle}°` : '',
                   ].filter(Boolean).join(' · ')} — tap a painted hole again to clear it.`
-                : 'Type a brush depth/angle above, then tap holes to paint the exceptions. With an empty brush, tapping erases. Holes without any depth are treated as not drilled.'}
+                : 'Type a depth or angle above, then tap holes to paint them. To leave a position out, pick ⌀ No hole first, then tap it. With nothing typed, tapping clears a painted hole.'}
           </p>
         </div>
       )}
@@ -523,7 +523,8 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
           {/* Row-paint handles (plan mode): one tap paints the whole row */}
           {planMode &&
             Array.from({ length: rows }, (_, r) => (
-              <g key={`row-${r}`} onClick={() => paintRow(r)} className="cursor-pointer">
+              <g key={`row-${r}`} onClick={() => paintRow(r)} className="cursor-pointer" role="button" tabIndex={0} aria-label={`Row ${r + 1} — paint the row`} data-grid-row={r + 1}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); paintRow(r); } }}>
                 <rect
                   x={2}
                   y={PAD + r * HOLE_SPACING + HOLE_SPACING / 2 - 11}
@@ -557,7 +558,9 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
               const matchesBrush = sameOverride(plan.overrides[idx], brush());
               const angled = !unused && effAngle(idx) !== 0;
               return (
-                <g key={idx} onClick={() => tapHole(idx)} className="cursor-pointer">
+                <g key={idx} onClick={() => tapHole(idx)} className="cursor-pointer" role="button" tabIndex={0}
+                  aria-label={`Hole ${idx + 1}${unused ? ' — left out' : ` · ${+depth.toFixed(1)} ft`}`} data-grid-hole={idx + 1}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tapHole(idx); } }}>
                   <circle cx={cx(idx)} cy={cy(idx)} r={HOLE_SPACING / 2} fill="transparent" />
                   <circle
                     cx={cx(idx)}
@@ -625,7 +628,9 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
               );
             }
             return (
-              <g key={idx} onClick={() => tapHole(idx)} className="cursor-pointer">
+              <g key={idx} onClick={() => tapHole(idx)} className="cursor-pointer" role="button" tabIndex={0}
+                aria-label={`Hole ${idx + 1}`} data-timing-hole={idx + 1}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tapHole(idx); } }}>
                 <circle cx={cx(idx)} cy={cy(idx)} r={HOLE_SPACING / 2} fill="transparent" />
                 <circle
                   cx={cx(idx)}
@@ -705,21 +710,21 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
       <div className="flex items-center gap-4 text-sm text-gray-600">
         <span className="flex items-center gap-1">
           Rows:
-          <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => resize('rows', -1)}>
+          <Button variant="outline" size="icon" className="h-9 w-9" aria-label="Fewer rows" data-grid-rows-minus onClick={() => resize('rows', -1)}>
             <Minus className="h-4 w-4" />
           </Button>
           <span className="font-mono font-semibold w-6 text-center">{rows}</span>
-          <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => resize('rows', 1)}>
+          <Button variant="outline" size="icon" className="h-9 w-9" aria-label="More rows" data-grid-rows-plus onClick={() => resize('rows', 1)}>
             <Plus className="h-4 w-4" />
           </Button>
         </span>
         <span className="flex items-center gap-1">
           Cols:
-          <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => resize('cols', -1)}>
+          <Button variant="outline" size="icon" className="h-9 w-9" aria-label="Fewer columns" data-grid-cols-minus onClick={() => resize('cols', -1)}>
             <Minus className="h-4 w-4" />
           </Button>
           <span className="font-mono font-semibold w-6 text-center">{cols}</span>
-          <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => resize('cols', 1)}>
+          <Button variant="outline" size="icon" className="h-9 w-9" aria-label="More columns" data-grid-cols-plus onClick={() => resize('cols', 1)}>
             <Plus className="h-4 w-4" />
           </Button>
         </span>

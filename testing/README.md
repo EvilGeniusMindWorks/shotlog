@@ -91,3 +91,10 @@ Agents play crew roles through a real browser, one isolated context per "device"
 - Outputs in `testing/eval/out/`: `<arm>-<who>.md` records, `<session>.log.jsonl` tap logs, `run-notes.md` (coordinator's interventions and artifacts), `verified.md` (code checks), `judge.md`.
 
 Lessons from the first run: tell agents explicitly never to run other scripts (one re-ran setup and wiped the run); keep screenshots at 1:1; make text matching tolerant of curly quotes and dashes; enrol the driller before the blaster sends the plan; invited people need roster rows.
+
+## Round S9a harnesses (Sep 9 2026)
+
+- `60` — the evaluation's blockers: ticket resolve from three doors; phone bottom sheets above the nav (Mark complete); the rig meter's two doors; filing pre-flight (red blocks, amber files with notes the office sees). Needs the local API (checklist → ticket, submit → PDFs).
+- `61` — the office: Send Back on the ask sheet with a required reason, `sendBackBy`/`At` stamped by the server (needs the local API), the day banner and home strip; the Approvals page gated for the office; customer cards truly read-only; a discarded write toasts; the ask sheet in place of native confirm().
+- `62` — fleet chips OR within "what's down?"; the design grid's names and keyboard; off-plan count in the drilling review; seismo reading Edit and the distance line. Picks a job with no day today (a stray day makes the harness day a "second copy" and hides the drilling view behind the merge strip).
+- Known stale: `45` §"Open that day" join step errors before and after S9a (pre-existing).

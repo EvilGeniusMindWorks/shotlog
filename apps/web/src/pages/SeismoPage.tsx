@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ask } from '@/components/ui/ask-sheet';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Camera, Loader2, Plus, ScanText, Trash2 } from 'lucide-react';
+import { ArrowLeft, Camera, Loader2, Pencil, Plus, ScanText, Trash2 } from 'lucide-react';
 import { useLiveQuery, db, deleteWithTombstone } from '@/db';
 import { generateId, nowISO } from '@/lib/utils';
 import {
@@ -48,6 +48,8 @@ export function SeismoPage() {
       [shotId],
     ) ?? [];
   const [adding, setAdding] = useState(false);
+  // S9a: saved readings can be edited in place (both evaluation blasters had to delete and re-enter)
+  const [editing, setEditing] = useState<SeismoReading | null>(null);
 
   if (!shot || !id) {
     return <div className="p-4 text-center text-gray-500">Loading...</div>;
@@ -81,7 +83,7 @@ export function SeismoPage() {
 
       <div className="p-4 space-y-3">
         {readings.map((reading) => (
-          <ReadingCard key={reading.id} reading={reading} shot={shot} />
+          <ReadingCard key={reading.id} reading={reading} shot={shot} onEdit={() => { setEditing(reading); setAdding(false); }} />
         ))}
 
         {readings.length === 0 && !adding && (
@@ -90,13 +92,16 @@ export function SeismoPage() {
           </p>
         )}
 
-        {adding ? (
+        {adding || editing ? (
           <AddReadingForm
+            key={editing?.id ?? 'new'}
             shotId={shot.id}
-            graphNumber={readings.length + 1}
+            graphNumber={editing?.graphNumber ?? readings.length + 1}
             structureDistance={shot.designPlan.closestStructureDistance}
             defaultLocation={shot.designPlan.closestStructureLocation}
-            onDone={() => setAdding(false)}
+            initial={editing ?? undefined}
+            designTo={`/blast-day/${id}/design/${shot.id}`}
+            onDone={() => { setAdding(false); setEditing(null); }}
           />
         ) : (
           <Button variant="safety" size="lg" className="w-full" onClick={() => setAdding(true)}>
@@ -108,7 +113,7 @@ export function SeismoPage() {
   );
 }
 
-function ReadingCard({ reading, shot }: { reading: SeismoReading; shot: Shot }) {
+function ReadingCard({ reading, shot, onEdit }: { reading: SeismoReading; shot: Shot; onEdit: () => void }) {
   const [imgUrl, setImgUrl] = useState<string | null>(null);
   const [showWhy, setShowWhy] = useState(false);
   // The printout as an attachment (2026-09-08): thumb from the record,
@@ -212,9 +217,13 @@ function ReadingCard({ reading, shot }: { reading: SeismoReading; shot: Shot }) 
               <p className="text-xs text-gray-500 mt-1 truncate">{reading.location}</p>
             )}
           </div>
+          <Button variant="ghost" size="icon" aria-label="Edit reading" title="Edit reading" data-reading-edit onClick={onEdit}>
+            <Pencil className="h-4 w-4 text-gray-400" />
+          </Button>
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Delete reading"
             onClick={() => {
               void ask({ title: `Delete graph ${reading.graphNumber}?`, confirmLabel: 'Delete', danger: true }).then((ok) => {
                 if (ok) void deleteWithTombstone('seismoReadings', reading.id);
@@ -261,23 +270,31 @@ function AddReadingForm({
   graphNumber,
   structureDistance,
   defaultLocation,
+  initial,
+  designTo,
   onDone,
 }: {
   shotId: string;
   graphNumber: number;
   structureDistance: number;
   defaultLocation: string;
+  /** S9a: editing an existing reading — the same form, prefilled */
+  initial?: SeismoReading;
+  /** where the structure distance lives (Design plan › Compliance) */
+  designTo: string;
   onDone: () => void;
 }) {
+  const navigate = useNavigate();
+  const str = (n: number | undefined) => (n ? String(n) : '');
   const [form, setForm] = useState({
-    seismographId: '',
-    ppvTran: '',
-    ppvVert: '',
-    ppvLong: '',
-    frequency: '',
-    airOverpressure: '',
-    operator: '',
-    location: defaultLocation,
+    seismographId: initial?.seismographId ?? '',
+    ppvTran: str(initial?.ppvTran),
+    ppvVert: str(initial?.ppvVert),
+    ppvLong: str(initial?.ppvLong),
+    frequency: str(initial?.frequency),
+    airOverpressure: str(initial?.airOverpressure),
+    operator: initial?.operator ?? '',
+    location: initial?.location ?? defaultLocation,
   });
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
@@ -356,6 +373,28 @@ function AddReadingForm({
   const save = async () => {
     if (!canSave) return;
     const now = nowISO();
+    if (initial) {
+      // edit in place — the printout and the graph number stay
+      await db.seismoReadings.update(initial.id, {
+        seismographId: form.seismographId,
+        ppvTran: num(form.ppvTran),
+        ppvVert: num(form.ppvVert),
+        ppvLong: num(form.ppvLong),
+        frequency: freq,
+        airOverpressure: num(form.airOverpressure),
+        operator: form.operator,
+        location: form.location,
+        complianceStatus: compliance?.overall ?? 'compliant',
+        ...(extracted ? { peakVectorSum: extracted.peakVectorSum ?? initial.peakVectorSum } : {}),
+        updatedAt: now,
+      });
+      if (photo) {
+        const [attachmentId] = await addAttachmentFiles(initial.id, 'seismo_reading', [photo], 'photo');
+        if (attachmentId) await db.seismoReadings.update(initial.id, { printoutAttachmentId: attachmentId, updatedAt: nowISO() });
+      }
+      onDone();
+      return;
+    }
     const reading: SeismoReading = {
       id: generateId(),
       shotId,
@@ -398,7 +437,14 @@ function AddReadingForm({
   return (
     <Card className="border-navy">
       <CardHeader>
-        <CardTitle className="text-base">Add Reading — Graph {graphNumber}</CardTitle>
+        <CardTitle className="text-base">{initial ? 'Edit' : 'Add'} Reading — Graph {graphNumber}</CardTitle>
+        {/* S9a: the distance is used here but lives on the design plan — say so, and link */}
+        <p className="text-xs text-gray-500" data-reading-distance={structureDistance > 0 ? structureDistance : 'none'}>
+          Distance to nearest structure: <b>{structureDistance > 0 ? `${structureDistance} ft` : 'not set'}</b> — from Design plan › Compliance ·{' '}
+          <button type="button" className="underline text-navy" onClick={() => navigate(designTo)} data-reading-distance-change>
+            {structureDistance > 0 ? 'change' : 'set it'}
+          </button>
+        </p>
       </CardHeader>
       <CardContent className="space-y-3">
         {/* Printout capture */}

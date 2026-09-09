@@ -10,7 +10,7 @@ When a driller signs a log complete, the day's Drilling phase reads **ready to r
 
 ## What you see
 
-The pattern, in its own shape, one grid per shot. Every hole shows who drilled it (initials), and holes the driller flagged — wet, hazard, skipped — are coloured. Holes the driller added that the plan never had sit below as **off-plan**.
+The pattern, in its own shape, one grid per shot. Every hole shows who drilled it (initials), and holes the driller flagged — wet, hazard, skipped — are coloured. Holes the driller added that the plan never had sit below as **off-plan**, and the header counts them beside hazards and skipped — "24 holes · 1 driller · 1 hazards · 1 skipped · 1 off-plan".
 
 ## Accepting
 

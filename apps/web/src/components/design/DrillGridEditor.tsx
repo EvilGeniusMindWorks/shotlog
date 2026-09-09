@@ -189,7 +189,7 @@ export function DrillGridEditor({
                 ? 'Tap holes (or a row handle) to mark them NOT drilled. Tap again to restore.'
                 : b
                   ? 'Tap holes (or a row handle) to paint — tap a painted hole again to clear it.'
-                  : 'Type a brush depth (and kick) above, then tap holes to paint exceptions. Empty brush erases.'}
+                  : 'Type a depth (and kick) above, then tap holes to paint them. To leave a position out, pick ⌀ No hole first, then tap it. With nothing typed, tapping clears a painted hole.'}
             </p>
           )}
         </div>
@@ -199,7 +199,8 @@ export function DrillGridEditor({
         <svg width={width} height={height} className="touch-manipulation">
           {!disabled &&
             Array.from({ length: rows }, (_, r) => (
-              <g key={`row-${r}`} onClick={() => paintRow(r)} className="cursor-pointer">
+              <g key={`row-${r}`} onClick={() => paintRow(r)} className="cursor-pointer" role="button" tabIndex={0} aria-label={`Row ${r + 1} — paint the row`} data-grid-row={r + 1}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); paintRow(r); } }}>
                 <rect x={2} y={PAD + r * SPACING + SPACING / 2 - 11} width={20} height={22} rx={5}
                   fill="#fff7ed" stroke="#fdba74" />
                 <text x={12} y={PAD + r * SPACING + SPACING / 2 + 4} textAnchor="middle"
@@ -215,7 +216,10 @@ export function DrillGridEditor({
             const hasOverride = overrides[idx] !== undefined && !unused;
             const matchesBrush = sameOverride(overrides[idx], b);
             return (
-              <g key={idx} onClick={() => paintHole(idx)} className={disabled ? undefined : 'cursor-pointer'}>
+              <g key={idx} onClick={() => paintHole(idx)} className={disabled ? undefined : 'cursor-pointer'}
+                role={disabled ? undefined : 'button'} tabIndex={disabled ? undefined : 0}
+                aria-label={`Hole ${idx + 1}${unused ? ' — left out' : ` · ${+depth.toFixed(1)} ft`}`} data-grid-hole={idx + 1}
+                onKeyDown={disabled ? undefined : (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); paintHole(idx); } }}>
                 <rect
                   x={cx(idx) - SPACING / 2}
                   y={cy(idx) - SPACING / 2}
@@ -255,24 +259,24 @@ export function DrillGridEditor({
       <div className="flex items-center gap-4 text-sm text-gray-600">
         <span className="flex items-center gap-1">
           Rows:
-          <Button variant="outline" size="icon" className="h-9 w-9" disabled={disabled}
+          <Button variant="outline" size="icon" className="h-9 w-9" disabled={disabled} aria-label="Fewer rows" data-grid-rows-minus
             onClick={() => onResize('rows', -1)}>
             <Minus className="h-4 w-4" />
           </Button>
           <span className="font-mono font-semibold w-7 text-center">{rows}</span>
-          <Button variant="outline" size="icon" className="h-9 w-9" disabled={disabled || rows >= GRID_MAX_ROWS}
+          <Button variant="outline" size="icon" className="h-9 w-9" disabled={disabled || rows >= GRID_MAX_ROWS} aria-label="More rows" data-grid-rows-plus
             onClick={() => onResize('rows', 1)}>
             <Plus className="h-4 w-4" />
           </Button>
         </span>
         <span className="flex items-center gap-1">
           Cols:
-          <Button variant="outline" size="icon" className="h-9 w-9" disabled={disabled}
+          <Button variant="outline" size="icon" className="h-9 w-9" disabled={disabled} aria-label="Fewer columns" data-grid-cols-minus
             onClick={() => onResize('cols', -1)}>
             <Minus className="h-4 w-4" />
           </Button>
           <span className="font-mono font-semibold w-7 text-center">{cols}</span>
-          <Button variant="outline" size="icon" className="h-9 w-9" disabled={disabled || cols >= GRID_MAX_COLS}
+          <Button variant="outline" size="icon" className="h-9 w-9" disabled={disabled || cols >= GRID_MAX_COLS} aria-label="More columns" data-grid-cols-plus
             onClick={() => onResize('cols', 1)}>
             <Plus className="h-4 w-4" />
           </Button>

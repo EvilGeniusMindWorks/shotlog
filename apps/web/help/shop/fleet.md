@@ -16,7 +16,7 @@ Every machine the company owns, grouped so the list is never long.
 
 ## Search and filters
 
-The search box finds a machine by code, description, make, model, plate or serial, across every group. Filter chips stack: **Active · In shop · Retired · Repair open · Out of service · Due ≤30 d**. "What is out of service right now?" is one tap; the header reads *N of M* while a filter is on, and the tab counts follow it.
+The search box finds a machine by code, description, make, model, plate or serial, across every group. Filter chips: **Unavailable · In shop · Out of service · Repair open · Active · Retired · Due ≤30 d**. The first four answer "what's down?" together — a machine that matches any one of the chips you picked shows, so *In shop* + *Out of service* is everything off the field, and **Unavailable** is that in one tap. *Active* / *Retired* choose the status group; *Due ≤30 d* narrows whatever is shown. The header reads *N of M* while a filter is on, and the tab counts follow it.
 
 ## Adding and importing
 
