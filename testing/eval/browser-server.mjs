@@ -147,9 +147,16 @@ async function run(s, a) {
     }
     case 'snapshot': return snapshot(page, a, s);
     case 'click': {
-      const loc = await pickOne(target(page, a, s), a);
+      let loc = await pickOne(target(page, a, s), a);
       await loc.scrollIntoViewIfNeeded().catch(() => undefined);
-      await loc.click({ timeout: a.timeout ?? 6000, force: a.force === true });
+      try {
+        await loc.click({ timeout: a.timeout ?? 6000, force: a.force === true });
+      } catch (e) {
+        if (a.ref == null) throw e;
+        s.refs = await collectRefs(page).catch(() => []);
+        loc = await pickOne(target(page, a, s), a);
+        await loc.click({ timeout: a.timeout ?? 6000, force: a.force === true });
+      }
       s.taps++;
       return snapshot(page, { settle: a.settle ?? 700 }, s);
     }

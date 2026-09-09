@@ -1,0 +1,47 @@
+{"t":"2026-09-09T04:32:53.303Z","op":"session","device":"wide"}
+{"t":"2026-09-09T04:32:54.352Z","op":"open","args":{"url":"http://localhost:5199/enroll/z0AFwjNFJkRIlrMM7NSL-xbpFSDN6Y2Pl14Cb1zH5Pdw6-qbjwr9e32KjwUbUqye","device":"wide"},"ms":1049,"ok":true}
+{"t":"2026-09-09T04:32:56.602Z","op":"fill","args":{"ref":2,"value":"ShopSam2026!"},"ms":22,"ok":true}
+{"t":"2026-09-09T04:32:56.643Z","op":"fill","args":{"ref":3,"value":"ShopSam2026!"},"ms":3,"ok":true}
+{"t":"2026-09-09T04:32:59.176Z","op":"snapshot","args":{},"ms":418,"ok":true}
+{"t":"2026-09-09T04:33:02.555Z","op":"click","args":{"ref":4},"ms":759,"ok":true}
+{"t":"2026-09-09T04:33:07.256Z","op":"wait","args":{"ms":2000},"ms":2224,"ok":true}
+{"t":"2026-09-09T04:33:14.199Z","op":"click","args":{"ref":1},"ms":775,"ok":true}
+{"t":"2026-09-09T04:33:15.014Z","op":"click","args":{"ref":2},"ms":761,"ok":true}
+{"t":"2026-09-09T04:33:15.819Z","op":"click","args":{"ref":3},"ms":752,"ok":true}
+{"t":"2026-09-09T04:33:16.632Z","op":"click","args":{"ref":4},"ms":772,"ok":true}
+{"t":"2026-09-09T04:33:17.450Z","op":"click","args":{"ref":5},"ms":765,"ok":true}
+{"t":"2026-09-09T04:33:18.254Z","op":"click","args":{"ref":6},"ms":758,"ok":true}
+{"t":"2026-09-09T04:33:22.765Z","op":"click","args":{"ref":1},"ms":771,"ok":true}
+{"t":"2026-09-09T04:33:23.580Z","op":"click","args":{"ref":2},"ms":762,"ok":true}
+{"t":"2026-09-09T04:33:24.393Z","op":"click","args":{"ref":3},"ms":760,"ok":true}
+{"t":"2026-09-09T04:33:25.215Z","op":"click","args":{"ref":4},"ms":769,"ok":true}
+{"t":"2026-09-09T04:33:26.030Z","op":"click","args":{"ref":5},"ms":762,"ok":true}
+{"t":"2026-09-09T04:33:26.843Z","op":"click","args":{"ref":6},"ms":759,"ok":true}
+{"t":"2026-09-09T04:33:30.647Z","op":"click","args":{"ref":1},"ms":801,"ok":true}
+{"t":"2026-09-09T04:33:45.542Z","op":"click","args":{"ref":22},"ms":6011,"ok":false,"error":"elementHandle.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-09T04:33:50.515Z","op":"click","args":{"text":"Skip"},"ms":784,"ok":true}
+{"t":"2026-09-09T04:33:54.234Z","op":"click","args":{"ref":21},"ms":778,"ok":true}
+{"t":"2026-09-09T04:34:00.608Z","op":"fill","args":{"ref":11,"value":"boom cylinder seal replaced"},"ms":3,"ok":true}
+{"t":"2026-09-09T04:34:03.843Z","op":"click","args":{"ref":14},"ms":781,"ok":true}
+{"t":"2026-09-09T04:34:09.437Z","op":"screenshot","args":{},"ms":23,"ok":true}
+{"t":"2026-09-09T04:34:24.223Z","op":"click","args":{"text":"Shop"},"ms":800,"ok":true}
+{"t":"2026-09-09T04:34:28.069Z","op":"click","args":{"ref":20},"ms":773,"ok":true}
+{"t":"2026-09-09T04:34:30.396Z","op":"fill","args":{"ref":11,"value":"horn relay replaced"},"ms":3,"ok":true}
+{"t":"2026-09-09T04:34:33.497Z","op":"click","args":{"ref":14},"ms":769,"ok":true}
+{"t":"2026-09-09T04:34:45.840Z","op":"click","args":{"text":"Fleet"},"ms":796,"ok":true}
+{"t":"2026-09-09T04:34:50.542Z","op":"click","args":{"ref":41},"ms":768,"ok":true}
+{"t":"2026-09-09T04:34:54.425Z","op":"click","args":{"ref":14},"ms":765,"ok":true}
+{"t":"2026-09-09T04:34:57.407Z","op":"fill","args":{"ref":14,"value":"4231"},"ms":3,"ok":true}
+{"t":"2026-09-09T04:35:00.817Z","op":"fill","args":{"ref":15,"value":"meter corrected to actual reading"},"ms":3,"ok":true}
+{"t":"2026-09-09T04:35:03.210Z","op":"snapshot","args":{},"ms":433,"ok":true}
+{"t":"2026-09-09T04:35:06.291Z","op":"click","args":{"ref":16},"ms":788,"ok":true}
+{"t":"2026-09-09T04:35:18.456Z","op":"click","args":{"ref":15},"ms":785,"ok":true}
+{"t":"2026-09-09T04:35:29.362Z","op":"select","args":{"ref":15,"value":"Engine service — oil, filters"},"ms":8005,"ok":true}
+{"t":"2026-09-09T04:35:34.474Z","op":"snapshot","args":{},"ms":436,"ok":true}
+{"t":"2026-09-09T04:35:39.389Z","op":"fill","args":{"ref":16,"value":"4231"},"ms":2,"ok":true}
+{"t":"2026-09-09T04:35:42.932Z","op":"snapshot","args":{},"ms":418,"ok":true}
+{"t":"2026-09-09T04:35:47.085Z","op":"click","args":{"ref":17},"ms":782,"ok":true}
+{"t":"2026-09-09T04:35:55.472Z","op":"snapshot","args":{"max":30000},"ms":433,"ok":true}
+{"t":"2026-09-09T04:36:11.227Z","op":"click","args":{"text":"Locator"},"ms":784,"ok":true}
+{"t":"2026-09-09T04:36:22.382Z","op":"click","args":{"text":"Fleet"},"ms":797,"ok":true}
+{"t":"2026-09-09T04:36:26.022Z","op":"click","args":{"ref":19},"ms":773,"ok":true}

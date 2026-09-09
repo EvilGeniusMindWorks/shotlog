@@ -1,0 +1,60 @@
+coordinator: arms A, B · steps dinis-enrol(all) → seed(all) → dinis-after(all) → sam-after(all) · model sonnet
+[12:23:47 AM] A · dinis-enrol (all): waiting for the state it needs…
+[12:23:47 AM] B · dinis-enrol (all): waiting for the state it needs…
+[12:23:47 AM] A · dinis-enrol (all): running
+[12:23:47 AM] B · dinis-enrol (all): running
+[12:25:16 AM] B · dinis-enrol (all): done (exit 0)
+Task 1 is complete — I opened the invitation, created my account, set a password (`RockDust8!`) and a 6-digit PIN, and reached my home screen, which shows the three tiles (File rig checklist, Drill log, My hours) under "My Drilling." No wrong turns, no help guide touched. My only confusion was a small wording mismatch: the welcome tour calls the tiles "Checklist, Drill log, My hours" but the dashboard row actually reads "File rig checklist" — cosmetic, not blocking. I've written this up in `testing/eval/out/after/B-dinis.md` and I'm stopping here per the brief, leaving the browser session open, waiting for the office to load last week's work onto my account before continuing.
+
+[12:25:16 AM] B · seed (all): waiting for the state it needs…
+[12:25:16 AM] B · seed (all): running
+[B] enrolled Barry by API: 201
+200 {"ok":true,"linked":2}
+[B] snapshot: 67 rows · jobs 2 · rigs 2
+200 {"ok":true,"linked":0}
+[12:25:20 AM] B · dinis-after (all): waiting for the state it needs…
+[12:25:20 AM] B · dinis-after (all): running
+[12:25:37 AM] A · dinis-enrol (all): done (exit 0)
+Task 1 is complete — Dinis's home now shows the three tiles (File rig checklist, Drill log, My hours). As instructed, I'm stopping here and leaving the browser session open until told to continue.
+
+**Summary:** Finished the only task in this sitting — invitation → password → PIN → onboarding tour → home with three tiles, all in 13 taps, zero wrong turns, no help guide consults needed. Record written to `testing/eval/out/after/A-dinis.md` with password/PIN noted for later sittings. Top confusions: (1) the 6-digit PIN entry gives no visual feedback (no dots/count) as you tap digits, which felt uncertain on a phone in a dusty cab; (2) the "two-minute walkthrough" tour actively navigates you through Dashboard → Drilling → My Records rather than staying as a passive overlay, which was a little disorienting the first time; (3) minor — no identity-verification step before account creation, which surprised me slightly for a first-time app user, though it wasn't a blocker.
+
+[12:25:37 AM] A · seed (all): waiting for the state it needs…
+[12:25:37 AM] A · seed (all): running
+[A] enrolled Barry by API: 201
+200 {"ok":true,"linked":2}
+[A] snapshot: 67 rows · jobs 2 · rigs 2
+200 {"ok":true,"linked":0}
+[12:25:41 AM] A · dinis-after (all): waiting for the state it needs…
+[12:25:41 AM] A · dinis-after (all): running
+[12:32:36 AM] A · dinis-after (all): done (exit 0)
+My top three confusions:
+1. The drill log's "Mark complete" flow lets the log go to "complete" status the instant you tap Complete on the hours card — *before* the driller signature exists. I saw "✓ Marked complete" sitting next to an unsigned "Tap to sign" button at the same time.
+2. The hours/time-card job picker listed "Ledgeville Pit — Phase 1" twice, with no way to tell which one was actually my job — I had to guess.
+3. Several buttons right after a state change (a filed checklist's "Done," the drill log tour's "Skip," and "Tap to sign" right after marking complete) didn't respond to normal or even coordinate taps on the first try — same symptom recurring in three different spots, which felt like one underlying UI timing bug rather than three unrelated ones.
+
+Full findings, "what worked," and notes for Mark are all written to `testing/eval/out/after/A-dinis.md`.
+
+[12:32:36 AM] A · sam-after (all): waiting for the state it needs…
+[12:32:36 AM] A · sam-after (all): running
+[12:34:50 AM] B · dinis-after (all): done (exit 0)
+
+My top three confusions, in order of how much they'd worry me if I were really Dinis in the cab:
+
+1. **Buttons that just don't respond.** Three separate times (a checklist receipt's "Done," an onboarding tour's "Skip," and "Close"/"My records" right after filing my time card) a clearly-visible button silently ate every tap with no error on screen. I only got past them by screenshotting and tapping raw pixel coordinates, or by reopening the app by URL — neither of which a real driller would think to try.
+2. **Fields that look filled in but aren't saved.** The rig checklist's "starting hours" showed 3888 the whole time, but the filed record came back with "Starting hours: —" because I never retyped it. The exact same trap sits on the drill log's end-of-day meter field.
+3. **A momentarily wrong hours calculation.** After typing my clock-in/out times on the time card, "ST" briefly showed 14.6 instead of 8.0 for an 8-hour shift, self-correcting only after a second edit — if I'd filed right then, I'd have signed a wrong number with no warning.
+
+[12:34:50 AM] B · sam-after (all): waiting for the state it needs…
+[12:34:50 AM] B · sam-after (all): running
+[12:36:58 AM] A · sam-after (all): done (exit 0)
+All 7 tasks are complete. Leaving the browser session open as instructed.
+
+**Summary:** All 7 tasks finished successfully as Sam Rivera the mechanic — enrolled and set a PIN, resolved both the hydraulic-leak ticket (R1004, back to Active) and the horn ticket (R-102, stayed in service), corrected R1004's meter to 4,231 with a visible audit trail, logged an engine service that updated the due count, found R1004 last worked at Ledgeville Pit via the Locator page, and used the Fleet "Unavailable" filter chip to see the one down machine (R1006) in one view. Never needed the help guide. My top three confusions: (1) a second, unrequested "Welcome to ShotLog" walkthrough overlay appeared mid-task and silently swallowed a click on the worklist with no error text visible on screen — looked like the app had frozen; (2) the "Log a service done" Save button stayed greyed out even with a correct pre-filled hours value until I retyped the same number, which reads as a bug rather than a validation rule; (3) the two repair-ticket screens gave inconsistent reassurance about what resolving would do to the machine's status (R-102's screen told me upfront it stays in service, R1004's only said what would happen as I was already filling the form).
+
+arm A complete
+[12:38:04 AM] B · sam-after (all): done (exit 0)
+All 7 tasks in Sam's brief finished successfully: enrollment/PIN setup, resolving both the hydraulic-leak and horn tickets, correcting R1004's hour meter to 4,231, logging its engine service at 4,231h, finding it last worked at Ledgeville Pit, and confirming the Fleet "Unavailable" filter shows exactly the one down machine (R1006) in one view. My top three confusions: (1) the "Log a service done" form's "At hours" field looked pre-filled with the correct meter reading but silently kept Save disabled until I retyped the same number in myself — the biggest real snag, since it looks done when it isn't; (2) a "Welcome to ShotLog" tour overlay sat on top of the worklist right after landing on Shop and swallowed my first click as a timeout before I noticed and hit Skip; (3) nothing else genuinely confused me — the ticket/meter/service/locator/filter flows all lived exactly where a shop mechanic would look, and I stayed in arm B (never touched the help guide). Record is written task-by-task to `testing/eval/out/after/B-sam.md`, browser session left open.
+
+arm B complete
+all arms complete

@@ -98,3 +98,10 @@ Lessons from the first run: tell agents explicitly never to run other scripts (o
 - `61` — the office: Send Back on the ask sheet with a required reason, `sendBackBy`/`At` stamped by the server (needs the local API), the day banner and home strip; the Approvals page gated for the office; customer cards truly read-only; a discarded write toasts; the ask sheet in place of native confirm().
 - `62` — fleet chips OR within "what's down?"; the design grid's names and keyboard; off-plan count in the drilling review; seismo reading Edit and the distance line. Picks a job with no day today (a stray day makes the harness day a "second copy" and hides the drilling view behind the merge strip).
 - Known stale: `45` §"Open that day" join step errors before and after S9a (pre-existing).
+
+### Running an evaluation unattended (S9a harness item)
+
+- `node testing/eval/run.mjs --arms A,B --steps full` — the whole day; `--steps after` — the S9a before/after chain (Dinis enrols → the coordinator enrols Barry by API, links the roster and seeds the rehearsal week onto the company → Dinis finishes the pattern → Sam works the shop); `--steps dinis,sam` — partial chains. Each step is a headless `claude -p` (`--model sonnet` by default, `--max-turns 300`); the coordinator watches the company's records in Postgres for the state the next step needs and releases it. Set `EVAL_RUN=after` (and start the daemon with `EVAL_OUT=testing/eval/out/after`) to keep a re-run's records apart.
+- Snapshots end with a numbered list of everything tappable — agents say `click 12`, `fill 7 …`; native dialogs are shown as `!!! DIALOG` and must be answered (`dialog accept [text]` / `dialog dismiss`).
+- `setup.mjs --force --lean` prunes the copied dev roster to a dozen real-looking names; `seed-hierarchy.mts <cid> --lean-only` does it on an existing company.
+- Briefs for the snapshot chain: `dinis-enrol`, `dinis-after`, `sam-after`; the comparison: `judge-after`.
