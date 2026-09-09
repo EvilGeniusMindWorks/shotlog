@@ -17,7 +17,7 @@ deploys `apps/server` + Postgres. ~10 minutes, all in the Railway dashboard.
    | `JWT_SECRET` | output of `openssl rand -base64 48` |
    | `POWERSYNC_JWT_SECRET` | the HS256 secret the PowerSync service is configured with — REQUIRED in production since S10 (the server refuses to start without it) |
    | `ALLOWED_ORIGINS` | comma-separated browser origins allowed to call the API; production defaults to `https://shotlog-app.vercel.app` when unset (S10) |
-   | `NODE_ENV` | `production` on Railway (Nixpacks sets it) — turns on the CORS allowlist and disables `AUTH_DEBUG_LINKS` |
+   | `NODE_ENV` | set to `production` on Railway yourself — S10 found Nixpacks does NOT set it. The server also treats `RAILWAY_ENVIRONMENT_NAME=production` (Railway sets that) as production for the CORS allowlist and the debug-links guard; the hard refusal to start without `POWERSYNC_JWT_SECRET` needs `NODE_ENV` |
    | `ADMIN_EMAIL` | your login email |
    | `ADMIN_PASSWORD` | a strong password (change-password works in-app after) |
    | `ADMIN_NAME` | display name |

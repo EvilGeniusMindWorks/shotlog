@@ -34,13 +34,16 @@ import {
   upsertRecord,
   type StoredRecord,
 } from './records.js';
+import { isProduction } from './env.js';
 
 // Must match the HS256 JWKS entry in the PowerSync service config
 // (infra/powersync/service.yaml locally; the deployed service config in prod).
-if (process.env.NODE_ENV === 'production' && !process.env.POWERSYNC_JWT_SECRET) {
-  // Fail loudly: a missing secret must never silently sign production sync
-  // tokens with the dev value (S10)
-  throw new Error('POWERSYNC_JWT_SECRET env var is required in production');
+if (!process.env.POWERSYNC_JWT_SECRET) {
+  // A missing secret must never silently sign production sync tokens with the
+  // dev value (S10): refuse to start under NODE_ENV=production, and shout on
+  // Railway either way (/health also reports powersyncSecret: 'default')
+  if (process.env.NODE_ENV === 'production') throw new Error('POWERSYNC_JWT_SECRET env var is required in production');
+  if (isProduction()) console.error('POWERSYNC_JWT_SECRET is not set — signing sync tokens with the dev default');
 }
 const POWERSYNC_JWT_SECRET =
   process.env.POWERSYNC_JWT_SECRET ?? 'spike-shared-secret-for-local-dev-only';

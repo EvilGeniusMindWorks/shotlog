@@ -17,6 +17,7 @@ import { filesConfigured } from './files.js';
 import { countLegacyInlinePdfs, migrateLegacyInlinePdfs } from './legacyPdfs.js';
 import { countLegacyInlineImages, migrateLegacyInlineImages } from './legacyImages.js';
 import { seedCompanyReference } from './seed.js';
+import { isProduction } from './env.js';
 
 const app = express();
 // Behind Railway's load balancer: trust the first proxy hop so req.ip is the
@@ -29,10 +30,9 @@ app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 // separated; defaults to the Vercel app). Outside production every origin is
 // allowed so local web (:5199) and harness contexts keep working.
 const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
-const isProduction = process.env.NODE_ENV === 'production';
 app.use(
   cors(
-    isProduction || allowedOrigins.length
+    isProduction() || allowedOrigins.length
       ? { origin: allowedOrigins.length ? allowedOrigins : ['https://shotlog-app.vercel.app'] }
       : {},
   ),
@@ -60,6 +60,9 @@ app.get('/health', async (_req, res) => {
     email: emailEnabled(),
     // Truthful file-storage status — Settings says where filed PDFs live
     files: filesConfigured(),
+    // S10: is the sync token secret configured, or is the dev default in use?
+    powersyncSecret: process.env.POWERSYNC_JWT_SECRET ? 'set' : 'default',
+    production: isProduction(),
     legacyInlinePdfs,
     legacyInlineImages,
   });

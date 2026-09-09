@@ -7,6 +7,7 @@ import { prisma } from './db.js';
 import { parsePayloadSafe, upsertRecord } from './records.js';
 import { APP_URL, emailEnabled, resetMail, sendEmail } from './email.js';
 import { loginRateLimit, rateLimit, refreshRateLimit } from './rateLimit.js';
+import { isProduction } from './env.js';
 
 const JWT_SECRET = process.env.JWT_SECRET ?? '';
 if (!JWT_SECRET) {
@@ -20,7 +21,7 @@ const RESET_TTL_MINUTES = 60;
 // so the flow can be exercised without a mailbox. Never set in production.
 // Never in production: a stray env var must not turn forgot-password into a
 // token dispenser (S10)
-const DEBUG_LINKS = process.env.AUTH_DEBUG_LINKS === '1' && process.env.NODE_ENV !== 'production';
+const DEBUG_LINKS = process.env.AUTH_DEBUG_LINKS === '1' && !isProduction();
 
 /**
  * Platform admins — the software vendor (Matthew), NOT a company role.
