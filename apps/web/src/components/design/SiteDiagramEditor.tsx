@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { parseCoordinates, searchAddress, formatLatLng, type GeoCandidate } from '@/lib/geo';
 import { ARCGIS_KEY, MAP_CREDIT } from '@/lib/mapProviders';
+import { compactAttribution } from '@/lib/mapAttribution';
 
 type PinMode = 'pan' | 'blast' | 'structure' | 'measure';
 
@@ -295,6 +296,7 @@ export function SiteDiagramEditor({
       zoom: v.zoom,
       zoomControl: true,
     });
+    compactAttribution(map);
     mapRef.current = map;
     pinsRef.current = L.layerGroup().addTo(map);
     // The container can be mid-layout when the map mounts — recalc once settled

@@ -3,6 +3,7 @@
 // paperwork (lib/equipmentLocation); pins from one-time site geocodes.
 // No GPS hardware involved.
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { compactAttribution } from '@/lib/mapAttribution';
 import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -51,6 +52,7 @@ export function LocatorMap({
     if (!containerRef.current || mapRef.current) return;
     // The OSM credit is a licence condition, not clutter — attribution stays on (S10)
     const map = L.map(containerRef.current, { zoomControl: !compact });
+    compactAttribution(map);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
       maxNativeZoom: 19,
