@@ -1,0 +1,63 @@
+coordinator: arms A, B · steps dinis-enrol(all) → seed(all) → dinis-after(all) → sam-after(all) · model sonnet
+[2:07:24 AM] A · dinis-enrol (all): waiting for the state it needs…
+[2:07:24 AM] B · dinis-enrol (all): waiting for the state it needs…
+[2:07:24 AM] A · dinis-enrol (all): running
+[2:07:24 AM] B · dinis-enrol (all): running
+[2:08:23 AM] B · dinis-enrol (all): done (exit 0)
+Task 1 is done. I created the account for Dinis, set a password and PIN, and reached home — the screen now shows the three "My Drilling" tiles (File rig checklist, Drill log, My hours). As instructed, I'm stopping here and leaving the browser session open until told to continue; my record is written to `testing/eval/out/after2/B-dinis.md`.
+
+My top three confusions from this sitting: (1) after confirming the PIN, the screen jumped straight to the "Welcome, Dinis" tips screen with no explicit "PIN saved" confirmation, so for a moment I wasn't certain the PIN had actually taken; (2) the home screen loaded with a "Finish setting up" card and a "Your first week · 0/5 done" checklist stacked above the three tiles, which is more on-screen at once than I expected right after enrollment; (3) otherwise the enrollment→PIN→home flow was linear and didn't require any guesswork — nothing else stood out as unclear.
+
+[2:08:23 AM] B · seed (all): waiting for the state it needs…
+[2:08:23 AM] B · seed (all): running
+[B] enrolled Barry by API: 201
+200 {"ok":true,"linked":2}
+[B] snapshot: 67 rows · jobs 2 · rigs 2
+200 {"ok":true,"linked":0}
+[2:08:27 AM] B · dinis-after (all): waiting for the state it needs…
+[2:08:27 AM] B · dinis-after (all): running
+[2:08:34 AM] A · dinis-enrol (all): done (exit 0)
+Task 1 is complete — I've reached home with the three tiles showing (File rig checklist, Drill log, My hours). As instructed, I'm stopping here and leaving the browser session open, since the brief says to end my turn while the office loads last week's work onto the account.
+
+**Summary:** Finished the one task in this sitting — enrolled via the invite link, set password (Driller2026!) and a 6-digit PIN (739154), clicked through the welcome tips screen, and landed on home showing the three promised tiles. No wrong turns, no help-guide consults needed — the enrollment flow was linear and self-explanatory. My top confusion note: the PIN-setup step launched immediately after account creation with no upfront explanation of why a PIN was needed on top of the password; that only became clear from a small caption ("Unlocks ShotLog on this device — even offline") after the fact, not before. Nothing else stood out as a real confusion point — it was a smooth first-run experience.
+
+[2:08:34 AM] A · seed (all): waiting for the state it needs…
+[2:08:34 AM] A · seed (all): running
+[A] enrolled Barry by API: 201
+200 {"ok":true,"linked":2}
+[A] snapshot: 67 rows · jobs 2 · rigs 2
+200 {"ok":true,"linked":0}
+[2:08:38 AM] A · dinis-after (all): waiting for the state it needs…
+[2:08:38 AM] A · dinis-after (all): running
+[2:15:06 AM] A · dinis-after (all): done (exit 0)
+All five tasks are complete and logged. Here's the summary:
+
+**Tasks 1, 2, 3, and 5 finished fully.** Task 4 (end-of-day hours + daily report check) finished **partly** — the log was signed complete and the meter reading (3888→3895) verifiably reached the rig's hour ledger, but I could never find "the day's daily report" for Ledgeville Pit today to confirm it showed there, because no Blast Day exists for that job today (only a different job's day showed up under Sep 9). I never opened the help guide — every screen had an obvious next control.
+
+My top three confusions: (1) after marking my drill log complete, navigating back into the same plan silently spawned a second empty "Open" log under my name, and the home tile then claimed "you 0 · others 30" even though I'd drilled the bulk of the pattern myself; (2) two different modal buttons (the checklist's "Done", the drill-log tour's "Skip") wouldn't register clicks by name or number and looked frozen — only a raw pixel tap worked; (3) the suggested time-card IN/OUT times were both the same clock-in-the-cab timestamp, proposing a zero-hour paid day unless I noticed and retyped them.
+
+[2:15:06 AM] A · sam-after (all): waiting for the state it needs…
+[2:15:06 AM] A · sam-after (all): running
+[2:17:36 AM] B · dinis-after (all): done (exit 0)
+**Top three confusions:**
+1. Tapping back into an already-completed plan tile from the Dashboard silently opened a second, empty drill log for the same plan and day — leaving one "Complete" and one "Open" record in My Records, and making the Dashboard misattribute my own 30 drilled holes to "others." This looks like a real duplicate-record bug, found by accident just checking my own work.
+2. The rig checklist's per-item toggle only cycles ✓ / N/A / "—", with no explicit "failed/needs repair" state — I had to guess that "—" plus the free-text "Repairs needed" box was the right combination to raise a shop ticket (it worked, confirmed by "Repair ticket opened" after filing).
+3. Time-card hours math looked broken: a 06:00–15:00 shift computed as "12.8" straight-time hours, and the record list leaked an unrounded float ("12.833333333333334 ST") straight into the UI — I wouldn't trust that number for payroll.
+
+Full detail, taps, and rankings are in `testing/eval/out/after2/B-dinis.md`. Browser session left open.
+
+[2:17:36 AM] B · sam-after (all): waiting for the state it needs…
+[2:17:36 AM] B · sam-after (all): running
+[2:18:54 AM] A · sam-after (all): done (exit 0)
+All seven tasks are complete. I'll leave the browser session open as instructed.
+
+All seven tasks finished successfully as Sam Rivera the mechanic: enrolled and set a PIN, resolved both the hydraulic-leak ticket (R1004 flipped to Active) and the horn ticket (R-102), corrected R1004's meter to 4,231 hrs with a reasoned ledger entry, logged an engine service at that reading (due clock reset to 0/250), found R1004 last worked at Ledgeville Pit via the Locator page, and confirmed the Fleet page's "Unavailable" filter showed exactly the one in-shop machine (R1006). My top three confusions: (1) a first-day welcome tour overlay silently ate my very first click on a ticket with just a generic "Timeout" error, with no obvious visual cue a modal was blocking the page; (2) the Home dashboard's "Where's my equipment" chips are clickable and jump straight to the full Locator page, but look like a passive preview since there's a separate "Open the locator ›" link right below them — cost me a wrong turn while hunting for R1004's machine page; (3) minor ambiguity between the ticket screen's optional "Meter now" field and the dedicated "Correct hours" flow — both write to the hour ledger but it's not stated which one to use when doing both at once. Never needed the help guide. Full record is at testing/eval/out/after2/A-sam.md.
+
+arm A complete
+[2:21:51 AM] B · sam-after (all): done (exit 0)
+All seven tasks in Sam's brief finished successfully, and the browser session stays open per instructions.
+
+All 7 tasks finished. Enrollment/PIN setup, both ticket resolutions (hydraulic leak → rig back to Active, horn relay), the meter correction to 4,231 with an attributed ledger line, logging the engine service (due count reset to 0/250), finding the last work site (Ledgeville Pit via Locator), and filtering the fleet to "Unavailable" (showed exactly R1006) all went through cleanly with no wrong turns beyond one hiccup. My top three confusions: (1) a "Welcome to ShotLog" tour overlay appeared unrequested right after PIN setup and silently swallowed my first tap on a real ticket — a real person would think the app had frozen until spotting the Skip button; (2) the "Log a service done" form has no visible date field, only an hours field, so I had to infer today's date was implicit rather than being told; (3) the first-week onboarding checklist auto-credited "Take the two-minute walkthrough" as done even though I never opened it, which could mislead someone tracking their own progress. Full task-by-task record, findings, and recommendations for Mark are in `testing/eval/out/after2/B-sam.md`.
+
+arm B complete
+all arms complete

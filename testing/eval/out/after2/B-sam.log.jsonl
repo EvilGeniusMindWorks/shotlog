@@ -1,0 +1,41 @@
+{"t":"2026-09-09T06:17:53.576Z","op":"session","device":"wide"}
+{"t":"2026-09-09T06:17:54.620Z","op":"open","args":{"url":"http://localhost:5199/enroll/wxI7Tm9CRou6RgZTVSZQn6wPzIDCJXAb5SvWe-J1xEqNZ8FwOy8hR8gFCDhYAEH6","device":"wide"},"ms":1044,"ok":true}
+{"t":"2026-09-09T06:17:56.798Z","op":"fill","args":{"ref":2,"value":"SamShop2026!"},"ms":23,"ok":true}
+{"t":"2026-09-09T06:17:59.688Z","op":"fill","args":{"ref":3,"value":"SamShop2026!"},"ms":4,"ok":true}
+{"t":"2026-09-09T06:18:02.265Z","op":"click","args":{"ref":4},"ms":761,"ok":true}
+{"t":"2026-09-09T06:18:06.577Z","op":"wait","args":{"ms":1500},"ms":1725,"ok":true}
+{"t":"2026-09-09T06:18:11.270Z","op":"click","args":{"ref":5},"ms":762,"ok":true}
+{"t":"2026-09-09T06:18:12.082Z","op":"click","args":{"ref":9},"ms":767,"ok":true}
+{"t":"2026-09-09T06:18:12.896Z","op":"click","args":{"ref":3},"ms":761,"ok":true}
+{"t":"2026-09-09T06:18:13.712Z","op":"click","args":{"ref":7},"ms":763,"ok":true}
+{"t":"2026-09-09T06:18:14.518Z","op":"click","args":{"ref":2},"ms":753,"ok":true}
+{"t":"2026-09-09T06:18:15.330Z","op":"click","args":{"ref":8},"ms":771,"ok":true}
+{"t":"2026-09-09T06:18:20.035Z","op":"click","args":{"ref":5},"ms":755,"ok":true}
+{"t":"2026-09-09T06:18:20.844Z","op":"click","args":{"ref":9},"ms":770,"ok":true}
+{"t":"2026-09-09T06:18:21.651Z","op":"click","args":{"ref":3},"ms":758,"ok":true}
+{"t":"2026-09-09T06:18:22.463Z","op":"click","args":{"ref":7},"ms":771,"ok":true}
+{"t":"2026-09-09T06:18:23.276Z","op":"click","args":{"ref":2},"ms":760,"ok":true}
+{"t":"2026-09-09T06:18:24.085Z","op":"click","args":{"ref":8},"ms":757,"ok":true}
+{"t":"2026-09-09T06:18:27.942Z","op":"click","args":{"ref":1},"ms":822,"ok":true}
+{"t":"2026-09-09T06:18:54.942Z","op":"click","args":{"ref":22},"ms":12034,"ok":false,"error":"elementHandle.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-09T06:18:59.209Z","op":"click","args":{"text":"Skip"},"ms":796,"ok":true}
+{"t":"2026-09-09T06:19:02.769Z","op":"click","args":{"ref":11},"ms":779,"ok":true}
+{"t":"2026-09-09T06:19:05.818Z","op":"fill","args":{"ref":11,"value":"boom cylinder seal replaced"},"ms":3,"ok":true}
+{"t":"2026-09-09T06:19:12.129Z","op":"click","args":{"ref":14},"ms":789,"ok":true}
+{"t":"2026-09-09T06:19:25.386Z","op":"click","args":{"ref":1},"ms":802,"ok":true}
+{"t":"2026-09-09T06:19:29.366Z","op":"click","args":{"ref":20},"ms":770,"ok":true}
+{"t":"2026-09-09T06:19:31.569Z","op":"fill","args":{"ref":11,"value":"horn relay replaced"},"ms":3,"ok":true}
+{"t":"2026-09-09T06:19:34.645Z","op":"click","args":{"ref":14},"ms":777,"ok":true}
+{"t":"2026-09-09T06:19:46.155Z","op":"click","args":{"ref":2},"ms":799,"ok":true}
+{"t":"2026-09-09T06:19:49.922Z","op":"click","args":{"ref":41},"ms":786,"ok":true}
+{"t":"2026-09-09T06:19:53.341Z","op":"click","args":{"ref":14},"ms":773,"ok":true}
+{"t":"2026-09-09T06:19:56.515Z","op":"fill","args":{"ref":14,"value":"4231"},"ms":4,"ok":true}
+{"t":"2026-09-09T06:19:58.782Z","op":"fill","args":{"ref":15,"value":"meter corrected per Mark's note"},"ms":3,"ok":true}
+{"t":"2026-09-09T06:20:01.656Z","op":"click","args":{"ref":16},"ms":776,"ok":true}
+{"t":"2026-09-09T06:20:14.824Z","op":"click","args":{"ref":15},"ms":785,"ok":true}
+{"t":"2026-09-09T06:20:25.506Z","op":"select","args":{"ref":15,"value":"Engine service — oil, filters"},"ms":8006,"ok":true}
+{"t":"2026-09-09T06:20:28.411Z","op":"snapshot","args":{},"ms":438,"ok":true}
+{"t":"2026-09-09T06:20:31.838Z","op":"click","args":{"ref":17},"ms":791,"ok":true}
+{"t":"2026-09-09T06:20:52.773Z","op":"click","args":{"ref":3},"ms":788,"ok":true}
+{"t":"2026-09-09T06:21:09.578Z","op":"click","args":{"ref":2},"ms":796,"ok":true}
+{"t":"2026-09-09T06:21:13.440Z","op":"click","args":{"ref":19},"ms":779,"ok":true}

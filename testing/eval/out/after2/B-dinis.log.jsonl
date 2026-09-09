@@ -1,0 +1,93 @@
+{"t":"2026-09-09T06:07:37.658Z","op":"session","device":"phone"}
+{"t":"2026-09-09T06:07:38.734Z","op":"open","args":{"url":"http://localhost:5199/enroll/xRICyPH4XOYwK-5pN59Ac-gqMzHquXPBce59SXo_YzS6YFRCTOccSR91jkrZtzSp","device":"phone"},"ms":1076,"ok":true}
+{"t":"2026-09-09T06:07:40.456Z","op":"fill","args":{"ref":2,"value":"DrillRig8costa"},"ms":29,"ok":true}
+{"t":"2026-09-09T06:07:41.606Z","op":"fill","args":{"ref":3,"value":"DrillRig8costa"},"ms":3,"ok":true}
+{"t":"2026-09-09T06:07:43.819Z","op":"click","args":{"ref":4},"ms":760,"ok":true}
+{"t":"2026-09-09T06:07:45.501Z","op":"wait","args":{"text":"PIN"},"ms":244,"ok":true}
+{"t":"2026-09-09T06:07:48.633Z","op":"click","args":{"ref":2},"ms":769,"ok":true}
+{"t":"2026-09-09T06:07:49.458Z","op":"click","args":{"ref":9},"ms":772,"ok":true}
+{"t":"2026-09-09T06:07:50.279Z","op":"click","args":{"ref":4},"ms":772,"ok":true}
+{"t":"2026-09-09T06:07:51.099Z","op":"click","args":{"ref":8},"ms":767,"ok":true}
+{"t":"2026-09-09T06:07:51.902Z","op":"click","args":{"ref":3},"ms":752,"ok":true}
+{"t":"2026-09-09T06:07:52.712Z","op":"click","args":{"ref":7},"ms":767,"ok":true}
+{"t":"2026-09-09T06:07:57.447Z","op":"click","args":{"ref":2},"ms":763,"ok":true}
+{"t":"2026-09-09T06:07:58.265Z","op":"click","args":{"ref":9},"ms":766,"ok":true}
+{"t":"2026-09-09T06:07:59.069Z","op":"click","args":{"ref":4},"ms":751,"ok":true}
+{"t":"2026-09-09T06:07:59.876Z","op":"click","args":{"ref":8},"ms":759,"ok":true}
+{"t":"2026-09-09T06:08:00.696Z","op":"click","args":{"ref":3},"ms":765,"ok":true}
+{"t":"2026-09-09T06:08:01.507Z","op":"click","args":{"ref":7},"ms":757,"ok":true}
+{"t":"2026-09-09T06:08:04.382Z","op":"click","args":{"ref":1},"ms":805,"ok":true}
+{"t":"2026-09-09T06:08:47.040Z","op":"snapshot","args":{"device":"phone"},"ms":422,"ok":true}
+{"t":"2026-09-09T06:08:53.427Z","op":"click","args":{"ref":22},"ms":793,"ok":true}
+{"t":"2026-09-09T06:08:57.266Z","op":"click","args":{"ref":15},"ms":771,"ok":true}
+{"t":"2026-09-09T06:09:02.464Z","op":"click","args":{"ref":6},"ms":794,"ok":true}
+{"t":"2026-09-09T06:09:06.714Z","op":"click","args":{"ref":22},"ms":794,"ok":true}
+{"t":"2026-09-09T06:09:11.978Z","op":"click","args":{"ref":9},"ms":786,"ok":true}
+{"t":"2026-09-09T06:09:20.780Z","op":"click","args":{"ref":9},"ms":779,"ok":true}
+{"t":"2026-09-09T06:09:30.622Z","op":"click","args":{"ref":9},"ms":781,"ok":true}
+{"t":"2026-09-09T06:09:31.461Z","op":"click","args":{"ref":9},"ms":791,"ok":true}
+{"t":"2026-09-09T06:09:34.747Z","op":"fill","args":{"ref":14,"value":"Horn doesn't work — no sound at all"},"ms":4,"ok":true}
+{"t":"2026-09-09T06:09:37.746Z","op":"snapshot","args":{},"ms":437,"ok":true}
+{"t":"2026-09-09T06:09:42.595Z","op":"click","args":{"ref":16},"ms":803,"ok":true}
+{"t":"2026-09-09T06:09:46.808Z","op":"sign","args":{},"ms":1639,"ok":true}
+{"t":"2026-09-09T06:09:52.291Z","op":"click","args":{"ref":13},"ms":792,"ok":true}
+{"t":"2026-09-09T06:09:56.121Z","op":"click","args":{"ref":12},"ms":767,"ok":true}
+{"t":"2026-09-09T06:10:11.094Z","op":"click","args":{"ref":1},"ms":12019,"ok":false,"error":"elementHandle.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-09T06:10:19.833Z","op":"click","args":{"text":"Done"},"ms":6015,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-09T06:10:24.807Z","op":"wait","args":{"ms":1500},"ms":1721,"ok":true}
+{"t":"2026-09-09T06:10:39.271Z","op":"click","args":{"ref":1},"ms":12023,"ok":false,"error":"elementHandle.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-09T06:10:42.807Z","op":"screenshot","args":{},"ms":6,"ok":true}
+{"t":"2026-09-09T06:10:48.821Z","op":"tap","args":{"x":195,"y":422},"ms":638,"ok":true}
+{"t":"2026-09-09T06:11:11.578Z","op":"click","args":{"ref":15},"ms":788,"ok":true}
+{"t":"2026-09-09T06:11:27.801Z","op":"click","args":{"ref":16},"ms":12061,"ok":false,"error":"elementHandle.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-09T06:11:37.417Z","op":"click","args":{"text":"Skip"},"ms":6020,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-09T06:11:40.353Z","op":"screenshot","args":{},"ms":26,"ok":true}
+{"t":"2026-09-09T06:11:45.429Z","op":"tap","args":{"x":235,"y":472},"ms":640,"ok":true}
+{"t":"2026-09-09T06:11:49.289Z","op":"click","args":{"ref":12},"ms":786,"ok":true}
+{"t":"2026-09-09T06:11:54.420Z","op":"click","args":{"ref":30},"ms":806,"ok":true}
+{"t":"2026-09-09T06:11:58.420Z","op":"click","args":{"ref":49},"ms":801,"ok":true}
+{"t":"2026-09-09T06:12:02.745Z","op":"click","args":{"ref":29},"ms":790,"ok":true}
+{"t":"2026-09-09T06:12:06.957Z","op":"click","args":{"ref":50},"ms":897,"ok":true}
+{"t":"2026-09-09T06:12:10.990Z","op":"click","args":{"ref":39},"ms":815,"ok":true}
+{"t":"2026-09-09T06:12:14.765Z","op":"click","args":{"ref":46},"ms":790,"ok":true}
+{"t":"2026-09-09T06:12:35.637Z","op":"snapshot","args":{},"ms":442,"ok":true}
+{"t":"2026-09-09T06:12:39.764Z","op":"click","args":{"text":"Mark Complete"},"ms":805,"ok":true}
+{"t":"2026-09-09T06:12:43.079Z","op":"fill","args":{"ref":70,"value":"3895"},"ms":5,"ok":true}
+{"t":"2026-09-09T06:12:45.878Z","op":"snapshot","args":{},"ms":458,"ok":true}
+{"t":"2026-09-09T06:12:55.413Z","op":"click","args":{"ref":74},"ms":6053,"ok":false,"error":"no [74] on the last snapshot — take a new snapshot"}
+{"t":"2026-09-09T06:12:59.816Z","op":"snapshot","args":{},"ms":434,"ok":true}
+{"t":"2026-09-09T06:13:03.751Z","op":"click","args":{"ref":10},"ms":802,"ok":true}
+{"t":"2026-09-09T06:13:08.218Z","op":"sign","args":{},"ms":1653,"ok":true}
+{"t":"2026-09-09T06:13:09.060Z","op":"click","args":{"ref":12},"ms":799,"ok":true}
+{"t":"2026-09-09T06:13:14.171Z","op":"click","args":{"ref":13},"ms":786,"ok":true}
+{"t":"2026-09-09T06:13:19.177Z","op":"click","args":{"text":"Work days"},"ms":769,"ok":true}
+{"t":"2026-09-09T06:13:25.939Z","op":"click","args":{"text":"Everyone"},"ms":778,"ok":true}
+{"t":"2026-09-09T06:13:33.194Z","op":"click","args":{"ref":9},"ms":769,"ok":true}
+{"t":"2026-09-09T06:13:41.194Z","op":"click","args":{"text":"Dashboard"},"ms":794,"ok":true}
+{"t":"2026-09-09T06:13:48.019Z","op":"click","args":{"ref":16},"ms":770,"ok":true}
+{"t":"2026-09-09T06:13:59.373Z","op":"select","args":{"ref":21,"value":"Ledgeville Pit — Phase 1"},"ms":8009,"ok":true}
+{"t":"2026-09-09T06:14:02.185Z","op":"snapshot","args":{},"ms":437,"ok":true}
+{"t":"2026-09-09T06:14:06.710Z","op":"click","args":{"ref":22},"ms":774,"ok":true}
+{"t":"2026-09-09T06:14:16.450Z","op":"fill","args":{"ref":22,"value":"06:00"},"ms":2,"ok":true}
+{"t":"2026-09-09T06:14:16.497Z","op":"fill","args":{"ref":23,"value":"15:00"},"ms":2,"ok":true}
+{"t":"2026-09-09T06:14:19.300Z","op":"snapshot","args":{},"ms":440,"ok":true}
+{"t":"2026-09-09T06:14:25.063Z","op":"click","args":{"ref":25},"ms":791,"ok":true}
+{"t":"2026-09-09T06:14:31.414Z","op":"click","args":{"ref":25},"ms":779,"ok":true}
+{"t":"2026-09-09T06:14:37.378Z","op":"sign","args":{},"ms":1638,"ok":true}
+{"t":"2026-09-09T06:14:38.216Z","op":"click","args":{"ref":27},"ms":791,"ok":true}
+{"t":"2026-09-09T06:14:41.840Z","op":"click","args":{"ref":26},"ms":786,"ok":true}
+{"t":"2026-09-09T06:14:53.157Z","op":"click","args":{"text":"Work days"},"ms":6021,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-09T06:15:01.537Z","op":"click","args":{"ref":26},"ms":6049,"ok":false,"error":"no [26] on the last snapshot — take a new snapshot"}
+{"t":"2026-09-09T06:15:05.105Z","op":"click","args":{"text":"a \"Work days\""},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"a \\\"Work days\\\"\""}
+{"t":"2026-09-09T06:15:09.374Z","op":"open","args":{"url":"http://localhost:5199/days"},"ms":1032,"ok":true}
+{"t":"2026-09-09T06:15:16.463Z","op":"click","args":{"text":"My records"},"ms":789,"ok":true}
+{"t":"2026-09-09T06:15:21.079Z","op":"click","args":{"text":"Ledgeville Pit — Phase 1 · Bench 3 east"},"ms":793,"ok":true}
+{"t":"2026-09-09T06:15:26.096Z","op":"click","args":{"ref":26},"ms":804,"ok":true}
+{"t":"2026-09-09T06:15:35.375Z","op":"click","args":{"ref":5},"ms":770,"ok":true}
+{"t":"2026-09-09T06:15:47.540Z","op":"click","args":{"ref":17},"ms":781,"ok":true}
+{"t":"2026-09-09T06:15:58.954Z","op":"back","args":{},"ms":636,"ok":true}
+{"t":"2026-09-09T06:16:11.262Z","op":"click","args":{"text":"My records"},"ms":859,"ok":true}
+{"t":"2026-09-09T06:16:22.499Z","op":"click","args":{"text":"Time Card — Dinis Costa","nth":1},"ms":803,"ok":true}
+{"t":"2026-09-09T06:16:27.859Z","op":"click","args":{"ref":26},"ms":791,"ok":true}
+{"t":"2026-09-09T06:16:31.338Z","op":"click","args":{"text":"Time Card — Dinis Costa","nth":0},"ms":795,"ok":true}
+{"t":"2026-09-09T06:16:36.478Z","op":"click","args":{"ref":27},"ms":786,"ok":true}

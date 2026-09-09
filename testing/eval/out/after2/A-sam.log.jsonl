@@ -1,0 +1,45 @@
+{"t":"2026-09-09T06:15:22.085Z","op":"session","device":"wide"}
+{"t":"2026-09-09T06:15:23.144Z","op":"open","args":{"url":"http://localhost:5199/enroll/NSmja93ZMBwVtD7MuP2CRLycGjzyebb6Eu4fcPf5MonNEOCjwg7CLZx4xsUwNcZI","device":"wide"},"ms":1058,"ok":true}
+{"t":"2026-09-09T06:15:25.348Z","op":"fill","args":{"ref":2,"value":"SamShop2026"},"ms":21,"ok":true}
+{"t":"2026-09-09T06:15:25.395Z","op":"fill","args":{"ref":3,"value":"SamShop2026"},"ms":2,"ok":true}
+{"t":"2026-09-09T06:15:27.632Z","op":"snapshot","args":{},"ms":419,"ok":true}
+{"t":"2026-09-09T06:15:30.273Z","op":"click","args":{"ref":4},"ms":757,"ok":true}
+{"t":"2026-09-09T06:15:34.656Z","op":"wait","args":{"ms":2000},"ms":2225,"ok":true}
+{"t":"2026-09-09T06:15:38.013Z","op":"click","args":{"ref":2},"ms":760,"ok":true}
+{"t":"2026-09-09T06:15:38.821Z","op":"click","args":{"ref":4},"ms":767,"ok":true}
+{"t":"2026-09-09T06:15:39.641Z","op":"click","args":{"ref":6},"ms":770,"ok":true}
+{"t":"2026-09-09T06:15:40.473Z","op":"click","args":{"ref":8},"ms":777,"ok":true}
+{"t":"2026-09-09T06:15:41.289Z","op":"click","args":{"ref":3},"ms":762,"ok":true}
+{"t":"2026-09-09T06:15:42.106Z","op":"click","args":{"ref":5},"ms":763,"ok":true}
+{"t":"2026-09-09T06:15:45.728Z","op":"click","args":{"ref":2},"ms":757,"ok":true}
+{"t":"2026-09-09T06:15:46.541Z","op":"click","args":{"ref":4},"ms":773,"ok":true}
+{"t":"2026-09-09T06:15:47.354Z","op":"click","args":{"ref":6},"ms":760,"ok":true}
+{"t":"2026-09-09T06:15:48.166Z","op":"click","args":{"ref":8},"ms":758,"ok":true}
+{"t":"2026-09-09T06:15:48.976Z","op":"click","args":{"ref":3},"ms":759,"ok":true}
+{"t":"2026-09-09T06:15:49.787Z","op":"click","args":{"ref":5},"ms":771,"ok":true}
+{"t":"2026-09-09T06:15:52.968Z","op":"click","args":{"ref":1},"ms":808,"ok":true}
+{"t":"2026-09-09T06:16:14.096Z","op":"click","args":{"ref":22},"ms":12035,"ok":false,"error":"elementHandle.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-09T06:16:17.770Z","op":"click","args":{"text":"Skip"},"ms":791,"ok":true}
+{"t":"2026-09-09T06:16:20.712Z","op":"click","args":{"ref":22},"ms":768,"ok":true}
+{"t":"2026-09-09T06:16:22.868Z","op":"fill","args":{"ref":11,"value":"boom cylinder seal replaced"},"ms":3,"ok":true}
+{"t":"2026-09-09T06:16:25.351Z","op":"click","args":{"ref":14},"ms":788,"ok":true}
+{"t":"2026-09-09T06:16:27.985Z","op":"screenshot","args":{},"ms":17,"ok":true}
+{"t":"2026-09-09T06:16:41.402Z","op":"click","args":{"text":"Shop"},"ms":785,"ok":true}
+{"t":"2026-09-09T06:16:44.659Z","op":"click","args":{"ref":20},"ms":782,"ok":true}
+{"t":"2026-09-09T06:16:46.601Z","op":"fill","args":{"ref":11,"value":"horn relay replaced"},"ms":3,"ok":true}
+{"t":"2026-09-09T06:16:49.101Z","op":"click","args":{"ref":14},"ms":767,"ok":true}
+{"t":"2026-09-09T06:16:59.787Z","op":"click","args":{"text":"Shop"},"ms":781,"ok":true}
+{"t":"2026-09-09T06:17:03.469Z","op":"click","args":{"ref":25},"ms":789,"ok":true}
+{"t":"2026-09-09T06:17:08.724Z","op":"click","args":{"ref":15},"ms":785,"ok":true}
+{"t":"2026-09-09T06:17:12.165Z","op":"click","args":{"ref":17},"ms":778,"ok":true}
+{"t":"2026-09-09T06:17:15.317Z","op":"click","args":{"ref":14},"ms":760,"ok":true}
+{"t":"2026-09-09T06:17:17.961Z","op":"fill","args":{"ref":14,"value":"4231"},"ms":4,"ok":true}
+{"t":"2026-09-09T06:17:19.889Z","op":"fill","args":{"ref":15,"value":"meter correction — actual reads 4231"},"ms":3,"ok":true}
+{"t":"2026-09-09T06:17:22.564Z","op":"click","args":{"text":"Save correction"},"ms":779,"ok":true}
+{"t":"2026-09-09T06:17:33.933Z","op":"click","args":{"ref":15},"ms":778,"ok":true}
+{"t":"2026-09-09T06:17:46.035Z","op":"select","args":{"ref":15,"value":"Engine service — oil, filters"},"ms":8007,"ok":true}
+{"t":"2026-09-09T06:17:48.964Z","op":"snapshot","args":{},"ms":434,"ok":true}
+{"t":"2026-09-09T06:17:53.145Z","op":"click","args":{"ref":17},"ms":785,"ok":true}
+{"t":"2026-09-09T06:18:07.046Z","op":"click","args":{"text":"Locator"},"ms":780,"ok":true}
+{"t":"2026-09-09T06:18:18.411Z","op":"click","args":{"text":"Fleet"},"ms":783,"ok":true}
+{"t":"2026-09-09T06:18:21.465Z","op":"click","args":{"ref":19},"ms":784,"ok":true}
