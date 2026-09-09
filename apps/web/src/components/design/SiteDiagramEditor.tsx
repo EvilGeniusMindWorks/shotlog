@@ -12,15 +12,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { parseCoordinates, searchAddress, formatLatLng, type GeoCandidate } from '@/lib/geo';
+import { ARCGIS_KEY, MAP_CREDIT } from '@/lib/mapProviders';
 
 type PinMode = 'pan' | 'blast' | 'structure' | 'measure';
-
-const ARCGIS_KEY = (import.meta.env.VITE_ARCGIS_KEY as string | undefined) ?? '';
 
 const TILE_LAYERS = {
   street: {
     url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: '© OpenStreetMap contributors',
+    attribution: MAP_CREDIT.street,
     // OSM serves tiles at every zoom we allow
     maxNativeZoom: 19,
   },
@@ -30,7 +29,7 @@ const TILE_LAYERS = {
         // (licensed for a commercial app; 2M tiles/month free). Set
         // VITE_ARCGIS_KEY in the web build to turn this on.
         url: `https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}?token=${ARCGIS_KEY}`,
-        attribution: 'Powered by Esri — Esri, Maxar, Earthstar Geographics, and the GIS User Community',
+        attribution: MAP_CREDIT.satellite,
         // rural New England has no tiles above ~z17; upscale from there
         maxNativeZoom: 17,
       }
@@ -40,7 +39,7 @@ const TILE_LAYERS = {
         // customer's PDF. No key, but the cached tiles stop at z16 in
         // Massachusetts (z17+ is a slow 404), so upscale from z16.
         url: 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}',
-        attribution: 'Imagery: USDA, USGS The National Map',
+        attribution: MAP_CREDIT.satellite,
         maxNativeZoom: 16,
       },
 };

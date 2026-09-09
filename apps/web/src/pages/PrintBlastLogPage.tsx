@@ -8,6 +8,7 @@ import { distributeByHoles, powderFactor } from '@shotlog/shared';
 import { validateForPrint } from '@/lib/validation';
 import { DELAY_COLORS, computeFiringTimes, parseDiagram } from '@/lib/shotDiagram';
 import { distanceFt, parseSiteDiagram } from '@/lib/siteDiagram';
+import { snapshotCredit } from '@/lib/mapProviders';
 import type { Shot } from '@/db/schema';
 import './print-blast-log.css';
 
@@ -593,6 +594,7 @@ function PrintSiteDiagram({ shot }: { shot: Shot }) {
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           onError={() => setImgFailed(true)}
         />
+        <div style={{ fontSize: 6, color: '#555', lineHeight: 1.2 }} data-map-credit>{snapshotCredit(site.baseLayer)}</div>
       </div>
     );
   }

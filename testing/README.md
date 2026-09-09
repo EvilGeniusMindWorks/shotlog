@@ -97,7 +97,7 @@ Lessons from the first run: tell agents explicitly never to run other scripts (o
 - `60` — the evaluation's blockers: ticket resolve from three doors; phone bottom sheets above the nav (Mark complete); the rig meter's two doors; filing pre-flight (red blocks, amber files with notes the office sees). Needs the local API (checklist → ticket, submit → PDFs).
 - `61` — the office: Send Back on the ask sheet with a required reason, `sendBackBy`/`At` stamped by the server (needs the local API), the day banner and home strip; the Approvals page gated for the office; customer cards truly read-only; a discarded write toasts; the ask sheet in place of native confirm().
 - `62` — fleet chips OR within "what's down?"; the design grid's names and keyboard; off-plan count in the drilling review; seismo reading Edit and the distance line. Picks a job with no day today (a stray day makes the harness day a "second copy" and hides the drilling view behind the merge strip).
-- Known stale: `45` §"Open that day" join step errors before and after S9a (pre-existing).
+- Known stale: `45` §"Open that day" join step errors before and after S9a (pre-existing); `26` §"By customer" click predates the S8b Jobs drill-down (its PDF sections still pass).
 
 ### Running an evaluation unattended (S9a harness item)
 

@@ -9,6 +9,7 @@ import { getJobView } from '@/lib/jobContext';
 import { distributeByHoles, powderFactor } from '@shotlog/shared';
 import { DELAY_COLORS, computeFiringTimes, parseDiagram } from '@/lib/shotDiagram';
 import { distanceFt, parseSiteDiagram } from '@/lib/siteDiagram';
+import { snapshotCredit } from '@/lib/mapProviders';
 import { LAYER_STYLES } from '@/components/design/TypicalColumnBuilder';
 import type {
   BlastDay,
@@ -702,7 +703,11 @@ function BlastLogDoc(d: Data) {
                   Site Diagram:   <Text style={{ fontSize: 6 }}>**Show Structures & Distances**</Text>
                 </Text>
                 {snapshotUrls[s.id] ? (
-                  <Image src={snapshotUrls[s.id]} style={{ width: '100%', height: 106, objectFit: 'cover' }} />
+                  <View>
+                    <Image src={snapshotUrls[s.id]} style={{ width: '100%', height: 100, objectFit: 'cover' }} />
+                    {/* the imagery source's required credit travels with the snapshot */}
+                    <Text style={{ fontSize: 4.5, color: '#555' }}>{snapshotCredit(parseSiteDiagram(s.designPlan.siteSketchData).baseLayer)}</Text>
+                  </View>
                 ) : (
                   <SiteSchematic shot={s} />
                 )}
