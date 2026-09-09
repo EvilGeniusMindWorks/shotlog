@@ -1,0 +1,148 @@
+{"t":"2026-09-09T01:25:42.308Z","op":"session","device":"wide"}
+{"t":"2026-09-09T01:25:43.365Z","op":"open","args":{"url":"http://localhost:5199/enroll/HbWY4EjFLj5um2QGfuhUiLSzUTtozPzZCFKX6r2OkoRHzAw7-K8Hpj8tauWU0uUx","device":"wide"},"ms":1057,"ok":true}
+{"t":"2026-09-09T01:25:46.245Z","op":"fill","args":{"label":"Choose a password (8+ characters)","value":"Shotlog123!"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Choose a password (8+ characters)\""}
+{"t":"2026-09-09T01:25:46.357Z","op":"fill","args":{"value":"Shotlog123!","placeholder":"Choose a password (8+ characters)"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Choose a password (8+ characters)\""}
+{"t":"2026-09-09T01:25:46.507Z","op":"fill","args":{"value":"Shotlog123!","selector":"input:near(:text(\"Choose a password (8+ characters)\"))"},"ms":42,"ok":true}
+{"t":"2026-09-09T01:25:48.675Z","op":"fill","args":{"label":"Confirm password","value":"Shotlog123!"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Confirm password\""}
+{"t":"2026-09-09T01:25:48.787Z","op":"fill","args":{"value":"Shotlog123!","placeholder":"Confirm password"},"ms":0,"ok":false,"error":"nothing on the screen matches placeholder=\"Confirm password\""}
+{"t":"2026-09-09T01:25:48.899Z","op":"fill","args":{"value":"Shotlog123!","selector":"input:near(:text(\"Confirm password\"))"},"ms":5,"ok":true}
+{"t":"2026-09-09T01:25:51.762Z","op":"click","args":{"text":"Create my account"},"ms":763,"ok":true}
+{"t":"2026-09-09T01:25:53.938Z","op":"snapshot","args":{},"ms":419,"ok":true}
+{"t":"2026-09-09T01:25:57.685Z","op":"click","args":{"text":"1"},"ms":774,"ok":true}
+{"t":"2026-09-09T01:25:58.503Z","op":"click","args":{"text":"2"},"ms":759,"ok":true}
+{"t":"2026-09-09T01:25:59.318Z","op":"click","args":{"text":"3"},"ms":759,"ok":true}
+{"t":"2026-09-09T01:26:00.127Z","op":"click","args":{"text":"4"},"ms":748,"ok":true}
+{"t":"2026-09-09T01:26:00.927Z","op":"click","args":{"text":"5"},"ms":757,"ok":true}
+{"t":"2026-09-09T01:26:01.726Z","op":"click","args":{"text":"6"},"ms":752,"ok":true}
+{"t":"2026-09-09T01:26:04.895Z","op":"screenshot","args":{},"ms":16,"ok":true}
+{"t":"2026-09-09T01:26:14.110Z","op":"click","args":{"text":"6"},"ms":754,"ok":true}
+{"t":"2026-09-09T01:26:17.030Z","op":"screenshot","args":{},"ms":11,"ok":true}
+{"t":"2026-09-09T01:26:26.892Z","op":"tap","args":{"x":754,"y":504},"ms":612,"ok":true}
+{"t":"2026-09-09T01:26:31.747Z","op":"tap","args":{"x":525,"y":440},"ms":614,"ok":true}
+{"t":"2026-09-09T01:26:32.420Z","op":"tap","args":{"x":640,"y":440},"ms":613,"ok":true}
+{"t":"2026-09-09T01:26:33.093Z","op":"tap","args":{"x":754,"y":440},"ms":613,"ok":true}
+{"t":"2026-09-09T01:26:33.765Z","op":"tap","args":{"x":525,"y":504},"ms":613,"ok":true}
+{"t":"2026-09-09T01:26:34.438Z","op":"tap","args":{"x":640,"y":504},"ms":610,"ok":true}
+{"t":"2026-09-09T01:26:35.114Z","op":"tap","args":{"x":754,"y":504},"ms":616,"ok":true}
+{"t":"2026-09-09T01:26:38.931Z","op":"click","args":{"text":"Let's go"},"ms":798,"ok":true}
+{"t":"2026-09-09T01:26:54.872Z","op":"click","args":{"text":"R1004 Horn not working — needs repair checklist · Dinis Costa · Wed, Sep 9, 2026 down"},"ms":2,"ok":false,"error":"nothing on the screen matches text=\"R1004 Horn not working — needs repair checklist · Dinis Costa · Wed, Sep 9, 2026 down\""}
+{"t":"2026-09-09T01:26:59.271Z","op":"click","args":{"text":"Skip"},"ms":769,"ok":true}
+{"t":"2026-09-09T01:27:05.597Z","op":"click","args":{"text":"R1004 Horn not working — needs repair checklist · Dinis Costa · Wed, Sep 9, 2026 down"},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"R1004 Horn not working — needs repair checklist · Dinis Costa · Wed, Sep 9, 2026 down\""}
+{"t":"2026-09-09T01:27:09.086Z","op":"screenshot","args":{},"ms":26,"ok":true}
+{"t":"2026-09-09T01:27:17.482Z","op":"tap","args":{"x":580,"y":388},"ms":616,"ok":true}
+{"t":"2026-09-09T01:27:28.441Z","op":"back","args":{},"ms":615,"ok":true}
+{"t":"2026-09-09T01:27:33.382Z","op":"click","args":{"text":"Tickets"},"ms":757,"ok":true}
+{"t":"2026-09-09T01:27:40.384Z","op":"click","args":{"text":"🔧 R1004"},"ms":767,"ok":true}
+{"t":"2026-09-09T01:27:47.395Z","op":"click","args":{"text":"Horn not working — needs repair · OUT OF SERVICE"},"ms":766,"ok":true}
+{"t":"2026-09-09T01:27:53.274Z","op":"back","args":{},"ms":609,"ok":true}
+{"t":"2026-09-09T01:27:57.227Z","op":"screenshot","args":{},"ms":22,"ok":true}
+{"t":"2026-09-09T01:28:11.509Z","op":"tap","args":{"x":543,"y":280},"ms":616,"ok":true}
+{"t":"2026-09-09T01:28:20.948Z","op":"click","args":{"text":"Resolve a ticket"},"ms":760,"ok":true}
+{"t":"2026-09-09T01:28:25.814Z","op":"click","args":{"text":"Horn not working — needs repair"},"ms":766,"ok":true}
+{"t":"2026-09-09T01:28:36.580Z","op":"click","args":{"text":"Repair ticket opened — Dinis Costa"},"ms":755,"ok":true}
+{"t":"2026-09-09T01:28:45.903Z","op":"back","args":{},"ms":615,"ok":true}
+{"t":"2026-09-09T01:28:54.295Z","op":"tap","args":{"x":795,"y":388},"ms":619,"ok":true}
+{"t":"2026-09-09T01:29:04.421Z","op":"click","args":{"text":"Horn not working — needs repair"},"ms":750,"ok":true}
+{"t":"2026-09-09T01:29:08.662Z","op":"click","args":{"text":"● Active"},"ms":763,"ok":true}
+{"t":"2026-09-09T01:29:20.051Z","op":"back","args":{},"ms":617,"ok":true}
+{"t":"2026-09-09T01:29:38.601Z","op":"screenshot","args":{},"ms":22,"ok":true}
+{"t":"2026-09-09T01:29:56.315Z","op":"tap","args":{"x":580,"y":388},"ms":612,"ok":true}
+{"t":"2026-09-09T01:30:01.865Z","op":"click","args":{"text":"Checklist — Dinis Costa OUT OF SERVICE — Horn not working — needs repair Tue, Sep 8, 2026"},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"Checklist — Dinis Costa OUT OF SERVICE — Horn not working — needs repair Tue, Sep 8, 2026\""}
+{"t":"2026-09-09T01:30:05.163Z","op":"screenshot","args":{},"ms":17,"ok":true}
+{"t":"2026-09-09T01:30:16.584Z","op":"tap","args":{"x":583,"y":641},"ms":614,"ok":true}
+{"t":"2026-09-09T01:30:36.331Z","op":"scroll","args":{"dy":600},"ms":412,"ok":true}
+{"t":"2026-09-09T01:30:42.682Z","op":"tap","args":{"x":750,"y":738},"ms":614,"ok":true}
+{"t":"2026-09-09T01:30:45.862Z","op":"screenshot","args":{},"ms":17,"ok":true}
+{"t":"2026-09-09T01:30:56.722Z","op":"tap","args":{"x":583,"y":598},"ms":605,"ok":true}
+{"t":"2026-09-09T01:31:14.218Z","op":"tap","args":{"x":547,"y":694},"ms":618,"ok":true}
+{"t":"2026-09-09T01:31:25.539Z","op":"click","args":{"text":"Back"},"ms":766,"ok":true}
+{"t":"2026-09-09T01:31:30.877Z","op":"click","args":{"text":"Shop"},"ms":774,"ok":true}
+{"t":"2026-09-09T01:31:37.810Z","op":"click","args":{"text":"view ›"},"ms":771,"ok":true}
+{"t":"2026-09-09T01:31:56.862Z","op":"click","args":{"text":"Back"},"ms":775,"ok":true}
+{"t":"2026-09-09T01:31:57.689Z","op":"click","args":{"text":"Shop"},"ms":768,"ok":true}
+{"t":"2026-09-09T01:32:15.103Z","op":"click","args":{"text":"R1004"},"ms":754,"ok":true}
+{"t":"2026-09-09T01:32:20.371Z","op":"click","args":{"text":"Open out-of-service repair ticket — resolving it in the shop queue restores Active automatically."},"ms":762,"ok":true}
+{"t":"2026-09-09T01:32:25.872Z","op":"click","args":{"text":"🔧 In shop"},"ms":765,"ok":true}
+{"t":"2026-09-09T01:32:35.740Z","op":"click","args":{"text":"Shop"},"ms":771,"ok":true}
+{"t":"2026-09-09T01:32:36.214Z","op":"snapshot","args":{"max":30000},"ms":416,"ok":true}
+{"t":"2026-09-09T01:32:42.344Z","op":"screenshot","args":{},"ms":22,"ok":true}
+{"t":"2026-09-09T01:32:55.873Z","op":"click","args":{"text":"Help & feedback"},"ms":773,"ok":true}
+{"t":"2026-09-09T01:33:00.791Z","op":"click","args":{"text":"About this screen"},"ms":772,"ok":true}
+{"t":"2026-09-09T01:33:20.313Z","op":"click","args":{"text":"Got it"},"ms":749,"ok":true}
+{"t":"2026-09-09T01:33:41.916Z","op":"tap","args":{"x":580,"y":388},"ms":616,"ok":true}
+{"t":"2026-09-09T01:33:50.484Z","op":"click","args":{"text":"● Active"},"ms":767,"ok":true}
+{"t":"2026-09-09T01:33:50.561Z","op":"screenshot","args":{},"ms":17,"ok":true}
+{"t":"2026-09-09T01:34:10.870Z","op":"scroll","args":{"dy":-600},"ms":413,"ok":true}
+{"t":"2026-09-09T01:34:22.924Z","op":"click","args":{"text":"Shop"},"ms":752,"ok":true}
+{"t":"2026-09-09T01:34:38.556Z","op":"tap","args":{"x":380,"y":388},"ms":610,"ok":true}
+{"t":"2026-09-09T01:34:44.932Z","op":"click","args":{"text":"Help & feedback"},"ms":761,"ok":true}
+{"t":"2026-09-09T01:34:48.944Z","op":"click","args":{"text":"About this screen"},"ms":751,"ok":true}
+{"t":"2026-09-09T01:35:03.782Z","op":"click","args":{"text":"Got it"},"ms":763,"ok":true}
+{"t":"2026-09-09T01:35:08.052Z","op":"click","args":{"text":"Help guide"},"ms":774,"ok":true}
+{"t":"2026-09-09T01:35:13.343Z","op":"click","args":{"text":"A repair ticket, in and out of service"},"ms":764,"ok":true}
+{"t":"2026-09-09T01:35:25.076Z","op":"click","args":{"text":"Back to ShotLog"},"ms":751,"ok":true}
+{"t":"2026-09-09T01:35:40.422Z","op":"tap","args":{"x":580,"y":388},"ms":610,"ok":true}
+{"t":"2026-09-09T01:35:42.687Z","op":"wait","args":{"ms":2000},"ms":2212,"ok":true}
+{"t":"2026-09-09T01:35:43.161Z","op":"snapshot","args":{"max":30000},"ms":415,"ok":true}
+{"t":"2026-09-09T01:36:08.285Z","op":"tap","args":{"x":455,"y":641},"ms":614,"ok":true}
+{"t":"2026-09-09T01:36:25.440Z","op":"scroll","args":{"dy":-600},"ms":409,"ok":true}
+{"t":"2026-09-09T01:36:25.516Z","op":"screenshot","args":{},"ms":17,"ok":true}
+{"t":"2026-09-09T01:36:52.549Z","op":"scroll","args":{"dy":400},"ms":413,"ok":true}
+{"t":"2026-09-09T01:36:52.629Z","op":"screenshot","args":{},"ms":21,"ok":true}
+{"t":"2026-09-09T01:37:05.233Z","op":"tap","args":{"x":583,"y":598},"ms":613,"ok":true}
+{"t":"2026-09-09T01:37:35.573Z","op":"scroll","args":{"dy":1200},"ms":430,"ok":true}
+{"t":"2026-09-09T01:37:36.043Z","op":"snapshot","args":{},"ms":411,"ok":true}
+{"t":"2026-09-09T01:38:11.977Z","op":"click","args":{"text":"Shop"},"ms":769,"ok":true}
+{"t":"2026-09-09T01:38:16.674Z","op":"click","args":{"text":"P002"},"ms":754,"ok":true}
+{"t":"2026-09-09T01:38:33.056Z","op":"scroll","args":{"dy":600},"ms":414,"ok":true}
+{"t":"2026-09-09T01:38:33.528Z","op":"snapshot","args":{},"ms":412,"ok":true}
+{"t":"2026-09-09T01:38:43.015Z","op":"click","args":{"text":"🔧 In shop"},"ms":760,"ok":true}
+{"t":"2026-09-09T01:38:52.259Z","op":"click","args":{"text":"Fleet"},"ms":763,"ok":true}
+{"t":"2026-09-09T01:39:23.856Z","op":"click","args":{"text":"R1004 Furukawa 9ES 2002 Rock Drill Rock Drills · 2002 · 13236 hrs"},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"R1004 Furukawa 9ES 2002 Rock Drill Rock Drills · 2002 · 13236 hrs\""}
+{"t":"2026-09-09T01:39:30.215Z","op":"click","args":{"text":"Furukawa 9ES 2002 Rock Drill"},"ms":752,"ok":true}
+{"t":"2026-09-09T01:39:35.844Z","op":"click","args":{"text":"Correct hours"},"ms":772,"ok":true}
+{"t":"2026-09-09T01:39:44.567Z","op":"fill","args":{"label":"Meter reads","value":"4131"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Meter reads\""}
+{"t":"2026-09-09T01:39:44.677Z","op":"fill","args":{"value":"4131","placeholder":"Meter reads"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Meter reads\""}
+{"t":"2026-09-09T01:39:44.791Z","op":"fill","args":{"value":"4131","selector":"input:near(:text(\"Meter reads\"))"},"ms":8,"ok":true}
+{"t":"2026-09-09T01:39:48.293Z","op":"snapshot","args":{},"ms":405,"ok":true}
+{"t":"2026-09-09T01:39:52.823Z","op":"click","args":{"text":"Save correction"},"ms":764,"ok":true}
+{"t":"2026-09-09T01:40:26.857Z","op":"click","args":{"text":"Log a service done"},"ms":768,"ok":true}
+{"t":"2026-09-09T01:40:32.264Z","op":"select","args":{"label":"Service","value":"Engine service — oil, filters"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Service\""}
+{"t":"2026-09-09T01:40:37.119Z","op":"select","args":{"label":"Pick…","value":"Engine service — oil, filters"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Pick…\""}
+{"t":"2026-09-09T01:40:42.804Z","op":"click","args":{"text":"Engine service — oil, filters"},"ms":769,"ok":true}
+{"t":"2026-09-09T01:40:48.054Z","op":"screenshot","args":{},"ms":19,"ok":true}
+{"t":"2026-09-09T01:40:57.650Z","op":"tap","args":{"x":559,"y":616},"ms":613,"ok":true}
+{"t":"2026-09-09T01:41:19.492Z","op":"click","args":{"text":"Pick…"},"ms":14005,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-09T01:41:28.995Z","op":"tap","args":{"x":559,"y":616},"ms":608,"ok":true}
+{"t":"2026-09-09T01:41:29.565Z","op":"press","args":{"key":"ArrowDown"},"ms":514,"ok":true}
+{"t":"2026-09-09T01:41:30.034Z","op":"snapshot","args":{},"ms":409,"ok":true}
+{"t":"2026-09-09T01:41:39.539Z","op":"tap","args":{"x":559,"y":616},"ms":614,"ok":true}
+{"t":"2026-09-09T01:41:40.105Z","op":"press","args":{"key":"Tab"},"ms":507,"ok":true}
+{"t":"2026-09-09T01:41:40.657Z","op":"press","args":{"key":"Tab"},"ms":508,"ok":true}
+{"t":"2026-09-09T01:41:41.113Z","op":"snapshot","args":{},"ms":408,"ok":true}
+{"t":"2026-09-09T01:41:52.380Z","op":"tap","args":{"x":655,"y":616},"ms":613,"ok":true}
+{"t":"2026-09-09T01:42:02.583Z","op":"tap","args":{"x":559,"y":616},"ms":616,"ok":true}
+{"t":"2026-09-09T01:42:02.779Z","op":"type","args":{"text":"Engine"},"ms":136,"ok":true}
+{"t":"2026-09-09T01:42:10.777Z","op":"fill","args":{"label":"At hours","value":"4131"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"At hours\""}
+{"t":"2026-09-09T01:42:10.888Z","op":"fill","args":{"value":"4131","placeholder":"At hours"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"At hours\""}
+{"t":"2026-09-09T01:42:10.998Z","op":"fill","args":{"value":"4131","selector":"input:near(:text(\"At hours\"))"},"ms":4,"ok":true}
+{"t":"2026-09-09T01:42:11.061Z","op":"press","args":{"key":"ShiftTab"},"ms":0,"ok":false,"error":"keyboard.press: Unknown key: \"ShiftTab\""}
+{"t":"2026-09-09T01:42:11.735Z","op":"press","args":{"key":"ArrowDown"},"ms":518,"ok":true}
+{"t":"2026-09-09T01:42:12.206Z","op":"snapshot","args":{},"ms":412,"ok":true}
+{"t":"2026-09-09T01:42:23.187Z","op":"fill","args":{"label":"At hours","value":"4131"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"At hours\""}
+{"t":"2026-09-09T01:42:23.299Z","op":"fill","args":{"value":"4131","placeholder":"At hours"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"At hours\""}
+{"t":"2026-09-09T01:42:23.415Z","op":"fill","args":{"value":"4131","selector":"input:near(:text(\"At hours\"))"},"ms":6,"ok":true}
+{"t":"2026-09-09T01:42:23.892Z","op":"snapshot","args":{},"ms":405,"ok":true}
+{"t":"2026-09-09T01:42:28.693Z","op":"click","args":{"text":"Save"},"ms":779,"ok":true}
+{"t":"2026-09-09T01:44:24.550Z","op":"screenshot","args":{},"ms":24,"ok":true}
+{"t":"2026-09-09T01:44:32.990Z","op":"click","args":{"text":"Close"},"ms":2,"ok":false,"error":"nothing on the screen matches text=\"Close\""}
+{"t":"2026-09-09T01:44:38.941Z","op":"tap","args":{"x":829,"y":197},"ms":615,"ok":true}
+{"t":"2026-09-09T01:44:43.581Z","op":"screenshot","args":{},"ms":33,"ok":true}
+{"t":"2026-09-09T01:44:50.129Z","op":"tap","args":{"x":485,"y":662},"ms":610,"ok":true}
+{"t":"2026-09-09T01:45:00.513Z","op":"open","args":{"url":"/admin/equipment"},"ms":1,"ok":false,"error":"page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL"}
+{"t":"2026-09-09T01:45:03.860Z","op":"open","args":{"url":"http://localhost:5199/admin/equipment"},"ms":1020,"ok":true}
+{"t":"2026-09-09T01:45:10.647Z","op":"click","args":{"text":"In shop"},"ms":764,"ok":true}
+{"t":"2026-09-09T01:45:14.321Z","op":"click","args":{"text":"Out of service"},"ms":757,"ok":true}
+{"t":"2026-09-09T01:45:39.871Z","op":"click","args":{"text":"In shop","nth":1},"ms":14005,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-09T01:45:43.802Z","op":"click","args":{"text":"Clear"},"ms":775,"ok":true}
+{"t":"2026-09-09T01:45:53.772Z","op":"click","args":{"text":"Out of service"},"ms":752,"ok":true}

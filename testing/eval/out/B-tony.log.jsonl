@@ -1,0 +1,53 @@
+{"t":"2026-09-09T01:21:02.546Z","op":"session","device":"wide"}
+{"t":"2026-09-09T01:21:03.603Z","op":"open","args":{"url":"http://localhost:5199/enroll/H2Hz0sU4hlR8D3rW3hW9sP3nWpQdpZqTnTFd8wYBfIg5fx7tNfEJ7LfoBfdwxyZG","device":"wide"},"ms":1057,"ok":true}
+{"t":"2026-09-09T01:21:07.418Z","op":"fill","args":{"label":"Choose a password","value":"Evalpass1"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Choose a password\""}
+{"t":"2026-09-09T01:21:07.532Z","op":"fill","args":{"value":"Evalpass1","placeholder":"Choose a password"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Choose a password\""}
+{"t":"2026-09-09T01:21:07.688Z","op":"fill","args":{"value":"Evalpass1","selector":"input:near(:text(\"Choose a password\"))"},"ms":45,"ok":true}
+{"t":"2026-09-09T01:21:07.752Z","op":"fill","args":{"label":"Confirm password","value":"Evalpass1"},"ms":0,"ok":false,"error":"nothing on the screen matches label=\"Confirm password\""}
+{"t":"2026-09-09T01:21:07.863Z","op":"fill","args":{"value":"Evalpass1","placeholder":"Confirm password"},"ms":0,"ok":false,"error":"nothing on the screen matches placeholder=\"Confirm password\""}
+{"t":"2026-09-09T01:21:07.984Z","op":"fill","args":{"value":"Evalpass1","selector":"input:near(:text(\"Confirm password\"))"},"ms":10,"ok":true}
+{"t":"2026-09-09T01:21:08.834Z","op":"click","args":{"text":"Create my account"},"ms":773,"ok":true}
+{"t":"2026-09-09T01:21:13.142Z","op":"click","args":{"text":"1"},"ms":785,"ok":true}
+{"t":"2026-09-09T01:21:13.958Z","op":"click","args":{"text":"2"},"ms":759,"ok":true}
+{"t":"2026-09-09T01:21:14.767Z","op":"click","args":{"text":"3"},"ms":749,"ok":true}
+{"t":"2026-09-09T01:21:15.551Z","op":"click","args":{"text":"4"},"ms":745,"ok":true}
+{"t":"2026-09-09T01:21:16.356Z","op":"click","args":{"text":"5"},"ms":757,"ok":true}
+{"t":"2026-09-09T01:21:17.030Z","op":"tap","args":{"x":755,"y":504},"ms":612,"ok":true}
+{"t":"2026-09-09T01:21:21.040Z","op":"click","args":{"text":"1"},"ms":752,"ok":true}
+{"t":"2026-09-09T01:21:21.851Z","op":"click","args":{"text":"2"},"ms":749,"ok":true}
+{"t":"2026-09-09T01:21:22.657Z","op":"click","args":{"text":"3"},"ms":757,"ok":true}
+{"t":"2026-09-09T01:21:23.474Z","op":"click","args":{"text":"4"},"ms":757,"ok":true}
+{"t":"2026-09-09T01:21:24.282Z","op":"click","args":{"text":"5"},"ms":747,"ok":true}
+{"t":"2026-09-09T01:21:24.948Z","op":"tap","args":{"x":755,"y":504},"ms":618,"ok":true}
+{"t":"2026-09-09T01:21:28.900Z","op":"click","args":{"text":"Let's go"},"ms":785,"ok":true}
+{"t":"2026-09-09T01:21:38.596Z","op":"click","args":{"text":"Later"},"ms":6011,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-09T01:21:44.798Z","op":"click","args":{"role":"link","name":"Approvals"},"ms":6026,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-09T01:21:50.344Z","op":"click","args":{"text":"Skip"},"ms":762,"ok":true}
+{"t":"2026-09-09T01:21:51.152Z","op":"click","args":{"text":"Later"},"ms":749,"ok":true}
+{"t":"2026-09-09T01:21:55.195Z","op":"open","args":{"url":"http://localhost:5199/admin/approvals"},"ms":979,"ok":true}
+{"t":"2026-09-09T01:21:58.632Z","op":"click","args":{"text":"Send Back"},"ms":767,"ok":true}
+{"t":"2026-09-09T01:22:43.318Z","op":"open","args":{"url":"http://localhost:5199/blast-day/a4cf7f12-88ee-4898-9683-22280de99e7d"},"ms":988,"ok":true}
+{"t":"2026-09-09T01:23:12.859Z","op":"click","args":{"text":"Change history"},"ms":2,"ok":false,"error":"nothing on the screen matches text=\"Change history\""}
+{"t":"2026-09-09T01:23:16.137Z","op":"screenshot","args":{},"ms":24,"ok":true}
+{"t":"2026-09-09T01:30:56.747Z","op":"open","args":{"url":"http://localhost:5199/admin/approvals"},"ms":976,"ok":true}
+{"t":"2026-09-09T01:31:00.110Z","op":"click","args":{"text":"Approve"},"ms":766,"ok":true}
+{"t":"2026-09-09T01:32:44.222Z","op":"open","args":{"url":"http://localhost:5199/blast-day/a4cf7f12-88ee-4898-9683-22280de99e7d"},"ms":992,"ok":true}
+{"t":"2026-09-09T01:32:53.023Z","op":"click","args":{"text":"Time cards"},"ms":6027,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-09T01:32:56.821Z","op":"click","args":{"text":"Skip"},"ms":768,"ok":true}
+{"t":"2026-09-09T01:32:57.492Z","op":"tap","args":{"x":752,"y":549},"ms":612,"ok":true}
+{"t":"2026-09-09T01:33:01.618Z","op":"screenshot","args":{},"ms":20,"ok":true}
+{"t":"2026-09-09T01:33:09.706Z","op":"tap","args":{"x":752,"y":510},"ms":619,"ok":true}
+{"t":"2026-09-09T01:33:14.438Z","op":"click","args":{"text":"Approve"},"ms":762,"ok":true}
+{"t":"2026-09-09T01:34:04.358Z","op":"open","args":{"url":"http://localhost:5199/blast-day/a4cf7f12-88ee-4898-9683-22280de99e7d?view=daily-report"},"ms":980,"ok":true}
+{"t":"2026-09-09T01:34:07.815Z","op":"screenshot","args":{},"ms":21,"ok":true}
+{"t":"2026-09-09T01:34:15.453Z","op":"tap","args":{"x":428,"y":457},"ms":616,"ok":true}
+{"t":"2026-09-09T01:35:48.095Z","op":"open","args":{"url":"http://localhost:5199/jobs"},"ms":993,"ok":true}
+{"t":"2026-09-09T01:36:24.626Z","op":"open","args":{"url":"http://localhost:5199/admin"},"ms":993,"ok":true}
+{"t":"2026-09-09T01:36:29.770Z","op":"open","args":{"url":"http://localhost:5199/jobs"},"ms":974,"ok":true}
+{"t":"2026-09-09T01:36:29.817Z","op":"fill","args":{"label":"Search customers","value":"Pioneer"},"ms":2,"ok":false,"error":"nothing on the screen matches label=\"Search customers\""}
+{"t":"2026-09-09T01:36:29.929Z","op":"fill","args":{"value":"Pioneer","placeholder":"Search customers"},"ms":3,"ok":true}
+{"t":"2026-09-09T01:36:30.382Z","op":"snapshot","args":{},"ms":413,"ok":true}
+{"t":"2026-09-09T01:36:43.251Z","op":"fill","args":{"label":"Search customers","value":""},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Search customers\""}
+{"t":"2026-09-09T01:36:43.368Z","op":"fill","args":{"value":"","placeholder":"Search customers"},"ms":4,"ok":true}
+{"t":"2026-09-09T01:36:44.026Z","op":"tap","args":{"x":984,"y":90},"ms":611,"ok":true}
+{"t":"2026-09-09T01:36:48.966Z","op":"tap","args":{"x":1101,"y":90},"ms":612,"ok":true}

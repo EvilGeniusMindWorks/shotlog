@@ -1,0 +1,44 @@
+{"t":"2026-09-09T02:19:32.610Z","op":"session","device":"wide"}
+{"t":"2026-09-09T02:19:33.659Z","op":"open","args":{"url":"http://localhost:5199/enroll/YL9r75oFI-nJDnkPkPBDvKjoO-undttNm0Ugs49aISXcaI9h1N_cyjfKXbTsvP8t","device":"wide"},"ms":1049,"ok":true}
+{"t":"2026-09-09T02:19:37.095Z","op":"fill","args":{"label":"Choose a password (8+ characters)","value":"Tony1234!"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Choose a password (8+ characters)\""}
+{"t":"2026-09-09T02:19:37.207Z","op":"fill","args":{"value":"Tony1234!","placeholder":"Choose a password (8+ characters)"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Choose a password (8+ characters)\""}
+{"t":"2026-09-09T02:19:37.355Z","op":"fill","args":{"value":"Tony1234!","selector":"input:near(:text(\"Choose a password (8+ characters)\"))"},"ms":36,"ok":true}
+{"t":"2026-09-09T02:19:37.423Z","op":"fill","args":{"label":"Confirm password","value":"Tony1234!"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Confirm password\""}
+{"t":"2026-09-09T02:19:37.534Z","op":"fill","args":{"value":"Tony1234!","placeholder":"Confirm password"},"ms":0,"ok":false,"error":"nothing on the screen matches placeholder=\"Confirm password\""}
+{"t":"2026-09-09T02:19:37.652Z","op":"fill","args":{"value":"Tony1234!","selector":"input:near(:text(\"Confirm password\"))"},"ms":7,"ok":true}
+{"t":"2026-09-09T02:19:38.492Z","op":"click","args":{"text":"Create my account"},"ms":768,"ok":true}
+{"t":"2026-09-09T02:19:42.822Z","op":"tap","args":{"x":525,"y":440},"ms":628,"ok":true}
+{"t":"2026-09-09T02:19:43.488Z","op":"tap","args":{"x":640,"y":440},"ms":613,"ok":true}
+{"t":"2026-09-09T02:19:44.162Z","op":"tap","args":{"x":755,"y":440},"ms":614,"ok":true}
+{"t":"2026-09-09T02:19:44.836Z","op":"tap","args":{"x":525,"y":505},"ms":614,"ok":true}
+{"t":"2026-09-09T02:19:45.507Z","op":"tap","args":{"x":640,"y":505},"ms":612,"ok":true}
+{"t":"2026-09-09T02:19:46.172Z","op":"tap","args":{"x":755,"y":505},"ms":607,"ok":true}
+{"t":"2026-09-09T02:19:49.976Z","op":"tap","args":{"x":525,"y":440},"ms":613,"ok":true}
+{"t":"2026-09-09T02:19:50.647Z","op":"tap","args":{"x":640,"y":440},"ms":611,"ok":true}
+{"t":"2026-09-09T02:19:51.320Z","op":"tap","args":{"x":755,"y":440},"ms":612,"ok":true}
+{"t":"2026-09-09T02:19:51.996Z","op":"tap","args":{"x":525,"y":505},"ms":615,"ok":true}
+{"t":"2026-09-09T02:19:52.650Z","op":"tap","args":{"x":640,"y":505},"ms":613,"ok":true}
+{"t":"2026-09-09T02:19:53.325Z","op":"tap","args":{"x":755,"y":505},"ms":615,"ok":true}
+{"t":"2026-09-09T02:19:56.629Z","op":"click","args":{"text":"Let's go"},"ms":804,"ok":true}
+{"t":"2026-09-09T02:20:06.742Z","op":"click","args":{"text":"Later"},"ms":6016,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-09T02:20:10.230Z","op":"click","args":{"text":"Skip"},"ms":763,"ok":true}
+{"t":"2026-09-09T02:20:13.882Z","op":"click","args":{"text":"Later"},"ms":765,"ok":true}
+{"t":"2026-09-09T02:20:14.700Z","op":"click","args":{"role":"link","name":"Approvals"},"ms":759,"ok":true}
+{"t":"2026-09-09T02:20:19.064Z","op":"click","args":{"text":"Send Back"},"ms":755,"ok":true}
+{"t":"2026-09-09T02:35:28.883Z","op":"open","args":{"url":"http://localhost:5199/admin/approvals"},"ms":1010,"ok":true}
+{"t":"2026-09-09T02:35:34.565Z","op":"click","args":{"role":"link","name":"Ledgeville Pit — Phase 1"},"ms":779,"ok":true}
+{"t":"2026-09-09T02:35:39.220Z","op":"click","args":{"text":"Change history"},"ms":2,"ok":false,"error":"nothing on the screen matches text=\"Change history\""}
+{"t":"2026-09-09T02:35:43.316Z","op":"click","args":{"text":"Skip"},"ms":767,"ok":true}
+{"t":"2026-09-09T02:35:50.348Z","op":"click","args":{"text":"Approve"},"ms":773,"ok":true}
+{"t":"2026-09-09T02:35:55.772Z","op":"click","args":{"text":"Time cards"},"ms":767,"ok":true}
+{"t":"2026-09-09T02:36:02.545Z","op":"click","args":{"text":"Approve"},"ms":761,"ok":true}
+{"t":"2026-09-09T02:36:09.327Z","op":"screenshot","args":{},"ms":29,"ok":true}
+{"t":"2026-09-09T02:36:17.929Z","op":"tap","args":{"x":427,"y":457},"ms":618,"ok":true}
+{"t":"2026-09-09T02:37:28.398Z","op":"open","args":{"url":"http://localhost:5199/jobs"},"ms":985,"ok":true}
+{"t":"2026-09-09T02:38:08.469Z","op":"open","args":{"url":"http://localhost:5199/jobs"},"ms":986,"ok":true}
+{"t":"2026-09-09T02:38:09.136Z","op":"tap","args":{"x":1101,"y":89},"ms":615,"ok":true}
+{"t":"2026-09-09T02:38:28.345Z","op":"open","args":{"url":"http://localhost:5199/admin"},"ms":984,"ok":true}
+{"t":"2026-09-09T02:44:40.622Z","op":"open","args":{"url":"http://localhost:5199/admin/people"},"ms":993,"ok":true}
+{"t":"2026-09-09T02:44:41.444Z","op":"click","args":{"text":"Add person"},"ms":771,"ok":true}
+{"t":"2026-09-09T02:44:59.374Z","op":"click","args":{"text":"Cancel"},"ms":760,"ok":true}
+{"t":"2026-09-09T02:45:09.956Z","op":"open","args":{"url":"http://localhost:5199/admin"},"ms":985,"ok":true}

@@ -1,0 +1,267 @@
+{"t":"2026-09-08T23:31:43.868Z","op":"session","device":"phone"}
+{"t":"2026-09-08T23:31:44.926Z","op":"open","args":{"url":"http://localhost:5199/enroll/y8xNNMduuP8SlyxcR_Oz3OmXNgFmqf6IynBvF0qH9KjnXYNocEn3A1dE7QI8gQQg","device":"phone"},"ms":1057,"ok":true}
+{"t":"2026-09-08T23:31:47.418Z","op":"fill","args":{"label":"Choose a password","value":"Blast2024!"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Choose a password\""}
+{"t":"2026-09-08T23:31:47.527Z","op":"fill","args":{"value":"Blast2024!","placeholder":"Choose a password"},"ms":0,"ok":false,"error":"nothing on the screen matches placeholder=\"Choose a password\""}
+{"t":"2026-09-08T23:31:47.661Z","op":"fill","args":{"value":"Blast2024!","selector":"input:near(:text(\"Choose a password\"))"},"ms":29,"ok":true}
+{"t":"2026-09-08T23:31:49.788Z","op":"fill","args":{"label":"Confirm password","value":"Blast2024!"},"ms":0,"ok":false,"error":"nothing on the screen matches label=\"Confirm password\""}
+{"t":"2026-09-08T23:31:49.896Z","op":"fill","args":{"value":"Blast2024!","placeholder":"Confirm password"},"ms":0,"ok":false,"error":"nothing on the screen matches placeholder=\"Confirm password\""}
+{"t":"2026-09-08T23:31:50.009Z","op":"fill","args":{"value":"Blast2024!","selector":"input:near(:text(\"Confirm password\"))"},"ms":7,"ok":true}
+{"t":"2026-09-08T23:31:52.868Z","op":"click","args":{"text":"Create my account"},"ms":769,"ok":true}
+{"t":"2026-09-08T23:32:03.088Z","op":"snapshot","args":{},"ms":425,"ok":true}
+{"t":"2026-09-08T23:32:07.285Z","op":"click","args":{"text":"1"},"ms":767,"ok":true}
+{"t":"2026-09-08T23:32:08.094Z","op":"click","args":{"text":"2"},"ms":746,"ok":true}
+{"t":"2026-09-08T23:32:08.902Z","op":"click","args":{"text":"3"},"ms":768,"ok":true}
+{"t":"2026-09-08T23:32:09.710Z","op":"click","args":{"text":"4"},"ms":747,"ok":true}
+{"t":"2026-09-08T23:32:10.502Z","op":"click","args":{"text":"5"},"ms":752,"ok":true}
+{"t":"2026-09-08T23:32:11.315Z","op":"click","args":{"text":"6"},"ms":753,"ok":true}
+{"t":"2026-09-08T23:32:14.020Z","op":"screenshot","args":{},"ms":34,"ok":true}
+{"t":"2026-09-08T23:32:24.627Z","op":"click","args":{"text":"6"},"ms":748,"ok":true}
+{"t":"2026-09-08T23:32:28.886Z","op":"screenshot","args":{},"ms":37,"ok":true}
+{"t":"2026-09-08T23:32:40.794Z","op":"click","args":{"text":"6"},"ms":753,"ok":true}
+{"t":"2026-09-08T23:32:56.500Z","op":"tap","args":{"x":275,"y":495},"ms":613,"ok":true}
+{"t":"2026-09-08T23:33:01.392Z","op":"tap","args":{"x":87,"y":435},"ms":612,"ok":true}
+{"t":"2026-09-08T23:33:02.061Z","op":"tap","args":{"x":181,"y":435},"ms":608,"ok":true}
+{"t":"2026-09-08T23:33:02.731Z","op":"tap","args":{"x":275,"y":435},"ms":610,"ok":true}
+{"t":"2026-09-08T23:33:03.403Z","op":"tap","args":{"x":87,"y":495},"ms":612,"ok":true}
+{"t":"2026-09-08T23:33:04.067Z","op":"tap","args":{"x":181,"y":495},"ms":605,"ok":true}
+{"t":"2026-09-08T23:33:04.716Z","op":"tap","args":{"x":275,"y":495},"ms":606,"ok":true}
+{"t":"2026-09-08T23:33:07.651Z","op":"screenshot","args":{},"ms":37,"ok":true}
+{"t":"2026-09-08T23:33:21.794Z","op":"tap","args":{"x":87,"y":495},"ms":610,"ok":true}
+{"t":"2026-09-08T23:33:25.109Z","op":"tap","args":{"x":181,"y":495},"ms":611,"ok":true}
+{"t":"2026-09-08T23:33:28.381Z","op":"tap","args":{"x":275,"y":495},"ms":612,"ok":true}
+{"t":"2026-09-08T23:33:53.203Z","op":"tap","args":{"x":87,"y":435},"ms":605,"ok":true}
+{"t":"2026-09-08T23:33:56.208Z","op":"tap","args":{"x":87,"y":435},"ms":607,"ok":true}
+{"t":"2026-09-08T23:33:59.863Z","op":"screenshot","args":{},"ms":34,"ok":true}
+{"t":"2026-09-08T23:34:13.525Z","op":"tap","args":{"x":87,"y":460},"ms":612,"ok":true}
+{"t":"2026-09-08T23:34:17.231Z","op":"tap","args":{"x":87,"y":460},"ms":612,"ok":true}
+{"t":"2026-09-08T23:34:20.219Z","op":"tap","args":{"x":87,"y":460},"ms":611,"ok":true}
+{"t":"2026-09-08T23:34:23.307Z","op":"tap","args":{"x":87,"y":460},"ms":611,"ok":true}
+{"t":"2026-09-08T23:34:26.400Z","op":"tap","args":{"x":87,"y":460},"ms":613,"ok":true}
+{"t":"2026-09-08T23:34:29.598Z","op":"tap","args":{"x":87,"y":460},"ms":605,"ok":true}
+{"t":"2026-09-08T23:34:34.599Z","op":"tap","args":{"x":87,"y":460},"ms":605,"ok":true}
+{"t":"2026-09-08T23:34:38.017Z","op":"tap","args":{"x":87,"y":460},"ms":605,"ok":true}
+{"t":"2026-09-08T23:34:41.020Z","op":"tap","args":{"x":87,"y":460},"ms":605,"ok":true}
+{"t":"2026-09-08T23:34:44.008Z","op":"tap","args":{"x":87,"y":460},"ms":605,"ok":true}
+{"t":"2026-09-08T23:34:47.428Z","op":"tap","args":{"x":87,"y":460},"ms":610,"ok":true}
+{"t":"2026-09-08T23:34:50.263Z","op":"tap","args":{"x":87,"y":460},"ms":615,"ok":true}
+{"t":"2026-09-08T23:34:54.781Z","op":"click","args":{"text":"Let's go"},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"Let's go\""}
+{"t":"2026-09-08T23:34:58.674Z","op":"click","args":{"role":"button","name":"Let's go"},"ms":1,"ok":false,"error":"nothing on the screen matches role=\"button\" name=\"Let's go\""}
+{"t":"2026-09-08T23:35:01.764Z","op":"screenshot","args":{},"ms":37,"ok":true}
+{"t":"2026-09-08T23:35:09.827Z","op":"tap","args":{"x":181,"y":515},"ms":607,"ok":true}
+{"t":"2026-09-08T23:35:19.321Z","op":"tap","args":{"x":200,"y":520},"ms":612,"ok":true}
+{"t":"2026-09-08T23:35:25.019Z","op":"press","args":{"key":"Tab"},"ms":512,"ok":true}
+{"t":"2026-09-08T23:35:27.935Z","op":"press","args":{"key":"Enter"},"ms":523,"ok":true}
+{"t":"2026-09-08T23:36:03.401Z","op":"click","args":{"role":"button","name":"— File rig checklist not filed today"},"ms":6028,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-08T23:36:07.964Z","op":"click","args":{"text":"Skip"},"ms":775,"ok":true}
+{"t":"2026-09-08T23:36:11.729Z","op":"scroll","args":{"dy":400},"ms":405,"ok":true}
+{"t":"2026-09-08T23:36:14.349Z","op":"screenshot","args":{},"ms":35,"ok":true}
+{"t":"2026-09-08T23:36:23.972Z","op":"tap","args":{"x":67,"y":695},"ms":614,"ok":true}
+{"t":"2026-09-08T23:36:29.460Z","op":"click","args":{"role":"link","name":"File a rig checklist"},"ms":759,"ok":true}
+{"t":"2026-09-08T23:36:37.617Z","op":"scroll","args":{"dy":-600},"ms":414,"ok":true}
+{"t":"2026-09-08T23:36:40.012Z","op":"screenshot","args":{},"ms":33,"ok":true}
+{"t":"2026-09-08T23:36:49.423Z","op":"tap","args":{"x":67,"y":431},"ms":614,"ok":true}
+{"t":"2026-09-08T23:36:54.406Z","op":"click","args":{"text":"All rigs (1)"},"ms":763,"ok":true}
+{"t":"2026-09-08T23:36:57.850Z","op":"click","args":{"text":"R1004"},"ms":759,"ok":true}
+{"t":"2026-09-08T23:37:03.470Z","op":"fill","args":{"label":"Starting hours","value":"4120"},"ms":2,"ok":false,"error":"nothing on the screen matches label=\"Starting hours\""}
+{"t":"2026-09-08T23:37:03.585Z","op":"fill","args":{"value":"4120","placeholder":"Starting hours"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Starting hours\""}
+{"t":"2026-09-08T23:37:03.714Z","op":"fill","args":{"value":"4120","selector":"input:near(:text(\"Starting hours\"))"},"ms":12,"ok":true}
+{"t":"2026-09-08T23:37:06.495Z","op":"click","args":{"text":"Horn ✓"},"ms":2,"ok":false,"error":"nothing on the screen matches text=\"Horn ✓\""}
+{"t":"2026-09-08T23:37:12.718Z","op":"click","args":{"role":"button","name":"Horn"},"ms":759,"ok":true}
+{"t":"2026-09-08T23:37:19.607Z","op":"click","args":{"role":"button","name":"Horn"},"ms":764,"ok":true}
+{"t":"2026-09-08T23:37:27.628Z","op":"fill","args":{"label":"e.g. hose blew","value":"Horn not working — needs repair"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"e.g. hose blew\""}
+{"t":"2026-09-08T23:37:27.746Z","op":"fill","args":{"value":"Horn not working — needs repair","placeholder":"e.g. hose blew"},"ms":5,"ok":true}
+{"t":"2026-09-08T23:37:30.810Z","op":"check","args":{"text":"Rig is OUT OF SERVICE"},"ms":94,"ok":true}
+{"t":"2026-09-08T23:37:34.190Z","op":"click","args":{"text":"Tap to sign"},"ms":762,"ok":true}
+{"t":"2026-09-08T23:37:40.058Z","op":"sign","args":{},"ms":1618,"ok":true}
+{"t":"2026-09-08T23:37:44.122Z","op":"click","args":{"text":"Save Signature"},"ms":759,"ok":true}
+{"t":"2026-09-08T23:37:48.579Z","op":"click","args":{"text":"File checklist for R1004"},"ms":754,"ok":true}
+{"t":"2026-09-09T00:03:35.504Z","op":"session","device":"phone"}
+{"t":"2026-09-09T00:03:36.550Z","op":"open","args":{"url":"http://localhost:5199/enroll/Btrmyc0C9Z4rqOCs5r_oND9s4NvIcLHP-vZgyUWDHW1q2586dxOGYTojB9D7S-Ft","device":"phone"},"ms":1045,"ok":true}
+{"t":"2026-09-09T00:03:39.566Z","op":"fill","args":{"label":"Choose a password","value":"Blast2024!"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Choose a password\""}
+{"t":"2026-09-09T00:03:39.680Z","op":"fill","args":{"value":"Blast2024!","placeholder":"Choose a password"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Choose a password\""}
+{"t":"2026-09-09T00:03:39.828Z","op":"fill","args":{"value":"Blast2024!","selector":"input:near(:text(\"Choose a password\"))"},"ms":37,"ok":true}
+{"t":"2026-09-09T00:03:42.357Z","op":"fill","args":{"label":"Confirm password","value":"Blast2024!"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Confirm password\""}
+{"t":"2026-09-09T00:03:42.467Z","op":"fill","args":{"value":"Blast2024!","placeholder":"Confirm password"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Confirm password\""}
+{"t":"2026-09-09T00:03:42.576Z","op":"fill","args":{"value":"Blast2024!","selector":"input:near(:text(\"Confirm password\"))"},"ms":4,"ok":true}
+{"t":"2026-09-09T00:03:46.205Z","op":"click","args":{"text":"Create my account"},"ms":768,"ok":true}
+{"t":"2026-09-09T00:03:49.390Z","op":"snapshot","args":{},"ms":425,"ok":true}
+{"t":"2026-09-09T00:03:58.111Z","op":"click","args":{"text":"1"},"ms":761,"ok":true}
+{"t":"2026-09-09T00:04:01.503Z","op":"click","args":{"text":"1"},"ms":762,"ok":true}
+{"t":"2026-09-09T00:04:05.138Z","op":"click","args":{"text":"1"},"ms":754,"ok":true}
+{"t":"2026-09-09T00:04:08.467Z","op":"click","args":{"text":"1"},"ms":748,"ok":true}
+{"t":"2026-09-09T00:04:12.037Z","op":"click","args":{"text":"1"},"ms":759,"ok":true}
+{"t":"2026-09-09T00:04:15.284Z","op":"click","args":{"text":"1"},"ms":746,"ok":true}
+{"t":"2026-09-09T00:04:20.225Z","op":"click","args":{"text":"1"},"ms":768,"ok":true}
+{"t":"2026-09-09T00:04:23.669Z","op":"click","args":{"text":"1"},"ms":756,"ok":true}
+{"t":"2026-09-09T00:04:26.924Z","op":"click","args":{"text":"1"},"ms":768,"ok":true}
+{"t":"2026-09-09T00:04:30.433Z","op":"click","args":{"text":"1"},"ms":758,"ok":true}
+{"t":"2026-09-09T00:04:33.652Z","op":"click","args":{"text":"1"},"ms":754,"ok":true}
+{"t":"2026-09-09T00:04:36.879Z","op":"click","args":{"text":"1"},"ms":759,"ok":true}
+{"t":"2026-09-09T00:04:41.811Z","op":"click","args":{"text":"Let's go"},"ms":786,"ok":true}
+{"t":"2026-09-09T00:04:46.677Z","op":"click","args":{"text":"— File rig checklist not filed today"},"ms":2,"ok":false,"error":"nothing on the screen matches text=\"— File rig checklist not filed today\""}
+{"t":"2026-09-09T00:04:51.695Z","op":"click","args":{"text":"Skip"},"ms":760,"ok":true}
+{"t":"2026-09-09T00:04:59.823Z","op":"click","args":{"role":"button","name":"File rig checklist not filed today"},"ms":788,"ok":true}
+{"t":"2026-09-09T00:05:04.771Z","op":"click","args":{"text":"All rigs (1)"},"ms":759,"ok":true}
+{"t":"2026-09-09T00:05:08.251Z","op":"click","args":{"text":"R1004"},"ms":751,"ok":true}
+{"t":"2026-09-09T00:05:11.276Z","op":"fill","args":{"label":"Starting hours","value":"4120"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Starting hours\""}
+{"t":"2026-09-09T00:05:11.389Z","op":"fill","args":{"value":"4120","placeholder":"Starting hours"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Starting hours\""}
+{"t":"2026-09-09T00:05:11.506Z","op":"fill","args":{"value":"4120","selector":"input:near(:text(\"Starting hours\"))"},"ms":8,"ok":true}
+{"t":"2026-09-09T00:05:15.042Z","op":"click","args":{"role":"button","name":"Horn"},"ms":771,"ok":true}
+{"t":"2026-09-09T00:05:18.510Z","op":"click","args":{"role":"button","name":"Horn"},"ms":768,"ok":true}
+{"t":"2026-09-09T00:05:22.411Z","op":"fill","args":{"label":"e.g. hose blew","value":"Horn not working — needs repair"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"e.g. hose blew\""}
+{"t":"2026-09-09T00:05:22.525Z","op":"fill","args":{"value":"Horn not working — needs repair","placeholder":"e.g. hose blew"},"ms":4,"ok":true}
+{"t":"2026-09-09T00:05:25.746Z","op":"check","args":{"text":"Rig is OUT OF SERVICE"},"ms":103,"ok":true}
+{"t":"2026-09-09T00:05:29.163Z","op":"click","args":{"text":"Tap to sign"},"ms":767,"ok":true}
+{"t":"2026-09-09T00:05:33.842Z","op":"sign","args":{},"ms":1609,"ok":true}
+{"t":"2026-09-09T00:05:37.308Z","op":"click","args":{"text":"Save Signature"},"ms":757,"ok":true}
+{"t":"2026-09-09T00:05:40.866Z","op":"click","args":{"text":"File checklist for R1004"},"ms":752,"ok":true}
+{"t":"2026-09-09T00:21:58.945Z","op":"click","args":{"text":"Done"},"ms":6022,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-09T00:22:02.895Z","op":"screenshot","args":{},"ms":9,"ok":true}
+{"t":"2026-09-09T00:22:12.506Z","op":"tap","args":{"x":194,"y":421},"ms":619,"ok":true}
+{"t":"2026-09-09T00:22:20.746Z","op":"click","args":{"text":"Shot 1 · Ledgeville Pit"},"ms":762,"ok":true}
+{"t":"2026-09-09T00:22:35.543Z","op":"click","args":{"text":"R1"},"ms":6025,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-09T00:22:40.435Z","op":"click","args":{"text":"Skip"},"ms":759,"ok":true}
+{"t":"2026-09-09T00:22:46.025Z","op":"click","args":{"text":"R1"},"ms":771,"ok":true}
+{"t":"2026-09-09T00:22:51.630Z","op":"screenshot","args":{},"ms":15,"ok":true}
+{"t":"2026-09-09T00:23:14.107Z","op":"scroll","args":{"dy":400},"ms":416,"ok":true}
+{"t":"2026-09-09T00:23:26.613Z","op":"click","args":{"text":"Add hole 1"},"ms":764,"ok":true}
+{"t":"2026-09-09T00:23:36.007Z","op":"click","args":{"text":"Add hole 2"},"ms":769,"ok":true}
+{"t":"2026-09-09T00:23:40.056Z","op":"click","args":{"text":"Add hole 3"},"ms":772,"ok":true}
+{"t":"2026-09-09T00:23:44.074Z","op":"click","args":{"text":"Add hole 4"},"ms":767,"ok":true}
+{"t":"2026-09-09T00:23:48.773Z","op":"click","args":{"text":"Add hole 5"},"ms":762,"ok":true}
+{"t":"2026-09-09T00:23:52.987Z","op":"click","args":{"text":"Add hole 6"},"ms":771,"ok":true}
+{"t":"2026-09-09T00:27:51.066Z","op":"snapshot","args":{},"ms":421,"ok":true}
+{"t":"2026-09-09T00:28:13.701Z","op":"click","args":{"text":"Add hole 7"},"ms":769,"ok":true}
+{"t":"2026-09-09T00:28:18.000Z","op":"click","args":{"text":"Add hole 8"},"ms":767,"ok":true}
+{"t":"2026-09-09T00:28:23.073Z","op":"click","args":{"text":"Water"},"ms":773,"ok":true}
+{"t":"2026-09-09T00:28:29.866Z","op":"click","args":{"text":"Add hole 9"},"ms":773,"ok":true}
+{"t":"2026-09-09T00:28:35.713Z","op":"click","args":{"text":"Add hole 10"},"ms":770,"ok":true}
+{"t":"2026-09-09T00:28:39.932Z","op":"click","args":{"text":"Add hole 11"},"ms":773,"ok":true}
+{"t":"2026-09-09T00:28:46.049Z","op":"click","args":{"text":"Add hole 12"},"ms":764,"ok":true}
+{"t":"2026-09-09T00:28:50.165Z","op":"click","args":{"text":"Add hole 13"},"ms":759,"ok":true}
+{"t":"2026-09-09T00:29:02.357Z","op":"click","args":{"text":"angle / subdrill / comment"},"ms":754,"ok":true}
+{"t":"2026-09-09T00:29:17.935Z","op":"click","args":{"text":"Void"},"ms":774,"ok":true}
+{"t":"2026-09-09T00:29:38.806Z","op":"click","args":{"text":"Void"},"ms":757,"ok":true}
+{"t":"2026-09-09T00:29:48.771Z","op":"click","args":{"role":"button","name":"14 18"},"ms":777,"ok":true}
+{"t":"2026-09-09T00:29:54.577Z","op":"click","args":{"text":"Mark skipped"},"ms":766,"ok":true}
+{"t":"2026-09-09T00:30:05.227Z","op":"click","args":{"text":"Add hole 15"},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"Add hole 15\""}
+{"t":"2026-09-09T00:30:12.003Z","op":"click","args":{"role":"button","name":"15 18"},"ms":756,"ok":true}
+{"t":"2026-09-09T00:30:17.577Z","op":"click","args":{"text":"Log 1 as planned"},"ms":765,"ok":true}
+{"t":"2026-09-09T00:30:22.996Z","op":"click","args":{"role":"button","name":"16 18"},"ms":770,"ok":true}
+{"t":"2026-09-09T00:30:26.985Z","op":"click","args":{"text":"Log 1 as planned"},"ms":759,"ok":true}
+{"t":"2026-09-09T00:30:31.697Z","op":"click","args":{"role":"button","name":"17 18"},"ms":770,"ok":true}
+{"t":"2026-09-09T00:30:36.257Z","op":"click","args":{"text":"Log 1 as planned"},"ms":761,"ok":true}
+{"t":"2026-09-09T00:30:46.948Z","op":"fill","args":{"label":"Hole #","value":"30"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Hole #\""}
+{"t":"2026-09-09T00:30:47.061Z","op":"fill","args":{"value":"30","placeholder":"Hole #"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Hole #\""}
+{"t":"2026-09-09T00:30:47.191Z","op":"fill","args":{"value":"30","selector":"input:near(:text(\"Hole #\"))"},"ms":12,"ok":true}
+{"t":"2026-09-09T00:30:50.509Z","op":"fill","args":{"label":"Depth drilled","value":"15"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Depth drilled\""}
+{"t":"2026-09-09T00:30:50.621Z","op":"fill","args":{"value":"15","placeholder":"Depth drilled"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Depth drilled\""}
+{"t":"2026-09-09T00:30:50.737Z","op":"fill","args":{"value":"15","selector":"input:near(:text(\"Depth drilled\"))"},"ms":7,"ok":true}
+{"t":"2026-09-09T00:30:54.349Z","op":"click","args":{"text":"Add hole 30"},"ms":755,"ok":true}
+{"t":"2026-09-09T00:31:06.043Z","op":"click","args":{"text":"Add hole 18"},"ms":763,"ok":true}
+{"t":"2026-09-09T00:31:10.507Z","op":"click","args":{"text":"Add hole 19"},"ms":767,"ok":true}
+{"t":"2026-09-09T00:31:15.124Z","op":"click","args":{"text":"Add hole 20"},"ms":757,"ok":true}
+{"t":"2026-09-09T00:31:19.276Z","op":"click","args":{"text":"Add hole 21"},"ms":759,"ok":true}
+{"t":"2026-09-09T00:31:23.522Z","op":"click","args":{"text":"Add hole 22"},"ms":763,"ok":true}
+{"t":"2026-09-09T00:31:28.042Z","op":"click","args":{"text":"Add hole 23"},"ms":769,"ok":true}
+{"t":"2026-09-09T00:38:04.721Z","op":"snapshot","args":{},"ms":416,"ok":true}
+{"t":"2026-09-09T00:38:11.189Z","op":"click","args":{"text":"Add hole 24"},"ms":770,"ok":true}
+{"t":"2026-09-09T00:38:15.639Z","op":"click","args":{"text":"Add hole 25"},"ms":771,"ok":true}
+{"t":"2026-09-09T00:38:20.194Z","op":"click","args":{"text":"Add hole 26"},"ms":764,"ok":true}
+{"t":"2026-09-09T00:40:32.489Z","op":"click","args":{"text":"Add hole 27"},"ms":748,"ok":true}
+{"t":"2026-09-09T00:40:36.317Z","op":"click","args":{"text":"Add hole 28"},"ms":767,"ok":true}
+{"t":"2026-09-09T00:40:39.900Z","op":"click","args":{"text":"Add hole 29"},"ms":771,"ok":true}
+{"t":"2026-09-09T00:41:38.034Z","op":"select","args":{"label":"Drill rig","value":"R1004 — Furukawa 9ES 2002 Rock Drill"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Drill rig\""}
+{"t":"2026-09-09T00:41:43.370Z","op":"click","args":{"text":"Mark complete"},"ms":779,"ok":true}
+{"t":"2026-09-09T00:42:07.047Z","op":"type","args":{"text":"e.g. row 3 ran wet, watch the toe Row 5 all done. Hole 9 wet around 12 ft, hole 14 had a boulder (skipped). Extra hole at 30 drilled off-plan."},"ms":3341,"ok":true}
+{"t":"2026-09-09T00:42:16.015Z","op":"click","args":{"text":"Complete"},"ms":6013,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-09T00:42:22.719Z","op":"screenshot","args":{},"ms":22,"ok":true}
+{"t":"2026-09-09T00:42:38.101Z","op":"scroll","args":{"dy":null},"ms":420,"ok":true}
+{"t":"2026-09-09T00:42:48.284Z","op":"screenshot","args":{},"ms":18,"ok":true}
+{"t":"2026-09-09T00:43:02.172Z","op":"key","args":{},"ms":0,"ok":false,"error":"unknown op key"}
+{"t":"2026-09-09T00:43:15.119Z","op":"tap","args":{"x":295,"y":782},"ms":616,"ok":true}
+{"t":"2026-09-09T00:43:22.315Z","op":"navigate","args":{},"ms":0,"ok":false,"error":"unknown op navigate"}
+{"t":"2026-09-09T00:43:26.776Z","op":"click","args":{"text":"Ledgeville Pit — Phase 1 · Shot 1"},"ms":772,"ok":true}
+{"t":"2026-09-09T00:43:29.831Z","op":"click","args":{"text":"Open live record"},"ms":764,"ok":true}
+{"t":"2026-09-09T00:44:11.460Z","op":"click","args":{"text":"Tap to sign"},"ms":766,"ok":true}
+{"t":"2026-09-09T00:44:15.830Z","op":"screenshot","args":{},"ms":16,"ok":true}
+{"t":"2026-09-09T00:44:23.224Z","op":"drag","args":{},"ms":0,"ok":false,"error":"unknown op drag"}
+{"t":"2026-09-09T00:44:29.871Z","op":"help","args":{},"ms":0,"ok":false,"error":"unknown op help"}
+{"t":"2026-09-09T00:44:37.642Z","op":"sign","args":{},"ms":1620,"ok":true}
+{"t":"2026-09-09T00:44:42.560Z","op":"click","args":{"text":"Save Signature"},"ms":766,"ok":true}
+{"t":"2026-09-09T00:45:01.045Z","op":"click","args":{"text":"Mark complete · 30 holes"},"ms":770,"ok":true}
+{"t":"2026-09-09T00:45:04.846Z","op":"fill","args":{"label":"e.g. row 3 ran wet, watch the toe","value":"Row 5 done. Hole 9 wet ~12 ft. Hole 14 skipped boulder. Off-plan hole at 30."},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"e.g. row 3 ran wet, watch the toe\""}
+{"t":"2026-09-09T00:45:04.967Z","op":"fill","args":{"value":"Row 5 done. Hole 9 wet ~12 ft. Hole 14 skipped boulder. Off-plan hole at 30.","placeholder":"e.g. row 3 ran wet, watch the toe"},"ms":7,"ok":true}
+{"t":"2026-09-09T00:45:08.200Z","op":"press","args":{"key":"Enter"},"ms":508,"ok":true}
+{"t":"2026-09-09T00:45:47.251Z","op":"scroll","args":{"dy":-600},"ms":419,"ok":true}
+{"t":"2026-09-09T00:45:50.044Z","op":"screenshot","args":{},"ms":18,"ok":true}
+{"t":"2026-09-09T00:46:19.789Z","op":"tap","args":{"x":295,"y":771},"ms":616,"ok":true}
+{"t":"2026-09-09T00:46:28.420Z","op":"tap","args":{"x":100,"y":776},"ms":616,"ok":true}
+{"t":"2026-09-09T00:46:41.714Z","op":"press","args":{"key":"Escape"},"ms":515,"ok":true}
+{"t":"2026-09-09T00:47:02.099Z","op":"scroll","args":{"dy":600},"ms":417,"ok":true}
+{"t":"2026-09-09T00:47:04.923Z","op":"screenshot","args":{},"ms":21,"ok":true}
+{"t":"2026-09-09T00:47:30.064Z","op":"tap","args":{"x":195,"y":400},"ms":615,"ok":true}
+{"t":"2026-09-09T00:47:51.136Z","op":"click","args":{"text":"Cancel"},"ms":6021,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-09T00:48:29.764Z","op":"press","args":{"key":"Tab"},"ms":515,"ok":true}
+{"t":"2026-09-09T00:48:33.431Z","op":"press","args":{"key":"Tab"},"ms":507,"ok":true}
+{"t":"2026-09-09T00:48:36.924Z","op":"press","args":{"key":"Space"},"ms":512,"ok":true}
+{"t":"2026-09-09T00:49:11.649Z","op":"click","args":{"text":"Tap to sign"},"ms":6022,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-09T00:49:25.380Z","op":"click","args":{"text":"Row 5 done"},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"Row 5 done\""}
+{"t":"2026-09-09T00:49:30.483Z","op":"fill","args":{"label":"e.g. row 3 ran wet, watch the toe","value":"Row 5 done. Hole 9 wet ~12 ft. Hole 14 skipped boulder. Off-plan hole at 30."},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"e.g. row 3 ran wet, watch the toe\""}
+{"t":"2026-09-09T00:49:30.602Z","op":"fill","args":{"value":"Row 5 done. Hole 9 wet ~12 ft. Hole 14 skipped boulder. Off-plan hole at 30.","placeholder":"e.g. row 3 ran wet, watch the toe"},"ms":4,"ok":true}
+{"t":"2026-09-09T00:49:35.123Z","op":"press","args":{"key":"Tab"},"ms":517,"ok":true}
+{"t":"2026-09-09T00:49:38.651Z","op":"press","args":{"key":"Space"},"ms":510,"ok":true}
+{"t":"2026-09-09T00:49:49.130Z","op":"click","args":{"text":"Tap to sign"},"ms":770,"ok":true}
+{"t":"2026-09-09T00:49:54.013Z","op":"sign","args":{},"ms":1620,"ok":true}
+{"t":"2026-09-09T00:49:57.804Z","op":"click","args":{"text":"Save Signature"},"ms":755,"ok":true}
+{"t":"2026-09-09T00:50:02.114Z","op":"click","args":{"text":"Mark complete · 30 holes"},"ms":775,"ok":true}
+{"t":"2026-09-09T00:50:05.988Z","op":"fill","args":{"label":"e.g. row 3 ran wet, watch the toe","value":"Row 5 done. Hole 9 wet ~12 ft. Hole 14 skipped boulder. Off-plan hole at 30."},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"e.g. row 3 ran wet, watch the toe\""}
+{"t":"2026-09-09T00:50:06.108Z","op":"fill","args":{"value":"Row 5 done. Hole 9 wet ~12 ft. Hole 14 skipped boulder. Off-plan hole at 30.","placeholder":"e.g. row 3 ran wet, watch the toe"},"ms":6,"ok":true}
+{"t":"2026-09-09T00:50:09.334Z","op":"press","args":{"key":"Tab"},"ms":518,"ok":true}
+{"t":"2026-09-09T00:50:13.829Z","op":"press","args":{"key":"Tab"},"ms":516,"ok":true}
+{"t":"2026-09-09T00:50:17.278Z","op":"press","args":{"key":"Space"},"ms":509,"ok":true}
+{"t":"2026-09-09T00:50:30.271Z","op":"click","args":{"role":"link","name":"Work days"},"ms":765,"ok":true}
+{"t":"2026-09-09T00:50:40.957Z","op":"click","args":{"role":"link","name":"Dashboard"},"ms":758,"ok":true}
+{"t":"2026-09-09T00:50:55.190Z","op":"click","args":{"text":"My hours"},"ms":767,"ok":true}
+{"t":"2026-09-09T00:51:03.255Z","op":"select","args":{"label":"Pick a job","value":"Ledgeville Pit — Phase 1"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Pick a job\""}
+{"t":"2026-09-09T00:51:05.809Z","op":"select","args":{"label":"Which job?","value":"Ledgeville Pit — Phase 1"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Which job?\""}
+{"t":"2026-09-09T00:51:08.698Z","op":"select","args":{"label":"Pick a job…","value":"Ledgeville Pit — Phase 1"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Pick a job…\""}
+{"t":"2026-09-09T00:51:15.531Z","op":"screenshot","args":{},"ms":9,"ok":true}
+{"t":"2026-09-09T00:51:22.619Z","op":"tap","args":{"x":195,"y":691},"ms":610,"ok":true}
+{"t":"2026-09-09T00:51:25.840Z","op":"select","args":{"label":"combobox","value":"Ledgeville Pit — Phase 1"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"combobox\""}
+{"t":"2026-09-09T00:51:40.477Z","op":"tap","args":{"x":195,"y":692},"ms":613,"ok":true}
+{"t":"2026-09-09T00:51:43.665Z","op":"press","args":{"key":"ArrowDown"},"ms":515,"ok":true}
+{"t":"2026-09-09T00:51:48.688Z","op":"click","args":{"text":"Add my card"},"ms":766,"ok":true}
+{"t":"2026-09-09T00:52:14.257Z","op":"click","args":{"text":"Sign"},"ms":6016,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-09T00:52:18.609Z","op":"screenshot","args":{},"ms":12,"ok":true}
+{"t":"2026-09-09T00:52:28.206Z","op":"tap","args":{"x":60,"y":657},"ms":617,"ok":true}
+{"t":"2026-09-09T00:52:46.099Z","op":"tap","args":{"x":73,"y":700},"ms":615,"ok":true}
+{"t":"2026-09-09T00:52:55.208Z","op":"sign","args":{},"ms":1,"ok":false,"error":"no signature pad is open on this screen"}
+{"t":"2026-09-09T00:53:03.352Z","op":"click","args":{"text":"Tap to sign"},"ms":758,"ok":true}
+{"t":"2026-09-09T00:53:09.368Z","op":"sign","args":{},"ms":1619,"ok":true}
+{"t":"2026-09-09T00:53:12.735Z","op":"click","args":{"text":"Save Signature"},"ms":756,"ok":true}
+{"t":"2026-09-09T00:53:24.167Z","op":"click","args":{"text":"File card"},"ms":769,"ok":true}
+{"t":"2026-09-09T00:53:42.897Z","op":"click","args":{"text":"Close"},"ms":770,"ok":true}
+{"t":"2026-09-09T00:53:47.166Z","op":"click","args":{"text":"Drill log"},"ms":760,"ok":true}
+{"t":"2026-09-09T00:53:52.782Z","op":"click","args":{"text":"R1004"},"ms":752,"ok":true}
+{"t":"2026-09-09T00:53:56.428Z","op":"click","args":{"text":"Back home"},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"Back home\""}
+{"t":"2026-09-09T00:54:06.215Z","op":"click","args":{"role":"link","name":"Dashboard"},"ms":6010,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-09T00:54:11.128Z","op":"click","args":{"text":"Skip"},"ms":764,"ok":true}
+{"t":"2026-09-09T00:54:15.862Z","op":"click","args":{"role":"link","name":"Dashboard"},"ms":768,"ok":true}
+{"t":"2026-09-09T00:54:27.009Z","op":"open","args":{"url":"http://localhost:5199/blast-day/a4cf7f12-88ee-4898-9683-22280de99e7d/drill-log/fcfab107-f23b-4736-81b7-5e5cb8f401ec"},"ms":1018,"ok":true}
+{"t":"2026-09-09T00:54:35.940Z","op":"select","args":{"label":"Drill rig","value":"R1004 — Furukawa 9ES 2002 Rock Drill"},"ms":2,"ok":false,"error":"nothing on the screen matches label=\"Drill rig\""}
+{"t":"2026-09-09T00:54:41.319Z","op":"scroll","args":{"dy":-600},"ms":419,"ok":true}
+{"t":"2026-09-09T00:54:44.340Z","op":"screenshot","args":{},"ms":13,"ok":true}
+{"t":"2026-09-09T00:54:52.358Z","op":"tap","args":{"x":195,"y":555},"ms":620,"ok":true}
+{"t":"2026-09-09T00:54:56.216Z","op":"press","args":{"key":"ArrowDown"},"ms":514,"ok":true}
+{"t":"2026-09-09T00:55:02.936Z","op":"click","args":{"text":"rig history"},"ms":777,"ok":true}
+{"t":"2026-09-09T00:55:13.246Z","op":"scroll","args":{"dy":400},"ms":411,"ok":true}
+{"t":"2026-09-09T00:55:24.892Z","op":"click","args":{"text":"Hour Ledger"},"ms":755,"ok":true}
+{"t":"2026-09-09T00:55:33.230Z","op":"click","args":{"text":"13,236 hrs"},"ms":760,"ok":true}
+{"t":"2026-09-09T00:55:41.880Z","op":"click","args":{"role":"link","name":"Drilling"},"ms":757,"ok":true}
+{"t":"2026-09-09T00:55:52.829Z","op":"click","args":{"role":"link","name":"Work days"},"ms":761,"ok":true}
+{"t":"2026-09-09T00:55:57.827Z","op":"click","args":{"text":"Tue, Sep 8, 2026"},"ms":759,"ok":true}
+{"t":"2026-09-09T00:56:05.343Z","op":"scroll","args":{"dy":400},"ms":416,"ok":true}
+{"t":"2026-09-09T00:56:09.970Z","op":"click","args":{"text":"R1004 4120"},"ms":2,"ok":false,"error":"nothing on the screen matches text=\"R1004 4120\""}
+{"t":"2026-09-09T00:56:16.820Z","op":"screenshot","args":{},"ms":12,"ok":true}
+{"t":"2026-09-09T00:56:28.163Z","op":"tap","args":{"x":225,"y":687},"ms":611,"ok":true}

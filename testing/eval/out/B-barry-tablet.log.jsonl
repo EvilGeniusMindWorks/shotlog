@@ -1,0 +1,734 @@
+{"t":"2026-09-08T22:36:23.485Z","op":"session","device":"tablet"}
+{"t":"2026-09-08T22:36:24.593Z","op":"open","args":{"url":"http://localhost:5199/enroll/COBWKVGjcI3BZd7SH_QnFJJUuNyennN8dkMGzr8_HnBbB80sllSi1PRPPS1Cs-MX","device":"tablet"},"ms":1107,"ok":true}
+{"t":"2026-09-08T22:36:27.117Z","op":"fill","args":{"label":"Choose a password","value":"Blasting41!"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Choose a password\""}
+{"t":"2026-09-08T22:36:27.227Z","op":"fill","args":{"value":"Blasting41!","placeholder":"Choose a password"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Choose a password\""}
+{"t":"2026-09-08T22:36:27.364Z","op":"fill","args":{"value":"Blasting41!","selector":"input:near(:text(\"Choose a password\"))"},"ms":31,"ok":true}
+{"t":"2026-09-08T22:36:29.681Z","op":"fill","args":{"label":"Confirm password","value":"Blasting41!"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Confirm password\""}
+{"t":"2026-09-08T22:36:29.793Z","op":"fill","args":{"value":"Blasting41!","placeholder":"Confirm password"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Confirm password\""}
+{"t":"2026-09-08T22:36:29.913Z","op":"fill","args":{"value":"Blasting41!","selector":"input:near(:text(\"Confirm password\"))"},"ms":10,"ok":true}
+{"t":"2026-09-08T22:36:33.486Z","op":"click","args":{"text":"Create my account"},"ms":773,"ok":true}
+{"t":"2026-09-08T22:36:37.622Z","op":"snapshot","args":{},"ms":426,"ok":true}
+{"t":"2026-09-08T22:36:42.154Z","op":"click","args":{"text":"1"},"ms":768,"ok":true}
+{"t":"2026-09-08T22:36:42.964Z","op":"click","args":{"text":"4"},"ms":752,"ok":true}
+{"t":"2026-09-08T22:36:43.772Z","op":"click","args":{"text":"1"},"ms":769,"ok":true}
+{"t":"2026-09-08T22:36:44.587Z","op":"click","args":{"text":"9"},"ms":755,"ok":true}
+{"t":"2026-09-08T22:36:45.397Z","op":"click","args":{"text":"8"},"ms":750,"ok":true}
+{"t":"2026-09-08T22:36:46.206Z","op":"click","args":{"text":"5"},"ms":769,"ok":true}
+{"t":"2026-09-08T22:36:50.555Z","op":"click","args":{"text":"1"},"ms":760,"ok":true}
+{"t":"2026-09-08T22:36:51.365Z","op":"click","args":{"text":"4"},"ms":749,"ok":true}
+{"t":"2026-09-08T22:36:52.169Z","op":"click","args":{"text":"1"},"ms":755,"ok":true}
+{"t":"2026-09-08T22:36:52.980Z","op":"click","args":{"text":"9"},"ms":749,"ok":true}
+{"t":"2026-09-08T22:36:53.788Z","op":"click","args":{"text":"8"},"ms":759,"ok":true}
+{"t":"2026-09-08T22:36:54.609Z","op":"click","args":{"text":"5"},"ms":762,"ok":true}
+{"t":"2026-09-08T22:36:57.041Z","op":"click","args":{"text":"Let's go"},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"Let's go\""}
+{"t":"2026-09-08T22:36:59.027Z","op":"click","args":{"role":"button","name":"Let's go"},"ms":1,"ok":false,"error":"nothing on the screen matches role=\"button\" name=\"Let's go\""}
+{"t":"2026-09-08T22:37:01.421Z","op":"screenshot","args":{},"ms":49,"ok":true}
+{"t":"2026-09-08T22:37:11.012Z","op":"click","args":{"text":"Let’s go"},"ms":792,"ok":true}
+{"t":"2026-09-08T22:37:33.378Z","op":"click","args":{"role":"link","name":"My Profile"},"ms":6027,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-08T22:37:39.323Z","op":"click","args":{"text":"Skip"},"ms":759,"ok":true}
+{"t":"2026-09-08T22:37:42.949Z","op":"click","args":{"role":"link","name":"Add your blasting license"},"ms":757,"ok":true}
+{"t":"2026-09-08T22:37:46.220Z","op":"click","args":{"text":"Add License"},"ms":767,"ok":true}
+{"t":"2026-09-08T22:37:49.899Z","op":"fill","args":{"label":"License #","value":"MA-BL-12345"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"License #\""}
+{"t":"2026-09-08T22:37:50.012Z","op":"fill","args":{"value":"MA-BL-12345","placeholder":"License #"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"License #\""}
+{"t":"2026-09-08T22:37:50.136Z","op":"fill","args":{"value":"MA-BL-12345","selector":"input:near(:text(\"License #\"))"},"ms":10,"ok":true}
+{"t":"2026-09-08T22:37:52.550Z","op":"fill","args":{"label":"Expires","value":"2027-09-08"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Expires\""}
+{"t":"2026-09-08T22:37:52.664Z","op":"fill","args":{"value":"2027-09-08","placeholder":"Expires"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Expires\""}
+{"t":"2026-09-08T22:37:52.775Z","op":"fill","args":{"value":"2027-09-08","selector":"input:near(:text(\"Expires\"))"},"ms":5,"ok":true}
+{"t":"2026-09-08T22:38:01.022Z","op":"click","args":{"text":"Save"},"ms":6022,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-08T22:38:05.090Z","op":"screenshot","args":{},"ms":61,"ok":true}
+{"t":"2026-09-08T22:38:15.668Z","op":"fill","args":{"label":"State","value":"MA"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"State\""}
+{"t":"2026-09-08T22:38:15.781Z","op":"fill","args":{"value":"MA","placeholder":"State"},"ms":0,"ok":false,"error":"nothing on the screen matches placeholder=\"State\""}
+{"t":"2026-09-08T22:38:15.905Z","op":"fill","args":{"value":"MA","selector":"input:near(:text(\"State\"))"},"ms":9,"ok":true}
+{"t":"2026-09-08T22:38:18.752Z","op":"snapshot","args":{},"ms":409,"ok":true}
+{"t":"2026-09-08T22:38:22.418Z","op":"click","args":{"text":"Save"},"ms":761,"ok":true}
+{"t":"2026-09-08T22:38:25.815Z","op":"click","args":{"text":"Tap to sign"},"ms":756,"ok":true}
+{"t":"2026-09-08T22:38:30.028Z","op":"sign","args":{},"ms":1610,"ok":true}
+{"t":"2026-09-08T22:38:34.201Z","op":"click","args":{"text":"Save Signature"},"ms":765,"ok":true}
+{"t":"2026-09-08T22:38:49.082Z","op":"click","args":{"role":"link","name":"Dashboard"},"ms":755,"ok":true}
+{"t":"2026-09-08T22:38:52.517Z","op":"click","args":{"text":"Start work at a job"},"ms":759,"ok":true}
+{"t":"2026-09-08T22:39:10.471Z","op":"click","args":{"text":"Start work at a job","nth":2},"ms":14007,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-08T22:39:13.967Z","op":"screenshot","args":{},"ms":56,"ok":true}
+{"t":"2026-09-08T22:39:22.647Z","op":"click","args":{"text":"Start work at a job"},"ms":759,"ok":true}
+{"t":"2026-09-08T22:39:30.149Z","op":"snapshot","args":{"max":50000},"ms":410,"ok":true}
+{"t":"2026-09-08T22:39:43.165Z","op":"click","args":{"role":"button","name":"Start work at a job"},"ms":763,"ok":true}
+{"t":"2026-09-08T22:39:45.420Z","op":"wait","args":{"ms":2000},"ms":2207,"ok":true}
+{"t":"2026-09-08T22:39:45.524Z","op":"screenshot","args":{},"ms":63,"ok":true}
+{"t":"2026-09-08T22:39:51.703Z","op":"click","args":{"text":"Choose the job — customer › site › job ›"},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"Choose the job — customer › site › job ›\""}
+{"t":"2026-09-08T22:39:55.491Z","op":"click","args":{"role":"button","name":"Choose the job — customer › site › job ›"},"ms":755,"ok":true}
+{"t":"2026-09-08T22:39:59.528Z","op":"click","args":{"text":"Granite Ridge Construction 1 site ›"},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"Granite Ridge Construction 1 site ›\""}
+{"t":"2026-09-08T22:40:03.296Z","op":"click","args":{"role":"button","name":"Granite Ridge Construction 1 site ›"},"ms":976,"ok":true}
+{"t":"2026-09-08T22:40:10.427Z","op":"click","args":{"text":"Drill to Blast"},"ms":765,"ok":true}
+{"t":"2026-09-08T22:40:19.515Z","op":"click","args":{"text":"Start work"},"ms":6008,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-08T22:40:23.820Z","op":"screenshot","args":{},"ms":68,"ok":true}
+{"t":"2026-09-08T22:40:38.400Z","op":"press","args":{"key":"Enter"},"ms":516,"ok":true}
+{"t":"2026-09-08T22:40:44.721Z","op":"scroll","args":{"dy":300},"ms":413,"ok":true}
+{"t":"2026-09-08T22:40:50.797Z","op":"click","args":{"role":"button","name":"Start work"},"ms":6018,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-08T22:40:59.453Z","op":"press","args":{"key":"Tab"},"ms":513,"ok":true}
+{"t":"2026-09-08T22:40:59.918Z","op":"snapshot","args":{},"ms":407,"ok":true}
+{"t":"2026-09-08T22:41:08.586Z","op":"press","args":{"key":"Tab"},"ms":513,"ok":true}
+{"t":"2026-09-08T22:41:09.158Z","op":"press","args":{"key":"Tab"},"ms":514,"ok":true}
+{"t":"2026-09-08T22:41:09.731Z","op":"press","args":{"key":"Tab"},"ms":513,"ok":true}
+{"t":"2026-09-08T22:41:10.304Z","op":"press","args":{"key":"Tab"},"ms":514,"ok":true}
+{"t":"2026-09-08T22:41:10.875Z","op":"press","args":{"key":"Tab"},"ms":513,"ok":true}
+{"t":"2026-09-08T22:41:11.449Z","op":"press","args":{"key":"Space"},"ms":514,"ok":true}
+{"t":"2026-09-08T22:41:20.220Z","op":"snapshot","args":{},"ms":412,"ok":true}
+{"t":"2026-09-08T22:41:20.344Z","op":"screenshot","args":{},"ms":65,"ok":true}
+{"t":"2026-09-08T22:41:33.027Z","op":"click","args":{"role":"button","name":"Start work at a job"},"ms":772,"ok":true}
+{"t":"2026-09-08T22:41:34.300Z","op":"wait","args":{"ms":1000},"ms":1215,"ok":true}
+{"t":"2026-09-08T22:41:40.443Z","op":"click","args":{"role":"button","name":"Choose the job — customer › site › job ›"},"ms":771,"ok":true}
+{"t":"2026-09-08T22:41:44.082Z","op":"click","args":{"role":"button","name":"Granite Ridge Construction 1 site ›"},"ms":759,"ok":true}
+{"t":"2026-09-08T22:42:03.487Z","op":"press","args":{"key":"Enter"},"ms":514,"ok":true}
+{"t":"2026-09-08T22:42:26.438Z","op":"click","args":{"text":"Cancel"},"ms":769,"ok":true}
+{"t":"2026-09-08T22:42:36.048Z","op":"click","args":{"role":"button","name":"Start work at a job"},"ms":759,"ok":true}
+{"t":"2026-09-08T22:42:36.094Z","op":"click","args":{"role":"button","name":"Granite Ridge Construction 1 site ›"},"ms":1,"ok":false,"error":"nothing on the screen matches role=\"button\" name=\"Granite Ridge Construction 1 site ›\""}
+{"t":"2026-09-08T22:42:45.038Z","op":"click","args":{"role":"button","name":"Choose the job — customer › site › job ›"},"ms":763,"ok":true}
+{"t":"2026-09-08T22:42:45.855Z","op":"click","args":{"role":"button","name":"Granite Ridge Construction 1 site ›"},"ms":756,"ok":true}
+{"t":"2026-09-08T22:42:54.971Z","op":"click","args":{"text":"Drill to Blast"},"ms":756,"ok":true}
+{"t":"2026-09-08T22:43:01.042Z","op":"click","args":{"role":"button","name":"Start work"},"ms":6013,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-08T22:43:12.052Z","op":"click","args":{"text":"Cancel"},"ms":754,"ok":true}
+{"t":"2026-09-08T22:43:12.870Z","op":"click","args":{"role":"link","name":"Jobs"},"ms":759,"ok":true}
+{"t":"2026-09-08T22:43:16.549Z","op":"click","args":{"role":"button","name":"Granite Ridge Construction Westfield, MA · 1 site · 1 job — 1 open"},"ms":753,"ok":true}
+{"t":"2026-09-08T22:43:21.190Z","op":"click","args":{"role":"button","name":"Ledgeville Pit Westfield, MA · K 180 · permits ok — 1 job"},"ms":758,"ok":true}
+{"t":"2026-09-08T22:43:24.987Z","op":"click","args":{"role":"button","name":"26-001Ledgeville Pit — Phase 1 quarry — no days"},"ms":760,"ok":true}
+{"t":"2026-09-08T22:43:31.095Z","op":"screenshot","args":{},"ms":75,"ok":true}
+{"t":"2026-09-08T22:43:42.361Z","op":"scroll","args":{"dy":1200},"ms":417,"ok":true}
+{"t":"2026-09-08T22:43:42.493Z","op":"screenshot","args":{},"ms":74,"ok":true}
+{"t":"2026-09-08T22:44:34.597Z","op":"click","args":{"role":"link","name":"Dashboard"},"ms":760,"ok":true}
+{"t":"2026-09-08T22:44:35.410Z","op":"click","args":{"role":"button","name":"Start work at a job"},"ms":754,"ok":true}
+{"t":"2026-09-08T22:44:41.252Z","op":"click","args":{"role":"button","name":"Choose the job — customer › site › job ›"},"ms":761,"ok":true}
+{"t":"2026-09-08T22:44:42.068Z","op":"click","args":{"role":"button","name":"Granite Ridge Construction 1 site ›"},"ms":758,"ok":true}
+{"t":"2026-09-08T22:44:51.519Z","op":"click","args":{"text":"Start work","nth":1},"ms":6013,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-08T22:45:02.498Z","op":"click","args":{"text":"Cancel"},"ms":769,"ok":true}
+{"t":"2026-09-08T22:45:03.315Z","op":"click","args":{"role":"link","name":"Work days"},"ms":758,"ok":true}
+{"t":"2026-09-08T22:45:09.048Z","op":"click","args":{"role":"button","name":"Start work at a job"},"ms":763,"ok":true}
+{"t":"2026-09-08T22:45:09.858Z","op":"click","args":{"role":"button","name":"Choose the job — customer › site › job ›"},"ms":751,"ok":true}
+{"t":"2026-09-08T22:45:10.682Z","op":"click","args":{"role":"button","name":"Granite Ridge Construction 1 site ›"},"ms":770,"ok":true}
+{"t":"2026-09-08T22:45:25.318Z","op":"click","args":{"role":"button","name":"Start work"},"ms":6022,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-08T22:45:29.003Z","op":"screenshot","args":{},"ms":67,"ok":true}
+{"t":"2026-09-08T22:45:56.138Z","op":"fill","args":{"label":"Date","value":"2026-09-08"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Date\""}
+{"t":"2026-09-08T22:45:56.251Z","op":"fill","args":{"value":"2026-09-08","placeholder":"Date"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Date\""}
+{"t":"2026-09-08T22:45:56.370Z","op":"fill","args":{"value":"2026-09-08","selector":"input:near(:text(\"Date\"))"},"ms":6,"ok":true}
+{"t":"2026-09-08T22:45:56.955Z","op":"press","args":{"key":"Tab"},"ms":513,"ok":true}
+{"t":"2026-09-08T22:45:57.524Z","op":"press","args":{"key":"Tab"},"ms":509,"ok":true}
+{"t":"2026-09-08T22:45:58.097Z","op":"press","args":{"key":"Tab"},"ms":512,"ok":true}
+{"t":"2026-09-08T22:45:58.669Z","op":"press","args":{"key":"Tab"},"ms":512,"ok":true}
+{"t":"2026-09-08T22:45:59.239Z","op":"press","args":{"key":"Tab"},"ms":511,"ok":true}
+{"t":"2026-09-08T22:45:59.806Z","op":"press","args":{"key":"Tab"},"ms":505,"ok":true}
+{"t":"2026-09-08T22:46:00.356Z","op":"press","args":{"key":"Tab"},"ms":513,"ok":true}
+{"t":"2026-09-08T22:46:00.930Z","op":"press","args":{"key":"Tab"},"ms":512,"ok":true}
+{"t":"2026-09-08T22:46:01.502Z","op":"press","args":{"key":"Enter"},"ms":513,"ok":true}
+{"t":"2026-09-08T22:46:10.444Z","op":"click","args":{"text":"Drill to Blast"},"ms":763,"ok":true}
+{"t":"2026-09-08T22:46:11.016Z","op":"press","args":{"key":"Tab"},"ms":512,"ok":true}
+{"t":"2026-09-08T22:46:11.589Z","op":"press","args":{"key":"Tab"},"ms":512,"ok":true}
+{"t":"2026-09-08T22:46:12.162Z","op":"press","args":{"key":"Space"},"ms":513,"ok":true}
+{"t":"2026-09-08T22:46:40.176Z","op":"click","args":{"text":"Drill to Blast"},"ms":760,"ok":true}
+{"t":"2026-09-08T22:46:40.747Z","op":"press","args":{"key":"Tab"},"ms":512,"ok":true}
+{"t":"2026-09-08T22:46:41.318Z","op":"press","args":{"key":"Tab"},"ms":512,"ok":true}
+{"t":"2026-09-08T22:46:41.890Z","op":"press","args":{"key":"Tab"},"ms":511,"ok":true}
+{"t":"2026-09-08T22:46:42.464Z","op":"press","args":{"key":"Tab"},"ms":514,"ok":true}
+{"t":"2026-09-08T22:46:43.036Z","op":"press","args":{"key":"Tab"},"ms":511,"ok":true}
+{"t":"2026-09-08T22:46:43.609Z","op":"press","args":{"key":"Tab"},"ms":514,"ok":true}
+{"t":"2026-09-08T22:46:44.179Z","op":"press","args":{"key":"Tab"},"ms":510,"ok":true}
+{"t":"2026-09-08T22:46:44.750Z","op":"press","args":{"key":"Space"},"ms":513,"ok":true}
+{"t":"2026-09-08T22:47:16.880Z","op":"click","args":{"role":"link","name":"Dashboard"},"ms":6016,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-08T22:47:21.166Z","op":"click","args":{"text":"Skip"},"ms":771,"ok":true}
+{"t":"2026-09-08T22:47:21.991Z","op":"click","args":{"role":"link","name":"Dashboard"},"ms":768,"ok":true}
+{"t":"2026-09-08T22:47:41.203Z","op":"click","args":{"role":"link","name":"Jobs"},"ms":757,"ok":true}
+{"t":"2026-09-08T22:47:41.257Z","op":"click","args":{"role":"button","name":"Granite Ridge Construction Westfield, MA · 1 site · 1 job — 1 open"},"ms":1,"ok":false,"error":"nothing on the screen matches role=\"button\" name=\"Granite Ridge Construction Westfield, MA · 1 site · 1 job — 1 open\""}
+{"t":"2026-09-08T22:47:46.325Z","op":"click","args":{"role":"button","name":"Granite Ridge Construction Westfield, MA · 1 site · 1 job Today 1 open"},"ms":768,"ok":true}
+{"t":"2026-09-08T22:47:46.387Z","op":"click","args":{"role":"button","name":"Ledgeville Pit Westfield, MA · K 180 · permits ok — 1 job"},"ms":1,"ok":false,"error":"nothing on the screen matches role=\"button\" name=\"Ledgeville Pit Westfield, MA · K 180 · permits ok — 1 job\""}
+{"t":"2026-09-08T22:47:51.332Z","op":"click","args":{"role":"button","name":"Ledgeville Pit Westfield, MA · K 180 · permits ok Today 1 job"},"ms":752,"ok":true}
+{"t":"2026-09-08T22:47:52.146Z","op":"click","args":{"text":"New job"},"ms":762,"ok":true}
+{"t":"2026-09-08T22:47:59.387Z","op":"fill","args":{"label":"Job name","value":"Ledgeville Pit — Phase 2"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Job name\""}
+{"t":"2026-09-08T22:47:59.501Z","op":"fill","args":{"value":"Ledgeville Pit — Phase 2","placeholder":"Job name"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Job name\""}
+{"t":"2026-09-08T22:47:59.623Z","op":"fill","args":{"value":"Ledgeville Pit — Phase 2","selector":"input:near(:text(\"Job name\"))"},"ms":8,"ok":true}
+{"t":"2026-09-08T22:47:59.694Z","op":"select","args":{"label":"Operation","value":"Quarry"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Operation\""}
+{"t":"2026-09-08T22:48:07.801Z","op":"click","args":{"text":"Create job"},"ms":763,"ok":true}
+{"t":"2026-09-08T22:48:16.955Z","op":"click","args":{"role":"link","name":"Work days"},"ms":758,"ok":true}
+{"t":"2026-09-08T22:48:17.770Z","op":"click","args":{"role":"button","name":"Start work at a job"},"ms":756,"ok":true}
+{"t":"2026-09-08T22:48:22.905Z","op":"fill","args":{"label":"Date","value":"2026-09-09"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Date\""}
+{"t":"2026-09-08T22:48:23.016Z","op":"fill","args":{"value":"2026-09-09","placeholder":"Date"},"ms":0,"ok":false,"error":"nothing on the screen matches placeholder=\"Date\""}
+{"t":"2026-09-08T22:48:23.133Z","op":"fill","args":{"value":"2026-09-09","selector":"input:near(:text(\"Date\"))"},"ms":6,"ok":true}
+{"t":"2026-09-08T22:48:23.973Z","op":"click","args":{"role":"button","name":"Choose the job — customer › site › job ›"},"ms":766,"ok":true}
+{"t":"2026-09-08T22:48:28.339Z","op":"click","args":{"role":"button","name":"Granite Ridge Construction 1 site ›"},"ms":765,"ok":true}
+{"t":"2026-09-08T22:48:32.746Z","op":"click","args":{"role":"button","name":"26-002 · Ledgeville Pit — Phase 2"},"ms":749,"ok":true}
+{"t":"2026-09-08T22:48:39.319Z","op":"click","args":{"text":"Drill to Blast"},"ms":767,"ok":true}
+{"t":"2026-09-08T22:48:39.894Z","op":"press","args":{"key":"Tab"},"ms":515,"ok":true}
+{"t":"2026-09-08T22:48:40.468Z","op":"press","args":{"key":"Tab"},"ms":513,"ok":true}
+{"t":"2026-09-08T22:48:41.040Z","op":"press","args":{"key":"Tab"},"ms":512,"ok":true}
+{"t":"2026-09-08T22:48:41.607Z","op":"press","args":{"key":"Tab"},"ms":512,"ok":true}
+{"t":"2026-09-08T22:48:42.178Z","op":"press","args":{"key":"Tab"},"ms":512,"ok":true}
+{"t":"2026-09-08T22:48:42.742Z","op":"press","args":{"key":"Tab"},"ms":505,"ok":true}
+{"t":"2026-09-08T22:48:43.295Z","op":"press","args":{"key":"Tab"},"ms":512,"ok":true}
+{"t":"2026-09-08T22:48:43.874Z","op":"press","args":{"key":"Space"},"ms":520,"ok":true}
+{"t":"2026-09-08T22:48:58.568Z","op":"click","args":{"role":"link","name":"Jobs"},"ms":751,"ok":true}
+{"t":"2026-09-08T22:48:58.628Z","op":"click","args":{"role":"button","name":"Granite Ridge Construction Westfield, MA · 1 site · 2 jobs Today 1 open"},"ms":1,"ok":false,"error":"nothing on the screen matches role=\"button\" name=\"Granite Ridge Construction Westfield, MA · 1 site · 2 jobs Today 1 open\""}
+{"t":"2026-09-08T22:49:02.903Z","op":"click","args":{"role":"button","name":"Granite Ridge Construction Westfield, MA · 1 site · 2 jobs Wed, Sep 9, 2026 2 open"},"ms":753,"ok":true}
+{"t":"2026-09-08T22:49:03.719Z","op":"click","args":{"text":"New site"},"ms":756,"ok":true}
+{"t":"2026-09-08T22:49:10.328Z","op":"fill","args":{"label":"Site name","value":"Russell Pit"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Site name\""}
+{"t":"2026-09-08T22:49:10.441Z","op":"fill","args":{"value":"Russell Pit","placeholder":"Site name"},"ms":0,"ok":false,"error":"nothing on the screen matches placeholder=\"Site name\""}
+{"t":"2026-09-08T22:49:10.564Z","op":"fill","args":{"value":"Russell Pit","selector":"input:near(:text(\"Site name\"))"},"ms":8,"ok":true}
+{"t":"2026-09-08T22:49:10.636Z","op":"fill","args":{"label":"Street","value":"88 Blandford Rd"},"ms":0,"ok":false,"error":"nothing on the screen matches label=\"Street\""}
+{"t":"2026-09-08T22:49:10.748Z","op":"fill","args":{"value":"88 Blandford Rd","placeholder":"Street"},"ms":0,"ok":false,"error":"nothing on the screen matches placeholder=\"Street\""}
+{"t":"2026-09-08T22:49:10.867Z","op":"fill","args":{"value":"88 Blandford Rd","selector":"input:near(:text(\"Street\"))"},"ms":8,"ok":true}
+{"t":"2026-09-08T22:49:10.939Z","op":"fill","args":{"label":"City","value":"Russell"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"City\""}
+{"t":"2026-09-08T22:49:11.049Z","op":"fill","args":{"value":"Russell","placeholder":"City"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"City\""}
+{"t":"2026-09-08T22:49:11.165Z","op":"fill","args":{"value":"Russell","selector":"input:near(:text(\"City\"))"},"ms":7,"ok":true}
+{"t":"2026-09-08T22:49:11.235Z","op":"fill","args":{"label":"State","value":"MA"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"State\""}
+{"t":"2026-09-08T22:49:11.346Z","op":"fill","args":{"value":"MA","placeholder":"State"},"ms":0,"ok":false,"error":"nothing on the screen matches placeholder=\"State\""}
+{"t":"2026-09-08T22:49:11.468Z","op":"fill","args":{"value":"MA","selector":"input:near(:text(\"State\"))"},"ms":9,"ok":true}
+{"t":"2026-09-08T22:49:15.427Z","op":"click","args":{"text":"Create site"},"ms":752,"ok":true}
+{"t":"2026-09-08T22:49:20.581Z","op":"click","args":{"text":"New job"},"ms":765,"ok":true}
+{"t":"2026-09-08T22:49:24.780Z","op":"fill","args":{"label":"Job name","value":"Russell haul road"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Job name\""}
+{"t":"2026-09-08T22:49:24.893Z","op":"fill","args":{"value":"Russell haul road","placeholder":"Job name"},"ms":0,"ok":false,"error":"nothing on the screen matches placeholder=\"Job name\""}
+{"t":"2026-09-08T22:49:25.014Z","op":"fill","args":{"value":"Russell haul road","selector":"input:near(:text(\"Job name\"))"},"ms":8,"ok":true}
+{"t":"2026-09-08T22:49:25.845Z","op":"click","args":{"text":"Create job"},"ms":761,"ok":true}
+{"t":"2026-09-08T22:49:35.563Z","op":"click","args":{"role":"link","name":"Work days"},"ms":749,"ok":true}
+{"t":"2026-09-08T22:49:36.369Z","op":"click","args":{"role":"button","name":"Start work at a job"},"ms":760,"ok":true}
+{"t":"2026-09-08T22:49:36.428Z","op":"fill","args":{"label":"Date","value":"2026-09-10"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Date\""}
+{"t":"2026-09-08T22:49:36.539Z","op":"fill","args":{"value":"2026-09-10","placeholder":"Date"},"ms":0,"ok":false,"error":"nothing on the screen matches placeholder=\"Date\""}
+{"t":"2026-09-08T22:49:36.648Z","op":"fill","args":{"value":"2026-09-10","selector":"input:near(:text(\"Date\"))"},"ms":3,"ok":true}
+{"t":"2026-09-08T22:49:37.469Z","op":"click","args":{"role":"button","name":"Choose the job — customer › site › job ›"},"ms":763,"ok":true}
+{"t":"2026-09-08T22:49:42.020Z","op":"click","args":{"role":"button","name":"Granite Ridge Construction 2 sites ›"},"ms":760,"ok":true}
+{"t":"2026-09-08T22:49:45.851Z","op":"click","args":{"role":"button","name":"Russell Pit Russell · K 180 1 job ›"},"ms":758,"ok":true}
+{"t":"2026-09-08T22:49:52.616Z","op":"click","args":{"text":"Drill to Blast"},"ms":761,"ok":true}
+{"t":"2026-09-08T22:49:53.186Z","op":"press","args":{"key":"Tab"},"ms":511,"ok":true}
+{"t":"2026-09-08T22:49:53.757Z","op":"press","args":{"key":"Tab"},"ms":511,"ok":true}
+{"t":"2026-09-08T22:49:54.329Z","op":"press","args":{"key":"Tab"},"ms":513,"ok":true}
+{"t":"2026-09-08T22:49:54.903Z","op":"press","args":{"key":"Tab"},"ms":515,"ok":true}
+{"t":"2026-09-08T22:49:55.474Z","op":"press","args":{"key":"Tab"},"ms":514,"ok":true}
+{"t":"2026-09-08T22:49:56.037Z","op":"press","args":{"key":"Tab"},"ms":504,"ok":true}
+{"t":"2026-09-08T22:49:56.591Z","op":"press","args":{"key":"Tab"},"ms":513,"ok":true}
+{"t":"2026-09-08T22:49:57.161Z","op":"press","args":{"key":"Space"},"ms":509,"ok":true}
+{"t":"2026-09-08T22:50:06.166Z","op":"click","args":{"role":"link","name":"Jobs"},"ms":757,"ok":true}
+{"t":"2026-09-08T22:50:06.985Z","op":"click","args":{"text":"New customer"},"ms":759,"ok":true}
+{"t":"2026-09-08T22:50:10.666Z","op":"fill","args":{"label":"Name","value":"Pioneer Valley Aggregates"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Name\""}
+{"t":"2026-09-08T22:50:10.779Z","op":"fill","args":{"value":"Pioneer Valley Aggregates","placeholder":"Name"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Name\""}
+{"t":"2026-09-08T22:50:10.900Z","op":"fill","args":{"value":"Pioneer Valley Aggregates","selector":"input:near(:text(\"Name\"))"},"ms":7,"ok":true}
+{"t":"2026-09-08T22:50:11.728Z","op":"click","args":{"text":"Create customer"},"ms":756,"ok":true}
+{"t":"2026-09-08T22:50:16.567Z","op":"click","args":{"text":"New site"},"ms":763,"ok":true}
+{"t":"2026-09-08T22:50:21.431Z","op":"fill","args":{"label":"Site name","value":"Westfield Quarry"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Site name\""}
+{"t":"2026-09-08T22:50:21.543Z","op":"fill","args":{"value":"Westfield Quarry","placeholder":"Site name"},"ms":0,"ok":false,"error":"nothing on the screen matches placeholder=\"Site name\""}
+{"t":"2026-09-08T22:50:21.656Z","op":"fill","args":{"value":"Westfield Quarry","selector":"input:near(:text(\"Site name\"))"},"ms":5,"ok":true}
+{"t":"2026-09-08T22:50:21.722Z","op":"fill","args":{"label":"Street","value":"200 Southampton Rd"},"ms":0,"ok":false,"error":"nothing on the screen matches label=\"Street\""}
+{"t":"2026-09-08T22:50:21.832Z","op":"fill","args":{"value":"200 Southampton Rd","placeholder":"Street"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Street\""}
+{"t":"2026-09-08T22:50:21.945Z","op":"fill","args":{"value":"200 Southampton Rd","selector":"input:near(:text(\"Street\"))"},"ms":6,"ok":true}
+{"t":"2026-09-08T22:50:22.014Z","op":"fill","args":{"label":"City","value":"Westfield"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"City\""}
+{"t":"2026-09-08T22:50:22.125Z","op":"fill","args":{"value":"Westfield","placeholder":"City"},"ms":0,"ok":false,"error":"nothing on the screen matches placeholder=\"City\""}
+{"t":"2026-09-08T22:50:22.244Z","op":"fill","args":{"value":"Westfield","selector":"input:near(:text(\"City\"))"},"ms":8,"ok":true}
+{"t":"2026-09-08T22:50:22.316Z","op":"fill","args":{"label":"State","value":"MA"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"State\""}
+{"t":"2026-09-08T22:50:22.427Z","op":"fill","args":{"value":"MA","placeholder":"State"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"State\""}
+{"t":"2026-09-08T22:50:22.546Z","op":"fill","args":{"value":"MA","selector":"input:near(:text(\"State\"))"},"ms":8,"ok":true}
+{"t":"2026-09-08T22:50:23.384Z","op":"click","args":{"text":"Create site"},"ms":767,"ok":true}
+{"t":"2026-09-08T22:50:28.237Z","op":"click","args":{"text":"New job"},"ms":775,"ok":true}
+{"t":"2026-09-08T22:50:28.296Z","op":"fill","args":{"label":"Job name","value":"Bench 3 trim"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Job name\""}
+{"t":"2026-09-08T22:50:28.409Z","op":"fill","args":{"value":"Bench 3 trim","placeholder":"Job name"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Job name\""}
+{"t":"2026-09-08T22:50:28.531Z","op":"fill","args":{"value":"Bench 3 trim","selector":"input:near(:text(\"Job name\"))"},"ms":7,"ok":true}
+{"t":"2026-09-08T22:50:29.367Z","op":"click","args":{"text":"Create job"},"ms":766,"ok":true}
+{"t":"2026-09-08T22:50:37.013Z","op":"click","args":{"role":"link","name":"Work days"},"ms":763,"ok":true}
+{"t":"2026-09-08T22:50:37.833Z","op":"click","args":{"role":"button","name":"Start work at a job"},"ms":760,"ok":true}
+{"t":"2026-09-08T22:50:37.892Z","op":"fill","args":{"label":"Date","value":"2026-09-11"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Date\""}
+{"t":"2026-09-08T22:50:38.003Z","op":"fill","args":{"value":"2026-09-11","placeholder":"Date"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Date\""}
+{"t":"2026-09-08T22:50:38.116Z","op":"fill","args":{"value":"2026-09-11","selector":"input:near(:text(\"Date\"))"},"ms":4,"ok":true}
+{"t":"2026-09-08T22:50:38.932Z","op":"click","args":{"role":"button","name":"Choose the job — customer › site › job ›"},"ms":757,"ok":true}
+{"t":"2026-09-08T22:50:46.414Z","op":"click","args":{"role":"button","name":"Pioneer Valley Aggregates 1 site ›"},"ms":763,"ok":true}
+{"t":"2026-09-08T22:50:51.880Z","op":"click","args":{"text":"Drill to Blast"},"ms":757,"ok":true}
+{"t":"2026-09-08T22:50:52.452Z","op":"press","args":{"key":"Tab"},"ms":513,"ok":true}
+{"t":"2026-09-08T22:50:53.025Z","op":"press","args":{"key":"Tab"},"ms":514,"ok":true}
+{"t":"2026-09-08T22:50:53.596Z","op":"press","args":{"key":"Tab"},"ms":512,"ok":true}
+{"t":"2026-09-08T22:50:54.167Z","op":"press","args":{"key":"Tab"},"ms":512,"ok":true}
+{"t":"2026-09-08T22:50:54.736Z","op":"press","args":{"key":"Tab"},"ms":511,"ok":true}
+{"t":"2026-09-08T22:50:55.298Z","op":"press","args":{"key":"Tab"},"ms":505,"ok":true}
+{"t":"2026-09-08T22:50:55.850Z","op":"press","args":{"key":"Tab"},"ms":511,"ok":true}
+{"t":"2026-09-08T22:50:56.422Z","op":"press","args":{"key":"Space"},"ms":514,"ok":true}
+{"t":"2026-09-08T22:51:04.512Z","op":"click","args":{"role":"link","name":"Dashboard"},"ms":763,"ok":true}
+{"t":"2026-09-08T22:51:16.142Z","op":"scroll","args":{"dy":600},"ms":411,"ok":true}
+{"t":"2026-09-08T22:51:16.610Z","op":"snapshot","args":{},"ms":411,"ok":true}
+{"t":"2026-09-08T22:54:03.640Z","op":"click","args":{"text":"Build the drill plan"},"ms":765,"ok":true}
+{"t":"2026-09-08T22:54:12.897Z","op":"back","args":{},"ms":606,"ok":true}
+{"t":"2026-09-08T22:54:18.617Z","op":"open","args":{"url":"http://localhost:5199/blast-day/f6e4da49-02f6-4826-b353-9cab653caf7b"},"ms":1015,"ok":true}
+{"t":"2026-09-08T22:54:23.416Z","op":"click","args":{"text":"Drill plan no plan yet — lay the pattern, then send it to do"},"ms":2,"ok":false,"error":"nothing on the screen matches text=\"Drill plan no plan yet — lay the pattern, then send it to do\""}
+{"t":"2026-09-08T22:54:26.829Z","op":"click","args":{"text":"Drill plan"},"ms":776,"ok":true}
+{"t":"2026-09-08T22:54:34.432Z","op":"click","args":{"text":"Timing"},"ms":763,"ok":true}
+{"t":"2026-09-08T22:54:40.165Z","op":"click","args":{"text":"Show the rest of the shot design — site map, compliance, typical column"},"ms":777,"ok":true}
+{"t":"2026-09-08T22:54:46.992Z","op":"click","args":{"text":"Done for now"},"ms":761,"ok":true}
+{"t":"2026-09-08T22:54:55.515Z","op":"click","args":{"text":"More actions"},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"More actions\""}
+{"t":"2026-09-08T22:54:58.843Z","op":"click","args":{"role":"button","name":"More actions"},"ms":756,"ok":true}
+{"t":"2026-09-08T22:55:06.018Z","op":"click","args":{"text":"Build the drill plan"},"ms":759,"ok":true}
+{"t":"2026-09-08T22:55:30.854Z","op":"click","args":{"text":"Done for now"},"ms":765,"ok":true}
+{"t":"2026-09-08T22:55:31.304Z","op":"scroll","args":{"dy":400},"ms":410,"ok":true}
+{"t":"2026-09-08T22:55:55.853Z","op":"click","args":{"text":"Build the drill plan"},"ms":762,"ok":true}
+{"t":"2026-09-08T22:56:05.394Z","op":"screenshot","args":{},"ms":66,"ok":true}
+{"t":"2026-09-08T22:57:11.135Z","op":"snapshot","args":{"max":30000},"ms":404,"ok":true}
+{"t":"2026-09-08T22:57:22.210Z","op":"fill","args":{"label":"—","value":"18"},"ms":2,"ok":false,"error":"nothing on the screen matches label=\"—\""}
+{"t":"2026-09-08T22:57:22.329Z","op":"fill","args":{"value":"18","placeholder":"—"},"ms":8,"ok":true}
+{"t":"2026-09-08T22:57:25.500Z","op":"press","args":{"key":"Tab"},"ms":517,"ok":true}
+{"t":"2026-09-08T22:57:25.962Z","op":"snapshot","args":{},"ms":405,"ok":true}
+{"t":"2026-09-08T22:58:13.982Z","op":"click","args":{"text":"⌀ No hole"},"ms":763,"ok":true}
+{"t":"2026-09-08T22:58:14.551Z","op":"press","args":{"key":"Tab"},"ms":510,"ok":true}
+{"t":"2026-09-08T22:58:15.119Z","op":"press","args":{"key":"Space"},"ms":509,"ok":true}
+{"t":"2026-09-08T22:58:27.062Z","op":"press","args":{"key":"Tab"},"ms":507,"ok":true}
+{"t":"2026-09-08T22:58:27.626Z","op":"press","args":{"key":"Tab"},"ms":514,"ok":true}
+{"t":"2026-09-08T22:58:28.190Z","op":"press","args":{"key":"Space"},"ms":508,"ok":true}
+{"t":"2026-09-08T22:58:28.759Z","op":"press","args":{"key":"Space"},"ms":517,"ok":true}
+{"t":"2026-09-08T22:58:29.328Z","op":"press","args":{"key":"Space"},"ms":507,"ok":true}
+{"t":"2026-09-08T22:58:29.877Z","op":"press","args":{"key":"Space"},"ms":508,"ok":true}
+{"t":"2026-09-08T22:58:56.420Z","op":"screenshot","args":{},"ms":61,"ok":true}
+{"t":"2026-09-08T22:59:44.899Z","op":"click","args":{"text":"18"},"ms":6022,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-08T22:59:55.131Z","op":"click","args":{"text":"R1"},"ms":6017,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-08T23:00:18.705Z","op":"click","args":{"text":"⌀ No hole"},"ms":759,"ok":true}
+{"t":"2026-09-08T23:00:19.277Z","op":"press","args":{"key":"Tab"},"ms":513,"ok":true}
+{"t":"2026-09-08T23:00:19.844Z","op":"press","args":{"key":"Space"},"ms":508,"ok":true}
+{"t":"2026-09-08T23:00:20.310Z","op":"snapshot","args":{},"ms":413,"ok":true}
+{"t":"2026-09-08T23:01:09.142Z","op":"press","args":{"key":"Tab"},"ms":515,"ok":true}
+{"t":"2026-09-08T23:01:09.709Z","op":"press","args":{"key":"Space"},"ms":508,"ok":true}
+{"t":"2026-09-08T23:01:20.995Z","op":"snapshot","args":{},"ms":413,"ok":true}
+{"t":"2026-09-08T23:01:29.941Z","op":"click","args":{"text":"⌀ No hole"},"ms":762,"ok":true}
+{"t":"2026-09-08T23:01:51.476Z","op":"click","args":{"text":"⌀ No hole"},"ms":763,"ok":true}
+{"t":"2026-09-08T23:01:52.311Z","op":"click","args":{"text":"Send to drillers"},"ms":778,"ok":true}
+{"t":"2026-09-08T23:02:23.735Z","op":"scroll","args":{"dy":800},"ms":423,"ok":true}
+{"t":"2026-09-08T23:02:24.210Z","op":"snapshot","args":{},"ms":424,"ok":true}
+{"t":"2026-09-08T23:02:33.470Z","op":"check","args":{"text":"Mark Swihart admin"},"ms":3,"ok":false,"error":"nothing on the screen matches text=\"Mark Swihart admin\""}
+{"t":"2026-09-08T23:02:43.877Z","op":"check","args":{"text":"Mark Swihart"},"ms":16,"ok":true}
+{"t":"2026-09-08T23:02:48.202Z","op":"snapshot","args":{},"ms":427,"ok":true}
+{"t":"2026-09-08T23:03:01.090Z","op":"scroll","args":{"dy":5000},"ms":427,"ok":true}
+{"t":"2026-09-08T23:03:01.570Z","op":"snapshot","args":{},"ms":427,"ok":true}
+{"t":"2026-09-08T23:03:13.654Z","op":"screenshot","args":{},"ms":75,"ok":true}
+{"t":"2026-09-08T23:03:25.273Z","op":"click","args":{"text":"Send to 1"},"ms":770,"ok":true}
+{"t":"2026-09-08T23:04:02.358Z","op":"click","args":{"text":"Time cards"},"ms":774,"ok":true}
+{"t":"2026-09-08T23:04:08.169Z","op":"click","args":{"text":"My card"},"ms":758,"ok":true}
+{"t":"2026-09-08T23:04:27.625Z","op":"screenshot","args":{},"ms":60,"ok":true}
+{"t":"2026-09-08T23:04:54.601Z","op":"click","args":{"text":"IN"},"ms":773,"ok":true}
+{"t":"2026-09-08T23:04:54.787Z","op":"type","args":{"text":"0700AM"},"ms":129,"ok":true}
+{"t":"2026-09-08T23:04:55.357Z","op":"press","args":{"key":"Tab"},"ms":517,"ok":true}
+{"t":"2026-09-08T23:05:19.114Z","op":"click","args":{"role":"tab","name":"Daily Report"},"ms":2,"ok":false,"error":"nothing on the screen matches role=\"tab\" name=\"Daily Report\""}
+{"t":"2026-09-08T23:05:24.148Z","op":"click","args":{"text":"Daily Report"},"ms":758,"ok":true}
+{"t":"2026-09-08T23:05:24.724Z","op":"press","args":{"key":"Tab"},"ms":516,"ok":true}
+{"t":"2026-09-08T23:05:25.297Z","op":"press","args":{"key":"Tab"},"ms":514,"ok":true}
+{"t":"2026-09-08T23:05:25.868Z","op":"press","args":{"key":"Tab"},"ms":512,"ok":true}
+{"t":"2026-09-08T23:05:26.064Z","op":"type","args":{"text":"0700AM"},"ms":137,"ok":true}
+{"t":"2026-09-08T23:05:26.633Z","op":"press","args":{"key":"Tab"},"ms":511,"ok":true}
+{"t":"2026-09-08T23:05:26.825Z","op":"type","args":{"text":"0330PM"},"ms":135,"ok":true}
+{"t":"2026-09-08T23:05:27.400Z","op":"press","args":{"key":"Tab"},"ms":517,"ok":true}
+{"t":"2026-09-08T23:05:27.524Z","op":"screenshot","args":{},"ms":66,"ok":true}
+{"t":"2026-09-08T23:06:01.893Z","op":"type","args":{"text":"0330PM"},"ms":133,"ok":true}
+{"t":"2026-09-08T23:06:02.358Z","op":"snapshot","args":{},"ms":414,"ok":true}
+{"t":"2026-09-08T23:06:21.278Z","op":"press","args":{"key":"Shift+Tab"},"ms":515,"ok":true}
+{"t":"2026-09-08T23:06:21.846Z","op":"press","args":{"key":"Shift+Tab"},"ms":510,"ok":true}
+{"t":"2026-09-08T23:06:22.033Z","op":"type","args":{"text":"0700AM"},"ms":131,"ok":true}
+{"t":"2026-09-08T23:06:22.497Z","op":"snapshot","args":{},"ms":413,"ok":true}
+{"t":"2026-09-08T23:06:48.932Z","op":"fill","args":{"label":"--:-- --","value":"07:00 AM"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"--:-- --\""}
+{"t":"2026-09-08T23:06:49.046Z","op":"fill","args":{"value":"07:00 AM","placeholder":"--:-- --"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"--:-- --\""}
+{"t":"2026-09-08T23:06:49.160Z","op":"fill","args":{"value":"07:00 AM","selector":"input:near(:text(\"--:-- --\"))"},"ms":3,"ok":false,"error":"nothing on the screen matches selector=\"input:near(:text(\\\"--:-- --\\\"))\""}
+{"t":"2026-09-08T23:07:16.627Z","op":"click","args":{"text":"Use saved signature"},"ms":766,"ok":true}
+{"t":"2026-09-08T23:07:17.200Z","op":"press","args":{"key":"Shift+Tab"},"ms":514,"ok":true}
+{"t":"2026-09-08T23:07:17.774Z","op":"press","args":{"key":"Shift+Tab"},"ms":514,"ok":true}
+{"t":"2026-09-08T23:07:18.347Z","op":"press","args":{"key":"Shift+Tab"},"ms":516,"ok":true}
+{"t":"2026-09-08T23:07:18.428Z","op":"type","args":{"text":"7"},"ms":22,"ok":true}
+{"t":"2026-09-08T23:07:18.515Z","op":"type","args":{"text":"00"},"ms":44,"ok":true}
+{"t":"2026-09-08T23:07:18.580Z","op":"type","args":{"text":"a"},"ms":22,"ok":true}
+{"t":"2026-09-08T23:07:19.133Z","op":"press","args":{"key":"Tab"},"ms":512,"ok":true}
+{"t":"2026-09-08T23:07:19.215Z","op":"type","args":{"text":"3"},"ms":22,"ok":true}
+{"t":"2026-09-08T23:07:19.302Z","op":"type","args":{"text":"30"},"ms":43,"ok":true}
+{"t":"2026-09-08T23:07:19.367Z","op":"type","args":{"text":"p"},"ms":21,"ok":true}
+{"t":"2026-09-08T23:07:19.819Z","op":"snapshot","args":{},"ms":412,"ok":true}
+{"t":"2026-09-08T23:07:31.118Z","op":"screenshot","args":{},"ms":69,"ok":true}
+{"t":"2026-09-08T23:08:03.354Z","op":"press","args":{"key":"Shift+Tab"},"ms":515,"ok":true}
+{"t":"2026-09-08T23:08:03.477Z","op":"type","args":{"text":"330"},"ms":65,"ok":true}
+{"t":"2026-09-08T23:08:03.548Z","op":"type","args":{"text":"p"},"ms":22,"ok":true}
+{"t":"2026-09-08T23:08:04.101Z","op":"press","args":{"key":"Shift+Tab"},"ms":511,"ok":true}
+{"t":"2026-09-08T23:08:04.672Z","op":"press","args":{"key":"Shift+Tab"},"ms":513,"ok":true}
+{"t":"2026-09-08T23:08:05.241Z","op":"press","args":{"key":"Shift+Tab"},"ms":510,"ok":true}
+{"t":"2026-09-08T23:08:05.315Z","op":"type","args":{"text":"7"},"ms":22,"ok":true}
+{"t":"2026-09-08T23:08:05.398Z","op":"type","args":{"text":"00"},"ms":43,"ok":true}
+{"t":"2026-09-08T23:08:05.464Z","op":"type","args":{"text":"a"},"ms":22,"ok":true}
+{"t":"2026-09-08T23:08:05.582Z","op":"screenshot","args":{},"ms":75,"ok":true}
+{"t":"2026-09-08T23:08:53.589Z","op":"click","args":{"role":"spinbutton","name":"0"},"ms":768,"ok":true}
+{"t":"2026-09-08T23:08:54.157Z","op":"press","args":{"key":"Shift+Tab"},"ms":509,"ok":true}
+{"t":"2026-09-08T23:08:54.724Z","op":"press","args":{"key":"Shift+Tab"},"ms":513,"ok":true}
+{"t":"2026-09-08T23:08:54.868Z","op":"type","args":{"text":"330p"},"ms":86,"ok":true}
+{"t":"2026-09-08T23:08:55.433Z","op":"press","args":{"key":"Shift+Tab"},"ms":513,"ok":true}
+{"t":"2026-09-08T23:08:56.000Z","op":"press","args":{"key":"Shift+Tab"},"ms":509,"ok":true}
+{"t":"2026-09-08T23:08:56.138Z","op":"type","args":{"text":"700a"},"ms":84,"ok":true}
+{"t":"2026-09-08T23:08:56.246Z","op":"screenshot","args":{},"ms":64,"ok":true}
+{"t":"2026-09-08T23:10:56.449Z","op":"click","args":{"role":"spinbutton","name":"0"},"ms":764,"ok":true}
+{"t":"2026-09-08T23:10:57.021Z","op":"press","args":{"key":"Shift+Tab"},"ms":513,"ok":true}
+{"t":"2026-09-08T23:10:57.594Z","op":"press","args":{"key":"Shift+Tab"},"ms":514,"ok":true}
+{"t":"2026-09-08T23:10:58.167Z","op":"press","args":{"key":"Shift+Tab"},"ms":514,"ok":true}
+{"t":"2026-09-08T23:10:58.740Z","op":"press","args":{"key":"Shift+Tab"},"ms":513,"ok":true}
+{"t":"2026-09-08T23:10:59.311Z","op":"press","args":{"key":"ArrowLeft"},"ms":513,"ok":true}
+{"t":"2026-09-08T23:10:59.875Z","op":"press","args":{"key":"ArrowLeft"},"ms":505,"ok":true}
+{"t":"2026-09-08T23:10:59.936Z","op":"type","args":{"text":"7"},"ms":22,"ok":true}
+{"t":"2026-09-08T23:11:00.492Z","op":"press","args":{"key":"ArrowRight"},"ms":514,"ok":true}
+{"t":"2026-09-08T23:11:00.593Z","op":"type","args":{"text":"00"},"ms":43,"ok":true}
+{"t":"2026-09-08T23:11:01.146Z","op":"press","args":{"key":"ArrowRight"},"ms":507,"ok":true}
+{"t":"2026-09-08T23:11:01.225Z","op":"type","args":{"text":"a"},"ms":23,"ok":true}
+{"t":"2026-09-08T23:11:01.780Z","op":"press","args":{"key":"Tab"},"ms":513,"ok":true}
+{"t":"2026-09-08T23:11:02.353Z","op":"press","args":{"key":"Tab"},"ms":514,"ok":true}
+{"t":"2026-09-08T23:11:02.433Z","op":"type","args":{"text":"3"},"ms":22,"ok":true}
+{"t":"2026-09-08T23:11:02.521Z","op":"type","args":{"text":"30"},"ms":44,"ok":true}
+{"t":"2026-09-08T23:11:02.584Z","op":"type","args":{"text":"p"},"ms":21,"ok":true}
+{"t":"2026-09-08T23:11:02.690Z","op":"screenshot","args":{},"ms":66,"ok":true}
+{"t":"2026-09-08T23:14:16.291Z","op":"snapshot","args":{},"ms":413,"ok":true}
+{"t":"2026-09-08T23:14:37.818Z","op":"click","args":{"role":"button","name":"Daily Report"},"ms":795,"ok":true}
+{"t":"2026-09-08T23:14:38.385Z","op":"press","args":{"key":"Tab"},"ms":515,"ok":true}
+{"t":"2026-09-08T23:14:38.957Z","op":"press","args":{"key":"Tab"},"ms":520,"ok":true}
+{"t":"2026-09-08T23:14:39.142Z","op":"type","args":{"text":"0700AM"},"ms":129,"ok":true}
+{"t":"2026-09-08T23:14:39.720Z","op":"press","args":{"key":"Tab"},"ms":521,"ok":true}
+{"t":"2026-09-08T23:14:40.294Z","op":"press","args":{"key":"Tab"},"ms":520,"ok":true}
+{"t":"2026-09-08T23:14:40.479Z","op":"type","args":{"text":"0330PM"},"ms":129,"ok":true}
+{"t":"2026-09-08T23:14:41.055Z","op":"press","args":{"key":"Tab"},"ms":520,"ok":true}
+{"t":"2026-09-08T23:14:41.521Z","op":"snapshot","args":{},"ms":410,"ok":true}
+{"t":"2026-09-08T23:15:30.043Z","op":"back","args":{},"ms":616,"ok":true}
+{"t":"2026-09-08T23:15:30.514Z","op":"snapshot","args":{},"ms":413,"ok":true}
+{"t":"2026-09-08T23:16:32.788Z","op":"click","args":{"role":"button","name":"Daily Report"},"ms":767,"ok":true}
+{"t":"2026-09-08T23:16:32.847Z","op":"click","args":{"role":"textbox","name":"1"},"ms":1,"ok":false,"error":"nothing on the screen matches role=\"textbox\" name=\"1\""}
+{"t":"2026-09-08T23:17:01.192Z","op":"fill","args":{"label":"IN","value":"07:00AM"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"IN\""}
+{"t":"2026-09-08T23:17:01.305Z","op":"fill","args":{"value":"07:00AM","placeholder":"IN"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"IN\""}
+{"t":"2026-09-08T23:17:01.424Z","op":"fill","args":{"value":"07:00AM","selector":"input:near(:text(\"IN\"))"},"ms":8,"ok":false,"error":"locator.fill: Error: Malformed value"}
+{"t":"2026-09-08T23:17:46.498Z","op":"click","args":{"role":"spinbutton","name":"0"},"ms":758,"ok":true}
+{"t":"2026-09-08T23:17:47.069Z","op":"press","args":{"key":"Shift+Tab"},"ms":513,"ok":true}
+{"t":"2026-09-08T23:17:47.641Z","op":"press","args":{"key":"Shift+Tab"},"ms":514,"ok":true}
+{"t":"2026-09-08T23:17:47.831Z","op":"type","args":{"text":"0330PM"},"ms":132,"ok":true}
+{"t":"2026-09-08T23:17:48.649Z","op":"click","args":{"role":"spinbutton","name":"0"},"ms":770,"ok":true}
+{"t":"2026-09-08T23:17:49.223Z","op":"press","args":{"key":"Shift+Tab"},"ms":514,"ok":true}
+{"t":"2026-09-08T23:17:49.797Z","op":"press","args":{"key":"Shift+Tab"},"ms":515,"ok":true}
+{"t":"2026-09-08T23:17:50.366Z","op":"press","args":{"key":"Shift+Tab"},"ms":510,"ok":true}
+{"t":"2026-09-08T23:17:50.937Z","op":"press","args":{"key":"Shift+Tab"},"ms":515,"ok":true}
+{"t":"2026-09-08T23:17:51.126Z","op":"type","args":{"text":"0700AM"},"ms":130,"ok":true}
+{"t":"2026-09-08T23:17:51.241Z","op":"screenshot","args":{},"ms":66,"ok":true}
+{"t":"2026-09-08T23:19:19.584Z","op":"press","args":{"key":"ArrowLeft"},"ms":515,"ok":true}
+{"t":"2026-09-08T23:19:20.157Z","op":"press","args":{"key":"ArrowLeft"},"ms":515,"ok":true}
+{"t":"2026-09-08T23:19:20.342Z","op":"type","args":{"text":"0330PM"},"ms":127,"ok":true}
+{"t":"2026-09-08T23:19:21.162Z","op":"click","args":{"role":"spinbutton","name":"0"},"ms":771,"ok":true}
+{"t":"2026-09-08T23:19:21.732Z","op":"press","args":{"key":"Shift+Tab"},"ms":512,"ok":true}
+{"t":"2026-09-08T23:19:22.305Z","op":"press","args":{"key":"Shift+Tab"},"ms":515,"ok":true}
+{"t":"2026-09-08T23:19:22.875Z","op":"press","args":{"key":"Shift+Tab"},"ms":514,"ok":true}
+{"t":"2026-09-08T23:19:23.451Z","op":"press","args":{"key":"Shift+Tab"},"ms":515,"ok":true}
+{"t":"2026-09-08T23:19:23.642Z","op":"type","args":{"text":"0700AM"},"ms":133,"ok":true}
+{"t":"2026-09-08T23:19:23.771Z","op":"screenshot","args":{},"ms":80,"ok":true}
+{"t":"2026-09-08T23:19:50.808Z","op":"press","args":{"key":"ArrowLeft"},"ms":515,"ok":true}
+{"t":"2026-09-08T23:19:51.000Z","op":"type","args":{"text":"0330PM"},"ms":133,"ok":true}
+{"t":"2026-09-08T23:19:51.565Z","op":"press","args":{"key":"Shift+Tab"},"ms":515,"ok":true}
+{"t":"2026-09-08T23:19:52.139Z","op":"press","args":{"key":"Shift+Tab"},"ms":514,"ok":true}
+{"t":"2026-09-08T23:19:52.337Z","op":"type","args":{"text":"0700AM"},"ms":137,"ok":true}
+{"t":"2026-09-08T23:19:52.900Z","op":"press","args":{"key":"Tab"},"ms":515,"ok":true}
+{"t":"2026-09-08T23:19:53.039Z","op":"screenshot","args":{},"ms":80,"ok":true}
+{"t":"2026-09-08T23:21:26.508Z","op":"click","args":{"role":"button","name":"Day"},"ms":767,"ok":true}
+{"t":"2026-09-08T23:21:27.327Z","op":"click","args":{"role":"button","name":"Daily Report"},"ms":760,"ok":true}
+{"t":"2026-09-08T23:21:27.901Z","op":"press","args":{"key":"Tab"},"ms":514,"ok":true}
+{"t":"2026-09-08T23:21:28.475Z","op":"press","args":{"key":"Tab"},"ms":515,"ok":true}
+{"t":"2026-09-08T23:21:28.669Z","op":"type","args":{"text":"0700AM"},"ms":136,"ok":true}
+{"t":"2026-09-08T23:21:29.232Z","op":"press","args":{"key":"Tab"},"ms":514,"ok":true}
+{"t":"2026-09-08T23:21:29.427Z","op":"type","args":{"text":"0330PM"},"ms":135,"ok":true}
+{"t":"2026-09-08T23:21:29.568Z","op":"screenshot","args":{},"ms":83,"ok":true}
+{"t":"2026-09-08T23:22:05.406Z","op":"press","args":{"key":"Tab"},"ms":511,"ok":true}
+{"t":"2026-09-08T23:22:05.597Z","op":"type","args":{"text":"0330PM"},"ms":137,"ok":true}
+{"t":"2026-09-08T23:22:05.717Z","op":"screenshot","args":{},"ms":71,"ok":true}
+{"t":"2026-09-08T23:22:35.842Z","op":"type","args":{"text":"0330PM"},"ms":134,"ok":true}
+{"t":"2026-09-08T23:22:35.965Z","op":"screenshot","args":{},"ms":73,"ok":true}
+{"t":"2026-09-08T23:23:26.522Z","op":"press","args":{"key":"ArrowLeft"},"ms":516,"ok":true}
+{"t":"2026-09-08T23:23:27.096Z","op":"press","args":{"key":"ArrowLeft"},"ms":515,"ok":true}
+{"t":"2026-09-08T23:23:27.671Z","op":"press","args":{"key":"3"},"ms":516,"ok":true}
+{"t":"2026-09-08T23:23:28.244Z","op":"press","args":{"key":"3"},"ms":514,"ok":true}
+{"t":"2026-09-08T23:23:28.815Z","op":"press","args":{"key":"0"},"ms":509,"ok":true}
+{"t":"2026-09-08T23:23:29.382Z","op":"press","args":{"key":"p"},"ms":515,"ok":true}
+{"t":"2026-09-08T23:23:29.855Z","op":"snapshot","args":{},"ms":414,"ok":true}
+{"t":"2026-09-08T23:24:12.525Z","op":"press","args":{"key":"ArrowLeft"},"ms":515,"ok":true}
+{"t":"2026-09-08T23:24:13.099Z","op":"press","args":{"key":"3"},"ms":515,"ok":true}
+{"t":"2026-09-08T23:24:13.671Z","op":"press","args":{"key":"0"},"ms":514,"ok":true}
+{"t":"2026-09-08T23:24:14.144Z","op":"snapshot","args":{},"ms":414,"ok":true}
+{"t":"2026-09-08T23:25:07.648Z","op":"click","args":{"role":"spinbutton","name":"0"},"ms":762,"ok":true}
+{"t":"2026-09-08T23:25:08.221Z","op":"press","args":{"key":"Shift+Tab"},"ms":511,"ok":true}
+{"t":"2026-09-08T23:25:08.795Z","op":"press","args":{"key":"Shift+Tab"},"ms":514,"ok":true}
+{"t":"2026-09-08T23:25:09.363Z","op":"press","args":{"key":"ArrowLeft"},"ms":509,"ok":true}
+{"t":"2026-09-08T23:25:09.926Z","op":"press","args":{"key":"ArrowLeft"},"ms":513,"ok":true}
+{"t":"2026-09-08T23:25:10.498Z","op":"press","args":{"key":"3"},"ms":513,"ok":true}
+{"t":"2026-09-08T23:25:11.071Z","op":"press","args":{"key":"3"},"ms":516,"ok":true}
+{"t":"2026-09-08T23:25:11.637Z","op":"press","args":{"key":"0"},"ms":506,"ok":true}
+{"t":"2026-09-08T23:25:12.198Z","op":"press","args":{"key":"p"},"ms":511,"ok":true}
+{"t":"2026-09-08T23:25:12.667Z","op":"snapshot","args":{},"ms":413,"ok":true}
+{"t":"2026-09-08T23:26:40.711Z","op":"click","args":{"role":"button","name":"File card"},"ms":757,"ok":true}
+{"t":"2026-09-08T23:26:41.184Z","op":"snapshot","args":{},"ms":414,"ok":true}
+{"t":"2026-09-08T23:27:38.080Z","op":"click","args":{"role":"button","name":"Day"},"ms":768,"ok":true}
+{"t":"2026-09-08T23:27:38.553Z","op":"snapshot","args":{},"ms":414,"ok":true}
+{"t":"2026-09-08T23:27:48.409Z","op":"click","args":{"role":"button","name":"Daily Report"},"ms":755,"ok":true}
+{"t":"2026-09-08T23:27:48.881Z","op":"scroll","args":{"dy":400},"ms":412,"ok":true}
+{"t":"2026-09-08T23:27:49.356Z","op":"snapshot","args":{},"ms":414,"ok":true}
+{"t":"2026-09-08T23:27:58.233Z","op":"click","args":{"role":"button","name":"Equipment / Assets Add equipment"},"ms":756,"ok":true}
+{"t":"2026-09-08T23:27:58.691Z","op":"snapshot","args":{},"ms":415,"ok":true}
+{"t":"2026-09-08T23:28:07.741Z","op":"click","args":{"role":"link","name":"My records"},"ms":769,"ok":true}
+{"t":"2026-09-08T23:28:08.214Z","op":"snapshot","args":{},"ms":414,"ok":true}
+{"t":"2026-09-08T23:28:14.320Z","op":"click","args":{"role":"link","name":"Settings"},"ms":793,"ok":true}
+{"t":"2026-09-08T23:28:14.779Z","op":"snapshot","args":{},"ms":411,"ok":true}
+{"t":"2026-09-08T23:28:27.105Z","op":"click","args":{"role":"link","name":"Jobs"},"ms":761,"ok":true}
+{"t":"2026-09-08T23:28:27.583Z","op":"snapshot","args":{},"ms":412,"ok":true}
+{"t":"2026-09-08T23:28:41.915Z","op":"open","args":{"url":"http://localhost:5199/blast-day/f6e4da49-02f6-4826-b353-9cab653caf7b"},"ms":1011,"ok":true}
+{"t":"2026-09-08T23:28:42.731Z","op":"click","args":{"role":"button","name":"Daily Report"},"ms":766,"ok":true}
+{"t":"2026-09-08T23:28:43.204Z","op":"scroll","args":{"dy":600},"ms":416,"ok":true}
+{"t":"2026-09-08T23:28:44.026Z","op":"click","args":{"role":"button","name":"Materials / Onsite Repairs / Fuel Add"},"ms":764,"ok":true}
+{"t":"2026-09-08T23:28:44.499Z","op":"snapshot","args":{},"ms":414,"ok":true}
+{"t":"2026-09-08T23:28:57.878Z","op":"click","args":{"role":"button","name":"More actions"},"ms":763,"ok":true}
+{"t":"2026-09-08T23:28:58.351Z","op":"snapshot","args":{},"ms":415,"ok":true}
+{"t":"2026-09-08T23:29:09.879Z","op":"select","args":{"label":"Pick asset…","value":"Other / not listed"},"ms":2,"ok":false,"error":"nothing on the screen matches label=\"Pick asset…\""}
+{"t":"2026-09-08T23:29:30.596Z","op":"fill","args":{"label":"Description","value":"Truck P002 — brake light out, needs repair before next use"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Description\""}
+{"t":"2026-09-08T23:29:30.713Z","op":"fill","args":{"value":"Truck P002 — brake light out, needs repair before next use","placeholder":"Description"},"ms":4,"ok":true}
+{"t":"2026-09-08T23:29:30.762Z","op":"fill","args":{"label":"Asset #","value":"P002"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Asset #\""}
+{"t":"2026-09-08T23:29:30.877Z","op":"fill","args":{"value":"P002","placeholder":"Asset #"},"ms":3,"ok":true}
+{"t":"2026-09-08T23:29:31.337Z","op":"snapshot","args":{},"ms":414,"ok":true}
+{"t":"2026-09-08T23:29:44.991Z","op":"click","args":{"role":"link","name":"Dashboard"},"ms":756,"ok":true}
+{"t":"2026-09-08T23:29:45.461Z","op":"snapshot","args":{},"ms":412,"ok":true}
+{"t":"2026-09-08T23:39:24.684Z","op":"session","device":"tablet"}
+{"t":"2026-09-08T23:39:25.731Z","op":"open","args":{"url":"http://localhost:5199","device":"tablet"},"ms":1047,"ok":true}
+{"t":"2026-09-08T23:39:30.900Z","op":"fill","args":{"label":"Email","value":"barry@baystate.example"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Email\""}
+{"t":"2026-09-08T23:39:31.012Z","op":"fill","args":{"value":"barry@baystate.example","placeholder":"Email"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Email\""}
+{"t":"2026-09-08T23:39:31.132Z","op":"fill","args":{"value":"barry@baystate.example","selector":"input:near(:text(\"Email\"))"},"ms":10,"ok":true}
+{"t":"2026-09-08T23:39:31.203Z","op":"fill","args":{"label":"Password","value":"Blasting41!"},"ms":0,"ok":false,"error":"nothing on the screen matches label=\"Password\""}
+{"t":"2026-09-08T23:39:31.316Z","op":"fill","args":{"value":"Blasting41!","placeholder":"Password"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Password\""}
+{"t":"2026-09-08T23:39:31.464Z","op":"fill","args":{"value":"Blasting41!","selector":"input:near(:text(\"Password\"))"},"ms":39,"ok":true}
+{"t":"2026-09-08T23:39:32.283Z","op":"click","args":{"role":"button","name":"Sign in"},"ms":755,"ok":true}
+{"t":"2026-09-08T23:39:32.741Z","op":"snapshot","args":{},"ms":405,"ok":true}
+{"t":"2026-09-08T23:40:14.029Z","op":"fill","args":{"label":"Email","value":"barry.lopes@baystate.example"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Email\""}
+{"t":"2026-09-08T23:40:14.142Z","op":"fill","args":{"value":"barry.lopes@baystate.example","placeholder":"Email"},"ms":0,"ok":false,"error":"nothing on the screen matches placeholder=\"Email\""}
+{"t":"2026-09-08T23:40:14.261Z","op":"fill","args":{"value":"barry.lopes@baystate.example","selector":"input:near(:text(\"Email\"))"},"ms":7,"ok":true}
+{"t":"2026-09-08T23:40:15.101Z","op":"click","args":{"role":"button","name":"Sign in"},"ms":767,"ok":true}
+{"t":"2026-09-08T23:40:15.572Z","op":"snapshot","args":{},"ms":411,"ok":true}
+{"t":"2026-09-08T23:42:37.510Z","op":"fill","args":{"label":"Email","value":"barry.b@eval.shotlog.test"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Email\""}
+{"t":"2026-09-08T23:42:37.622Z","op":"fill","args":{"value":"barry.b@eval.shotlog.test","placeholder":"Email"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Email\""}
+{"t":"2026-09-08T23:42:37.739Z","op":"fill","args":{"value":"barry.b@eval.shotlog.test","selector":"input:near(:text(\"Email\"))"},"ms":6,"ok":true}
+{"t":"2026-09-08T23:42:38.579Z","op":"click","args":{"role":"button","name":"Sign in"},"ms":766,"ok":true}
+{"t":"2026-09-08T23:42:39.050Z","op":"snapshot","args":{},"ms":410,"ok":true}
+{"t":"2026-09-08T23:45:17.561Z","op":"open","args":{"url":"http://localhost:5199/enroll/n5iVDCYzDSX7Kd-jSO9Eo-U68vMYr-YTEjBoUUb8hmY4YC2oNRsGuvPH8-VyRmwO"},"ms":977,"ok":true}
+{"t":"2026-09-08T23:45:22.285Z","op":"fill","args":{"label":"Choose a password","value":"Blasting41!"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Choose a password\""}
+{"t":"2026-09-08T23:45:22.398Z","op":"fill","args":{"value":"Blasting41!","placeholder":"Choose a password"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Choose a password\""}
+{"t":"2026-09-08T23:45:22.519Z","op":"fill","args":{"value":"Blasting41!","selector":"input:near(:text(\"Choose a password\"))"},"ms":9,"ok":true}
+{"t":"2026-09-08T23:45:22.591Z","op":"fill","args":{"label":"Confirm password","value":"Blasting41!"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Confirm password\""}
+{"t":"2026-09-08T23:45:22.699Z","op":"fill","args":{"value":"Blasting41!","placeholder":"Confirm password"},"ms":0,"ok":false,"error":"nothing on the screen matches placeholder=\"Confirm password\""}
+{"t":"2026-09-08T23:45:22.808Z","op":"fill","args":{"value":"Blasting41!","selector":"input:near(:text(\"Confirm password\"))"},"ms":4,"ok":true}
+{"t":"2026-09-08T23:45:23.654Z","op":"click","args":{"role":"button","name":"Create my account"},"ms":789,"ok":true}
+{"t":"2026-09-08T23:45:26.880Z","op":"snapshot","args":{},"ms":416,"ok":true}
+{"t":"2026-09-08T23:45:31.490Z","op":"click","args":{"role":"button","name":"1"},"ms":763,"ok":true}
+{"t":"2026-09-08T23:45:32.305Z","op":"click","args":{"role":"button","name":"4"},"ms":753,"ok":true}
+{"t":"2026-09-08T23:45:33.122Z","op":"click","args":{"role":"button","name":"1"},"ms":758,"ok":true}
+{"t":"2026-09-08T23:45:33.940Z","op":"click","args":{"role":"button","name":"9"},"ms":759,"ok":true}
+{"t":"2026-09-08T23:45:34.756Z","op":"click","args":{"role":"button","name":"8"},"ms":757,"ok":true}
+{"t":"2026-09-08T23:45:35.569Z","op":"click","args":{"role":"button","name":"5"},"ms":752,"ok":true}
+{"t":"2026-09-08T23:45:41.198Z","op":"click","args":{"role":"button","name":"1"},"ms":751,"ok":true}
+{"t":"2026-09-08T23:45:41.989Z","op":"click","args":{"role":"button","name":"4"},"ms":753,"ok":true}
+{"t":"2026-09-08T23:45:42.805Z","op":"click","args":{"role":"button","name":"1"},"ms":756,"ok":true}
+{"t":"2026-09-08T23:45:43.615Z","op":"click","args":{"role":"button","name":"9"},"ms":749,"ok":true}
+{"t":"2026-09-08T23:45:44.420Z","op":"click","args":{"role":"button","name":"8"},"ms":754,"ok":true}
+{"t":"2026-09-08T23:45:45.240Z","op":"click","args":{"role":"button","name":"5"},"ms":760,"ok":true}
+{"t":"2026-09-08T23:45:56.629Z","op":"click","args":{"role":"button","name":"Let's go"},"ms":1,"ok":false,"error":"nothing on the screen matches role=\"button\" name=\"Let's go\""}
+{"t":"2026-09-08T23:45:58.904Z","op":"click","args":{"text":"Let's go"},"ms":2,"ok":false,"error":"nothing on the screen matches text=\"Let's go\""}
+{"t":"2026-09-08T23:46:01.655Z","op":"screenshot","args":{},"ms":42,"ok":true}
+{"t":"2026-09-08T23:46:18.774Z","op":"tap","args":{"x":400,"y":592},"ms":610,"ok":true}
+{"t":"2026-09-08T23:46:30.882Z","op":"press","args":{"key":"Enter"},"ms":512,"ok":true}
+{"t":"2026-09-08T23:46:34.096Z","op":"tap","args":{"x":400,"y":460},"ms":603,"ok":true}
+{"t":"2026-09-08T23:46:46.914Z","op":"press","args":{"key":"Tab"},"ms":511,"ok":true}
+{"t":"2026-09-08T23:46:47.504Z","op":"press","args":{"key":"Space"},"ms":530,"ok":true}
+{"t":"2026-09-08T23:47:08.808Z","op":"click","args":{"role":"link","name":"My Profile"},"ms":6012,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-08T23:47:13.522Z","op":"click","args":{"role":"button","name":"Skip"},"ms":760,"ok":true}
+{"t":"2026-09-08T23:47:17.279Z","op":"click","args":{"role":"link","name":"Add your blasting license"},"ms":760,"ok":true}
+{"t":"2026-09-08T23:47:20.309Z","op":"click","args":{"role":"button","name":"Add License"},"ms":758,"ok":true}
+{"t":"2026-09-08T23:47:23.673Z","op":"snapshot","args":{"max":30000},"ms":410,"ok":true}
+{"t":"2026-09-08T23:47:26.603Z","op":"screenshot","args":{},"ms":46,"ok":true}
+{"t":"2026-09-08T23:47:36.594Z","op":"tap","args":{"x":422,"y":185},"ms":611,"ok":true}
+{"t":"2026-09-08T23:47:43.486Z","op":"click","args":{"text":"Add License"},"ms":769,"ok":true}
+{"t":"2026-09-08T23:47:52.538Z","op":"click","args":{"text":"My Licenses"},"ms":773,"ok":true}
+{"t":"2026-09-08T23:48:03.406Z","op":"fill","args":{"label":"License #","value":"BL-MA-2201"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"License #\""}
+{"t":"2026-09-08T23:48:03.518Z","op":"fill","args":{"value":"BL-MA-2201","placeholder":"License #"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"License #\""}
+{"t":"2026-09-08T23:48:03.638Z","op":"fill","args":{"value":"BL-MA-2201","selector":"input:near(:text(\"License #\"))"},"ms":8,"ok":true}
+{"t":"2026-09-08T23:48:03.710Z","op":"fill","args":{"label":"Expires","value":"2027-12-31"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Expires\""}
+{"t":"2026-09-08T23:48:03.821Z","op":"fill","args":{"value":"2027-12-31","placeholder":"Expires"},"ms":0,"ok":false,"error":"nothing on the screen matches placeholder=\"Expires\""}
+{"t":"2026-09-08T23:48:03.942Z","op":"fill","args":{"value":"2027-12-31","selector":"input:near(:text(\"Expires\"))"},"ms":8,"ok":true}
+{"t":"2026-09-08T23:48:10.021Z","op":"click","args":{"role":"button","name":"Save"},"ms":6007,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-08T23:48:18.171Z","op":"screenshot","args":{},"ms":69,"ok":true}
+{"t":"2026-09-08T23:48:26.498Z","op":"fill","args":{"label":"State","value":"MA"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"State\""}
+{"t":"2026-09-08T23:48:26.610Z","op":"fill","args":{"value":"MA","placeholder":"State"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"State\""}
+{"t":"2026-09-08T23:48:26.729Z","op":"fill","args":{"value":"MA","selector":"input:near(:text(\"State\"))"},"ms":9,"ok":true}
+{"t":"2026-09-08T23:48:27.211Z","op":"snapshot","args":{},"ms":412,"ok":true}
+{"t":"2026-09-08T23:48:30.775Z","op":"click","args":{"role":"button","name":"Save"},"ms":746,"ok":true}
+{"t":"2026-09-08T23:48:35.612Z","op":"click","args":{"role":"button","name":"Tap to sign"},"ms":751,"ok":true}
+{"t":"2026-09-08T23:48:37.266Z","op":"sign","args":{},"ms":1612,"ok":true}
+{"t":"2026-09-08T23:48:37.735Z","op":"snapshot","args":{},"ms":410,"ok":true}
+{"t":"2026-09-08T23:48:42.386Z","op":"click","args":{"role":"button","name":"Save Signature"},"ms":763,"ok":true}
+{"t":"2026-09-08T23:48:47.874Z","op":"click","args":{"role":"link","name":"Dashboard"},"ms":761,"ok":true}
+{"t":"2026-09-08T23:48:48.684Z","op":"click","args":{"role":"button","name":"Start work at a job"},"ms":766,"ok":true}
+{"t":"2026-09-08T23:48:54.328Z","op":"click","args":{"text":"Choose the job"},"ms":757,"ok":true}
+{"t":"2026-09-08T23:48:58.324Z","op":"click","args":{"text":"Granite Ridge Construction"},"ms":755,"ok":true}
+{"t":"2026-09-08T23:49:11.486Z","op":"click","args":{"role":"button","name":"Start work"},"ms":6017,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-08T23:49:15.853Z","op":"screenshot","args":{},"ms":72,"ok":true}
+{"t":"2026-09-08T23:49:25.211Z","op":"tap","args":{"x":403,"y":622},"ms":610,"ok":true}
+{"t":"2026-09-08T23:49:49.182Z","op":"press","args":{"key":"Tab"},"ms":515,"ok":true}
+{"t":"2026-09-08T23:49:49.754Z","op":"press","args":{"key":"Tab"},"ms":513,"ok":true}
+{"t":"2026-09-08T23:49:50.326Z","op":"press","args":{"key":"Enter"},"ms":515,"ok":true}
+{"t":"2026-09-08T23:49:56.257Z","op":"click","args":{"text":"Granite Ridge Construction"},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"Granite Ridge Construction\""}
+{"t":"2026-09-08T23:49:59.962Z","op":"click","args":{"text":"Choose the job"},"ms":764,"ok":true}
+{"t":"2026-09-08T23:50:02.742Z","op":"click","args":{"text":"Granite Ridge Construction 1 site"},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"Granite Ridge Construction 1 site\""}
+{"t":"2026-09-08T23:50:06.094Z","op":"click","args":{"role":"button","name":"Granite Ridge Construction 1 site ›"},"ms":763,"ok":true}
+{"t":"2026-09-08T23:50:14.753Z","op":"scroll","args":{"dy":200},"ms":413,"ok":true}
+{"t":"2026-09-08T23:50:14.888Z","op":"screenshot","args":{},"ms":77,"ok":true}
+{"t":"2026-09-08T23:50:52.001Z","op":"wait","args":{"ms":1000},"ms":1218,"ok":true}
+{"t":"2026-09-08T23:50:52.675Z","op":"tap","args":{"x":401,"y":620},"ms":615,"ok":true}
+{"t":"2026-09-08T23:51:03.957Z","op":"click","args":{"role":"button","name":"Hauling"},"ms":757,"ok":true}
+{"t":"2026-09-08T23:51:04.530Z","op":"press","args":{"key":"Tab"},"ms":516,"ok":true}
+{"t":"2026-09-08T23:51:05.102Z","op":"press","args":{"key":"Tab"},"ms":514,"ok":true}
+{"t":"2026-09-08T23:51:05.677Z","op":"press","args":{"key":"Space"},"ms":516,"ok":true}
+{"t":"2026-09-08T23:51:23.129Z","op":"click","args":{"role":"button","name":"Add Blasting Log"},"ms":6013,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-08T23:51:27.778Z","op":"click","args":{"role":"button","name":"Skip"},"ms":760,"ok":true}
+{"t":"2026-09-08T23:51:28.601Z","op":"click","args":{"role":"button","name":"Add Blasting Log"},"ms":764,"ok":true}
+{"t":"2026-09-08T23:51:36.974Z","op":"click","args":{"text":"Drill Plan"},"ms":757,"ok":true}
+{"t":"2026-09-08T23:51:41.855Z","op":"click","args":{"role":"tab","name":"Drill Plan"},"ms":1,"ok":false,"error":"nothing on the screen matches role=\"tab\" name=\"Drill Plan\""}
+{"t":"2026-09-08T23:51:46.895Z","op":"click","args":{"role":"button","name":"Drill Plan Needs your attention"},"ms":773,"ok":true}
+{"t":"2026-09-08T23:51:52.761Z","op":"click","args":{"text":"Build plan"},"ms":775,"ok":true}
+{"t":"2026-09-08T23:52:04.531Z","op":"triple_click","args":{},"ms":0,"ok":false,"error":"unknown op triple_click"}
+{"t":"2026-09-08T23:52:09.574Z","op":"fill","args":{"label":"All holes","value":"18"},"ms":2,"ok":false,"error":"nothing on the screen matches label=\"All holes\""}
+{"t":"2026-09-08T23:52:09.687Z","op":"fill","args":{"value":"18","placeholder":"All holes"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"All holes\""}
+{"t":"2026-09-08T23:52:09.805Z","op":"fill","args":{"value":"18","selector":"input:near(:text(\"All holes\"))"},"ms":7,"ok":true}
+{"t":"2026-09-08T23:52:10.276Z","op":"snapshot","args":{},"ms":407,"ok":true}
+{"t":"2026-09-08T23:52:18.598Z","op":"screenshot","args":{},"ms":74,"ok":true}
+{"t":"2026-09-08T23:52:34.740Z","op":"tap","args":{"x":64,"y":493},"ms":614,"ok":true}
+{"t":"2026-09-08T23:52:35.398Z","op":"tap","args":{"x":171,"y":493},"ms":613,"ok":true}
+{"t":"2026-09-08T23:52:36.065Z","op":"tap","args":{"x":171,"y":493},"ms":619,"ok":true}
+{"t":"2026-09-08T23:52:36.731Z","op":"tap","args":{"x":171,"y":493},"ms":607,"ok":true}
+{"t":"2026-09-08T23:52:37.394Z","op":"tap","args":{"x":171,"y":493},"ms":618,"ok":true}
+{"t":"2026-09-08T23:52:37.864Z","op":"snapshot","args":{},"ms":407,"ok":true}
+{"t":"2026-09-08T23:52:49.514Z","op":"screenshot","args":{},"ms":71,"ok":true}
+{"t":"2026-09-08T23:54:19.525Z","op":"screenshot","args":{},"ms":61,"ok":true}
+{"t":"2026-09-08T23:54:52.425Z","op":"tap","args":{"x":332,"y":441},"ms":616,"ok":true}
+{"t":"2026-09-08T23:55:08.921Z","op":"scroll","args":{"dy":-600},"ms":411,"ok":true}
+{"t":"2026-09-08T23:55:09.043Z","op":"screenshot","args":{},"ms":76,"ok":true}
+{"t":"2026-09-08T23:55:42.117Z","op":"click","args":{"text":"⌀ No hole"},"ms":768,"ok":true}
+{"t":"2026-09-08T23:55:42.590Z","op":"snapshot","args":{},"ms":415,"ok":true}
+{"t":"2026-09-08T23:55:54.901Z","op":"screenshot","args":{},"ms":64,"ok":true}
+{"t":"2026-09-08T23:56:14.112Z","op":"tap","args":{"x":55,"y":308},"ms":615,"ok":true}
+{"t":"2026-09-08T23:56:14.577Z","op":"snapshot","args":{},"ms":416,"ok":true}
+{"t":"2026-09-08T23:57:10.783Z","op":"tap","args":{"x":31,"y":308},"ms":615,"ok":true}
+{"t":"2026-09-08T23:57:11.252Z","op":"snapshot","args":{},"ms":411,"ok":true}
+{"t":"2026-09-08T23:57:57.638Z","op":"tap","args":{"x":80,"y":280},"ms":622,"ok":true}
+{"t":"2026-09-08T23:57:58.106Z","op":"snapshot","args":{},"ms":410,"ok":true}
+{"t":"2026-09-08T23:57:58.775Z","op":"tap","args":{"x":80,"y":300},"ms":617,"ok":true}
+{"t":"2026-09-08T23:57:59.249Z","op":"snapshot","args":{},"ms":416,"ok":true}
+{"t":"2026-09-08T23:57:59.923Z","op":"tap","args":{"x":80,"y":320},"ms":616,"ok":true}
+{"t":"2026-09-08T23:58:00.391Z","op":"snapshot","args":{},"ms":410,"ok":true}
+{"t":"2026-09-08T23:58:01.042Z","op":"tap","args":{"x":80,"y":340},"ms":606,"ok":true}
+{"t":"2026-09-08T23:58:01.497Z","op":"snapshot","args":{},"ms":411,"ok":true}
+{"t":"2026-09-08T23:58:02.169Z","op":"tap","args":{"x":80,"y":360},"ms":614,"ok":true}
+{"t":"2026-09-08T23:58:02.644Z","op":"snapshot","args":{},"ms":416,"ok":true}
+{"t":"2026-09-08T23:58:03.318Z","op":"tap","args":{"x":80,"y":380},"ms":615,"ok":true}
+{"t":"2026-09-08T23:58:03.790Z","op":"snapshot","args":{},"ms":413,"ok":true}
+{"t":"2026-09-08T23:58:15.654Z","op":"click","args":{"role":"button","name":"Drill plan"},"ms":759,"ok":true}
+{"t":"2026-09-08T23:58:15.780Z","op":"screenshot","args":{},"ms":72,"ok":true}
+{"t":"2026-09-08T23:59:21.923Z","op":"tap","args":{"x":86,"y":481},"ms":620,"ok":true}
+{"t":"2026-09-08T23:59:22.397Z","op":"snapshot","args":{},"ms":415,"ok":true}
+{"t":"2026-09-08T23:59:38.922Z","op":"click","args":{"role":"button","name":"Send to drillers"},"ms":777,"ok":true}
+{"t":"2026-09-08T23:59:55.699Z","op":"snapshot","args":{"max":30000},"ms":424,"ok":true}
+{"t":"2026-09-09T00:00:25.561Z","op":"press","args":{"key":"Escape"},"ms":530,"ok":true}
+{"t":"2026-09-09T00:07:03.586Z","op":"session","device":"phone"}
+{"t":"2026-09-09T00:07:04.639Z","op":"open","args":{"url":"http://localhost:5199"},"ms":1053,"ok":true}
+{"t":"2026-09-09T00:07:05.102Z","op":"snapshot","args":{},"ms":410,"ok":true}
+{"t":"2026-09-09T00:09:16.790Z","op":"fill","args":{"label":"Email","value":"barry.b@eval.shotlog.test"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Email\""}
+{"t":"2026-09-09T00:09:16.898Z","op":"fill","args":{"value":"barry.b@eval.shotlog.test","placeholder":"Email"},"ms":0,"ok":false,"error":"nothing on the screen matches placeholder=\"Email\""}
+{"t":"2026-09-09T00:09:17.013Z","op":"fill","args":{"value":"barry.b@eval.shotlog.test","selector":"input:near(:text(\"Email\"))"},"ms":7,"ok":true}
+{"t":"2026-09-09T00:09:17.079Z","op":"fill","args":{"label":"Password","value":"Blasting41!"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Password\""}
+{"t":"2026-09-09T00:09:17.190Z","op":"fill","args":{"value":"Blasting41!","placeholder":"Password"},"ms":0,"ok":false,"error":"nothing on the screen matches placeholder=\"Password\""}
+{"t":"2026-09-09T00:09:17.339Z","op":"fill","args":{"value":"Blasting41!","selector":"input:near(:text(\"Password\"))"},"ms":40,"ok":true}
+{"t":"2026-09-09T00:09:18.162Z","op":"click","args":{"text":"Sign in"},"ms":761,"ok":true}
+{"t":"2026-09-09T00:09:22.113Z","op":"snapshot","args":{},"ms":411,"ok":true}
+{"t":"2026-09-09T00:09:25.435Z","op":"key","args":{},"ms":0,"ok":false,"error":"unknown op key"}
+{"t":"2026-09-09T00:09:28.293Z","op":"screenshot","args":{},"ms":23,"ok":true}
+{"t":"2026-09-09T00:09:51.758Z","op":"tap","args":{"x":400,"y":700},"ms":614,"ok":true}
+{"t":"2026-09-09T00:10:06.760Z","op":"click","args":{"text":"Sign in"},"ms":754,"ok":true}
+{"t":"2026-09-09T00:10:07.215Z","op":"snapshot","args":{},"ms":406,"ok":true}
+{"t":"2026-09-09T00:10:12.085Z","op":"click","args":{"text":"Forgot password?"},"ms":767,"ok":true}
+{"t":"2026-09-09T00:10:12.146Z","op":"tab","args":{},"ms":0,"ok":false,"error":"unknown op tab"}
+{"t":"2026-09-09T00:10:25.765Z","op":"click","args":{"text":"Back to sign in"},"ms":755,"ok":true}
+{"t":"2026-09-09T00:10:28.801Z","op":"fill","args":{"label":"Email","value":"barry.b@eval.shotlog.test"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Email\""}
+{"t":"2026-09-09T00:10:28.912Z","op":"fill","args":{"value":"barry.b@eval.shotlog.test","placeholder":"Email"},"ms":0,"ok":false,"error":"nothing on the screen matches placeholder=\"Email\""}
+{"t":"2026-09-09T00:10:29.024Z","op":"fill","args":{"value":"barry.b@eval.shotlog.test","selector":"input:near(:text(\"Email\"))"},"ms":4,"ok":true}
+{"t":"2026-09-09T00:10:29.089Z","op":"fill","args":{"label":"Password","value":"Blasting41!"},"ms":0,"ok":false,"error":"nothing on the screen matches label=\"Password\""}
+{"t":"2026-09-09T00:10:29.201Z","op":"fill","args":{"value":"Blasting41!","placeholder":"Password"},"ms":0,"ok":false,"error":"nothing on the screen matches placeholder=\"Password\""}
+{"t":"2026-09-09T00:10:29.320Z","op":"fill","args":{"value":"Blasting41!","selector":"input:near(:text(\"Password\"))"},"ms":7,"ok":true}
+{"t":"2026-09-09T00:10:29.407Z","op":"screenshot","args":{},"ms":11,"ok":true}
+{"t":"2026-09-09T00:10:33.029Z","op":"click","args":{"text":"Sign in"},"ms":751,"ok":true}
+{"t":"2026-09-09T00:10:35.124Z","op":"screenshot","args":{},"ms":9,"ok":true}
+{"t":"2026-09-09T00:10:54.640Z","op":"navigate","args":{},"ms":0,"ok":false,"error":"unknown op navigate"}
+{"t":"2026-09-09T00:11:00.330Z","op":"open","args":{"url":"http://localhost:5199/blast-day/a4cf7f12-88ee-4898-9683-22280de99e7d"},"ms":989,"ok":true}
+{"t":"2026-09-09T00:11:00.796Z","op":"snapshot","args":{},"ms":414,"ok":true}
+{"t":"2026-09-09T00:11:19.802Z","op":"fill","args":{"label":"Email","value":"barry.b@eval.shotlog.test"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Email\""}
+{"t":"2026-09-09T00:11:19.913Z","op":"fill","args":{"value":"barry.b@eval.shotlog.test","placeholder":"Email"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Email\""}
+{"t":"2026-09-09T00:11:20.028Z","op":"fill","args":{"value":"barry.b@eval.shotlog.test","selector":"input:near(:text(\"Email\"))"},"ms":7,"ok":true}
+{"t":"2026-09-09T00:11:20.101Z","op":"fill","args":{"label":"Password","value":"Blasting41!"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Password\""}
+{"t":"2026-09-09T00:11:20.213Z","op":"fill","args":{"value":"Blasting41!","placeholder":"Password"},"ms":0,"ok":false,"error":"nothing on the screen matches placeholder=\"Password\""}
+{"t":"2026-09-09T00:11:20.335Z","op":"fill","args":{"value":"Blasting41!","selector":"input:near(:text(\"Password\"))"},"ms":8,"ok":true}
+{"t":"2026-09-09T00:11:21.015Z","op":"tap","args":{"x":400,"y":780},"ms":607,"ok":true}
+{"t":"2026-09-09T00:11:21.069Z","op":"screenshot","args":{},"ms":7,"ok":true}
+{"t":"2026-09-09T00:12:29.899Z","op":"fill","args":{"label":"Email","value":"barry.b@eval.shotlog.test"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Email\""}
+{"t":"2026-09-09T00:12:30.013Z","op":"fill","args":{"value":"barry.b@eval.shotlog.test","placeholder":"Email"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Email\""}
+{"t":"2026-09-09T00:12:30.129Z","op":"fill","args":{"value":"barry.b@eval.shotlog.test","selector":"input:near(:text(\"Email\"))"},"ms":5,"ok":true}
+{"t":"2026-09-09T00:12:30.204Z","op":"fill","args":{"label":"Password","value":"Blasting41!"},"ms":0,"ok":false,"error":"nothing on the screen matches label=\"Password\""}
+{"t":"2026-09-09T00:12:30.317Z","op":"fill","args":{"value":"Blasting41!","placeholder":"Password"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Password\""}
+{"t":"2026-09-09T00:12:30.438Z","op":"fill","args":{"value":"Blasting41!","selector":"input:near(:text(\"Password\"))"},"ms":8,"ok":true}
+{"t":"2026-09-09T00:12:31.126Z","op":"tap","args":{"x":400,"y":660},"ms":615,"ok":true}
+{"t":"2026-09-09T00:12:32.236Z","op":"screenshot","args":{},"ms":18,"ok":true}
+{"t":"2026-09-09T00:13:25.924Z","op":"open","args":{"url":"http://localhost:5199","device":"tablet"},"ms":988,"ok":true}
+{"t":"2026-09-09T00:13:26.389Z","op":"snapshot","args":{},"ms":411,"ok":true}
+{"t":"2026-09-09T00:13:30.051Z","op":"fill","args":{"label":"Email","value":"barry.b@eval.shotlog.test"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Email\""}
+{"t":"2026-09-09T00:13:30.162Z","op":"fill","args":{"value":"barry.b@eval.shotlog.test","placeholder":"Email"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Email\""}
+{"t":"2026-09-09T00:13:30.277Z","op":"fill","args":{"value":"barry.b@eval.shotlog.test","selector":"input:near(:text(\"Email\"))"},"ms":7,"ok":true}
+{"t":"2026-09-09T00:13:30.350Z","op":"fill","args":{"label":"Password","value":"Blasting41!"},"ms":0,"ok":false,"error":"nothing on the screen matches label=\"Password\""}
+{"t":"2026-09-09T00:13:30.459Z","op":"fill","args":{"value":"Blasting41!","placeholder":"Password"},"ms":0,"ok":false,"error":"nothing on the screen matches placeholder=\"Password\""}
+{"t":"2026-09-09T00:13:30.573Z","op":"fill","args":{"value":"Blasting41!","selector":"input:near(:text(\"Password\"))"},"ms":7,"ok":true}
+{"t":"2026-09-09T00:13:31.255Z","op":"tap","args":{"x":400,"y":900},"ms":617,"ok":true}
+{"t":"2026-09-09T00:13:33.741Z","op":"snapshot","args":{},"ms":407,"ok":true}
+{"t":"2026-09-09T00:13:43.760Z","op":"tap","args":{"x":400,"y":600},"ms":611,"ok":true}
+{"t":"2026-09-09T00:13:44.433Z","op":"tap","args":{"x":400,"y":650},"ms":612,"ok":true}
+{"t":"2026-09-09T00:13:45.108Z","op":"tap","args":{"x":400,"y":700},"ms":613,"ok":true}
+{"t":"2026-09-09T00:13:45.783Z","op":"tap","args":{"x":400,"y":750},"ms":612,"ok":true}
+{"t":"2026-09-09T00:13:46.460Z","op":"tap","args":{"x":400,"y":800},"ms":614,"ok":true}
+{"t":"2026-09-09T00:13:47.134Z","op":"tap","args":{"x":400,"y":850},"ms":615,"ok":true}
+{"t":"2026-09-09T00:14:04.392Z","op":"fill","args":{"label":"Email","value":"barry.b@eval.shotlog.test"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Email\""}
+{"t":"2026-09-09T00:14:04.505Z","op":"fill","args":{"value":"barry.b@eval.shotlog.test","placeholder":"Email"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Email\""}
+{"t":"2026-09-09T00:14:04.615Z","op":"fill","args":{"value":"barry.b@eval.shotlog.test","selector":"input:near(:text(\"Email\"))"},"ms":3,"ok":true}
+{"t":"2026-09-09T00:14:04.687Z","op":"fill","args":{"label":"Password","value":"Blasting41!"},"ms":0,"ok":false,"error":"nothing on the screen matches label=\"Password\""}
+{"t":"2026-09-09T00:14:04.799Z","op":"fill","args":{"value":"Blasting41!","placeholder":"Password"},"ms":0,"ok":false,"error":"nothing on the screen matches placeholder=\"Password\""}
+{"t":"2026-09-09T00:14:04.918Z","op":"fill","args":{"value":"Blasting41!","selector":"input:near(:text(\"Password\"))"},"ms":8,"ok":true}
+{"t":"2026-09-09T00:14:04.991Z","op":"enter","args":{},"ms":0,"ok":false,"error":"unknown op enter"}
+{"t":"2026-09-09T00:14:08.228Z","op":"space","args":{},"ms":0,"ok":false,"error":"unknown op space"}
+{"t":"2026-09-09T00:14:08.382Z","op":"tab","args":{},"ms":0,"ok":false,"error":"unknown op tab"}
+{"t":"2026-09-09T00:14:09.049Z","op":"press","args":{"key":"Enter"},"ms":509,"ok":true}
+{"t":"2026-09-09T00:14:13.650Z","op":"fill","args":{"label":"Email","value":"barry.b@eval.shotlog.test"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Email\""}
+{"t":"2026-09-09T00:14:13.763Z","op":"fill","args":{"value":"barry.b@eval.shotlog.test","placeholder":"Email"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Email\""}
+{"t":"2026-09-09T00:14:13.874Z","op":"fill","args":{"value":"barry.b@eval.shotlog.test","selector":"input:near(:text(\"Email\"))"},"ms":2,"ok":false,"error":"nothing on the screen matches selector=\"input:near(:text(\\\"Email\\\"))\""}
+{"t":"2026-09-09T00:14:24.882Z","op":"open","args":{"url":"http://localhost:5199/blast-day/a4cf7f12-88ee-4898-9683-22280de99e7d/design/362b0601-ac0d-4db2-85ca-4b953166d9e9?mode=plan"},"ms":993,"ok":true}
+{"t":"2026-09-09T00:14:25.347Z","op":"snapshot","args":{},"ms":414,"ok":true}
+{"t":"2026-09-09T00:14:34.404Z","op":"screenshot","args":{},"ms":16,"ok":true}
+{"t":"2026-09-09T00:15:16.416Z","op":"press","args":{"key":"End"},"ms":513,"ok":true}
+{"t":"2026-09-09T00:15:16.484Z","op":"screenshot","args":{},"ms":16,"ok":true}
+{"t":"2026-09-09T00:16:32.158Z","op":"tap","args":{"x":91,"y":513},"ms":615,"ok":true}
+{"t":"2026-09-09T00:16:32.626Z","op":"snapshot","args":{},"ms":414,"ok":true}
+{"t":"2026-09-09T00:16:40.206Z","op":"tap","args":{"x":249,"y":513},"ms":614,"ok":true}
+{"t":"2026-09-09T00:16:40.883Z","op":"tap","args":{"x":249,"y":513},"ms":622,"ok":true}
+{"t":"2026-09-09T00:16:41.560Z","op":"tap","args":{"x":249,"y":513},"ms":620,"ok":true}
+{"t":"2026-09-09T00:16:42.232Z","op":"tap","args":{"x":249,"y":513},"ms":615,"ok":true}
+{"t":"2026-09-09T00:16:42.705Z","op":"snapshot","args":{},"ms":415,"ok":true}
+{"t":"2026-09-09T00:16:55.225Z","op":"click","args":{"text":"Send to drillers"},"ms":789,"ok":true}
+{"t":"2026-09-09T00:16:55.710Z","op":"snapshot","args":{},"ms":432,"ok":true}
+{"t":"2026-09-09T00:17:06.594Z","op":"snapshot","args":{"max":null},"ms":428,"ok":true}
+{"t":"2026-09-09T00:17:29.413Z","op":"snapshot","args":{"max":null},"ms":421,"ok":true}
+{"t":"2026-09-09T00:17:33.098Z","op":"snapshot","args":{"max":null},"ms":425,"ok":true}
+{"t":"2026-09-09T00:18:10.615Z","op":"snapshot","args":{"max":null},"ms":426,"ok":true}
+{"t":"2026-09-09T00:18:13.758Z","op":"snapshot","args":{"max":null},"ms":423,"ok":true}
+{"t":"2026-09-09T00:18:16.893Z","op":"snapshot","args":{"max":null},"ms":428,"ok":true}
+{"t":"2026-09-09T00:18:23.433Z","op":"snapshot","args":{"max":null},"ms":426,"ok":true}
+{"t":"2026-09-09T00:18:42.714Z","op":"screenshot","args":{},"ms":26,"ok":true}
+{"t":"2026-09-09T00:20:27.398Z","op":"click","args":{"text":"×"},"ms":2,"ok":false,"error":"nothing on the screen matches text=\"×\""}
+{"t":"2026-09-09T00:20:27.995Z","op":"snapshot","args":{},"ms":427,"ok":true}
+{"t":"2026-09-09T00:20:32.357Z","op":"click","args":{"text":"Dinis Costa driller"},"ms":2,"ok":false,"error":"nothing on the screen matches text=\"Dinis Costa driller\""}
+{"t":"2026-09-09T00:20:38.776Z","op":"click","args":{"text":"Dinis Costa"},"ms":782,"ok":true}
+{"t":"2026-09-09T00:20:39.254Z","op":"snapshot","args":{},"ms":426,"ok":true}
+{"t":"2026-09-09T00:20:49.839Z","op":"click","args":{"text":"Send to"},"ms":6018,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-09T00:20:57.457Z","op":"screenshot","args":{},"ms":13,"ok":true}
+{"t":"2026-09-09T00:21:07.670Z","op":"click","args":{"text":"Send to 1"},"ms":762,"ok":true}
+{"t":"2026-09-09T00:21:10.171Z","op":"snapshot","args":{},"ms":413,"ok":true}

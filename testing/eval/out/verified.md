@@ -1,0 +1,17 @@
+# Code checks on the agents' top findings (coordinator, Sep 8 late)
+
+| Finding (both arms unless noted) | Checked | Verdict |
+|---|---|---|
+| Day files with the shot unsigned; sign-off then locked | `pages/SubmitDayPage.tsx` has no signature (or any) gate before building the PDFs | **Confirmed.** Nothing blocks filing. |
+| Send Back attaches no note; blaster sees no reason | `sendBackNote` is never written anywhere in `apps/web/src` (only cleared on refile). `AdminApprovalsPage` Send Back = `act(day.id,'draft')` | **Confirmed.** The S7 tour promises "send back with a reason" that does not exist. |
+| Office sees Approve / Send Back and gets "insufficient role" | `OfficeHome` gates on `approve_days`; `/admin/approvals` (`AdminApprovalsPage`) does not gate at all | **Confirmed.** Page-level gap. |
+| Mark complete sheet's buttons hidden behind the phone bottom nav | Sheet: `fixed inset-0 … items-end … z-50`; bottom nav: `fixed bottom-0 … z-50`, later in the DOM | **Confirmed** (same z-index, nav wins). Also hides the end-of-day meter field that lives in that sheet (S7d), which is why both drillers "found no place" for 4,127 h. |
+| Repair ticket cannot be resolved anywhere | `resolveTicket()` has no caller since S8b removed the admin repair queue (698b1c7); help page shop/a-repair-ticket.md describes a button that no longer exists | **Confirmed regression.** Guide page wrong. |
+| New person invited without a roster row never appears in Send to drillers / pickers | `enrollment.ts` links the roster only when the invite carries `crewMemberId`; `POST /users/backfill-roster` exists as an admin repair | **Confirmed.** |
+| FAB "+" covers the Start work button in the day dialog on tablet portrait | FAB `z-20` (Dashboard.tsx:207); dialog `fixed inset-0 z-50` inside StartGrid — should win, unless an ancestor creates a stacking context | **Not reproduced** at 800×1280 with a real click path: the Start work button sits at y≈906, the FAB at y≈1192, no overlap. Both agents' clicks timed out for a reason not yet pinned (actionability during the dialog's entry animation is a candidate); keep as "investigate", not "confirmed". |
+| Rows/Cols −/+ and clock-icon buttons have no accessible name; SVG holes unnamed | `DrillGridEditor.tsx` buttons carry glyph text only | **Confirmed** (accessibility; also blocks screen-reader users). |
+| Read-only role's edit silently reverts (COI date) while chip says "All changes saved" | Office cannot PATCH customers by design; client shows no denial | **Confirmed behaviour**; the silence is the finding. |
+| Supervisor cannot send login invites ("Logins are admin-only") | `manage_people` is in the supervisor's built-in capabilities, but the People UI says admin-only | **Confirmed inconsistency.** `AddPersonPanel` gates login invitations on `isAdmin`, while the supervisor role carries `manage_people`. Decide which is intended. |
+| Plan add-row appears silently on the driller's log | Live query updates the grid; no badge or toast | **Confirmed behaviour**; design question. |
+| Seismo reading has no distance field; readings cannot be edited | Distance lives on the Design Plan compliance section; reading cards have delete only | **Confirmed behaviour**; both arms lost time here. |
+| No Dyno Nobel in the catalog (arm A) | Catalog copied from the local dev company | **Environment.** The local dev catalog has Austin Powder, Maxam, Orica and test names — no Dyno Nobel at all. Production's catalog differs; not a finding. |

@@ -1,0 +1,570 @@
+{"t":"2026-09-09T00:24:16.021Z","op":"session","device":"phone"}
+{"t":"2026-09-09T00:24:17.088Z","op":"open","args":{"url":"http://localhost:5199","device":"phone"},"ms":1067,"ok":true}
+{"t":"2026-09-09T00:24:20.408Z","op":"fill","args":{"label":"Email","value":"barry.a@eval.shotlog.test"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Email\""}
+{"t":"2026-09-09T00:24:20.520Z","op":"fill","args":{"value":"barry.a@eval.shotlog.test","placeholder":"Email"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Email\""}
+{"t":"2026-09-09T00:24:20.633Z","op":"fill","args":{"value":"barry.a@eval.shotlog.test","selector":"input:near(:text(\"Email\"))"},"ms":7,"ok":true}
+{"t":"2026-09-09T00:24:23.208Z","op":"fill","args":{"label":"Password","value":"Blaster41!"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Password\""}
+{"t":"2026-09-09T00:24:23.318Z","op":"fill","args":{"value":"Blaster41!","placeholder":"Password"},"ms":0,"ok":false,"error":"nothing on the screen matches placeholder=\"Password\""}
+{"t":"2026-09-09T00:24:23.463Z","op":"fill","args":{"value":"Blaster41!","selector":"input:near(:text(\"Password\"))"},"ms":37,"ok":true}
+{"t":"2026-09-09T00:24:26.747Z","op":"click","args":{"text":"Sign in"},"ms":787,"ok":true}
+{"t":"2026-09-09T00:24:32.101Z","op":"wait","args":{"ms":2000},"ms":2210,"ok":true}
+{"t":"2026-09-09T00:24:38.774Z","op":"click","args":{"role":"button","name":"Sign in"},"ms":767,"ok":true}
+{"t":"2026-09-09T00:26:03.031Z","op":"snapshot","args":{},"ms":409,"ok":true}
+{"t":"2026-09-09T00:26:06.712Z","op":"click","args":{"text":"Ledgeville Pit — Phase 1 · 26-001 Phase: drilling · 6/24 holes · 1 driller resume"},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"Ledgeville Pit — Phase 1 · 26-001 Phase: drilling · 6/24 holes · 1 driller resume\""}
+{"t":"2026-09-09T00:26:10.104Z","op":"click","args":{"text":"Ledgeville Pit"},"ms":761,"ok":true}
+{"t":"2026-09-09T00:26:13.782Z","op":"click","args":{"text":"Drilling 6/24 holes · 1 driller in progress"},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"Drilling 6/24 holes · 1 driller in progress\""}
+{"t":"2026-09-09T00:26:17.059Z","op":"click","args":{"text":"Drilling"},"ms":760,"ok":true}
+{"t":"2026-09-09T00:26:25.065Z","op":"click","args":{"text":"‹ Back to the day"},"ms":768,"ok":true}
+{"t":"2026-09-09T00:26:33.579Z","op":"click","args":{"role":"tab","name":"Blast Log"},"ms":1,"ok":false,"error":"nothing on the screen matches role=\"tab\" name=\"Blast Log\""}
+{"t":"2026-09-09T00:26:37.821Z","op":"click","args":{"text":"Blast Log"},"ms":786,"ok":true}
+{"t":"2026-09-09T00:26:44.790Z","op":"click","args":{"text":"Drill Plan Pattern design → drillers → review"},"ms":2,"ok":false,"error":"nothing on the screen matches text=\"Drill Plan Pattern design → drillers → review\""}
+{"t":"2026-09-09T00:26:52.666Z","op":"click","args":{"text":"Drill Plan"},"ms":767,"ok":true}
+{"t":"2026-09-09T00:26:59.729Z","op":"click","args":{"text":"Plan ›"},"ms":761,"ok":true}
+{"t":"2026-09-09T00:27:23.276Z","op":"click","args":{"text":"⌀ No hole"},"ms":762,"ok":true}
+{"t":"2026-09-09T00:27:29.414Z","op":"press","args":{"key":"Tab"},"ms":512,"ok":true}
+{"t":"2026-09-09T00:27:33.862Z","op":"press","args":{"key":"Space"},"ms":510,"ok":true}
+{"t":"2026-09-09T00:27:40.659Z","op":"press","args":{"key":"Tab"},"ms":516,"ok":true}
+{"t":"2026-09-09T00:27:45.478Z","op":"press","args":{"key":"Space"},"ms":508,"ok":true}
+{"t":"2026-09-09T00:27:54.006Z","op":"press","args":{"key":"Space"},"ms":509,"ok":true}
+{"t":"2026-09-09T00:28:01.275Z","op":"click","args":{"text":"Done for now"},"ms":765,"ok":true}
+{"t":"2026-09-09T00:32:51.572Z","op":"snapshot","args":{},"ms":416,"ok":true}
+{"t":"2026-09-09T00:32:57.230Z","op":"click","args":{"text":"Drilling"},"ms":763,"ok":true}
+{"t":"2026-09-09T00:33:32.391Z","op":"click","args":{"text":"Dinis Costa open"},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"Dinis Costa open\""}
+{"t":"2026-09-09T00:33:35.959Z","op":"click","args":{"text":"Dinis Costa"},"ms":761,"ok":true}
+{"t":"2026-09-09T00:33:48.761Z","op":"click","args":{"text":"‹ Back to the day"},"ms":763,"ok":true}
+{"t":"2026-09-09T00:33:51.660Z","op":"click","args":{"text":"Readiness review"},"ms":770,"ok":true}
+{"t":"2026-09-09T00:34:16.787Z","op":"scroll","args":{"dy":600},"ms":409,"ok":true}
+{"t":"2026-09-09T00:34:31.824Z","op":"click","args":{"text":"‹ Back to the day"},"ms":764,"ok":true}
+{"t":"2026-09-09T00:34:34.991Z","op":"click","args":{"text":"Drilling"},"ms":757,"ok":true}
+{"t":"2026-09-09T00:34:44.751Z","op":"scroll","args":{"dy":800},"ms":418,"ok":true}
+{"t":"2026-09-09T00:34:48.872Z","op":"click","args":{"text":"9 DC"},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"9 DC\""}
+{"t":"2026-09-09T00:34:52.052Z","op":"click","args":{"role":"button","name":"9 DC"},"ms":764,"ok":true}
+{"t":"2026-09-09T00:34:58.569Z","op":"click","args":{"role":"button","name":"14"},"ms":765,"ok":true}
+{"t":"2026-09-09T00:35:14.788Z","op":"click","args":{"text":"Blast Log"},"ms":774,"ok":true}
+{"t":"2026-09-09T00:35:35.724Z","op":"click","args":{"text":"Dinis Costa · 24 holes · 432 ft · 1 wet · sent by Barry Lopes open"},"ms":3,"ok":false,"error":"nothing on the screen matches text=\"Dinis Costa · 24 holes · 432 ft · 1 wet · sent by Barry Lopes open\""}
+{"t":"2026-09-09T00:36:02.673Z","op":"click","args":{"text":"Drilling"},"ms":776,"ok":true}
+{"t":"2026-09-09T00:36:10.705Z","op":"click","args":{"text":"Day"},"ms":771,"ok":true}
+{"t":"2026-09-09T00:36:37.653Z","op":"click","args":{"text":"Drilling — Dinis Costa 25/30"},"ms":761,"ok":true}
+{"t":"2026-09-09T00:36:45.942Z","op":"screenshot","args":{},"ms":14,"ok":true}
+{"t":"2026-09-09T00:37:19.601Z","op":"scroll","args":{"dy":600},"ms":410,"ok":true}
+{"t":"2026-09-09T00:37:23.089Z","op":"screenshot","args":{},"ms":12,"ok":true}
+{"t":"2026-09-09T00:37:33.870Z","op":"click","args":{"role":"button","name":"open"},"ms":2,"ok":false,"error":"nothing on the screen matches role=\"button\" name=\"open\""}
+{"t":"2026-09-09T00:37:41.110Z","op":"tap","args":{"x":330,"y":720},"ms":615,"ok":true}
+{"t":"2026-09-09T00:37:50.105Z","op":"tap","args":{"x":335,"y":710},"ms":614,"ok":true}
+{"t":"2026-09-09T00:38:00.524Z","op":"screenshot","args":{},"ms":9,"ok":true}
+{"t":"2026-09-09T00:38:19.094Z","op":"tap","args":{"x":338,"y":715},"ms":615,"ok":true}
+{"t":"2026-09-09T00:38:56.560Z","op":"click","args":{"text":"Blast Log"},"ms":783,"ok":true}
+{"t":"2026-09-09T00:39:03.005Z","op":"click","args":{"text":"Design Plan Shot"},"ms":2,"ok":false,"error":"nothing on the screen matches text=\"Design Plan Shot\""}
+{"t":"2026-09-09T00:39:09.839Z","op":"click","args":{"text":"Drill Plan"},"ms":782,"ok":true}
+{"t":"2026-09-09T00:39:14.579Z","op":"click","args":{"text":"Plan ›"},"ms":768,"ok":true}
+{"t":"2026-09-09T00:39:20.366Z","op":"click","args":{"text":"Timing"},"ms":761,"ok":true}
+{"t":"2026-09-09T00:39:27.924Z","op":"click","args":{"text":"Build timing from drilling"},"ms":761,"ok":true}
+{"t":"2026-09-09T00:39:41.951Z","op":"screenshot","args":{},"ms":16,"ok":true}
+{"t":"2026-09-09T00:40:08.904Z","op":"scroll","args":{"dy":300},"ms":413,"ok":true}
+{"t":"2026-09-09T00:40:12.133Z","op":"screenshot","args":{},"ms":19,"ok":true}
+{"t":"2026-09-09T00:40:45.571Z","op":"tap","args":{"x":72,"y":320},"ms":620,"ok":true}
+{"t":"2026-09-09T00:40:56.359Z","op":"click","args":{"text":"Lead Wire"},"ms":767,"ok":true}
+{"t":"2026-09-09T00:41:15.415Z","op":"press","args":{"key":"Escape"},"ms":515,"ok":true}
+{"t":"2026-09-09T00:41:31.757Z","op":"click","args":{"role":"button","name":"17"},"ms":758,"ok":true}
+{"t":"2026-09-09T00:41:36.618Z","op":"click","args":{"text":"Lead Wire"},"ms":772,"ok":true}
+{"t":"2026-09-09T00:41:53.819Z","op":"tap","args":{"x":124,"y":320},"ms":613,"ok":true}
+{"t":"2026-09-09T00:42:00.709Z","op":"tap","args":{"x":176,"y":320},"ms":621,"ok":true}
+{"t":"2026-09-09T00:42:04.782Z","op":"tap","args":{"x":228,"y":320},"ms":614,"ok":true}
+{"t":"2026-09-09T00:42:19.052Z","op":"tap","args":{"x":222,"y":320},"ms":619,"ok":true}
+{"t":"2026-09-09T00:42:26.691Z","op":"tap","args":{"x":270,"y":320},"ms":619,"ok":true}
+{"t":"2026-09-09T00:42:29.799Z","op":"tap","args":{"x":318,"y":320},"ms":614,"ok":true}
+{"t":"2026-09-09T00:42:36.310Z","op":"tap","args":{"x":314,"y":320},"ms":615,"ok":true}
+{"t":"2026-09-09T00:42:44.644Z","op":"tap","args":{"x":72,"y":365},"ms":615,"ok":true}
+{"t":"2026-09-09T00:42:51.835Z","op":"tap","args":{"x":72,"y":358},"ms":620,"ok":true}
+{"t":"2026-09-09T00:43:08.924Z","op":"screenshot","args":{},"ms":14,"ok":true}
+{"t":"2026-09-09T00:43:38.496Z","op":"tap","args":{"x":314,"y":319},"ms":618,"ok":true}
+{"t":"2026-09-09T00:43:43.632Z","op":"tap","args":{"x":72,"y":357},"ms":617,"ok":true}
+{"t":"2026-09-09T00:43:52.086Z","op":"tap","args":{"x":72,"y":360},"ms":614,"ok":true}
+{"t":"2026-09-09T00:44:05.808Z","op":"screenshot","args":{},"ms":45,"ok":true}
+{"t":"2026-09-09T00:44:38.749Z","op":"tap","args":{"x":314,"y":319},"ms":618,"ok":true}
+{"t":"2026-09-09T00:44:39.423Z","op":"tap","args":{"x":72,"y":370},"ms":615,"ok":true}
+{"t":"2026-09-09T00:44:56.639Z","op":"tap","args":{"x":170,"y":353},"ms":616,"ok":true}
+{"t":"2026-09-09T00:45:47.335Z","op":"tap","args":{"x":314,"y":319},"ms":609,"ok":true}
+{"t":"2026-09-09T00:45:47.997Z","op":"tap","args":{"x":314,"y":380},"ms":612,"ok":true}
+{"t":"2026-09-09T00:46:12.702Z","op":"tap","args":{"x":72,"y":335},"ms":616,"ok":true}
+{"t":"2026-09-09T00:46:13.376Z","op":"tap","args":{"x":72,"y":345},"ms":614,"ok":true}
+{"t":"2026-09-09T00:46:14.051Z","op":"tap","args":{"x":72,"y":355},"ms":616,"ok":true}
+{"t":"2026-09-09T00:46:14.727Z","op":"tap","args":{"x":72,"y":365},"ms":617,"ok":true}
+{"t":"2026-09-09T00:46:15.400Z","op":"tap","args":{"x":72,"y":375},"ms":615,"ok":true}
+{"t":"2026-09-09T00:46:16.073Z","op":"tap","args":{"x":72,"y":385},"ms":610,"ok":true}
+{"t":"2026-09-09T00:46:16.736Z","op":"tap","args":{"x":72,"y":395},"ms":616,"ok":true}
+{"t":"2026-09-09T00:46:17.410Z","op":"tap","args":{"x":72,"y":405},"ms":615,"ok":true}
+{"t":"2026-09-09T00:46:18.087Z","op":"tap","args":{"x":72,"y":415},"ms":617,"ok":true}
+{"t":"2026-09-09T00:46:18.763Z","op":"tap","args":{"x":72,"y":425},"ms":617,"ok":true}
+{"t":"2026-09-09T00:46:34.294Z","op":"click","args":{"text":"Undo"},"ms":765,"ok":true}
+{"t":"2026-09-09T00:46:35.105Z","op":"click","args":{"text":"Undo"},"ms":751,"ok":true}
+{"t":"2026-09-09T00:46:35.571Z","op":"snapshot","args":{},"ms":410,"ok":true}
+{"t":"2026-09-09T00:46:53.286Z","op":"tap","args":{"x":72,"y":385},"ms":616,"ok":true}
+{"t":"2026-09-09T00:49:45.331Z","op":"click","args":{"text":"button \"Undo\""},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"button \\\"Undo\\\"\""}
+{"t":"2026-09-09T00:49:50.370Z","op":"click","args":{"text":"Undo"},"ms":770,"ok":true}
+{"t":"2026-09-09T00:49:57.776Z","op":"screenshot","args":{},"ms":26,"ok":true}
+{"t":"2026-09-09T00:50:56.506Z","op":"tap","args":{"x":72,"y":350},"ms":618,"ok":true}
+{"t":"2026-09-09T00:58:43.195Z","op":"tap","args":{"x":314,"y":320},"ms":612,"ok":true}
+{"t":"2026-09-09T00:58:48.867Z","op":"tap","args":{"x":314,"y":350},"ms":614,"ok":true}
+{"t":"2026-09-09T01:00:31.038Z","op":"tap","args":{"x":270,"y":350},"ms":620,"ok":true}
+{"t":"2026-09-09T01:00:31.715Z","op":"tap","args":{"x":222,"y":350},"ms":618,"ok":true}
+{"t":"2026-09-09T01:00:32.393Z","op":"tap","args":{"x":176,"y":350},"ms":619,"ok":true}
+{"t":"2026-09-09T01:00:33.070Z","op":"tap","args":{"x":124,"y":350},"ms":619,"ok":true}
+{"t":"2026-09-09T01:00:33.748Z","op":"tap","args":{"x":72,"y":350},"ms":621,"ok":true}
+{"t":"2026-09-09T01:01:17.551Z","op":"tap","args":{"x":72,"y":393},"ms":618,"ok":true}
+{"t":"2026-09-09T01:01:29.198Z","op":"tap","args":{"x":72,"y":437},"ms":613,"ok":true}
+{"t":"2026-09-09T01:01:29.874Z","op":"tap","args":{"x":124,"y":437},"ms":614,"ok":true}
+{"t":"2026-09-09T01:01:30.554Z","op":"tap","args":{"x":176,"y":437},"ms":619,"ok":true}
+{"t":"2026-09-09T01:01:31.225Z","op":"tap","args":{"x":222,"y":437},"ms":612,"ok":true}
+{"t":"2026-09-09T01:01:31.898Z","op":"tap","args":{"x":270,"y":437},"ms":620,"ok":true}
+{"t":"2026-09-09T01:01:32.572Z","op":"tap","args":{"x":314,"y":437},"ms":615,"ok":true}
+{"t":"2026-09-09T01:03:26.749Z","op":"screenshot","args":{},"ms":25,"ok":true}
+{"t":"2026-09-09T01:03:55.120Z","op":"tap","args":{"x":314,"y":393},"ms":621,"ok":true}
+{"t":"2026-09-09T01:03:55.792Z","op":"tap","args":{"x":270,"y":393},"ms":616,"ok":true}
+{"t":"2026-09-09T01:03:56.473Z","op":"tap","args":{"x":222,"y":393},"ms":621,"ok":true}
+{"t":"2026-09-09T01:03:57.148Z","op":"tap","args":{"x":176,"y":393},"ms":618,"ok":true}
+{"t":"2026-09-09T01:04:27.010Z","op":"click","args":{"text":"Done for now"},"ms":762,"ok":true}
+{"t":"2026-09-09T01:25:28.278Z","op":"snapshot","args":{},"ms":415,"ok":true}
+{"t":"2026-09-09T01:25:33.315Z","op":"snapshot","args":{},"ms":407,"ok":true}
+{"t":"2026-09-09T01:25:53.860Z","op":"click","args":{"text":"Review drilling & build timing"},"ms":766,"ok":true}
+{"t":"2026-09-09T01:26:18.156Z","op":"click","args":{"text":"Accept pattern → Readiness review"},"ms":765,"ok":true}
+{"t":"2026-09-09T01:26:36.210Z","op":"click","args":{"text":"Confirm design → Shot 1"},"ms":766,"ok":true}
+{"t":"2026-09-09T01:26:43.379Z","op":"click","args":{"text":"Use the drilled pattern"},"ms":774,"ok":true}
+{"t":"2026-09-09T01:28:35.864Z","op":"click","args":{"text":"Clear"},"ms":784,"ok":true}
+{"t":"2026-09-09T01:29:17.958Z","op":"screenshot","args":{},"ms":17,"ok":true}
+{"t":"2026-09-09T01:30:40.298Z","op":"click","args":{"text":"17"},"ms":758,"ok":true}
+{"t":"2026-09-09T01:30:40.972Z","op":"tap","args":{"x":72,"y":128},"ms":617,"ok":true}
+{"t":"2026-09-09T01:30:51.164Z","op":"screenshot","args":{},"ms":28,"ok":true}
+{"t":"2026-09-09T01:31:25.786Z","op":"scroll","args":{"dy":195},"ms":412,"ok":true}
+{"t":"2026-09-09T01:31:25.861Z","op":"screenshot","args":{},"ms":30,"ok":true}
+{"t":"2026-09-09T01:32:19.092Z","op":"scroll","args":{"dy":195},"ms":420,"ok":true}
+{"t":"2026-09-09T01:32:19.176Z","op":"screenshot","args":{},"ms":28,"ok":true}
+{"t":"2026-09-09T01:33:17.645Z","op":"tap","args":{"x":72,"y":643},"ms":612,"ok":true}
+{"t":"2026-09-09T01:33:24.258Z","op":"screenshot","args":{},"ms":27,"ok":true}
+{"t":"2026-09-09T01:34:04.312Z","op":"press","args":{"key":"PageDown"},"ms":517,"ok":true}
+{"t":"2026-09-09T01:34:04.398Z","op":"screenshot","args":{},"ms":26,"ok":true}
+{"t":"2026-09-09T01:34:23.436Z","op":"press","args":{"key":"PageUp"},"ms":518,"ok":true}
+{"t":"2026-09-09T01:34:23.522Z","op":"screenshot","args":{},"ms":28,"ok":true}
+{"t":"2026-09-09T01:34:42.839Z","op":"press","args":{"key":"ArrowDown"},"ms":519,"ok":true}
+{"t":"2026-09-09T01:34:43.410Z","op":"press","args":{"key":"ArrowDown"},"ms":514,"ok":true}
+{"t":"2026-09-09T01:34:43.975Z","op":"press","args":{"key":"ArrowDown"},"ms":507,"ok":true}
+{"t":"2026-09-09T01:34:44.536Z","op":"press","args":{"key":"ArrowDown"},"ms":515,"ok":true}
+{"t":"2026-09-09T01:34:45.103Z","op":"press","args":{"key":"ArrowDown"},"ms":509,"ok":true}
+{"t":"2026-09-09T01:34:45.181Z","op":"screenshot","args":{},"ms":26,"ok":true}
+{"t":"2026-09-09T01:38:18.924Z","op":"screenshot","args":{},"ms":26,"ok":true}
+{"t":"2026-09-09T01:40:31.101Z","op":"tap","args":{"x":125,"y":431},"ms":616,"ok":true}
+{"t":"2026-09-09T01:40:34.802Z","op":"screenshot","args":{},"ms":12,"ok":true}
+{"t":"2026-09-09T01:41:04.833Z","op":"tap","args":{"x":169,"y":425},"ms":615,"ok":true}
+{"t":"2026-09-09T01:41:05.498Z","op":"tap","args":{"x":213,"y":425},"ms":609,"ok":true}
+{"t":"2026-09-09T01:41:06.155Z","op":"tap","args":{"x":257,"y":425},"ms":614,"ok":true}
+{"t":"2026-09-09T01:41:06.825Z","op":"tap","args":{"x":301,"y":425},"ms":613,"ok":true}
+{"t":"2026-09-09T01:41:12.109Z","op":"tap","args":{"x":301,"y":468},"ms":615,"ok":true}
+{"t":"2026-09-09T01:41:12.785Z","op":"tap","args":{"x":257,"y":468},"ms":619,"ok":true}
+{"t":"2026-09-09T01:41:13.460Z","op":"tap","args":{"x":213,"y":468},"ms":617,"ok":true}
+{"t":"2026-09-09T01:41:14.132Z","op":"tap","args":{"x":169,"y":468},"ms":615,"ok":true}
+{"t":"2026-09-09T01:41:14.808Z","op":"tap","args":{"x":125,"y":468},"ms":621,"ok":true}
+{"t":"2026-09-09T01:41:15.484Z","op":"tap","args":{"x":81,"y":468},"ms":619,"ok":true}
+{"t":"2026-09-09T01:41:20.246Z","op":"tap","args":{"x":81,"y":511},"ms":610,"ok":true}
+{"t":"2026-09-09T01:41:20.910Z","op":"tap","args":{"x":81,"y":555},"ms":619,"ok":true}
+{"t":"2026-09-09T01:41:21.584Z","op":"tap","args":{"x":81,"y":600},"ms":616,"ok":true}
+{"t":"2026-09-09T01:41:25.828Z","op":"tap","args":{"x":125,"y":600},"ms":612,"ok":true}
+{"t":"2026-09-09T01:41:26.491Z","op":"tap","args":{"x":169,"y":600},"ms":620,"ok":true}
+{"t":"2026-09-09T01:41:27.162Z","op":"tap","args":{"x":213,"y":600},"ms":613,"ok":true}
+{"t":"2026-09-09T01:41:27.830Z","op":"tap","args":{"x":257,"y":600},"ms":612,"ok":true}
+{"t":"2026-09-09T01:41:28.498Z","op":"tap","args":{"x":301,"y":600},"ms":613,"ok":true}
+{"t":"2026-09-09T01:41:33.102Z","op":"tap","args":{"x":301,"y":555},"ms":612,"ok":true}
+{"t":"2026-09-09T01:41:33.772Z","op":"tap","args":{"x":257,"y":555},"ms":619,"ok":true}
+{"t":"2026-09-09T01:41:34.439Z","op":"tap","args":{"x":213,"y":555},"ms":611,"ok":true}
+{"t":"2026-09-09T01:41:35.109Z","op":"tap","args":{"x":169,"y":555},"ms":620,"ok":true}
+{"t":"2026-09-09T01:41:35.771Z","op":"tap","args":{"x":125,"y":555},"ms":620,"ok":true}
+{"t":"2026-09-09T01:41:40.760Z","op":"tap","args":{"x":169,"y":511},"ms":611,"ok":true}
+{"t":"2026-09-09T01:41:41.424Z","op":"tap","args":{"x":213,"y":511},"ms":620,"ok":true}
+{"t":"2026-09-09T01:41:42.096Z","op":"tap","args":{"x":257,"y":511},"ms":614,"ok":true}
+{"t":"2026-09-09T01:41:42.765Z","op":"tap","args":{"x":301,"y":511},"ms":614,"ok":true}
+{"t":"2026-09-09T01:41:45.303Z","op":"screenshot","args":{},"ms":26,"ok":true}
+{"t":"2026-09-09T01:42:27.872Z","op":"press","args":{"key":"PageDown"},"ms":509,"ok":true}
+{"t":"2026-09-09T01:42:27.947Z","op":"screenshot","args":{},"ms":23,"ok":true}
+{"t":"2026-09-09T01:42:45.885Z","op":"back","args":{},"ms":613,"ok":true}
+{"t":"2026-09-09T01:42:45.953Z","op":"screenshot","args":{},"ms":9,"ok":true}
+{"t":"2026-09-09T01:43:27.955Z","op":"tap","args":{"x":195,"y":330},"ms":615,"ok":true}
+{"t":"2026-09-09T01:43:28.030Z","op":"screenshot","args":{},"ms":16,"ok":true}
+{"t":"2026-09-09T01:43:48.008Z","op":"scroll","args":{"dy":195},"ms":416,"ok":true}
+{"t":"2026-09-09T01:43:48.078Z","op":"screenshot","args":{},"ms":9,"ok":true}
+{"t":"2026-09-09T01:44:04.829Z","op":"tap","args":{"x":68,"y":108},"ms":617,"ok":true}
+{"t":"2026-09-09T01:44:04.897Z","op":"screenshot","args":{},"ms":9,"ok":true}
+{"t":"2026-09-09T01:44:16.474Z","op":"tap","args":{"x":195,"y":615},"ms":623,"ok":true}
+{"t":"2026-09-09T01:44:16.546Z","op":"screenshot","args":{},"ms":20,"ok":true}
+{"t":"2026-09-09T01:44:30.883Z","op":"scroll","args":{"dy":195},"ms":422,"ok":true}
+{"t":"2026-09-09T01:44:30.962Z","op":"screenshot","args":{},"ms":24,"ok":true}
+{"t":"2026-09-09T01:44:40.174Z","op":"scroll","args":{"dy":195},"ms":414,"ok":true}
+{"t":"2026-09-09T01:44:40.244Z","op":"screenshot","args":{},"ms":15,"ok":true}
+{"t":"2026-09-09T01:44:48.044Z","op":"scroll","args":{"dy":195},"ms":421,"ok":true}
+{"t":"2026-09-09T01:44:48.144Z","op":"screenshot","args":{},"ms":43,"ok":true}
+{"t":"2026-09-09T01:44:55.482Z","op":"scroll","args":{"dy":195},"ms":421,"ok":true}
+{"t":"2026-09-09T01:44:55.559Z","op":"screenshot","args":{},"ms":22,"ok":true}
+{"t":"2026-09-09T01:45:06.219Z","op":"tap","args":{"x":195,"y":745},"ms":621,"ok":true}
+{"t":"2026-09-09T01:45:06.292Z","op":"screenshot","args":{},"ms":14,"ok":true}
+{"t":"2026-09-09T01:45:14.741Z","op":"scroll","args":{"dy":195},"ms":421,"ok":true}
+{"t":"2026-09-09T01:45:14.809Z","op":"screenshot","args":{},"ms":13,"ok":true}
+{"t":"2026-09-09T01:45:26.616Z","op":"scroll","args":{"dy":195},"ms":419,"ok":true}
+{"t":"2026-09-09T01:45:26.693Z","op":"screenshot","args":{},"ms":21,"ok":true}
+{"t":"2026-09-09T01:45:37.798Z","op":"scroll","args":{"dy":195},"ms":421,"ok":true}
+{"t":"2026-09-09T01:45:37.876Z","op":"screenshot","args":{},"ms":19,"ok":true}
+{"t":"2026-09-09T01:45:50.500Z","op":"scroll","args":{"dy":195},"ms":420,"ok":true}
+{"t":"2026-09-09T01:45:50.576Z","op":"screenshot","args":{},"ms":20,"ok":true}
+{"t":"2026-09-09T01:46:00.126Z","op":"tap","args":{"x":68,"y":655},"ms":630,"ok":true}
+{"t":"2026-09-09T01:46:00.209Z","op":"screenshot","args":{},"ms":28,"ok":true}
+{"t":"2026-09-09T01:46:07.602Z","op":"fill","args":{"label":"195","value":"211 Dyno"},"ms":2,"ok":false,"error":"nothing on the screen matches label=\"195\""}
+{"t":"2026-09-09T01:46:07.724Z","op":"fill","args":{"value":"211 Dyno","placeholder":"195"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"195\""}
+{"t":"2026-09-09T01:46:07.847Z","op":"fill","args":{"value":"211 Dyno","selector":"input:near(:text(\"195\"))"},"ms":4,"ok":false,"error":"nothing on the screen matches selector=\"input:near(:text(\\\"195\\\"))\""}
+{"t":"2026-09-09T01:46:08.060Z","op":"screenshot","args":{},"ms":17,"ok":true}
+{"t":"2026-09-09T01:46:16.339Z","op":"tap","args":{"x":195,"y":211},"ms":624,"ok":true}
+{"t":"2026-09-09T01:46:16.394Z","op":"fill","args":{"label":"195","value":"211 Dyno"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"195\""}
+{"t":"2026-09-09T01:46:16.515Z","op":"fill","args":{"value":"211 Dyno","placeholder":"195"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"195\""}
+{"t":"2026-09-09T01:46:16.640Z","op":"fill","args":{"value":"211 Dyno","selector":"input:near(:text(\"195\"))"},"ms":4,"ok":false,"error":"nothing on the screen matches selector=\"input:near(:text(\\\"195\\\"))\""}
+{"t":"2026-09-09T01:46:16.843Z","op":"screenshot","args":{},"ms":27,"ok":true}
+{"t":"2026-09-09T01:46:27.269Z","op":"scroll","args":{"dy":195},"ms":426,"ok":true}
+{"t":"2026-09-09T01:46:27.341Z","op":"screenshot","args":{},"ms":19,"ok":true}
+{"t":"2026-09-09T01:46:37.685Z","op":"scroll","args":{"dy":195},"ms":423,"ok":true}
+{"t":"2026-09-09T01:46:37.757Z","op":"screenshot","args":{},"ms":18,"ok":true}
+{"t":"2026-09-09T01:47:00.337Z","op":"tap","args":{"x":195,"y":211},"ms":611,"ok":true}
+{"t":"2026-09-09T01:47:00.908Z","op":"press","args":{"key":"KeyD"},"ms":527,"ok":true}
+{"t":"2026-09-09T01:47:01.485Z","op":"press","args":{"key":"KeyY"},"ms":524,"ok":true}
+{"t":"2026-09-09T01:47:02.061Z","op":"press","args":{"key":"KeyN"},"ms":520,"ok":true}
+{"t":"2026-09-09T01:47:02.641Z","op":"press","args":{"key":"KeyO"},"ms":524,"ok":true}
+{"t":"2026-09-09T01:47:02.724Z","op":"screenshot","args":{},"ms":27,"ok":true}
+{"t":"2026-09-09T01:47:21.984Z","op":"press","args":{"key":"Control+a"},"ms":510,"ok":true}
+{"t":"2026-09-09T01:47:22.548Z","op":"press","args":{"key":"Backspace"},"ms":521,"ok":true}
+{"t":"2026-09-09T01:47:22.622Z","op":"screenshot","args":{},"ms":16,"ok":true}
+{"t":"2026-09-09T01:47:36.915Z","op":"press","args":{"key":"Control+a"},"ms":521,"ok":true}
+{"t":"2026-09-09T01:47:36.971Z","op":"fill","args":{"label":"195","value":"687 Nobel"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"195\""}
+{"t":"2026-09-09T01:47:37.090Z","op":"fill","args":{"value":"687 Nobel","placeholder":"195"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"195\""}
+{"t":"2026-09-09T01:47:37.211Z","op":"fill","args":{"value":"687 Nobel","selector":"input:near(:text(\"195\"))"},"ms":4,"ok":false,"error":"nothing on the screen matches selector=\"input:near(:text(\\\"195\\\"))\""}
+{"t":"2026-09-09T01:47:37.422Z","op":"screenshot","args":{},"ms":18,"ok":true}
+{"t":"2026-09-09T01:47:48.306Z","op":"press","args":{"key":"Backspace"},"ms":514,"ok":true}
+{"t":"2026-09-09T01:47:48.878Z","op":"press","args":{"key":"Backspace"},"ms":519,"ok":true}
+{"t":"2026-09-09T01:47:49.453Z","op":"press","args":{"key":"Backspace"},"ms":521,"ok":true}
+{"t":"2026-09-09T01:47:50.031Z","op":"press","args":{"key":"Backspace"},"ms":521,"ok":true}
+{"t":"2026-09-09T01:47:50.105Z","op":"screenshot","args":{},"ms":17,"ok":true}
+{"t":"2026-09-09T01:49:41.623Z","op":"press","args":{"key":"Control+a"},"ms":520,"ok":true}
+{"t":"2026-09-09T01:49:42.201Z","op":"press","args":{"key":"Delete"},"ms":522,"ok":true}
+{"t":"2026-09-09T01:49:42.777Z","op":"press","args":{"key":"KeyH"},"ms":520,"ok":true}
+{"t":"2026-09-09T01:49:43.353Z","op":"press","args":{"key":"KeyY"},"ms":521,"ok":true}
+{"t":"2026-09-09T01:49:43.931Z","op":"press","args":{"key":"KeyD"},"ms":521,"ok":true}
+{"t":"2026-09-09T01:49:44.507Z","op":"press","args":{"key":"KeyR"},"ms":520,"ok":true}
+{"t":"2026-09-09T01:49:44.585Z","op":"screenshot","args":{},"ms":21,"ok":true}
+{"t":"2026-09-09T01:49:57.112Z","op":"press","args":{"key":"Backspace"},"ms":522,"ok":true}
+{"t":"2026-09-09T01:49:57.687Z","op":"press","args":{"key":"Backspace"},"ms":520,"ok":true}
+{"t":"2026-09-09T01:49:58.265Z","op":"press","args":{"key":"Backspace"},"ms":521,"ok":true}
+{"t":"2026-09-09T01:49:58.844Z","op":"press","args":{"key":"Backspace"},"ms":522,"ok":true}
+{"t":"2026-09-09T01:49:59.422Z","op":"press","args":{"key":"Backspace"},"ms":522,"ok":true}
+{"t":"2026-09-09T01:49:59.999Z","op":"press","args":{"key":"Backspace"},"ms":521,"ok":true}
+{"t":"2026-09-09T01:50:00.562Z","op":"press","args":{"key":"Backspace"},"ms":509,"ok":true}
+{"t":"2026-09-09T01:50:00.616Z","op":"screenshot","args":{},"ms":10,"ok":true}
+{"t":"2026-09-09T01:50:10.884Z","op":"press","args":{"key":"Backspace"},"ms":522,"ok":true}
+{"t":"2026-09-09T01:50:11.460Z","op":"press","args":{"key":"Backspace"},"ms":521,"ok":true}
+{"t":"2026-09-09T01:50:12.035Z","op":"press","args":{"key":"Backspace"},"ms":519,"ok":true}
+{"t":"2026-09-09T01:50:12.612Z","op":"press","args":{"key":"KeyH"},"ms":522,"ok":true}
+{"t":"2026-09-09T01:50:13.191Z","op":"press","args":{"key":"KeyY"},"ms":522,"ok":true}
+{"t":"2026-09-09T01:50:13.767Z","op":"press","args":{"key":"KeyD"},"ms":520,"ok":true}
+{"t":"2026-09-09T01:50:14.343Z","op":"press","args":{"key":"KeyR"},"ms":518,"ok":true}
+{"t":"2026-09-09T01:50:14.912Z","op":"press","args":{"key":"KeyO"},"ms":514,"ok":true}
+{"t":"2026-09-09T01:50:14.983Z","op":"screenshot","args":{},"ms":18,"ok":true}
+{"t":"2026-09-09T01:50:27.043Z","op":"press","args":{"key":"Backspace"},"ms":525,"ok":true}
+{"t":"2026-09-09T01:50:27.612Z","op":"press","args":{"key":"Backspace"},"ms":515,"ok":true}
+{"t":"2026-09-09T01:50:28.188Z","op":"press","args":{"key":"Backspace"},"ms":522,"ok":true}
+{"t":"2026-09-09T01:50:28.760Z","op":"press","args":{"key":"Backspace"},"ms":517,"ok":true}
+{"t":"2026-09-09T01:50:29.337Z","op":"press","args":{"key":"Backspace"},"ms":521,"ok":true}
+{"t":"2026-09-09T01:50:29.914Z","op":"press","args":{"key":"Backspace"},"ms":520,"ok":true}
+{"t":"2026-09-09T01:50:30.479Z","op":"press","args":{"key":"Backspace"},"ms":510,"ok":true}
+{"t":"2026-09-09T01:50:31.046Z","op":"press","args":{"key":"Backspace"},"ms":522,"ok":true}
+{"t":"2026-09-09T01:50:31.617Z","op":"press","args":{"key":"Digit8"},"ms":516,"ok":true}
+{"t":"2026-09-09T01:50:32.194Z","op":"press","args":{"key":"Digit8"},"ms":522,"ok":true}
+{"t":"2026-09-09T01:50:32.771Z","op":"press","args":{"key":"Digit0"},"ms":520,"ok":true}
+{"t":"2026-09-09T01:50:32.851Z","op":"screenshot","args":{},"ms":26,"ok":true}
+{"t":"2026-09-09T01:50:48.952Z","op":"press","args":{"key":"Backspace"},"ms":523,"ok":true}
+{"t":"2026-09-09T01:50:49.530Z","op":"press","args":{"key":"Backspace"},"ms":522,"ok":true}
+{"t":"2026-09-09T01:50:50.108Z","op":"press","args":{"key":"Backspace"},"ms":522,"ok":true}
+{"t":"2026-09-09T01:50:50.182Z","op":"screenshot","args":{},"ms":17,"ok":true}
+{"t":"2026-09-09T01:51:13.114Z","op":"tap","args":{"x":195,"y":687},"ms":622,"ok":true}
+{"t":"2026-09-09T01:51:13.689Z","op":"press","args":{"key":"Control+a"},"ms":518,"ok":true}
+{"t":"2026-09-09T01:51:14.262Z","op":"press","args":{"key":"Digit8"},"ms":519,"ok":true}
+{"t":"2026-09-09T01:51:14.839Z","op":"press","args":{"key":"Digit8"},"ms":521,"ok":true}
+{"t":"2026-09-09T01:51:15.415Z","op":"press","args":{"key":"Digit0"},"ms":521,"ok":true}
+{"t":"2026-09-09T01:51:15.481Z","op":"screenshot","args":{},"ms":11,"ok":true}
+{"t":"2026-09-09T01:51:31.119Z","op":"press","args":{"key":"Backspace"},"ms":520,"ok":true}
+{"t":"2026-09-09T01:51:31.697Z","op":"press","args":{"key":"Backspace"},"ms":521,"ok":true}
+{"t":"2026-09-09T01:51:32.274Z","op":"press","args":{"key":"Backspace"},"ms":522,"ok":true}
+{"t":"2026-09-09T01:51:32.348Z","op":"screenshot","args":{},"ms":17,"ok":true}
+{"t":"2026-09-09T01:51:53.009Z","op":"press","args":{"key":"End"},"ms":520,"ok":true}
+{"t":"2026-09-09T01:51:53.585Z","op":"press","args":{"key":"Backspace"},"ms":520,"ok":true}
+{"t":"2026-09-09T01:51:54.161Z","op":"press","args":{"key":"Backspace"},"ms":521,"ok":true}
+{"t":"2026-09-09T01:51:54.738Z","op":"press","args":{"key":"Backspace"},"ms":521,"ok":true}
+{"t":"2026-09-09T01:51:54.814Z","op":"screenshot","args":{},"ms":20,"ok":true}
+{"t":"2026-09-09T01:52:09.659Z","op":"snapshot","args":{},"ms":421,"ok":true}
+{"t":"2026-09-09T01:52:26.339Z","op":"fill","args":{"label":"195","value":"687 Hydromite"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"195\""}
+{"t":"2026-09-09T01:52:26.456Z","op":"fill","args":{"value":"687 Hydromite","placeholder":"195"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"195\""}
+{"t":"2026-09-09T01:52:26.581Z","op":"fill","args":{"value":"687 Hydromite","selector":"input:near(:text(\"195\"))"},"ms":4,"ok":false,"error":"nothing on the screen matches selector=\"input:near(:text(\\\"195\\\"))\""}
+{"t":"2026-09-09T01:52:26.795Z","op":"screenshot","args":{},"ms":22,"ok":true}
+{"t":"2026-09-09T01:52:45.066Z","op":"tap","args":{"x":338,"y":636},"ms":625,"ok":true}
+{"t":"2026-09-09T01:52:45.146Z","op":"screenshot","args":{},"ms":23,"ok":true}
+{"t":"2026-09-09T01:53:03.221Z","op":"press","args":{"key":"PageUp"},"ms":517,"ok":true}
+{"t":"2026-09-09T01:53:03.296Z","op":"screenshot","args":{},"ms":20,"ok":true}
+{"t":"2026-09-09T01:53:14.421Z","op":"tap","args":{"x":68,"y":393},"ms":629,"ok":true}
+{"t":"2026-09-09T01:53:14.495Z","op":"screenshot","args":{},"ms":22,"ok":true}
+{"t":"2026-09-09T01:53:34.839Z","op":"tap","args":{"x":195,"y":726},"ms":627,"ok":true}
+{"t":"2026-09-09T01:53:34.911Z","op":"screenshot","args":{},"ms":16,"ok":true}
+{"t":"2026-09-09T01:53:51.220Z","op":"tap","args":{"x":163,"y":403},"ms":620,"ok":true}
+{"t":"2026-09-09T01:53:51.278Z","op":"fill","args":{"label":"163","value":"403 57"},"ms":2,"ok":false,"error":"nothing on the screen matches label=\"163\""}
+{"t":"2026-09-09T01:53:51.395Z","op":"fill","args":{"value":"403 57","placeholder":"163"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"163\""}
+{"t":"2026-09-09T01:53:51.518Z","op":"fill","args":{"value":"403 57","selector":"input:near(:text(\"163\"))"},"ms":3,"ok":false,"error":"nothing on the screen matches selector=\"input:near(:text(\\\"163\\\"))\""}
+{"t":"2026-09-09T01:53:51.727Z","op":"screenshot","args":{},"ms":13,"ok":true}
+{"t":"2026-09-09T01:54:03.071Z","op":"tap","args":{"x":163,"y":403},"ms":620,"ok":true}
+{"t":"2026-09-09T01:54:03.644Z","op":"press","args":{"key":"Digit5"},"ms":517,"ok":true}
+{"t":"2026-09-09T01:54:04.220Z","op":"press","args":{"key":"Digit7"},"ms":520,"ok":true}
+{"t":"2026-09-09T01:54:04.293Z","op":"screenshot","args":{},"ms":15,"ok":true}
+{"t":"2026-09-09T01:54:17.376Z","op":"press","args":{"key":"Tab"},"ms":514,"ok":true}
+{"t":"2026-09-09T01:54:18.051Z","op":"tap","args":{"x":68,"y":565},"ms":623,"ok":true}
+{"t":"2026-09-09T01:54:18.127Z","op":"screenshot","args":{},"ms":19,"ok":true}
+{"t":"2026-09-09T01:54:31.499Z","op":"tap","args":{"x":195,"y":565},"ms":623,"ok":true}
+{"t":"2026-09-09T01:54:31.576Z","op":"screenshot","args":{},"ms":23,"ok":true}
+{"t":"2026-09-09T01:54:40.526Z","op":"tap","args":{"x":68,"y":594},"ms":625,"ok":true}
+{"t":"2026-09-09T01:54:40.609Z","op":"screenshot","args":{},"ms":28,"ok":true}
+{"t":"2026-09-09T01:54:52.088Z","op":"tap","args":{"x":195,"y":510},"ms":623,"ok":true}
+{"t":"2026-09-09T01:54:52.159Z","op":"screenshot","args":{},"ms":16,"ok":true}
+{"t":"2026-09-09T01:55:02.628Z","op":"tap","args":{"x":163,"y":601},"ms":622,"ok":true}
+{"t":"2026-09-09T01:55:03.203Z","op":"press","args":{"key":"Digit2"},"ms":520,"ok":true}
+{"t":"2026-09-09T01:55:03.781Z","op":"press","args":{"key":"Digit8"},"ms":521,"ok":true}
+{"t":"2026-09-09T01:55:04.356Z","op":"press","args":{"key":"Tab"},"ms":516,"ok":true}
+{"t":"2026-09-09T01:55:04.426Z","op":"screenshot","args":{},"ms":19,"ok":true}
+{"t":"2026-09-09T01:55:17.081Z","op":"tap","args":{"x":195,"y":672},"ms":623,"ok":true}
+{"t":"2026-09-09T01:55:17.161Z","op":"screenshot","args":{},"ms":25,"ok":true}
+{"t":"2026-09-09T01:55:26.812Z","op":"scroll","args":{"dy":195},"ms":410,"ok":true}
+{"t":"2026-09-09T01:55:26.875Z","op":"screenshot","args":{},"ms":22,"ok":true}
+{"t":"2026-09-09T01:55:37.753Z","op":"tap","args":{"x":110,"y":655},"ms":624,"ok":true}
+{"t":"2026-09-09T01:55:37.823Z","op":"screenshot","args":{},"ms":11,"ok":true}
+{"t":"2026-09-09T01:55:56.412Z","op":"tap","args":{"x":100,"y":710},"ms":622,"ok":true}
+{"t":"2026-09-09T01:55:56.990Z","op":"press","args":{"key":"KeyL"},"ms":522,"ok":true}
+{"t":"2026-09-09T01:55:57.568Z","op":"press","args":{"key":"KeyP"},"ms":521,"ok":true}
+{"t":"2026-09-09T01:55:58.146Z","op":"press","args":{"key":"Minus"},"ms":522,"ok":true}
+{"t":"2026-09-09T01:55:58.726Z","op":"press","args":{"key":"Digit1"},"ms":522,"ok":true}
+{"t":"2026-09-09T01:55:59.303Z","op":"press","args":{"key":"Digit7"},"ms":522,"ok":true}
+{"t":"2026-09-09T01:55:59.868Z","op":"press","args":{"key":"Tab"},"ms":510,"ok":true}
+{"t":"2026-09-09T01:56:00.435Z","op":"press","args":{"key":"Digit2"},"ms":523,"ok":true}
+{"t":"2026-09-09T01:56:01.013Z","op":"press","args":{"key":"Digit8"},"ms":522,"ok":true}
+{"t":"2026-09-09T01:56:01.090Z","op":"screenshot","args":{},"ms":22,"ok":true}
+{"t":"2026-09-09T01:56:11.867Z","op":"tap","args":{"x":277,"y":715},"ms":625,"ok":true}
+{"t":"2026-09-09T01:56:11.939Z","op":"screenshot","args":{},"ms":14,"ok":true}
+{"t":"2026-09-09T01:56:28.470Z","op":"scroll","args":{"dy":195},"ms":425,"ok":true}
+{"t":"2026-09-09T01:56:28.538Z","op":"screenshot","args":{},"ms":14,"ok":true}
+{"t":"2026-09-09T01:56:45.412Z","op":"press","args":{"key":"PageUp"},"ms":523,"ok":true}
+{"t":"2026-09-09T01:56:45.489Z","op":"screenshot","args":{},"ms":20,"ok":true}
+{"t":"2026-09-09T01:56:59.197Z","op":"tap","args":{"x":195,"y":295},"ms":613,"ok":true}
+{"t":"2026-09-09T01:56:59.268Z","op":"screenshot","args":{},"ms":12,"ok":true}
+{"t":"2026-09-09T01:57:09.925Z","op":"tap","args":{"x":195,"y":276},"ms":616,"ok":true}
+{"t":"2026-09-09T01:57:10.005Z","op":"screenshot","args":{},"ms":20,"ok":true}
+{"t":"2026-09-09T01:57:35.195Z","op":"tap","args":{"x":83,"y":358},"ms":617,"ok":true}
+{"t":"2026-09-09T01:57:35.770Z","op":"press","args":{"key":"Digit0"},"ms":515,"ok":true}
+{"t":"2026-09-09T01:57:36.342Z","op":"press","args":{"key":"Period"},"ms":512,"ok":true}
+{"t":"2026-09-09T01:57:36.918Z","op":"press","args":{"key":"Digit4"},"ms":516,"ok":true}
+{"t":"2026-09-09T01:57:37.490Z","op":"press","args":{"key":"Digit2"},"ms":513,"ok":true}
+{"t":"2026-09-09T01:57:38.165Z","op":"tap","args":{"x":195,"y":358},"ms":615,"ok":true}
+{"t":"2026-09-09T01:57:38.738Z","op":"press","args":{"key":"Digit0"},"ms":514,"ok":true}
+{"t":"2026-09-09T01:57:39.314Z","op":"press","args":{"key":"Period"},"ms":516,"ok":true}
+{"t":"2026-09-09T01:57:39.886Z","op":"press","args":{"key":"Digit3"},"ms":514,"ok":true}
+{"t":"2026-09-09T01:57:40.459Z","op":"press","args":{"key":"Digit1"},"ms":514,"ok":true}
+{"t":"2026-09-09T01:57:41.130Z","op":"tap","args":{"x":308,"y":358},"ms":611,"ok":true}
+{"t":"2026-09-09T01:57:41.704Z","op":"press","args":{"key":"Digit0"},"ms":513,"ok":true}
+{"t":"2026-09-09T01:57:42.261Z","op":"press","args":{"key":"Period"},"ms":512,"ok":true}
+{"t":"2026-09-09T01:57:42.835Z","op":"press","args":{"key":"Digit2"},"ms":514,"ok":true}
+{"t":"2026-09-09T01:57:43.406Z","op":"press","args":{"key":"Digit8"},"ms":514,"ok":true}
+{"t":"2026-09-09T01:57:43.487Z","op":"screenshot","args":{},"ms":20,"ok":true}
+{"t":"2026-09-09T01:58:12.519Z","op":"tap","args":{"x":83,"y":437},"ms":613,"ok":true}
+{"t":"2026-09-09T01:58:13.095Z","op":"press","args":{"key":"Digit2"},"ms":517,"ok":true}
+{"t":"2026-09-09T01:58:13.670Z","op":"press","args":{"key":"Digit7"},"ms":515,"ok":true}
+{"t":"2026-09-09T01:58:14.342Z","op":"tap","args":{"x":195,"y":437},"ms":613,"ok":true}
+{"t":"2026-09-09T01:58:14.916Z","op":"press","args":{"key":"Digit1"},"ms":514,"ok":true}
+{"t":"2026-09-09T01:58:15.489Z","op":"press","args":{"key":"Digit1"},"ms":513,"ok":true}
+{"t":"2026-09-09T01:58:16.060Z","op":"press","args":{"key":"Digit8"},"ms":511,"ok":true}
+{"t":"2026-09-09T01:58:16.135Z","op":"screenshot","args":{},"ms":14,"ok":true}
+{"t":"2026-09-09T01:58:43.148Z","op":"tap","args":{"x":195,"y":253},"ms":613,"ok":true}
+{"t":"2026-09-09T01:58:43.236Z","op":"screenshot","args":{},"ms":26,"ok":true}
+{"t":"2026-09-09T01:58:56.294Z","op":"click","args":{"text":"195","nth":253},"ms":2,"ok":false,"error":"nothing on the screen matches text=\"195\" nth=253"}
+{"t":"2026-09-09T01:59:04.650Z","op":"help","args":{},"ms":0,"ok":false,"error":"unknown op help"}
+{"t":"2026-09-09T01:59:17.472Z","op":"upload","args":{"files":["195","253","/Users/matthewbulmer/Documents/Code/shotlog/testing/eval/assets/printout.jpg"]},"ms":0,"ok":false,"error":"no such file /Users/matthewbulmer/Documents/Code/shotlog/195"}
+{"t":"2026-09-09T01:59:21.452Z","op":"screenshot","args":{},"ms":23,"ok":true}
+{"t":"2026-09-09T01:59:37.997Z","op":"snapshot","args":{},"ms":412,"ok":true}
+{"t":"2026-09-09T01:59:43.232Z","op":"upload","args":{"files":["Capture Seismograph Printout","/Users/matthewbulmer/Documents/Code/shotlog/testing/eval/assets/printout.jpg"]},"ms":0,"ok":false,"error":"no such file /Users/matthewbulmer/Documents/Code/shotlog/Capture Seismograph Printout"}
+{"t":"2026-09-09T02:01:12.006Z","op":"tap","args":{"x":297,"y":574},"ms":614,"ok":true}
+{"t":"2026-09-09T02:01:12.080Z","op":"screenshot","args":{},"ms":15,"ok":true}
+{"t":"2026-09-09T02:01:31.226Z","op":"tap","args":{"x":297,"y":609},"ms":614,"ok":true}
+{"t":"2026-09-09T02:01:31.329Z","op":"screenshot","args":{},"ms":43,"ok":true}
+{"t":"2026-09-09T02:01:45.777Z","op":"click","args":{"text":"297","nth":609},"ms":2,"ok":false,"error":"nothing on the screen matches text=\"297\" nth=609"}
+{"t":"2026-09-09T02:01:45.944Z","op":"screenshot","args":{},"ms":10,"ok":true}
+{"t":"2026-09-09T02:01:56.355Z","op":"snapshot","args":{},"ms":411,"ok":true}
+{"t":"2026-09-09T02:02:20.622Z","op":"tap","args":{"x":297,"y":620},"ms":611,"ok":true}
+{"t":"2026-09-09T02:02:20.692Z","op":"screenshot","args":{},"ms":11,"ok":true}
+{"t":"2026-09-09T02:02:39.005Z","op":"back","args":{},"ms":612,"ok":true}
+{"t":"2026-09-09T02:02:39.078Z","op":"screenshot","args":{},"ms":10,"ok":true}
+{"t":"2026-09-09T02:02:56.465Z","op":"tap","args":{"x":195,"y":713},"ms":615,"ok":true}
+{"t":"2026-09-09T02:02:56.531Z","op":"screenshot","args":{},"ms":9,"ok":true}
+{"t":"2026-09-09T02:03:08.252Z","op":"tap","args":{"x":195,"y":714},"ms":616,"ok":true}
+{"t":"2026-09-09T02:03:08.320Z","op":"screenshot","args":{},"ms":9,"ok":true}
+{"t":"2026-09-09T02:03:19.468Z","op":"tap","args":{"x":202,"y":254},"ms":633,"ok":true}
+{"t":"2026-09-09T02:03:19.546Z","op":"screenshot","args":{},"ms":23,"ok":true}
+{"t":"2026-09-09T02:03:33.505Z","op":"scroll","args":{"dy":195},"ms":420,"ok":true}
+{"t":"2026-09-09T02:03:33.982Z","op":"scroll","args":{"dy":195},"ms":420,"ok":true}
+{"t":"2026-09-09T02:03:34.057Z","op":"screenshot","args":{},"ms":20,"ok":true}
+{"t":"2026-09-09T02:03:44.523Z","op":"scroll","args":{"dy":195},"ms":417,"ok":true}
+{"t":"2026-09-09T02:03:45.000Z","op":"scroll","args":{"dy":195},"ms":417,"ok":true}
+{"t":"2026-09-09T02:03:45.478Z","op":"scroll","args":{"dy":195},"ms":419,"ok":true}
+{"t":"2026-09-09T02:03:45.556Z","op":"screenshot","args":{},"ms":22,"ok":true}
+{"t":"2026-09-09T02:03:57.319Z","op":"scroll","args":{"dy":195},"ms":409,"ok":true}
+{"t":"2026-09-09T02:03:57.371Z","op":"screenshot","args":{},"ms":10,"ok":true}
+{"t":"2026-09-09T02:04:08.306Z","op":"tap","args":{"x":195,"y":645},"ms":624,"ok":true}
+{"t":"2026-09-09T02:04:08.389Z","op":"screenshot","args":{},"ms":27,"ok":true}
+{"t":"2026-09-09T02:04:22.634Z","op":"scroll","args":{"dy":195},"ms":422,"ok":true}
+{"t":"2026-09-09T02:04:22.705Z","op":"screenshot","args":{},"ms":17,"ok":true}
+{"t":"2026-09-09T02:04:37.600Z","op":"upload","args":{"files":["157","590","/Users/matthewbulmer/Documents/Code/shotlog/testing/eval/assets/shot.webm"]},"ms":0,"ok":false,"error":"no such file /Users/matthewbulmer/Documents/Code/shotlog/157"}
+{"t":"2026-09-09T02:04:37.789Z","op":"screenshot","args":{},"ms":27,"ok":true}
+{"t":"2026-09-09T02:04:50.858Z","op":"snapshot","args":{},"ms":421,"ok":true}
+{"t":"2026-09-09T02:05:38.733Z","op":"tap","args":{"x":267,"y":493},"ms":625,"ok":true}
+{"t":"2026-09-09T02:05:38.802Z","op":"screenshot","args":{},"ms":15,"ok":true}
+{"t":"2026-09-09T02:06:08.151Z","op":"press","args":{"key":"PageUp"},"ms":525,"ok":true}
+{"t":"2026-09-09T02:06:08.729Z","op":"press","args":{"key":"PageUp"},"ms":524,"ok":true}
+{"t":"2026-09-09T02:06:08.802Z","op":"screenshot","args":{},"ms":19,"ok":true}
+{"t":"2026-09-09T02:06:19.505Z","op":"tap","args":{"x":88,"y":254},"ms":616,"ok":true}
+{"t":"2026-09-09T02:06:19.573Z","op":"screenshot","args":{},"ms":9,"ok":true}
+{"t":"2026-09-09T02:06:34.479Z","op":"tap","args":{"x":195,"y":668},"ms":618,"ok":true}
+{"t":"2026-09-09T02:06:34.550Z","op":"screenshot","args":{},"ms":11,"ok":true}
+{"t":"2026-09-09T02:06:55.244Z","op":"tap","args":{"x":189,"y":95},"ms":609,"ok":true}
+{"t":"2026-09-09T02:06:55.318Z","op":"screenshot","args":{},"ms":22,"ok":true}
+{"t":"2026-09-09T02:07:29.592Z","op":"tap","args":{"x":195,"y":545},"ms":631,"ok":true}
+{"t":"2026-09-09T02:07:29.665Z","op":"screenshot","args":{},"ms":19,"ok":true}
+{"t":"2026-09-09T02:07:43.440Z","op":"scroll","args":{"dy":195},"ms":418,"ok":true}
+{"t":"2026-09-09T02:07:43.918Z","op":"scroll","args":{"dy":195},"ms":423,"ok":true}
+{"t":"2026-09-09T02:07:44.395Z","op":"scroll","args":{"dy":195},"ms":421,"ok":true}
+{"t":"2026-09-09T02:07:44.874Z","op":"scroll","args":{"dy":195},"ms":423,"ok":true}
+{"t":"2026-09-09T02:07:44.948Z","op":"screenshot","args":{},"ms":19,"ok":true}
+{"t":"2026-09-09T02:07:55.910Z","op":"scroll","args":{"dy":195},"ms":423,"ok":true}
+{"t":"2026-09-09T02:07:56.384Z","op":"scroll","args":{"dy":195},"ms":420,"ok":true}
+{"t":"2026-09-09T02:07:56.861Z","op":"scroll","args":{"dy":195},"ms":421,"ok":true}
+{"t":"2026-09-09T02:07:56.930Z","op":"screenshot","args":{},"ms":14,"ok":true}
+{"t":"2026-09-09T02:08:15.347Z","op":"press","args":{"key":"PageUp"},"ms":517,"ok":true}
+{"t":"2026-09-09T02:08:15.925Z","op":"press","args":{"key":"PageUp"},"ms":523,"ok":true}
+{"t":"2026-09-09T02:08:16.596Z","op":"tap","args":{"x":88,"y":254},"ms":618,"ok":true}
+{"t":"2026-09-09T02:08:16.664Z","op":"screenshot","args":{},"ms":9,"ok":true}
+{"t":"2026-09-09T02:08:29.955Z","op":"tap","args":{"x":195,"y":545},"ms":630,"ok":true}
+{"t":"2026-09-09T02:08:30.030Z","op":"screenshot","args":{},"ms":21,"ok":true}
+{"t":"2026-09-09T02:08:44.537Z","op":"scroll","args":{"dy":195},"ms":421,"ok":true}
+{"t":"2026-09-09T02:08:45.015Z","op":"scroll","args":{"dy":195},"ms":421,"ok":true}
+{"t":"2026-09-09T02:08:45.492Z","op":"scroll","args":{"dy":195},"ms":421,"ok":true}
+{"t":"2026-09-09T02:08:45.972Z","op":"scroll","args":{"dy":195},"ms":423,"ok":true}
+{"t":"2026-09-09T02:08:46.450Z","op":"scroll","args":{"dy":195},"ms":423,"ok":true}
+{"t":"2026-09-09T02:08:46.528Z","op":"screenshot","args":{},"ms":22,"ok":true}
+{"t":"2026-09-09T02:08:57.637Z","op":"scroll","args":{"dy":195},"ms":422,"ok":true}
+{"t":"2026-09-09T02:08:58.115Z","op":"scroll","args":{"dy":195},"ms":423,"ok":true}
+{"t":"2026-09-09T02:08:58.591Z","op":"scroll","args":{"dy":195},"ms":421,"ok":true}
+{"t":"2026-09-09T02:08:58.662Z","op":"screenshot","args":{},"ms":16,"ok":true}
+{"t":"2026-09-09T02:09:12.771Z","op":"scroll","args":{"dy":195},"ms":423,"ok":true}
+{"t":"2026-09-09T02:09:13.247Z","op":"scroll","args":{"dy":195},"ms":420,"ok":true}
+{"t":"2026-09-09T02:09:13.727Z","op":"scroll","args":{"dy":195},"ms":423,"ok":true}
+{"t":"2026-09-09T02:09:14.204Z","op":"scroll","args":{"dy":195},"ms":421,"ok":true}
+{"t":"2026-09-09T02:09:14.278Z","op":"screenshot","args":{},"ms":18,"ok":true}
+{"t":"2026-09-09T02:09:25.838Z","op":"scroll","args":{"dy":195},"ms":423,"ok":true}
+{"t":"2026-09-09T02:09:25.911Z","op":"screenshot","args":{},"ms":18,"ok":true}
+{"t":"2026-09-09T02:11:16.091Z","op":"screenshot","args":{},"ms":24,"ok":true}
+{"t":"2026-09-09T02:11:26.737Z","op":"tap","args":{"x":195,"y":728},"ms":620,"ok":true}
+{"t":"2026-09-09T02:22:44.415Z","op":"screenshot","args":{},"ms":14,"ok":true}
+{"t":"2026-09-09T02:22:52.378Z","op":"tap","args":{"x":199,"y":810},"ms":616,"ok":true}
+{"t":"2026-09-09T02:22:56.058Z","op":"tap","args":{"x":42,"y":810},"ms":614,"ok":true}
+{"t":"2026-09-09T02:23:04.331Z","op":"tap","args":{"x":195,"y":340},"ms":616,"ok":true}
+{"t":"2026-09-09T02:23:07.298Z","op":"screenshot","args":{},"ms":13,"ok":true}
+{"t":"2026-09-09T02:23:17.904Z","op":"tap","args":{"x":195,"y":475},"ms":616,"ok":true}
+{"t":"2026-09-09T02:23:26.976Z","op":"scroll","args":{"dy":null},"ms":414,"ok":true}
+{"t":"2026-09-09T02:23:31.304Z","op":"screenshot","args":{},"ms":9,"ok":true}
+{"t":"2026-09-09T02:23:50.387Z","op":"scroll","args":{"dy":null},"ms":413,"ok":true}
+{"t":"2026-09-09T02:23:53.788Z","op":"tap","args":{"x":302,"y":810},"ms":616,"ok":true}
+{"t":"2026-09-09T02:23:58.488Z","op":"tap","args":{"x":348,"y":810},"ms":616,"ok":true}
+{"t":"2026-09-09T02:24:02.815Z","op":"tap","args":{"x":195,"y":110},"ms":615,"ok":true}
+{"t":"2026-09-09T02:24:05.889Z","op":"back","args":{},"ms":608,"ok":true}
+{"t":"2026-09-09T02:24:08.512Z","op":"navigate","args":{},"ms":0,"ok":false,"error":"unknown op navigate"}
+{"t":"2026-09-09T02:24:12.390Z","op":"tap","args":{"x":348,"y":810},"ms":615,"ok":true}
+{"t":"2026-09-09T02:24:12.463Z","op":"screenshot","args":{},"ms":15,"ok":true}
+{"t":"2026-09-09T02:24:16.043Z","op":"tap","args":{"x":195,"y":110},"ms":605,"ok":true}
+{"t":"2026-09-09T02:24:24.517Z","op":"tap","args":{"x":195,"y":170},"ms":606,"ok":true}
+{"t":"2026-09-09T02:24:31.230Z","op":"tap","args":{"x":195,"y":200},"ms":610,"ok":true}
+{"t":"2026-09-09T02:24:34.166Z","op":"screenshot","args":{},"ms":9,"ok":true}
+{"t":"2026-09-09T02:24:41.985Z","op":"tap","args":{"x":270,"y":253},"ms":615,"ok":true}
+{"t":"2026-09-09T02:24:46.252Z","op":"click","args":{"text":"Add License"},"ms":758,"ok":true}
+{"t":"2026-09-09T02:24:57.941Z","op":"tap","args":{"x":270,"y":255},"ms":610,"ok":true}
+{"t":"2026-09-09T02:24:58.011Z","op":"screenshot","args":{},"ms":19,"ok":true}
+{"t":"2026-09-09T02:25:12.259Z","op":"tap","args":{"x":90,"y":370},"ms":615,"ok":true}
+{"t":"2026-09-09T02:25:12.832Z","op":"press","args":{"key":"KeyM"},"ms":513,"ok":true}
+{"t":"2026-09-09T02:25:13.404Z","op":"press","args":{"key":"KeyA"},"ms":512,"ok":true}
+{"t":"2026-09-09T02:25:26.205Z","op":"tap","args":{"x":195,"y":370},"ms":615,"ok":true}
+{"t":"2026-09-09T02:25:26.776Z","op":"press","args":{"key":"KeyB"},"ms":512,"ok":true}
+{"t":"2026-09-09T02:25:27.347Z","op":"press","args":{"key":"KeyL"},"ms":512,"ok":true}
+{"t":"2026-09-09T02:25:27.920Z","op":"press","args":{"key":"Minus"},"ms":513,"ok":true}
+{"t":"2026-09-09T02:25:28.492Z","op":"press","args":{"key":"Digit1"},"ms":513,"ok":true}
+{"t":"2026-09-09T02:25:29.064Z","op":"press","args":{"key":"Digit2"},"ms":513,"ok":true}
+{"t":"2026-09-09T02:25:29.630Z","op":"press","args":{"key":"Digit3"},"ms":507,"ok":true}
+{"t":"2026-09-09T02:25:30.188Z","op":"press","args":{"key":"Digit4"},"ms":513,"ok":true}
+{"t":"2026-09-09T02:25:30.764Z","op":"press","args":{"key":"Digit5"},"ms":514,"ok":true}
+{"t":"2026-09-09T02:25:40.826Z","op":"tap","args":{"x":295,"y":370},"ms":613,"ok":true}
+{"t":"2026-09-09T02:25:41.399Z","op":"press","args":{"key":"Digit0"},"ms":513,"ok":true}
+{"t":"2026-09-09T02:25:41.969Z","op":"press","args":{"key":"Digit9"},"ms":510,"ok":true}
+{"t":"2026-09-09T02:25:42.539Z","op":"press","args":{"key":"Digit0"},"ms":513,"ok":true}
+{"t":"2026-09-09T02:25:43.115Z","op":"press","args":{"key":"Digit8"},"ms":516,"ok":true}
+{"t":"2026-09-09T02:25:43.689Z","op":"press","args":{"key":"Digit2"},"ms":514,"ok":true}
+{"t":"2026-09-09T02:25:44.263Z","op":"press","args":{"key":"Digit0"},"ms":515,"ok":true}
+{"t":"2026-09-09T02:25:44.829Z","op":"press","args":{"key":"Digit2"},"ms":508,"ok":true}
+{"t":"2026-09-09T02:25:45.383Z","op":"press","args":{"key":"Digit7"},"ms":507,"ok":true}
+{"t":"2026-09-09T02:25:54.302Z","op":"click","args":{"text":"Save"},"ms":764,"ok":true}
+{"t":"2026-09-09T02:26:07.173Z","op":"tap","args":{"x":195,"y":490},"ms":614,"ok":true}
+{"t":"2026-09-09T02:26:09.931Z","op":"screenshot","args":{},"ms":9,"ok":true}
+{"t":"2026-09-09T02:26:16.768Z","op":"tap","args":{"x":195,"y":583},"ms":616,"ok":true}
+{"t":"2026-09-09T02:26:19.840Z","op":"screenshot","args":{},"ms":15,"ok":true}
+{"t":"2026-09-09T02:26:35.166Z","op":"sign","args":{},"ms":1610,"ok":true}
+{"t":"2026-09-09T02:26:41.060Z","op":"screenshot","args":{},"ms":9,"ok":true}
+{"t":"2026-09-09T02:26:49.031Z","op":"click","args":{"text":"Save Signature"},"ms":763,"ok":true}
+{"t":"2026-09-09T02:26:58.574Z","op":"tap","args":{"x":42,"y":810},"ms":613,"ok":true}
+{"t":"2026-09-09T02:27:03.940Z","op":"tap","args":{"x":195,"y":390},"ms":618,"ok":true}
+{"t":"2026-09-09T02:27:08.361Z","op":"press","args":{"key":"Escape"},"ms":514,"ok":true}
+{"t":"2026-09-09T02:27:11.897Z","op":"click","args":{"text":"Cancel"},"ms":755,"ok":true}
+{"t":"2026-09-09T02:27:15.659Z","op":"click","args":{"text":"Continue — Shot 1"},"ms":770,"ok":true}
+{"t":"2026-09-09T02:27:26.062Z","op":"click","args":{"text":"Seismo Readings 1 graph · Compliant"},"ms":2,"ok":false,"error":"nothing on the screen matches text=\"Seismo Readings 1 graph · Compliant\""}
+{"t":"2026-09-09T02:27:33.216Z","op":"scroll","args":{"dy":null},"ms":423,"ok":true}
+{"t":"2026-09-09T02:27:33.288Z","op":"screenshot","args":{},"ms":16,"ok":true}
+{"t":"2026-09-09T02:27:45.503Z","op":"scroll","args":{"dy":null},"ms":423,"ok":true}
+{"t":"2026-09-09T02:27:45.570Z","op":"screenshot","args":{},"ms":12,"ok":true}
+{"t":"2026-09-09T02:27:53.663Z","op":"tap","args":{"x":195,"y":555},"ms":612,"ok":true}
+{"t":"2026-09-09T02:28:00.651Z","op":"screenshot","args":{},"ms":11,"ok":true}
+{"t":"2026-09-09T02:28:09.092Z","op":"tap","args":{"x":195,"y":230},"ms":611,"ok":true}
+{"t":"2026-09-09T02:28:20.766Z","op":"tap","args":{"x":195,"y":210},"ms":614,"ok":true}
+{"t":"2026-09-09T02:29:24.995Z","op":"back","args":{},"ms":628,"ok":true}
+{"t":"2026-09-09T02:29:31.316Z","op":"click","args":{"text":"Design Plan Site · Shot"},"ms":2,"ok":false,"error":"nothing on the screen matches text=\"Design Plan Site · Shot\""}
+{"t":"2026-09-09T02:29:37.980Z","op":"scroll","args":{"dy":null},"ms":423,"ok":true}
+{"t":"2026-09-09T02:29:38.050Z","op":"screenshot","args":{},"ms":14,"ok":true}
+{"t":"2026-09-09T02:29:47.110Z","op":"scroll","args":{"dy":null},"ms":408,"ok":true}
+{"t":"2026-09-09T02:29:47.166Z","op":"screenshot","args":{},"ms":15,"ok":true}
+{"t":"2026-09-09T02:29:55.898Z","op":"tap","args":{"x":195,"y":494},"ms":621,"ok":true}
+{"t":"2026-09-09T02:30:01.526Z","op":"screenshot","args":{},"ms":26,"ok":true}
+{"t":"2026-09-09T02:30:09.841Z","op":"scroll","args":{"dy":null},"ms":419,"ok":true}
+{"t":"2026-09-09T02:30:09.928Z","op":"screenshot","args":{},"ms":27,"ok":true}
+{"t":"2026-09-09T02:30:18.426Z","op":"scroll","args":{"dy":null},"ms":433,"ok":true}
+{"t":"2026-09-09T02:30:18.506Z","op":"screenshot","args":{},"ms":21,"ok":true}
+{"t":"2026-09-09T02:30:30.611Z","op":"tap","args":{"x":195,"y":155},"ms":619,"ok":true}
+{"t":"2026-09-09T02:30:34.135Z","op":"fill","args":{"label":"Distance (ft)","value":"450"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Distance (ft)\""}
+{"t":"2026-09-09T02:30:34.249Z","op":"fill","args":{"value":"450","placeholder":"Distance (ft)"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Distance (ft)\""}
+{"t":"2026-09-09T02:30:34.378Z","op":"fill","args":{"value":"450","selector":"input:near(:text(\"Distance (ft)\"))"},"ms":10,"ok":true}
+{"t":"2026-09-09T02:30:38.528Z","op":"press","args":{"key":"Tab"},"ms":513,"ok":true}
+{"t":"2026-09-09T02:30:38.600Z","op":"screenshot","args":{},"ms":20,"ok":true}
+{"t":"2026-09-09T02:30:44.067Z","op":"click","args":{"text":"Apply"},"ms":750,"ok":true}
+{"t":"2026-09-09T02:30:54.344Z","op":"back","args":{},"ms":623,"ok":true}
+{"t":"2026-09-09T02:31:04.737Z","op":"click","args":{"text":"MA · bl-12345"},"ms":773,"ok":true}
+{"t":"2026-09-09T02:31:10.905Z","op":"click","args":{"text":"Use Saved Signature"},"ms":772,"ok":true}
+{"t":"2026-09-09T02:31:18.980Z","op":"click","args":{"text":"Submit to Office"},"ms":768,"ok":true}
+{"t":"2026-09-09T02:31:27.056Z","op":"screenshot","args":{},"ms":11,"ok":true}
+{"t":"2026-09-09T02:31:44.518Z","op":"tap","args":{"x":352,"y":93},"ms":616,"ok":true}
+{"t":"2026-09-09T02:31:56.722Z","op":"tap","args":{"x":302,"y":810},"ms":616,"ok":true}

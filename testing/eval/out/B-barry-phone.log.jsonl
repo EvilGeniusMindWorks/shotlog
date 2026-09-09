@@ -1,0 +1,199 @@
+{"t":"2026-09-09T00:24:24.278Z","op":"session","device":"phone"}
+{"t":"2026-09-09T00:24:25.333Z","op":"open","args":{"url":"http://localhost:5199","device":"phone"},"ms":1055,"ok":true}
+{"t":"2026-09-09T00:24:29.402Z","op":"fill","args":{"label":"Email","value":"barry.b@eval.shotlog.test"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Email\""}
+{"t":"2026-09-09T00:24:29.515Z","op":"fill","args":{"value":"barry.b@eval.shotlog.test","placeholder":"Email"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Email\""}
+{"t":"2026-09-09T00:24:29.641Z","op":"fill","args":{"value":"barry.b@eval.shotlog.test","selector":"input:near(:text(\"Email\"))"},"ms":11,"ok":true}
+{"t":"2026-09-09T00:24:32.396Z","op":"fill","args":{"label":"Password","value":"Blasting41!"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Password\""}
+{"t":"2026-09-09T00:24:32.508Z","op":"fill","args":{"value":"Blasting41!","placeholder":"Password"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Password\""}
+{"t":"2026-09-09T00:24:32.652Z","op":"fill","args":{"value":"Blasting41!","selector":"input:near(:text(\"Password\"))"},"ms":36,"ok":true}
+{"t":"2026-09-09T00:24:35.130Z","op":"press","args":{"key":"Enter"},"ms":511,"ok":true}
+{"t":"2026-09-09T00:24:55.933Z","op":"click","args":{"text":"Days › Everyone"},"ms":2,"ok":false,"error":"nothing on the screen matches text=\"Days › Everyone\""}
+{"t":"2026-09-09T00:25:43.764Z","op":"snapshot","args":{},"ms":413,"ok":true}
+{"t":"2026-09-09T00:25:46.859Z","op":"click","args":{"text":"Ledgeville Pit — Phase 1 · 26-001 Phase: drilling · 6/23 holes · 1 driller resume"},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"Ledgeville Pit — Phase 1 · 26-001 Phase: drilling · 6/23 holes · 1 driller resume\""}
+{"t":"2026-09-09T00:25:51.336Z","op":"click","args":{"role":"button","name":"Ledgeville Pit"},"ms":771,"ok":true}
+{"t":"2026-09-09T00:25:56.177Z","op":"click","args":{"text":"Drilling 6/23 holes · 1 driller in progress"},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"Drilling 6/23 holes · 1 driller in progress\""}
+{"t":"2026-09-09T00:26:00.252Z","op":"click","args":{"role":"button","name":"Drilling"},"ms":760,"ok":true}
+{"t":"2026-09-09T00:26:07.335Z","op":"click","args":{"text":"‹ Back to the day"},"ms":772,"ok":true}
+{"t":"2026-09-09T00:26:10.903Z","op":"click","args":{"role":"tab","name":"Blast Log"},"ms":1,"ok":false,"error":"nothing on the screen matches role=\"tab\" name=\"Blast Log\""}
+{"t":"2026-09-09T00:26:14.981Z","op":"click","args":{"role":"button","name":"Blast Log"},"ms":791,"ok":true}
+{"t":"2026-09-09T00:26:22.105Z","op":"click","args":{"text":"Drill Plan"},"ms":778,"ok":true}
+{"t":"2026-09-09T00:26:28.568Z","op":"click","args":{"text":"Plan ›"},"ms":762,"ok":true}
+{"t":"2026-09-09T00:26:34.872Z","op":"screenshot","args":{},"ms":12,"ok":true}
+{"t":"2026-09-09T00:26:42.106Z","op":"scroll","args":{"dy":400},"ms":408,"ok":true}
+{"t":"2026-09-09T00:26:44.473Z","op":"screenshot","args":{},"ms":26,"ok":true}
+{"t":"2026-09-09T00:26:56.324Z","op":"tap","args":{"x":160,"y":513},"ms":614,"ok":true}
+{"t":"2026-09-09T00:27:04.988Z","op":"screenshot","args":{},"ms":20,"ok":true}
+{"t":"2026-09-09T00:32:36.416Z","op":"click","args":{"text":"button"},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"button\""}
+{"t":"2026-09-09T00:32:39.550Z","op":"back","args":{},"ms":615,"ok":true}
+{"t":"2026-09-09T00:32:46.954Z","op":"click","args":{"role":"button","name":"Drilling"},"ms":776,"ok":true}
+{"t":"2026-09-09T00:33:15.433Z","op":"click","args":{"text":"‹ Back to the day"},"ms":766,"ok":true}
+{"t":"2026-09-09T00:33:18.517Z","op":"click","args":{"text":"Readiness review"},"ms":759,"ok":true}
+{"t":"2026-09-09T00:33:52.548Z","op":"click","args":{"text":"‹ Back to the day"},"ms":770,"ok":true}
+{"t":"2026-09-09T00:33:56.501Z","op":"click","args":{"role":"button","name":"Drilling"},"ms":777,"ok":true}
+{"t":"2026-09-09T00:34:00.041Z","op":"click","args":{"text":"Dinis Costa open"},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"Dinis Costa open\""}
+{"t":"2026-09-09T00:34:03.645Z","op":"screenshot","args":{},"ms":9,"ok":true}
+{"t":"2026-09-09T00:34:34.073Z","op":"scroll","args":{"dy":400},"ms":416,"ok":true}
+{"t":"2026-09-09T00:34:36.501Z","op":"screenshot","args":{},"ms":9,"ok":true}
+{"t":"2026-09-09T00:34:43.881Z","op":"tap","args":{"x":325,"y":717},"ms":616,"ok":true}
+{"t":"2026-09-09T00:34:59.040Z","op":"tap","args":{"x":325,"y":720},"ms":614,"ok":true}
+{"t":"2026-09-09T00:35:42.166Z","op":"click","args":{"text":"9 DC"},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"9 DC\""}
+{"t":"2026-09-09T00:35:45.844Z","op":"click","args":{"role":"button","name":"9 DC"},"ms":763,"ok":true}
+{"t":"2026-09-09T00:35:54.204Z","op":"click","args":{"role":"button","name":"14"},"ms":752,"ok":true}
+{"t":"2026-09-09T00:36:03.768Z","op":"click","args":{"role":"button","name":"Dinis Costa"},"ms":1,"ok":false,"error":"nothing on the screen matches role=\"button\" name=\"Dinis Costa\""}
+{"t":"2026-09-09T00:36:22.291Z","op":"click","args":{"text":"‹ Back to the day"},"ms":760,"ok":true}
+{"t":"2026-09-09T00:36:32.866Z","op":"open","args":{"url":"http://localhost:5199/blast-day/a4cf7f12-88ee-4898-9683-22280de99e7d/design/362b0601-ac0d-4db2-85ca-4b953166d9e9?mode=timing"},"ms":1019,"ok":true}
+{"t":"2026-09-09T00:36:46.888Z","op":"click","args":{"text":"Build timing from drilling"},"ms":770,"ok":true}
+{"t":"2026-09-09T00:37:00.791Z","op":"screenshot","args":{},"ms":40,"ok":true}
+{"t":"2026-09-09T00:58:45.457Z","op":"back","args":{},"ms":691,"ok":true}
+{"t":"2026-09-09T00:58:56.739Z","op":"click","args":{"text":"Review drilling & build timing"},"ms":764,"ok":true}
+{"t":"2026-09-09T00:59:16.132Z","op":"click","args":{"text":"Accept pattern → Readiness review"},"ms":761,"ok":true}
+{"t":"2026-09-09T00:59:25.592Z","op":"click","args":{"text":"Confirm design → Shot 1"},"ms":765,"ok":true}
+{"t":"2026-09-09T00:59:33.081Z","op":"click","args":{"text":"Use the drilled pattern"},"ms":755,"ok":true}
+{"t":"2026-09-09T00:59:40.614Z","op":"back","args":{},"ms":618,"ok":true}
+{"t":"2026-09-09T00:59:46.240Z","op":"click","args":{"role":"button","name":"Blast Log"},"ms":787,"ok":true}
+{"t":"2026-09-09T01:00:00.164Z","op":"click","args":{"text":"+ Add Product"},"ms":772,"ok":true}
+{"t":"2026-09-09T01:00:05.278Z","op":"fill","args":{"label":"Search products...","value":"Dyno"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Search products...\""}
+{"t":"2026-09-09T01:00:05.402Z","op":"fill","args":{"value":"Dyno","placeholder":"Search products..."},"ms":4,"ok":true}
+{"t":"2026-09-09T01:00:08.493Z","op":"snapshot","args":{},"ms":421,"ok":true}
+{"t":"2026-09-09T01:00:13.825Z","op":"fill","args":{"label":"Search products...","value":"Nobel"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Search products...\""}
+{"t":"2026-09-09T01:00:13.944Z","op":"fill","args":{"value":"Nobel","placeholder":"Search products..."},"ms":3,"ok":true}
+{"t":"2026-09-09T01:00:17.028Z","op":"snapshot","args":{"max":5000},"ms":421,"ok":true}
+{"t":"2026-09-09T01:00:34.471Z","op":"fill","args":{"label":"Search products...","value":""},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Search products...\""}
+{"t":"2026-09-09T01:00:34.591Z","op":"fill","args":{"value":"","placeholder":"Search products..."},"ms":6,"ok":true}
+{"t":"2026-09-09T01:00:37.973Z","op":"scroll","args":{"dy":600},"ms":429,"ok":true}
+{"t":"2026-09-09T01:01:01.179Z","op":"click","args":{"text":"Fortel Ultra - 2.5x16 (16st/55lbs)"},"ms":771,"ok":true}
+{"t":"2026-09-09T01:01:07.002Z","op":"fill","args":{"label":"0","value":"3"},"ms":2,"ok":false,"error":"nothing on the screen matches label=\"0\""}
+{"t":"2026-09-09T01:01:07.119Z","op":"fill","args":{"value":"3","placeholder":"0"},"ms":4,"ok":true}
+{"t":"2026-09-09T01:01:10.133Z","op":"press","args":{"key":"Tab"},"ms":519,"ok":true}
+{"t":"2026-09-09T01:01:18.937Z","op":"click","args":{"text":"Edit quantity"},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"Edit quantity\""}
+{"t":"2026-09-09T01:01:26.396Z","op":"click","args":{"role":"button","name":"Edit quantity"},"ms":753,"ok":true}
+{"t":"2026-09-09T01:01:34.710Z","op":"screenshot","args":{},"ms":14,"ok":true}
+{"t":"2026-09-09T01:01:43.666Z","op":"tap","args":{"x":165,"y":393},"ms":611,"ok":true}
+{"t":"2026-09-09T01:01:53.813Z","op":"click","args":{"role":"button","name":"Edit quantity"},"ms":784,"ok":true}
+{"t":"2026-09-09T01:01:59.519Z","op":"type","args":{"text":"3"},"ms":24,"ok":true}
+{"t":"2026-09-09T01:02:02.731Z","op":"press","args":{"key":"Tab"},"ms":516,"ok":true}
+{"t":"2026-09-09T01:02:36.960Z","op":"click","args":{"text":"+ Add Booster"},"ms":778,"ok":true}
+{"t":"2026-09-09T01:02:48.019Z","op":"click","args":{"text":"Booster - Pentex BC *454g (1#)"},"ms":6022,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-09T01:02:59.235Z","op":"click","args":{"role":"button","name":"Booster - Pentex BC *454g (1#) booster — 1 lbs/each"},"ms":6014,"ok":false,"error":"locator.click: Timeout 6000ms exceeded."}
+{"t":"2026-09-09T01:03:05.941Z","op":"click","args":{"text":"Booster - Orange Cap"},"ms":771,"ok":true}
+{"t":"2026-09-09T01:04:59.929Z","op":"snapshot","args":{},"ms":411,"ok":true}
+{"t":"2026-09-09T01:05:06.234Z","op":"screenshot","args":{},"ms":16,"ok":true}
+{"t":"2026-09-09T01:05:14.758Z","op":"tap","args":{"x":163,"y":617},"ms":611,"ok":true}
+{"t":"2026-09-09T01:05:23.673Z","op":"type","args":{"text":"28"},"ms":46,"ok":true}
+{"t":"2026-09-09T01:05:26.115Z","op":"screenshot","args":{},"ms":10,"ok":true}
+{"t":"2026-09-09T01:05:32.780Z","op":"key","args":{},"ms":0,"ok":false,"error":"unknown op key"}
+{"t":"2026-09-09T01:05:42.470Z","op":"tap","args":{"x":195,"y":555},"ms":624,"ok":true}
+{"t":"2026-09-09T01:05:48.116Z","op":"click","args":{"text":"+ Add Detonator / Lead"},"ms":775,"ok":true}
+{"t":"2026-09-09T01:05:54.324Z","op":"click","args":{"text":"LF Series"},"ms":2,"ok":false,"error":"nothing on the screen matches text=\"LF Series\""}
+{"t":"2026-09-09T01:05:59.405Z","op":"fill","args":{"label":"Series","value":"QR-12"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Series\""}
+{"t":"2026-09-09T01:05:59.521Z","op":"fill","args":{"value":"QR-12","placeholder":"Series"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Series\""}
+{"t":"2026-09-09T01:05:59.643Z","op":"fill","args":{"value":"QR-12","selector":"input:near(:text(\"Series\"))"},"ms":10,"ok":true}
+{"t":"2026-09-09T01:06:01.748Z","op":"fill","args":{"label":"Qty","value":"28"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Qty\""}
+{"t":"2026-09-09T01:06:01.866Z","op":"fill","args":{"value":"28","placeholder":"Qty"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Qty\""}
+{"t":"2026-09-09T01:06:01.992Z","op":"fill","args":{"value":"28","selector":"input:near(:text(\"Qty\"))"},"ms":11,"ok":true}
+{"t":"2026-09-09T01:06:05.056Z","op":"click","args":{"text":"Add"},"ms":774,"ok":true}
+{"t":"2026-09-09T01:06:30.560Z","op":"click","args":{"text":"Add"},"ms":784,"ok":true}
+{"t":"2026-09-09T01:06:45.048Z","op":"screenshot","args":{},"ms":19,"ok":true}
+{"t":"2026-09-09T01:06:52.286Z","op":"tap","args":{"x":314,"y":426},"ms":630,"ok":true}
+{"t":"2026-09-09T01:07:03.615Z","op":"screenshot","args":{},"ms":32,"ok":true}
+{"t":"2026-09-09T01:07:12.441Z","op":"scroll","args":{"dy":null},"ms":426,"ok":true}
+{"t":"2026-09-09T01:07:21.663Z","op":"screenshot","args":{},"ms":19,"ok":true}
+{"t":"2026-09-09T01:07:30.208Z","op":"tap","args":{"x":278,"y":486},"ms":631,"ok":true}
+{"t":"2026-09-09T01:07:43.128Z","op":"scroll","args":{"dy":null},"ms":415,"ok":true}
+{"t":"2026-09-09T01:07:50.078Z","op":"screenshot","args":{},"ms":28,"ok":true}
+{"t":"2026-09-09T01:07:57.512Z","op":"scroll","args":{"dy":null},"ms":424,"ok":true}
+{"t":"2026-09-09T01:08:02.727Z","op":"screenshot","args":{},"ms":17,"ok":true}
+{"t":"2026-09-09T01:08:17.063Z","op":"click","args":{"role":"button","name":"Shot #2 17.4 lbs"},"ms":784,"ok":true}
+{"t":"2026-09-09T01:08:22.194Z","op":"screenshot","args":{},"ms":27,"ok":true}
+{"t":"2026-09-09T01:08:29.531Z","op":"tap","args":{"x":314,"y":421},"ms":622,"ok":true}
+{"t":"2026-09-09T01:08:40.000Z","op":"click","args":{"text":"Seismo Readings"},"ms":761,"ok":true}
+{"t":"2026-09-09T01:08:43.448Z","op":"click","args":{"text":"Add Reading"},"ms":755,"ok":true}
+{"t":"2026-09-09T01:08:48.808Z","op":"fill","args":{"label":"PPV Tran","value":"0.42"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"PPV Tran\""}
+{"t":"2026-09-09T01:08:48.922Z","op":"fill","args":{"value":"0.42","placeholder":"PPV Tran"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"PPV Tran\""}
+{"t":"2026-09-09T01:08:49.044Z","op":"fill","args":{"value":"0.42","selector":"input:near(:text(\"PPV Tran\"))"},"ms":9,"ok":true}
+{"t":"2026-09-09T01:08:49.120Z","op":"fill","args":{"label":"PPV Vert","value":"0.31"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"PPV Vert\""}
+{"t":"2026-09-09T01:08:49.232Z","op":"fill","args":{"value":"0.31","placeholder":"PPV Vert"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"PPV Vert\""}
+{"t":"2026-09-09T01:08:49.351Z","op":"fill","args":{"value":"0.31","selector":"input:near(:text(\"PPV Vert\"))"},"ms":8,"ok":true}
+{"t":"2026-09-09T01:08:49.425Z","op":"fill","args":{"label":"PPV Long","value":"0.28"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"PPV Long\""}
+{"t":"2026-09-09T01:08:49.537Z","op":"fill","args":{"value":"0.28","placeholder":"PPV Long"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"PPV Long\""}
+{"t":"2026-09-09T01:08:49.662Z","op":"fill","args":{"value":"0.28","selector":"input:near(:text(\"PPV Long\"))"},"ms":7,"ok":true}
+{"t":"2026-09-09T01:08:49.733Z","op":"fill","args":{"label":"Frequency","value":"27"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Frequency\""}
+{"t":"2026-09-09T01:08:49.846Z","op":"fill","args":{"value":"27","placeholder":"Frequency"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Frequency\""}
+{"t":"2026-09-09T01:08:49.967Z","op":"fill","args":{"value":"27","selector":"input:near(:text(\"Frequency\"))"},"ms":9,"ok":true}
+{"t":"2026-09-09T01:08:50.038Z","op":"fill","args":{"label":"Air","value":"118"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Air\""}
+{"t":"2026-09-09T01:08:50.152Z","op":"fill","args":{"value":"118","placeholder":"Air"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Air\""}
+{"t":"2026-09-09T01:08:50.273Z","op":"fill","args":{"value":"118","selector":"input:near(:text(\"Air\"))"},"ms":10,"ok":true}
+{"t":"2026-09-09T01:08:53.663Z","op":"attach","args":{},"ms":0,"ok":false,"error":"unknown op attach"}
+{"t":"2026-09-09T01:09:00.992Z","op":"upload","args":{"files":["Capture Seismograph Printout","/Users/matthewbulmer/Documents/Code/shotlog/testing/eval/assets/printout.jpg"]},"ms":1,"ok":false,"error":"no such file /Users/matthewbulmer/Documents/Code/shotlog/Capture Seismograph Printout"}
+{"t":"2026-09-09T01:09:08.346Z","op":"upload","args":{"files":["/Users/matthewbulmer/Documents/Code/shotlog/testing/eval/assets/printout.jpg","Capture Seismograph Printout"]},"ms":0,"ok":false,"error":"no such file /Users/matthewbulmer/Documents/Code/shotlog/Capture Seismograph Printout"}
+{"t":"2026-09-09T01:09:21.493Z","op":"upload","args":{"files":["/Users/matthewbulmer/Documents/Code/shotlog/testing/eval/assets/printout.jpg"]},"ms":1511,"ok":true}
+{"t":"2026-09-09T01:09:27.279Z","op":"click","args":{"text":"Save Reading"},"ms":832,"ok":true}
+{"t":"2026-09-09T01:09:32.151Z","op":"click","args":{"text":"button"},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"button\""}
+{"t":"2026-09-09T01:09:37.319Z","op":"open","args":{"url":"http://localhost:5199/blast-day/a4cf7f12-88ee-4898-9683-22280de99e7d"},"ms":1015,"ok":true}
+{"t":"2026-09-09T01:09:44.128Z","op":"click","args":{"text":"Blast Log"},"ms":778,"ok":true}
+{"t":"2026-09-09T01:09:49.071Z","op":"click","args":{"text":"Shot media"},"ms":772,"ok":true}
+{"t":"2026-09-09T01:09:57.423Z","op":"click","args":{"text":"Photo"},"ms":774,"ok":true}
+{"t":"2026-09-09T01:10:07.253Z","op":"click","args":{"text":"Add"},"ms":774,"ok":true}
+{"t":"2026-09-09T01:10:16.326Z","op":"upload","args":{"files":["/Users/matthewbulmer/Documents/Code/shotlog/testing/eval/assets/face.jpg"]},"ms":1528,"ok":true}
+{"t":"2026-09-09T01:10:23.395Z","op":"upload","args":{"files":["/Users/matthewbulmer/Documents/Code/shotlog/testing/eval/assets/shot.webm"]},"ms":1530,"ok":true}
+{"t":"2026-09-09T01:10:31.119Z","op":"click","args":{"text":"Attach full video"},"ms":773,"ok":true}
+{"t":"2026-09-09T01:10:37.755Z","op":"click","args":{"text":"Done"},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"Done\""}
+{"t":"2026-09-09T01:10:46.631Z","op":"click","args":{"text":"Day"},"ms":772,"ok":true}
+{"t":"2026-09-09T01:10:51.533Z","op":"click","args":{"text":"Report & file"},"ms":768,"ok":true}
+{"t":"2026-09-09T01:10:58.321Z","op":"scroll","args":{"dy":null},"ms":416,"ok":true}
+{"t":"2026-09-09T01:11:04.374Z","op":"click","args":{"text":"Day"},"ms":766,"ok":true}
+{"t":"2026-09-09T01:11:10.236Z","op":"click","args":{"text":"Submit to Office"},"ms":757,"ok":true}
+{"t":"2026-09-09T01:11:24.195Z","op":"click","args":{"text":"Continue — Shot 1"},"ms":851,"ok":true}
+{"t":"2026-09-09T01:24:48.025Z","op":"snapshot","args":{},"ms":426,"ok":true}
+{"t":"2026-09-09T01:24:59.532Z","op":"click","args":{"text":"Day"},"ms":772,"ok":true}
+{"t":"2026-09-09T01:25:04.849Z","op":"click","args":{"text":"Report & file"},"ms":767,"ok":true}
+{"t":"2026-09-09T01:25:10.161Z","op":"click","args":{"text":"Dashboard"},"ms":774,"ok":true}
+{"t":"2026-09-09T01:25:15.196Z","op":"click","args":{"text":"Ledgeville Pit"},"ms":770,"ok":true}
+{"t":"2026-09-09T01:25:18.891Z","op":"click","args":{"text":"More actions"},"ms":2,"ok":false,"error":"nothing on the screen matches text=\"More actions\""}
+{"t":"2026-09-09T01:25:22.002Z","op":"screenshot","args":{},"ms":11,"ok":true}
+{"t":"2026-09-09T01:25:30.864Z","op":"tap","args":{"x":381,"y":97},"ms":615,"ok":true}
+{"t":"2026-09-09T01:25:42.082Z","op":"click","args":{"text":"Continue — Shot 1"},"ms":788,"ok":true}
+{"t":"2026-09-09T01:25:48.456Z","op":"click","args":{"text":"Seismo Readings"},"ms":759,"ok":true}
+{"t":"2026-09-09T01:25:51.837Z","op":"click","args":{"text":"Graph 1 printout"},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"Graph 1 printout\""}
+{"t":"2026-09-09T01:25:54.872Z","op":"screenshot","args":{},"ms":7,"ok":true}
+{"t":"2026-09-09T01:26:01.474Z","op":"tap","args":{"x":195,"y":230},"ms":609,"ok":true}
+{"t":"2026-09-09T01:26:11.540Z","op":"tap","args":{"x":175,"y":210},"ms":608,"ok":true}
+{"t":"2026-09-09T01:26:22.774Z","op":"click","args":{"text":"compliant"},"ms":763,"ok":true}
+{"t":"2026-09-09T01:26:28.641Z","op":"tap","args":{"x":70,"y":230},"ms":615,"ok":true}
+{"t":"2026-09-09T01:26:39.124Z","op":"click","args":{"text":"Close"},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"Close\""}
+{"t":"2026-09-09T01:26:42.591Z","op":"screenshot","args":{},"ms":11,"ok":true}
+{"t":"2026-09-09T01:26:50.259Z","op":"tap","args":{"x":358,"y":32},"ms":614,"ok":true}
+{"t":"2026-09-09T01:27:06.781Z","op":"scroll","args":{"dy":0},"ms":411,"ok":true}
+{"t":"2026-09-09T01:27:14.479Z","op":"tap","args":{"x":195,"y":250},"ms":607,"ok":true}
+{"t":"2026-09-09T01:27:24.496Z","op":"screenshot","args":{},"ms":11,"ok":true}
+{"t":"2026-09-09T01:27:38.988Z","op":"tap","args":{"x":338,"y":215},"ms":611,"ok":true}
+{"t":"2026-09-09T01:27:43.073Z","op":"click","args":{"text":"Add Reading"},"ms":765,"ok":true}
+{"t":"2026-09-09T01:27:51.644Z","op":"scroll","args":{"dy":0},"ms":413,"ok":true}
+{"t":"2026-09-09T01:28:06.436Z","op":"fill","args":{"label":"PPV Tran","value":"0.420"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"PPV Tran\""}
+{"t":"2026-09-09T01:28:06.547Z","op":"fill","args":{"value":"0.420","placeholder":"PPV Tran"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"PPV Tran\""}
+{"t":"2026-09-09T01:28:06.659Z","op":"fill","args":{"value":"0.420","selector":"input:near(:text(\"PPV Tran\"))"},"ms":6,"ok":true}
+{"t":"2026-09-09T01:28:06.724Z","op":"fill","args":{"label":"PPV Vert","value":"0.310"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"PPV Vert\""}
+{"t":"2026-09-09T01:28:06.832Z","op":"fill","args":{"value":"0.310","placeholder":"PPV Vert"},"ms":0,"ok":false,"error":"nothing on the screen matches placeholder=\"PPV Vert\""}
+{"t":"2026-09-09T01:28:06.946Z","op":"fill","args":{"value":"0.310","selector":"input:near(:text(\"PPV Vert\"))"},"ms":7,"ok":true}
+{"t":"2026-09-09T01:28:07.013Z","op":"fill","args":{"label":"PPV Long","value":"0.280"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"PPV Long\""}
+{"t":"2026-09-09T01:28:07.126Z","op":"fill","args":{"value":"0.280","placeholder":"PPV Long"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"PPV Long\""}
+{"t":"2026-09-09T01:28:07.244Z","op":"fill","args":{"value":"0.280","selector":"input:near(:text(\"PPV Long\"))"},"ms":8,"ok":true}
+{"t":"2026-09-09T01:28:07.316Z","op":"fill","args":{"label":"Frequency","value":"27"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Frequency\""}
+{"t":"2026-09-09T01:28:07.428Z","op":"fill","args":{"value":"27","placeholder":"Frequency"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Frequency\""}
+{"t":"2026-09-09T01:28:07.545Z","op":"fill","args":{"value":"27","selector":"input:near(:text(\"Frequency\"))"},"ms":8,"ok":true}
+{"t":"2026-09-09T01:28:07.617Z","op":"fill","args":{"label":"Air","value":"118"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Air\""}
+{"t":"2026-09-09T01:28:07.729Z","op":"fill","args":{"value":"118","placeholder":"Air"},"ms":0,"ok":false,"error":"nothing on the screen matches placeholder=\"Air\""}
+{"t":"2026-09-09T01:28:07.850Z","op":"fill","args":{"value":"118","selector":"input:near(:text(\"Air\"))"},"ms":8,"ok":true}
+{"t":"2026-09-09T01:28:10.713Z","op":"fill","args":{"label":"Location","value":"450 ft"},"ms":1,"ok":false,"error":"nothing on the screen matches label=\"Location\""}
+{"t":"2026-09-09T01:28:10.826Z","op":"fill","args":{"value":"450 ft","placeholder":"Location"},"ms":1,"ok":false,"error":"nothing on the screen matches placeholder=\"Location\""}
+{"t":"2026-09-09T01:28:10.938Z","op":"fill","args":{"value":"450 ft","selector":"input:near(:text(\"Location\"))"},"ms":5,"ok":true}
+{"t":"2026-09-09T01:28:16.021Z","op":"upload","args":{"files":["/Users/matthewbulmer/Documents/Code/shotlog/testing/eval/assets/printout.jpg"]},"ms":1512,"ok":true}
+{"t":"2026-09-09T01:28:24.287Z","op":"click","args":{"text":"Save Reading"},"ms":846,"ok":true}
+{"t":"2026-09-09T01:28:31.378Z","op":"tap","args":{"x":36,"y":113},"ms":618,"ok":true}
+{"t":"2026-09-09T01:28:36.386Z","op":"click","args":{"text":"Continue — Shot 1"},"ms":772,"ok":true}
+{"t":"2026-09-09T01:28:42.265Z","op":"click","args":{"text":"Use Saved Signature"},"ms":772,"ok":true}
+{"t":"2026-09-09T01:28:49.437Z","op":"click","args":{"text":"Day"},"ms":773,"ok":true}
+{"t":"2026-09-09T01:28:54.052Z","op":"click","args":{"text":"Submit to Office"},"ms":754,"ok":true}
+{"t":"2026-09-09T01:29:04.421Z","op":"click","args":{"text":"Visual Blast Report"},"ms":1,"ok":false,"error":"nothing on the screen matches text=\"Visual Blast Report\""}
+{"t":"2026-09-09T01:29:07.385Z","op":"screenshot","args":{},"ms":12,"ok":true}
+{"t":"2026-09-09T01:29:39.002Z","op":"click","args":{"text":"My records"},"ms":767,"ok":true}

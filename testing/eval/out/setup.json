@@ -1,0 +1,83 @@
+{
+  "at": "2026-09-08T23:41:02.746Z",
+  "home": "9526ee5d-0eaa-4bf5-8a41-a12003530062",
+  "arms": {
+    "A": {
+      "name": "Eval A (Beta)",
+      "companyId": "686097d5-9dd2-4672-befb-5991a0f20837",
+      "invites": {
+        "barry": {
+          "name": "Barry Lopes",
+          "role": "blaster",
+          "email": "barry.a@eval.shotlog.test",
+          "link": "http://localhost:5199/enroll/AbnGzo0NC6DTeb8cJ4GajqjMYr15kbXc7lqPwwripUPpBYy9reEYB4UKs_rCbQWg"
+        },
+        "dinis": {
+          "name": "Dinis Costa",
+          "role": "driller",
+          "email": "dinis.a@eval.shotlog.test",
+          "link": "http://localhost:5199/enroll/Y52BBKQBosx2LVXYQVP4vwMDNflmX2iWrk_gL9ULhUwWYdKDiLWduYUXq8aDZmam"
+        },
+        "sam": {
+          "name": "Sam Rivera",
+          "role": "mechanic",
+          "email": "sam.a@eval.shotlog.test",
+          "link": "http://localhost:5199/enroll/HbWY4EjFLj5um2QGfuhUiLSzUTtozPzZCFKX6r2OkoRHzAw7-K8Hpj8tauWU0uUx"
+        },
+        "evette": {
+          "name": "Evette Marsh",
+          "role": "office",
+          "email": "evette.a@eval.shotlog.test",
+          "link": "http://localhost:5199/enroll/WZxmyWoy4GNF60vdXxbVy_UHpfAu5fm0fUBnb7im3H4PS0CF8suk4MAze7uKXa_E"
+        },
+        "tony": {
+          "name": "Tony Baptista",
+          "role": "supervisor",
+          "email": "tony.a@eval.shotlog.test",
+          "link": "http://localhost:5199/enroll/YL9r75oFI-nJDnkPkPBDvKjoO-undttNm0Ugs49aISXcaI9h1N_cyjfKXbTsvP8t"
+        }
+      }
+    },
+    "B": {
+      "name": "Eval B (Beta)",
+      "companyId": "4e93687c-2b07-4717-bc43-4e23efdc0300",
+      "invites": {
+        "barry": {
+          "name": "Barry Lopes",
+          "role": "blaster",
+          "email": "barry.b@eval.shotlog.test",
+          "link": "http://localhost:5199/enroll/n5iVDCYzDSX7Kd-jSO9Eo-U68vMYr-YTEjBoUUb8hmY4YC2oNRsGuvPH8-VyRmwO"
+        },
+        "dinis": {
+          "name": "Dinis Costa",
+          "role": "driller",
+          "email": "dinis.b@eval.shotlog.test",
+          "link": "http://localhost:5199/enroll/Btrmyc0C9Z4rqOCs5r_oND9s4NvIcLHP-vZgyUWDHW1q2586dxOGYTojB9D7S-Ft"
+        },
+        "sam": {
+          "name": "Sam Rivera",
+          "role": "mechanic",
+          "email": "sam.b@eval.shotlog.test",
+          "link": "http://localhost:5199/enroll/590nbMYgwK5vSN3I91RcwPMchnNNbn2wLt8gTUFkA-r5Aa_NiTR1AbBhBoAsyGkR"
+        },
+        "evette": {
+          "name": "Evette Marsh",
+          "role": "office",
+          "email": "evette.b@eval.shotlog.test",
+          "link": "http://localhost:5199/enroll/AX5TYS1OWIpGl7YNYmURbE97PAyTvr_LyPSYDm_mLKt-C8wY86erTklJUGUf4y3O"
+        },
+        "tony": {
+          "name": "Tony Baptista",
+          "role": "supervisor",
+          "email": "tony.b@eval.shotlog.test",
+          "link": "http://localhost:5199/enroll/H2Hz0sU4hlR8D3rW3hW9sP3nWpQdpZqTnTFd8wYBfIg5fx7tNfEJ7LfoBfdwxyZG"
+        }
+      }
+    }
+  },
+  "assets": {
+    "face": "/Users/matthewbulmer/Documents/Code/shotlog/testing/eval/assets/face.jpg",
+    "printout": "/Users/matthewbulmer/Documents/Code/shotlog/testing/eval/assets/printout.jpg",
+    "video": "/Users/matthewbulmer/Documents/Code/shotlog/testing/eval/assets/shot.webm"
+  }
+}

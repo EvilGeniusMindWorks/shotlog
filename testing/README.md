@@ -78,3 +78,16 @@ cutover gate they were written for.
 
 - `node testing/help-shots.mjs [names…]` — re-captures the guide's screenshots from the dev app at phone width into `apps/web/public/help-img/`. Run it whenever a screen changes.
 - harness39 (walkthrough) needs the driller's tour reset first: `UPDATE "User" SET "tourDoneAt"=NULL WHERE email='dinis@test.local'` (other harnesses' skipTours mark it done).
+
+## Persona evaluation harness (`testing/eval/`, Sep 8 2026)
+
+Agents play crew roles through a real browser, one isolated context per "device", and can only act through a tiny CLI — never through selectors or scripts they could not see. Every command is logged so tap counts are measured, not self-reported.
+
+- `node testing/eval/browser-server.mjs` — the daemon (port 4790). Devices: `phone` 390×844, `tablet` 800×1280, `wide` 1280×800, all at scale 1 so a screenshot pixel is a tap unit.
+- `node testing/eval/b.mjs <session> <op> …` — open · snapshot · click · fill · type · press · select · check · upload · tap x y · scroll · wait · back · screenshot · sign · downloads. See `AGENT-README.md` (what the agents are given).
+- `node testing/eval/setup.mjs` — two Beta companies from Baystate's reference data, Granite Ridge / Ledgeville seeded server-side (`seed-hierarchy.mts`), one invitation per cast member, media assets. Refuses to run while `out/setup.json` exists (`--force` to rebuild, `--clean` to delete the eval companies).
+- `node testing/eval/admin.mjs backfill-roster A|B` — the admin repairs "Mark" performs mid-run.
+- `node testing/eval/briefs.mjs <A|B> <barry-am|dinis|barry-pm|sam|evette|barry-refile|judge>` — the accepted briefs with links and paths filled in; the same text drives a re-run after fixes.
+- Outputs in `testing/eval/out/`: `<arm>-<who>.md` records, `<session>.log.jsonl` tap logs, `run-notes.md` (coordinator's interventions and artifacts), `verified.md` (code checks), `judge.md`.
+
+Lessons from the first run: tell agents explicitly never to run other scripts (one re-ran setup and wiped the run); keep screenshots at 1:1; make text matching tolerant of curly quotes and dashes; enrol the driller before the blaster sends the plan; invited people need roster rows.
