@@ -75,3 +75,5 @@ returns.
   set, the site map's satellite layer is Esri World Imagery through the keyed
   endpoint (2M tiles/month free); when unset it is USGS public-domain imagery,
   which stops at zoom 16 in Massachusetts. Redeploy after changing either.
+
+Note: after adding or changing a web build variable, redeploy WITHOUT the build cache, or push any commit — a push always builds with the current variables.
