@@ -14,7 +14,7 @@ On **Admin › Approvals**, tap **Approve** on the day. It moves to the approved
 
 ## Send back
 
-Tap **Send back** and write what needs fixing — one line is enough: "crew missing Ray", "shot 2 not signed". The day returns to the blaster's Dashboard with your note on it. When they file again it is version 2, and both versions are kept with the note.
+Tap **Send back**. A sheet asks what needs fixing — one line is enough: "crew missing Ray", "shot 2 not signed" — and will not send without it. The day returns to the blaster's Dashboard with your note, and the day itself carries a banner: who sent it back, when, and your words. When they file again it is version 2, and both versions are kept with the note.
 
 ## Reopening
 

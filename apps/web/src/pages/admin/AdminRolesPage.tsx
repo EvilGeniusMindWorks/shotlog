@@ -2,6 +2,7 @@
 // locked); editing a built-in saves an OVERRIDE record (reset = delete it);
 // custom roles are new records. Capabilities are human-named bundles from
 // @shotlog/shared — the server enforces them at the sync choke point.
+import { ask } from '@/components/ui/ask-sheet';
 import { useMemo, useState } from 'react';
 import { Lock, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import {
@@ -234,14 +235,16 @@ export function AdminRolesPage() {
                   size="sm"
                   variant="outline"
                   onClick={() => {
-                    if (
-                      confirm(
-                        `Delete the ${row.name} role? People still assigned to it lose all permissions until reassigned.`,
-                      )
-                    ) {
+                    void ask({
+                      title: `Delete the ${row.name} role?`,
+                      body: 'People still assigned to it lose all permissions until reassigned.',
+                      confirmLabel: 'Delete role',
+                      danger: true,
+                    }).then((ok) => {
+                      if (!ok) return;
                       void db.roleDefinitions.delete(row.record!.id);
                       setSelected('supervisor');
-                    }
+                    });
                   }}
                 >
                   <Trash2 className="h-4 w-4 text-gray-400" />

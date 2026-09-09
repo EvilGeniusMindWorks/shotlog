@@ -10,7 +10,7 @@ Your home is the work that needs an office decision, oldest first, and the clock
 
 ## The sections
 
-- **Awaiting approval** — filed days, each with what came with it (shots, pounds, crew, time cards) and **Review**.
+- **Awaiting approval** — filed days, each with what came with it (shots, pounds, crew, time cards, and "filed with 2 notes" when the blaster filed past the pre-flight) and **Review**. Approving and sending back are the supervisor's and the admin's; you read the queue, open the day, and download or send its PDF — the Approvals page says so at the top.
 - **Sent back, waiting** — days you returned that the blaster has not refiled.
 - **Time cards to approve** — grouped by day and job; **Approve all** when they match the day.
 - **Expiring** — certificates of insurance and permits within 90 days.

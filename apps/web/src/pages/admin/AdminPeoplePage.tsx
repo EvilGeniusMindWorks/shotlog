@@ -9,6 +9,7 @@
 //               changes on login people, deactivate anyone
 // One deactivate switch: a person with a login loses BOTH the login (sessions
 // revoked server-side) and their roster spot in one action.
+import { hasCap } from '@/lib/perms';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import {
@@ -504,7 +505,8 @@ function PersonRow({
 export function AdminPeoplePage() {
   const { online } = useOutletContext<{ online: boolean }>();
   const me = getSessionUser();
-  const isAdmin = me?.role === 'admin';
+  // S9a: creating logins follows the manage-people capability (supervisors too), not the admin role
+  const isAdmin = hasCap('manage_people');
   const navigate = useNavigate();
   const ROLE_OPTIONS = useRoleOptions();
   const people = useLiveQuery(() => db.crewMembers.toArray()) ?? [];

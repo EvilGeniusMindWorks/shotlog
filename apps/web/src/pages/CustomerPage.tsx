@@ -2,6 +2,7 @@
 // cards (Company & billing · Contacts · Compliance & terms) come FIRST,
 // then the customer's SITES (windowed, "+ New site" here), then the full
 // sections to edit. Wide screens: the same page, cards across the top.
+import { ReadOnlyWrap } from '@/components/ui/read-only-wrap';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { createSite } from '@/lib/jobContext';
@@ -157,7 +158,7 @@ export function CustomerPage() {
               {[billingTown || customer.billingAddress, customer.paymentTerms].filter(Boolean).join(' · ') || 'no billing address'}
             </>
           ),
-          render: () => <CompanyCard customer={customer} readOnly={!isAdmin} />,
+          render: () => <ReadOnlyWrap readOnly={!isAdmin} table="customers"><CompanyCard customer={customer} readOnly={!isAdmin} /></ReadOnlyWrap>,
         },
         {
           id: 'contacts',
@@ -173,7 +174,7 @@ export function CustomerPage() {
           ) : (
             'none yet'
           ),
-          render: () => <ContactsCard customer={customer} readOnly={!isAdmin} />,
+          render: () => <ReadOnlyWrap readOnly={!isAdmin} table="customers"><ContactsCard customer={customer} readOnly={!isAdmin} /></ReadOnlyWrap>,
         },
         {
           id: 'compliance',
@@ -193,7 +194,7 @@ export function CustomerPage() {
               {[customer.paymentTerms, customer.poRequired ? 'PO required' : undefined, customer.taxExempt ? 'tax exempt' : undefined].filter(Boolean).join(' · ') || 'terms not set'}
             </>
           ),
-          render: () => <ComplianceCard customer={customer} readOnly={!isAdmin} />,
+          render: () => <ReadOnlyWrap readOnly={!isAdmin} table="customers"><ComplianceCard customer={customer} readOnly={!isAdmin} /></ReadOnlyWrap>,
         },
       ]}
     />

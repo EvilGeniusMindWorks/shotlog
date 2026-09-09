@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ask } from '@/components/ui/ask-sheet';
 import { ArrowDown, ArrowUp, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useLiveQuery, db, deleteWithTombstone } from '@/db';
 import { generateId, nowISO, cn } from '@/lib/utils';
@@ -63,7 +64,7 @@ export function TypicalColumnBuilder({ shotId }: { shotId: string }) {
 
   const deleteColumn = async () => {
     if (!active) return;
-    if (!confirm(`Delete ${active.name}?`)) return;
+    if (!(await ask({ title: `Delete ${active.name}?`, confirmLabel: 'Delete', danger: true }))) return;
     await deleteWithTombstone('typicalColumns', active.id);
     setActiveId(null);
   };

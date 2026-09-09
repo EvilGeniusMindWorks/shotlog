@@ -68,3 +68,28 @@ export function canEditApprovedDay(): boolean {
 export function canEditAcceptedLog(): boolean {
   return canEditAcceptedDrillLogAs(myRole(), cache);
 }
+
+// ── S9a: say who CAN, when the signed-in role can't ──────────────────────
+const ROLE_LABELS: Record<string, string> = {
+  admin: 'admins', supervisor: 'supervisors', blaster: 'blasters', driller: 'drillers', mechanic: 'the shop', office: 'the office',
+};
+
+/** Built-in roles that may perform this write, as a readable list
+ *  ("supervisors and admins") — for the one line under a read-only field. */
+export function whoCanWrite(tableName: string, op: WriteOp): string {
+  const roles = ['admin', 'supervisor', 'blaster', 'driller', 'mechanic', 'office'].filter((r) => canPerformOpAs(tableName, op, r, cache));
+  const labels = roles.map((r) => ROLE_LABELS[r] ?? r);
+  if (labels.length === 0) return 'nobody';
+  if (labels.length === 1) return labels[0];
+  return `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`;
+}
+
+/** "Office accounts can read this. Blasters and admins can change it." */
+export function readOnlyLine(tableName: string, op: WriteOp = 'PATCH'): string {
+  const role = myRole();
+  const mine = role ? (ROLE_LABELS[role] ?? role) : 'this account';
+  const who = whoCanWrite(tableName, op);
+  return `${mine[0].toUpperCase()}${mine.slice(1)} can read this. ${who[0].toUpperCase()}${who.slice(1)} can change it.`;
+}
+
+export type { WriteOp };

@@ -3,6 +3,7 @@
 // legacy inline → R2 presigned download). Capture goes through the
 // addAttachmentFiles pipeline (compression, thumbs, checksum, local-first
 // storage) and the background uploader lands eligible binaries in R2.
+import { ask } from '@/components/ui/ask-sheet';
 import { useMemo, useRef, useState } from 'react';
 import { Camera, Clapperboard, CloudUpload, FileText, Play, Plus, Scissors, Smartphone, X } from 'lucide-react';
 import { useLiveQuery, db, deleteWithTombstone } from '@/db';
@@ -281,10 +282,11 @@ function AttachmentTile({
           className="absolute -top-1.5 -right-1.5 h-6 w-6 rounded-full bg-gray-700 text-white items-center justify-center hidden group-hover:flex shadow"
           title="Remove"
           onClick={() => {
-            if (confirm(`Remove ${s.fileName}?`)) {
+            void ask({ title: `Remove ${s.fileName}?`, confirmLabel: 'Remove', danger: true }).then((ok) => {
+              if (!ok) return;
               void deleteWithTombstone('attachments', s.id);
               void deleteLocalMedia(s.id).catch(() => undefined);
-            }
+            });
           }}
         >
           <X className="h-3.5 w-3.5" />

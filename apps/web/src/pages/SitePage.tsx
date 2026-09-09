@@ -5,6 +5,7 @@
 // here inherits (address, state, Site K, rock), jurisdiction & permits with
 // expiry countdowns, access & safety notes, the offline contact sheet, and
 // the jobs run at this site.
+import { ReadOnlyWrap } from '@/components/ui/read-only-wrap';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { relativeDay, useJobActivity, type JobActivityMap } from '@/lib/jobActivity';
@@ -113,7 +114,7 @@ export function SitePage() {
               {[site.overburden ? `overburden ${site.overburden}` : undefined, site.waterConditions].filter(Boolean).join(' · ') || [site.address, site.city].filter(Boolean).join(', ') || '—'}
             </>
           ),
-          render: () => <GroundCard site={site} readOnly={!isAdmin} />,
+          render: () => <ReadOnlyWrap readOnly={!isAdmin} table="sites"><GroundCard site={site} readOnly={!isAdmin} /></ReadOnlyWrap>,
         },
         {
           id: 'jurisdiction',
@@ -134,7 +135,7 @@ export function SitePage() {
               {[site.jurisdiction, site.localRegName].filter(Boolean).join(' · ') || 'jurisdiction not set'}
             </>
           ),
-          render: () => <JurisdictionCard site={site} readOnly={!isAdmin} />,
+          render: () => <ReadOnlyWrap readOnly={!isAdmin} table="sites"><JurisdictionCard site={site} readOnly={!isAdmin} /></ReadOnlyWrap>,
         },
         {
           id: 'access',
@@ -147,7 +148,7 @@ export function SitePage() {
               {site.standingHazards ? <><br />⚠ {site.standingHazards}</> : null}
             </>
           ),
-          render: () => <AccessCard site={site} readOnly={!isAdmin} />,
+          render: () => <ReadOnlyWrap readOnly={!isAdmin} table="sites"><AccessCard site={site} readOnly={!isAdmin} /></ReadOnlyWrap>,
         },
         {
           id: 'contacts',

@@ -2,12 +2,18 @@
 // decisions. Data arrives via sync (live), decisions go through REST so
 // the supervisor gets an immediate, truthful result (409 if a colleague
 // beat them to it).
+//
+// S9a (2026-09-09): gated like the office home — a role without
+// `approve_days` reads the queue and is told who approves; Send Back asks
+// for the reason on the app's own sheet (it was a native prompt()).
 import { useEffect, useState } from 'react';
 import { Link, useOutletContext, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, Undo2 } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { authedFetch } from '@/lib/session';
+import { hasCap, whoCanWrite } from '@/lib/perms';
 import { formatDate } from '@/lib/utils';
+import { askText } from '@/components/ui/ask-sheet';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -15,6 +21,7 @@ export function AdminApprovalsPage() {
   const { online } = useOutletContext<{ online: boolean }>();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const canApprove = hasCap('approve_days');
   // Deep link from the office queue ("Review"): highlight + scroll to the day
   const [params] = useSearchParams();
   const focusDay = params.get('day');
@@ -42,18 +49,24 @@ export function AdminApprovalsPage() {
   const jobs = useLiveQuery(() => db.jobs.toArray()) ?? [];
   const jobName = (jobId: string) => jobs.find((j) => j.id === jobId)?.name ?? 'Unknown job';
 
-  const act = async (id: string, to: 'approved' | 'draft') => {
-    // The reason rides to the blaster's needs-attention strip — worth asking
+  const act = async (day: { id: string; jobId: string; date: string }, to: 'approved' | 'draft') => {
+    // The reason rides to the blaster's home strip and the day's banner — required
     let note: string | undefined;
     if (to === 'draft') {
-      const answer = prompt('What needs fixing? (shown to the blaster)');
+      const answer = await askText({
+        title: `Send ${jobName(day.jobId)} · ${formatDate(day.date)} back?`,
+        label: 'What needs fixing — the blaster sees this on the day',
+        placeholder: 'e.g. seismo distance missing',
+        required: true,
+        confirmLabel: 'Send back',
+      });
       if (answer === null) return; // cancelled
-      note = answer.trim() || undefined;
+      note = answer;
     }
-    setBusyId(id);
+    setBusyId(day.id);
     setError(null);
     try {
-      const res = await authedFetch(`/admin/blast-days/${id}/status`, {
+      const res = await authedFetch(`/admin/blast-days/${day.id}/status`, {
         method: 'POST',
         body: JSON.stringify({ to, note }),
       });
@@ -69,6 +82,11 @@ export function AdminApprovalsPage() {
   return (
     <div className="space-y-5">
       {error && <p className="text-sm text-violation">{error}</p>}
+      {!canApprove && (
+        <p className="text-sm text-gray-600 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2" data-approvals-readonly>
+          {whoCanWrite('blastDays', 'PATCH').replace(/^\w/, (c) => c.toUpperCase())} approve days and send them back. You can read the queue, open a day, and download or send its PDF.
+        </p>
+      )}
 
       <section>
         <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
@@ -89,17 +107,26 @@ export function AdminApprovalsPage() {
                 <p className="text-xs text-gray-400">{formatDate(day.date)}</p>
               </div>
               <Badge variant="submitted">submitted</Badge>
-              <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white"
-                disabled={!online || busyId === day.id}
-                data-tour="approve"
-                onClick={() => void act(day.id, 'approved')}>
-                <CheckCircle2 className="h-4 w-4 mr-1" /> Approve
-              </Button>
-              <Button size="sm" variant="secondary" disabled={!online || busyId === day.id}
-                data-tour="send-back"
-                onClick={() => void act(day.id, 'draft')}>
-                <Undo2 className="h-4 w-4 mr-1" /> Send Back
-              </Button>
+              {(day.filedNotes?.length ?? 0) > 0 && (
+                <Badge variant="warning" data-filed-notes={day.filedNotes!.length}>
+                  filed with {day.filedNotes!.length} note{day.filedNotes!.length > 1 ? 's' : ''}
+                </Badge>
+              )}
+              {canApprove && (
+                <>
+                  <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white"
+                    disabled={!online || busyId === day.id}
+                    data-tour="approve"
+                    onClick={() => void act(day, 'approved')}>
+                    <CheckCircle2 className="h-4 w-4 mr-1" /> Approve
+                  </Button>
+                  <Button size="sm" variant="secondary" disabled={!online || busyId === day.id}
+                    data-tour="send-back"
+                    onClick={() => void act(day, 'draft')}>
+                    <Undo2 className="h-4 w-4 mr-1" /> Send Back
+                  </Button>
+                </>
+              )}
             </div>
           ))}
           {submitted.length === 0 && (

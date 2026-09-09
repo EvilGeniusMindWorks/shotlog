@@ -1,6 +1,7 @@
 // The app's one sync indicator. Same truth everywhere (sidebar + mobile
 // header) via deriveSyncState; tapping opens the sync panel with details,
 // a Reconnect button, the re-login path, and the connection event log.
+import { ask } from '@/components/ui/ask-sheet';
 import { useEffect, useState } from 'react';
 import { Copy, RefreshCw, X } from 'lucide-react';
 import { useSyncStatus } from '@/db/powersync/useSyncStatus';
@@ -109,13 +110,15 @@ function SyncPanel({ state, onClose }: { state: SyncState; onClose: () => void }
   const resetLocal = async () => {
     if (
       sync.queued > 0 &&
-      !confirm(
-        `${sync.queued} change${sync.queued === 1 ? '' : 's'} on this device haven't reached the server ` +
-          `and will be LOST. Reset anyway?`,
-      )
+      !(await ask({
+        title: 'Reset this device anyway?',
+        body: `${sync.queued} change${sync.queued === 1 ? '' : 's'} on this device haven't reached the server and will be lost.`,
+        confirmLabel: 'Reset and lose them',
+        danger: true,
+      }))
     )
       return;
-    if (sync.queued === 0 && !confirm('Clear this device’s copy and download everything again?')) return;
+    if (sync.queued === 0 && !(await ask({ title: 'Clear this device’s copy and download everything again?', confirmLabel: 'Clear and download' }))) return;
     setResetting(true);
     await resetLocalReplica();
     window.location.reload();

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { ask } from '@/components/ui/ask-sheet';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Camera, Loader2, Plus, ScanText, Trash2 } from 'lucide-react';
 import { useLiveQuery, db, deleteWithTombstone } from '@/db';
@@ -215,9 +216,9 @@ function ReadingCard({ reading, shot }: { reading: SeismoReading; shot: Shot }) 
             variant="ghost"
             size="icon"
             onClick={() => {
-              if (confirm(`Delete graph ${reading.graphNumber}?`)) {
-                void deleteWithTombstone('seismoReadings', reading.id);
-              }
+              void ask({ title: `Delete graph ${reading.graphNumber}?`, confirmLabel: 'Delete', danger: true }).then((ok) => {
+                if (ok) void deleteWithTombstone('seismoReadings', reading.id);
+              });
             }}
           >
             <Trash2 className="h-4 w-4 text-gray-400" />

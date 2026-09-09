@@ -3,6 +3,7 @@
 // left this card for My Profile (one sign-out, one place). The old
 // SyncCard's Sync Now / Deep Check / Repair panels stay gone: PowerSync
 // replicates continuously and the status line reflects SDK truth.
+import { ask } from '@/components/ui/ask-sheet';
 import { useEffect, useState } from 'react';
 import { Download, HardDrive, RotateCcw } from 'lucide-react';
 import { authedFetch, getSession } from '@/lib/session';
@@ -30,7 +31,7 @@ export function DataDeviceCard() {
 
   const handleReset = async () => {
     const queued = sync.queued > 0 ? `${sync.queued} unsent change${sync.queued === 1 ? '' : 's'} on this device will be lost. ` : '';
-    if (!confirm(`${queued}Clear this device's copy of the company data and download it again?`)) return;
+    if (!(await ask({ title: "Clear this device's copy of the company data?", body: `${queued}It downloads again from the server.`, confirmLabel: 'Clear and download', danger: sync.queued > 0 }))) return;
     setResetting(true);
     await resetLocalReplica();
     window.location.reload();

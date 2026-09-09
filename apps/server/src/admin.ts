@@ -363,10 +363,14 @@ adminRouter.post(
         // transition clears it (the day is moving forward again)
         const sendBackNote =
           to === 'draft' && parsed.data.note?.trim() ? parsed.data.note.trim() : undefined;
+        // S9a: the day page shows who sent it back and when, not just the note
+        const actor = await resolveActor(req.userId, role);
         const payload = JSON.stringify({
           ...stored.payload,
           status: to,
           sendBackNote,
+          sendBackBy: sendBackNote ? actor.actorName : undefined,
+          sendBackAt: sendBackNote ? new Date().toISOString() : undefined,
           updatedAt: new Date().toISOString(),
         });
         await upsertRecord(tx, cid, id, 'blastDays', payload, new Date().toISOString());
@@ -376,7 +380,7 @@ adminRouter.post(
           tableName: 'blastDays',
           recordId: id,
           op: 'PATCH',
-          actor: await resolveActor(req.userId, role),
+          actor,
           changes: [
             { field: 'status', old: from, new: to },
             ...(sendBackNote ? [{ field: 'sendBackNote', old: null, new: sendBackNote }] : []),

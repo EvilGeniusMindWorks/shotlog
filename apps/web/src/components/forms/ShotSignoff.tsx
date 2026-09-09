@@ -2,6 +2,7 @@
 // its responsible blaster + their signature. On single-blaster days the
 // log's own sign-off covers everything — this row stays quiet until used.
 // The server guards the sign-off: only the responsible blaster signs.
+import { ask } from '@/components/ui/ask-sheet';
 import { useState } from 'react';
 import { PenLine } from 'lucide-react';
 import { db, useLiveQuery } from '@/db';
@@ -28,7 +29,7 @@ export function ShotSignoff({ shot }: { shot: Shot }) {
   const update = (changes: Partial<Shot>) =>
     db.shots.update(shot.id, { ...changes, updatedAt: nowISO() });
 
-  const pick = (crewMemberId: string) => {
+  const pick = async (crewMemberId: string) => {
     if (!crewMemberId) {
       void update({
         responsibleBlasterUserId: undefined,
@@ -44,7 +45,7 @@ export function ShotSignoff({ shot }: { shot: Shot }) {
     if (!m) return;
     if (
       shot.signatureImage &&
-      !confirm(`Changing the responsible blaster clears ${shot.responsibleBlasterName}'s signature. Continue?`)
+      !(await ask({ title: 'Change the responsible blaster?', body: `${shot.responsibleBlasterName}'s signature on this shot is cleared.`, confirmLabel: 'Change and clear' }))
     )
       return;
     void update({

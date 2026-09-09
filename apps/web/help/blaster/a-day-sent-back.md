@@ -10,7 +10,7 @@ The office can return a filed day with a note. It is not a mark against you — 
 
 ## What you see
 
-The day appears on your Dashboard under **Sent back**, with the office's note. The day is unlocked again.
+The day appears on your Dashboard under **Sent back**, with the office's note, and the day itself shows a banner at the top — who sent it back, when, and their words. The day is unlocked again.
 
 ## What to do
 

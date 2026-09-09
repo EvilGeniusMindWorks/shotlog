@@ -444,6 +444,23 @@ export function BlastDayPage() {
         </div>
       </div>
 
+      {/* S9a: the office sent this day back — the reason lives on the day, not only the home strip */}
+      {status === 'draft' && blastDay.sendBackNote && (
+        <div className="px-4 pt-3">
+          <div
+            className="max-w-5xl mx-auto rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm"
+            data-sent-back-banner
+          >
+            <p className="font-semibold text-amber-900">
+              ↩ Sent back{blastDay.sendBackBy ? ` by ${blastDay.sendBackBy}` : ' by the office'}
+              {blastDay.sendBackAt ? ` · ${new Date(blastDay.sendBackAt).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}` : ''}
+            </p>
+            <p className="text-amber-900">“{blastDay.sendBackNote}”</p>
+            <p className="text-xs text-amber-800/80 mt-0.5">Fix it and file again — that becomes version 2.</p>
+          </div>
+        </div>
+      )}
+
       {/* S7d: two copies of today at this job (both devices offline) → merge */}
       {duplicates.length > 0 && !locked && (owner || canEditApprovedDay()) && (
         <div className="px-4 pt-3">

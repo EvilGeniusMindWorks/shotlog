@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { ask } from '@/components/ui/ask-sheet';
 import { KeyRound, Lock, LogOut, PenLine } from 'lucide-react';
 import { resetLocalReplica } from '@/db/powersync/client';
 import {
@@ -230,7 +231,7 @@ function SecurityCard() {
               onClick={async () => {
                 // A shared or departing phone: also clear the company data.
                 // Bounded replica reset so a wedged database can never hold it.
-                if (!confirm("Sign out and clear this device's copy of the company data? The next sign-in downloads it again.")) return;
+                if (!(await ask({ title: 'Sign out and clear this device?', body: "This device's copy of the company data is removed. The next sign-in downloads it again.", confirmLabel: 'Sign out and clear', danger: true }))) return;
                 await logout();
                 await resetLocalReplica();
                 window.location.reload();

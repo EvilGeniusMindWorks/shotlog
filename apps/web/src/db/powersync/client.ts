@@ -17,6 +17,7 @@ import {
   type PowerSyncLogger,
 } from '@powersync/web';
 import { authedFetch, getSession, sessionCompanyId } from '@/lib/session';
+import { showToast } from '@/components/ui/undo-toast';
 import { logSyncEvent, syncDebugOn } from '@/lib/syncLog';
 import { defaultEngineFor, type StorageEngine as PolicyEngine, isAppleWebKit } from '@/lib/storageEnginePolicy';
 import type { SqlAdapter } from './adapter';
@@ -91,6 +92,14 @@ class ShotLogConnector implements PowerSyncBackendConnector {
     if (!res.ok) {
       logSyncEvent(`upload failed (${res.status})`);
       throw new Error(`upload failed (${res.status})`);
+    }
+    // S9a: the server discards writes a role may not make and sync puts the
+    // old value back — say so, instead of a green chip over a reverted field
+    const body = (await res.clone().json().catch(() => null)) as { discarded?: number } | null;
+    if (body?.discarded) {
+      const n = body.discarded;
+      logSyncEvent(`${n} change${n === 1 ? '' : 's'} not saved — your role can't make ${n === 1 ? 'it' : 'them'}`);
+      showToast(`Not saved — ${n === 1 ? 'a change' : `${n} changes`} your role can't make ${n === 1 ? 'was' : 'were'} undone`, { ms: 8000 });
     }
     await tx.complete();
   }

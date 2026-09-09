@@ -81,7 +81,7 @@ export function AddPersonPanel({
         : 'Add person';
 
   const reasonOff = !isAdmin
-    ? 'Logins are admin-only'
+    ? 'Only people who manage the roster (supervisors and admins) create logins'
     : !online
       ? 'No signal — add now, invite from their row when you are back online'
       : !emailOk

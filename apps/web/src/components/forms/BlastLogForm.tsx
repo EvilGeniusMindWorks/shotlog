@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { ask } from '@/components/ui/ask-sheet';
 import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { db } from '@/db';
 import { useJobContext } from '@/lib/jobContext';
@@ -110,7 +111,7 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
   };
 
   const handleDeleteShot = async (shotId: string) => {
-    if (!confirm('Delete this shot?')) return;
+    if (!(await ask({ title: 'Delete this shot?', body: 'Its drill parameters, design and readings go with it.', confirmLabel: 'Delete shot', danger: true }))) return;
     await deleteShot(shotId, blastLog.id);
     setExpandedShots((prev) => {
       const next = new Set(prev);

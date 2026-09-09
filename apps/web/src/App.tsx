@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { AskHost } from '@/components/ui/ask-sheet';
 import { AppShell } from '@/components/layout/AppShell';
 import { AuthGate } from '@/components/layout/AuthGate';
 import { Dashboard, WorkDaysPage } from '@/pages/Dashboard';
@@ -113,6 +114,7 @@ export function App() {
   return (
     <AuthGate>
     <UndoToastHost />
+    <AskHost />
     <FeedbackHost />
     <BrowserRouter>
       <Routes>
