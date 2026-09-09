@@ -379,7 +379,7 @@ export async function buildDocRows(opts: {
       kind: 'time_card',
       date: c.date,
       title: `Time Card — ${c.personName ?? '—'}`,
-      sub: `${jobs.get(c.jobId) ?? ''} · ${c.straightTime ?? 0} ST / ${c.overtime ?? 0} OT`,
+      sub: `${jobs.get(c.jobId) ?? ''} · ${(+(c.straightTime ?? 0)).toFixed(1)} ST / ${(+(c.overtime ?? 0)).toFixed(1)} OT`,
       status: c.status,
       statusVariant: c.status === 'approved' ? 'approved' : c.status === 'filed' ? 'submitted' : 'draft',
       to: c.blastDayId ? `/blast-day/${c.blastDayId}?view=daily-report` : `/jobs/${c.jobId}`,

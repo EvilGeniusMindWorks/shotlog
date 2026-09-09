@@ -37,6 +37,16 @@ export async function createDrillLog(
   assignTo?: { userId: string; name: string },
 ): Promise<string> {
   const session = getSessionUser();
+  // S9b follow-up: one log per driller per shot. The evaluation's drillers
+  // tapped a finished plan's tile again and got a second, empty log — reuse
+  // theirs in ANY status instead (a completed log opens read-only).
+  const drillerId = assignTo?.userId ?? session?.id ?? '';
+  if (drillerId) {
+    const mine = (await db.drillLogs.where('shotId').equals(shot.id).toArray())
+      .filter((l) => l.drillerUserId === drillerId && (!blastDayId || !l.blastDayId || l.blastDayId === blastDayId))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+    if (mine) return mine.id;
+  }
   const now = nowISO();
   const id = generateId();
   const log: DrillLog = {
