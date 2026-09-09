@@ -994,3 +994,12 @@ Eight agents played Barry / Dinis / Sam / Evette+Tony through one day, with and 
 | 9 | Plan grid buttons/holes unnamed; how to leave a hole out unclear | aria names + keyboard on both grid editors; footer copy | 3 | ✅ shipped 2026-09-09 (harness62 13/13) |
 | 10 | Off-plan holes invisible; seismo reading not editable, distance elsewhere | off-plan count in the header; Edit on readings; distance line with link | 3 | ✅ shipped 2026-09-09 (harness62 13/13) |
 | — | Harness: coordinator, numbered refs, dialogs surfaced, snapshot seed, template company | next | 3 | ⏳ |
+
+## Round S9b — what the before/after re-run left (2026-09-09; plan artifact 4735c81e)
+
+| # | Finding | Fix | Status |
+|---|---|---|---|
+| 1 | Suggested meters were placeholders nobody committed (checklist, Mark complete, Log a service) | real starting values with a "from the meter — change it if the gauge reads differently" line | ✅ built (harness63 10/10; 60 22/22) |
+| 2 | A drill log could be complete before it was signed | the Mark complete sheet carries the signature pad; "Sign and complete" until there is ink | ✅ built (harness63) |
+| 3 | A screen tour could start mid-task | tours auto-run on the account's first day only (Matthew's call) | ✅ built (harness63, 41) |
+| — | Snapshot doubled the Ledgeville job | `setup.mjs --snapshot` | ✅ built |

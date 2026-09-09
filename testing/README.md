@@ -105,3 +105,4 @@ Lessons from the first run: tell agents explicitly never to run other scripts (o
 - Snapshots end with a numbered list of everything tappable — agents say `click 12`, `fill 7 …`; native dialogs are shown as `!!! DIALOG` and must be answered (`dialog accept [text]` / `dialog dismiss`).
 - `setup.mjs --force --lean` prunes the copied dev roster to a dozen real-looking names; `seed-hierarchy.mts <cid> --lean-only` does it on an existing company.
 - Briefs for the snapshot chain: `dinis-enrol`, `dinis-after`, `sam-after`; the comparison: `judge-after`.
+- `63` — S9b: suggested meters are real values (checklist starting hours, Mark complete meter, Log a service); Mark complete signs inside the sheet ("Sign and complete"); screen tours do not auto-run after the first day. Precondition: `UPDATE "User" SET "toursDone"='[]' WHERE email='dinis@test.local'`.

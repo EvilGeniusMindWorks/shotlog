@@ -82,7 +82,7 @@ export function AssetPMCard({ equip }: { equip: Equipment }) {
         );
       })}
       {!logging ? (
-        <Button variant="outline" size="sm" className="mt-2" onClick={() => setLogging(true)}>
+        <Button variant="outline" size="sm" className="mt-2" onClick={() => { setAtHours(pm.currentHours != null ? String(pm.currentHours) : ''); setLogging(true); }}>
           Log a service done
         </Button>
       ) : (
@@ -104,10 +104,16 @@ export function AssetPMCard({ equip }: { equip: Equipment }) {
                 inputMode="decimal"
                 value={atHours}
                 onChange={(e) => setAtHours(e.target.value)}
-                placeholder={pm.currentHours != null ? String(pm.currentHours) : 'hours'}
+                placeholder="hours"
+                data-service-hours
               />
             </div>
           </div>
+          {pm.currentHours != null && (
+            <p className="text-xs text-gray-400" data-service-hours-source>
+              {atHours === String(pm.currentHours) ? 'from the ledger — change it if the service was done earlier' : 'the ledger reads ' + pm.currentHours}
+            </p>
+          )}
           <div className="flex gap-2">
             <Button size="sm" onClick={() => void logService()} disabled={!type || !atHours}>
               Save

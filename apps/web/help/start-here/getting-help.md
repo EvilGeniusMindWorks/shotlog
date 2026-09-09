@@ -13,7 +13,7 @@ The **?** button — in the sidebar on a wide screen, in the top bar on a phone 
 - **About this screen** — three to five lines about the screen you are on and what to do next. It ends with a link to the guide page for that screen.
 - **Show me this screen** — a short guided look at the screen you are on, where one exists.
 - **Help guide** — this guide, opened at the page for the screen you are on.
-- **Walkthrough** — the tour of your screens that ran on your first day. Run it as often as you like.
+- **Walkthrough** — the tour of your screens that ran on your first day. Screen tours start on their own only on that first day; after that, run them from here as often as you like.
 - **Send feedback** — see below.
 
 ![The ? menu](help-menu.png)

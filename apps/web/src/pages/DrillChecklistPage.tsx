@@ -255,6 +255,14 @@ export function DrillChecklistPage() {
     if (routeRigId) setRigId(routeRigId);
   }, [routeRigId]);
   const rig = useLiveQuery(() => (rigId ? db.equipment.get(rigId) : undefined), [rigId]);
+  // S9b: the machine's reading is the starting value — a placeholder looked
+  // filled in and nobody committed it (both evaluation drillers)
+  const [suggestedHours, setSuggestedHours] = useState<number | null>(null);
+  useEffect(() => {
+    if (!rig || rig.hourMeter == null) return;
+    setDraft((d) => (d.equipmentId === rig.id && d.startingHours == null ? { ...d, startingHours: rig.hourMeter ?? null } : d));
+    setSuggestedHours(rig.hourMeter ?? null);
+  }, [rig?.id, rig?.hourMeter]);
   const existing = useTodayChecklist(rigId);
   const [draft, setDraft] = useState(() => emptyChecklist(rigId ?? '', jobParam));
   const [saved, setSaved] = useState<{ ticketId?: string } | null>(null);
@@ -353,14 +361,16 @@ export function DrillChecklistPage() {
                   <Input
                     type="number"
                     inputMode="decimal"
-                    placeholder={rig.hourMeter ? String(rig.hourMeter) : ''}
+                    placeholder="read the gauge"
                     value={draft.startingHours ?? ''}
                     onChange={(e) => set({ startingHours: e.target.value ? parseFloat(e.target.value) : null })}
                     data-chk-hours
                   />
                 </div>
-                <p className="text-xs text-gray-400 self-end pb-2">
-                  Updates the registry's hour meter automatically (typos going backward are ignored).
+                <p className="text-xs text-gray-400 self-end pb-2" data-chk-hours-source>
+                  {suggestedHours != null && draft.startingHours === suggestedHours
+                    ? `from ${rig.assetNumber}'s meter — change it if the gauge reads differently. A number going backwards is ignored.`
+                    : "Updates the registry's hour meter automatically (a number going backwards is ignored)."}
                 </p>
               </div>
               <div>

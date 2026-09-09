@@ -8,6 +8,7 @@
 //   node testing/eval/setup.mjs            (local stack must be up)
 //   node testing/eval/setup.mjs --clean    delete the eval companies and stop
 //   node testing/eval/setup.mjs --force --lean   rebuild, and prune the dev roster's harness names
+//   node testing/eval/setup.mjs --force --lean --snapshot   …for a run that seeds the rehearsal week (no Ledgeville of its own)
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -65,8 +66,9 @@ for (const [arm, name] of Object.entries(ARMS)) {
   const cid = c.body.company.id;
   console.log(`${arm}: ${name} ${cid} (${c.body.copied} reference records)`);
 
-  // Granite Ridge / Ledgeville Pit / Phase 1 — written server-side like the rehearsal fixture
-  const seeded = execFileSync('npx', ['tsx', path.resolve('testing/eval/seed-hierarchy.mts'), cid, ...(process.argv.includes('--lean') ? ['--lean'] : [])], {
+  // Granite Ridge / Ledgeville Pit / Phase 1 — written server-side like the rehearsal fixture.
+  // --snapshot: skip it — the coordinator's snapshot seeds the rehearsal week (which has its own Ledgeville)
+  const seeded = process.argv.includes('--snapshot') ? 'skipped (snapshot run)' : execFileSync('npx', ['tsx', path.resolve('testing/eval/seed-hierarchy.mts'), cid, ...(process.argv.includes('--lean') ? ['--lean'] : [])], {
     cwd: path.resolve('apps/server'),
     env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL ?? 'postgresql://postgres:spikepass@localhost:5434/shotlog' },
     encoding: 'utf8',

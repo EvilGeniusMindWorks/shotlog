@@ -79,6 +79,18 @@ async (page, lib) => {
       await PD.locator('[data-tour="log-complete"]').click();
       const confirm = PD.locator('[data-log-complete-confirm]');
       await confirm.waitFor({ timeout: 5000 });
+      // S9b: an unsigned log signs inside the sheet before Complete enables
+      if (await PD.locator('[data-log-complete-signature]').count()) {
+        await PD.locator('[data-log-complete-signature]').getByRole('button', { name: /Tap to sign/ }).click();
+        const canvas = PD.locator('canvas').first();
+        await canvas.waitFor({ timeout: 5000 });
+        const cb = await canvas.boundingBox();
+        await PD.mouse.move(cb.x + 30, cb.y + 40); await PD.mouse.down();
+        for (let i = 1; i <= 20; i++) await PD.mouse.move(cb.x + 30 + i * 8, cb.y + 40 + Math.sin(i / 2) * 15);
+        await PD.mouse.up();
+        await PD.getByRole('button', { name: /Save Signature/ }).click().catch(() => undefined);
+        await PD.waitForFunction(() => { const b = document.querySelector('[data-log-complete-confirm]'); return b && !b.disabled; }, null, { timeout: 8000 }).catch(() => undefined);
+      }
       const box = await confirm.boundingBox();
       const hit = await PD.evaluate(([x, y]) => {
         const el = document.elementFromPoint(x, y);

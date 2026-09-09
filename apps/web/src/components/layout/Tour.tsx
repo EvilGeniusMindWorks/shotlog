@@ -74,13 +74,26 @@ export function shouldAutoRunTour(): boolean {
 }
 
 /** Should this screen's tour auto-run now? Once per account, not while
- *  another tour just ended, never under the harness suppression key. */
+ *  another tour just ended, never under the harness suppression key —
+ *  and (S9b, Matthew's call) only on the account's FIRST DAY: the
+ *  evaluation's mechanics lost their first tap to a tour that started in the
+ *  middle of a task. After that day, tours run from the ? menu on request. */
 export function shouldAutoRunScreenTour(key: ScreenTourKey): boolean {
   const user = getRealSessionUser();
   if (!user) return false;
   if ((user.toursDone ?? []).includes(key)) return false;
   if (legacySuppressed() || endedRecently()) return false;
+  if (!isFirstDay(user.onboardedAt)) return false;
   return true;
+}
+
+/** The calendar day (local) the account was onboarded is its first day. A new
+ *  account is stamped at the welcome screen, before any screen tour could run,
+ *  so a missing stamp means an old account: not its first day. */
+export function isFirstDay(onboardedAt: string | null | undefined, now = new Date()): boolean {
+  if (!onboardedAt) return false;
+  const d = new Date(onboardedAt);
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
 }
 
 function firstVisible(selector: string): Element | null {

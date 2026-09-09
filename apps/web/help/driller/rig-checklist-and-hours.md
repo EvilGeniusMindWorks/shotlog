@@ -14,7 +14,7 @@ The rig is the first question. The quick picks are the ones that matter today â€
 
 ## Hour meter first
 
-Read the meter and type it. The starting hours drive the 50-hour service clock and the shop's ledger. A typo going backwards is ignored, so a wrong number cannot roll a machine back.
+The field starts with the machine's last reading, and says so underneath. Read the gauge: if it matches, leave it; if not, type what you see. The starting hours drive the 50-hour service clock and the shop's ledger. A number going backwards is ignored, so a wrong one cannot roll a machine back.
 
 ![The rig checklist](checklist.png)
 

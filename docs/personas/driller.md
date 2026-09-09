@@ -185,3 +185,8 @@ report (solo submit) · My Records · jobs list
   with it. The fifth row the blaster added appeared silently. **S9a batch 1:**
   sheets above the nav; the meter also enterable from the rig row on the
   day's daily report. Later: a "plan changed" badge on the log.
+- **S9b (2026-09-09):** the before/after re-run found the meter suggestions
+  were placeholders nobody committed, and that a log could be complete before
+  it was signed. Now: starting hours and the end-of-day meter start as real
+  values with a "from the meter — change if the gauge differs" line; Mark
+  complete carries the signature pad and reads "Sign and complete" until signed.

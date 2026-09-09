@@ -2,7 +2,7 @@
 // auto-increments, depth defaults to the pattern's design, conditions are
 // single-tap toggles. Blaster accepts a completed log to take the pattern
 // for loading (which locks it against driller edits — server-enforced).
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Check, Droplets, Printer, Trash2 } from 'lucide-react';
 import { type Role } from '@shotlog/shared';
@@ -135,7 +135,15 @@ export function DrillLogPage() {
       return rig ? (await buildHourLedger(rig)).currentHours : null;
     },
     [log?.drillRigEquipmentId],
-  );
+  );  // S9b: the ledger's reading is the starting VALUE; it arrives from a live
+  // query, so fill the open sheet when it lands — unless the driller has typed
+  const endMeterTouched = useRef(false);
+  useEffect(() => {
+    if (notePrompt === 'complete' && !endMeterTouched.current && !endMeter && rigMeter != null) setEndMeter(String(rigMeter));
+    if (!notePrompt) endMeterTouched.current = false;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notePrompt, rigMeter]);
+
 
   useEffect(() => {
     if (!log || holeNumber) return;
@@ -329,7 +337,7 @@ export function DrillLogPage() {
           {log.status === 'open' && canDrillLogTransition('open', 'complete') && (
             <Button size="sm" variant="secondary" disabled={holes.length === 0}
               data-tour="log-complete"
-              onClick={() => { setNoteText(''); setNotePrompt('complete'); }}>
+              onClick={() => { setNoteText(''); setEndMeter(rigMeter != null ? String(rigMeter) : ''); setNotePrompt('complete'); }}>
               Mark Complete
             </Button>
           )}
@@ -823,6 +831,13 @@ export function DrillLogPage() {
               <p className="font-bold">
                 {notePrompt === 'complete' ? 'Mark complete' : 'Send back to the driller'}
               </p>
+              {/* S9b: "complete" means signed — an unsigned log signs here */}
+              {notePrompt === 'complete' && !log.signatureImage && (
+                <div data-log-complete-signature>
+                  <Label className="text-xs">Your signature — {log.drillerName || me?.name}</Label>
+                  <SignatureField value={log.signatureImage} onChange={(blob) => void update({ signatureImage: blob })} />
+                </div>
+              )}
               {/* S7d: the rig's end-of-day meter, asked ONCE here — closes the
                   rig's hours without typing them on any report. Skippable. */}
               {notePrompt === 'complete' && log.drillRigEquipmentId && (
@@ -837,10 +852,12 @@ export function DrillLogPage() {
                     data-log-end-meter
                     value={endMeter}
                     placeholder={rigMeter != null ? String(rigMeter) : ''}
-                    onChange={(e) => setEndMeter(e.target.value)}
+                    onChange={(e) => { endMeterTouched.current = true; setEndMeter(e.target.value); }}
                   />
-                  <p className="text-[11px] text-gray-400 mt-1">
-                    Goes to the shop's hour ledger and the daily report's equipment hours.
+                  <p className="text-[11px] text-gray-400 mt-1" data-log-end-meter-source>
+                    {rigMeter != null && endMeter === String(rigMeter)
+                      ? 'from the ledger — change it if the gauge reads differently. Goes to the shop\'s hour ledger and the daily report.'
+                      : "Goes to the shop's hour ledger and the daily report's equipment hours."}
                   </p>
                 </div>
               )}
@@ -862,6 +879,7 @@ export function DrillLogPage() {
                 </Button>
                 <Button
                   data-log-complete-confirm
+                  disabled={notePrompt === 'complete' && !log.signatureImage}
                   onClick={() => {
                     const note = noteText.trim() || undefined;
                     if (notePrompt === 'complete') {
@@ -881,7 +899,7 @@ export function DrillLogPage() {
                     setNotePrompt(null);
                   }}
                 >
-                  {notePrompt === 'complete' ? 'Complete' : 'Send back'}
+                  {notePrompt === 'complete' ? (log.signatureImage ? 'Complete' : 'Sign and complete') : 'Send back'}
                 </Button>
               </div>
             </div>
@@ -904,7 +922,7 @@ export function DrillLogPage() {
               size="lg"
               disabled={holes.length === 0}
               data-log-complete-bottom
-              onClick={() => { setNoteText(''); setNotePrompt('complete'); }}
+              onClick={() => { setNoteText(''); setEndMeter(rigMeter != null ? String(rigMeter) : ''); setNotePrompt('complete'); }}
             >
               <Check className="h-4 w-4 mr-1" /> Mark complete{holes.length > 0 ? ` · ${holes.length} holes` : ''}
             </Button>

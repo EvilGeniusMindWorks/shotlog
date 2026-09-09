@@ -122,3 +122,6 @@ Shop home (queue + PM due) · repair ticket · equipment list + detail
   inspect a truck (known gap — DVIR / Equipment Safety Inspection & Repair
   Report are the paper forms). **S9a batch 1:** the ticket screen is back
   (`/tickets/:id`, three doors). Batch 3: status chips OR + "Unavailable".
+- **S9b (2026-09-09):** "Log a service" hours start at the current reading
+  (the placeholder that looked filled in never counted). Both re-run Sams
+  resolved their tickets in under four taps after S9a.

@@ -20,7 +20,7 @@ When the physical meter disagrees with the app, enter a **correction** on the ma
 
 ## Services and PM due
 
-**Log a service** when one is done — engine, compressor, whichever — with the hours it was done at. The PM clock for that service restarts from there, and the **Due soon** count on your home follows the hour ledger. The intervals are the company's assumptions until the shop confirms them.
+**Log a service** when one is done — engine, compressor, whichever. The hours start at the machine's current reading; change them if the service was done earlier. The PM clock for that service restarts from there, and the **Due soon** count on your home follows the hour ledger. The intervals are the company's assumptions until the shop confirms them.
 
 ## Related
 
