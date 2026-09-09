@@ -41,8 +41,13 @@ export async function createDrillLog(
   // tapped a finished plan's tile again and got a second, empty log — reuse
   // theirs in ANY status instead (a completed log opens read-only).
   const drillerId = assignTo?.userId ?? session?.id ?? '';
+  const existing = await db.drillLogs.where('shotId').equals(shot.id).toArray();
+  // Drilling finished (every log accepted): nothing to start — open the record
+  if (existing.length > 0 && existing.every((l) => l.status === 'accepted')) {
+    return existing.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0].id;
+  }
   if (drillerId) {
-    const mine = (await db.drillLogs.where('shotId').equals(shot.id).toArray())
+    const mine = existing
       .filter((l) => l.drillerUserId === drillerId && (!blastDayId || !l.blastDayId || l.blastDayId === blastDayId))
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
     if (mine) return mine.id;

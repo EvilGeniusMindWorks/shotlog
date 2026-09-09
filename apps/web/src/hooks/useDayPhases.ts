@@ -54,15 +54,20 @@ export function useDayPhases(
     // ── drilling ──
     const logs = await dayDrillLogs(day, shots);
     let holeCount = 0;
+    const holesByLog = new Map<string, number>();
     let hazardCount = 0;
     for (const log of logs) {
       const holes = await db.drillLogHoles.where('drillLogId').equals(log.id).toArray();
       holeCount += holes.length;
+      holesByLog.set(log.id, holes.length);
       hazardCount += holes.filter((h) => h.conditions.length > 0).length;
     }
-    const drillerNames = [...new Set(logs.map((l) => l.drillerName).filter(Boolean))];
-    const allAccepted = logs.length > 0 && logs.every((l) => l.status === 'accepted');
-    const allComplete = logs.length > 0 && logs.every((l) => l.status !== 'open');
+    // S9b follow-up (Matthew, Sep 9): an open log with NO holes — one a tap opened
+    // by mistake on a finished pattern — must not drag the phase back to "in progress"
+    const counted = logs.filter((l) => !(l.status === 'open' && (holesByLog.get(l.id) ?? 0) === 0));
+    const drillerNames = [...new Set(counted.map((l) => l.drillerName).filter(Boolean))];
+    const allAccepted = counted.length > 0 && counted.every((l) => l.status === 'accepted');
+    const allComplete = counted.length > 0 && counted.every((l) => l.status !== 'open');
     const hasDrilling = logs.length > 0;
     // S8: before any drilling, the plan itself is the phase — build it,
     // then send it (Matthew: "there was nothing to do!")

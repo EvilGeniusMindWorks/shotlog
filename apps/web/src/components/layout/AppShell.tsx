@@ -237,7 +237,9 @@ export function AppShell() {
   }, [shellLocation.pathname, shellLocation.search, touring, screenTour]);
   const profile = useLiveQuery(() => db.blasterProfiles.filter((b) => b.isCurrentUser).first());
   const session = getSessionUser();
-  const realAdmin = getRealSessionUser()?.role === 'admin';
+  // View as is Matthew's (platform admin) preview tool, not a company admin's —
+  // a preview session that can still write created a stray drill log (Sep 9)
+  const realAdmin = Boolean(getRealSessionUser()?.platformAdmin);
   const navItems = navItemsForRole();
   const displayName = session?.name || profile?.name || '';
   const displaySub = session

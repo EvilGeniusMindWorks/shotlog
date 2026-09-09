@@ -7,7 +7,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Check, Droplets, Printer, Trash2 } from 'lucide-react';
 import { type Role } from '@shotlog/shared';
 import { canDrillLogTransition, canEditAcceptedLog, myHomeDashboard } from '@/lib/perms';
-import { useLiveQuery, db } from '@/db';
+import { useLiveQuery, db, deleteWithTombstone } from '@/db';
 import { addHole, aggregateDrilling, drilledHoleNumbers, getShotPlan, nextHoleNumber } from '@/hooks/useDrillLogs';
 import { getPlanHoles, planDrilledHoleNumbers, planToDiagram } from '@/hooks/useDrillPlans';
 import { parseDiagram } from '@/lib/shotDiagram';
@@ -21,6 +21,7 @@ import type { HoleCondition, HoleConditionCode } from '@/db/schema';
 import { Badge } from '@/components/ui/badge';
 import { showToast } from '@/components/ui/undo-toast';
 import { Button } from '@/components/ui/button';
+import { LifecycleMenu } from '@/components/records/LifecycleMenu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
@@ -334,6 +335,24 @@ export function DrillLogPage() {
             </p>
           </div>
           <Badge variant={STATUS_BADGE[log.status]}>{log.status}</Badge>
+          {/* S9b follow-up (Matthew, Sep 9): a log opened by mistake on a finished
+              pattern could not be removed anywhere — the lifecycle menu, with an
+              empty log always deletable by whoever may delete field records */}
+          <LifecycleMenu
+            table="drillLogs"
+            record={log}
+            label={`Drill log — ${log.drillerName || 'unassigned'}`}
+            kind="drill log"
+            allowArchive={false}
+            canDeleteOverride={holes.length === 0}
+            deleteDescription={holes.length === 0 ? 'This log has no holes. Removing it takes it off the day and the driller\'s home.' : `${holes.length} logged holes go with it. The plan stays.`}
+            deleteFn={async () => {
+              for (const h of holes) await db.drillLogHoles.delete(h.id);
+              await deleteWithTombstone('drillLogs', log.id);
+            }}
+            onDeleted={() => navigate(log.blastDayId ? `/blast-day/${log.blastDayId}` : '/')}
+            buttonClassName="h-9 w-9 rounded-lg bg-white/10 flex items-center justify-center text-white hover:bg-white/20"
+          />
           {log.status === 'open' && canDrillLogTransition('open', 'complete') && (
             <Button size="sm" variant="secondary" disabled={holes.length === 0}
               data-tour="log-complete"

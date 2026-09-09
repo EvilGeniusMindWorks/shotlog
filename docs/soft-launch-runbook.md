@@ -81,7 +81,7 @@ the link and text it; it works once and expires in 14 days.
 
 | # | Decision | Recommendation |
 |---|---|---|
-| D1 | **Test users**: wipe the dev company data, or keep dev as the permanent test bed? Prod is clean (Baystate roster + equipment + Matthew). | **Keep dev as the test bed and never point a real device at it.** The harnesses depend on its logins and seed; wiping buys nothing for prod. Record in decisions.md. |
-| D2 | **USBM curve**: who reviews docs/usbm-curve-signoff.md, and should compliance badges carry an "advisory — pending engineer review" label until they sign? | Hand it to Baystate's blasting consultant or the seismograph vendor's engineer this week. **Label the badges advisory until signed** — a one-line UI change I can ship in an hour once you say so. |
+| D1 | **Test users**: wipe the dev company data, or keep dev as the permanent test bed? | ✅ Answered 2026-09-09: keep dev as the test bed. |
+| D2 | **USBM curve**: who reviews docs/usbm-curve-signoff.md, and should compliance badges carry an "advisory — pending engineer review" label until they sign? | ✅ **Answered 2026-09-09: label shown** (`COMPLIANCE_ADVISORY` in lib/complianceAdvisory.tsx; flip when signed). Reviewer still to be named. |
 | D3 | **Cohort order**: the staggered order in §1, or everyone at once? | Staggered (§1). Two weeks end to end. |
 | D4 | **Cadence**: weekly review slot with Mark; who else attends (Evette)? | Weekly, Mark + Evette, 30 minutes; Matthew reads Admin › Feedback daily for the first two weeks. |
