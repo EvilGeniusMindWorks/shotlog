@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import { TABLE_PERMISSIONS } from '@shotlog/shared';
 import { authRouter, ensureAdminUser, requireAuth, requirePlatformAdmin } from './auth.js';
 import { adminRouter } from './admin.js';
@@ -18,7 +19,24 @@ import { countLegacyInlineImages, migrateLegacyInlineImages } from './legacyImag
 import { seedCompanyReference } from './seed.js';
 
 const app = express();
-app.use(cors());
+// Behind Railway's load balancer: trust the first proxy hop so req.ip is the
+// real client (the rate limiters key on it) and secure-cookie logic is right
+app.set('trust proxy', 1);
+// Standard browser safety headers. The API serves JSON to a different origin,
+// so resources must stay loadable cross-origin (helmet's default is same-origin).
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+// CORS: an explicit origin allowlist in production (ALLOWED_ORIGINS, comma
+// separated; defaults to the Vercel app). Outside production every origin is
+// allowed so local web (:5199) and harness contexts keep working.
+const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+const isProduction = process.env.NODE_ENV === 'production';
+app.use(
+  cors(
+    isProduction || allowedOrigins.length
+      ? { origin: allowedOrigins.length ? allowedOrigins : ['https://shotlog-app.vercel.app'] }
+      : {},
+  ),
+);
 // Payloads carry base64 blobs (signatures, map snapshots, printout photos)
 app.use(express.json({ limit: '30mb' }));
 

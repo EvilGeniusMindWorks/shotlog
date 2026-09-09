@@ -15,6 +15,9 @@ deploys `apps/server` + Postgres. ~10 minutes, all in the Railway dashboard.
    |---|---|
    | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (reference, not literal) |
    | `JWT_SECRET` | output of `openssl rand -base64 48` |
+   | `POWERSYNC_JWT_SECRET` | the HS256 secret the PowerSync service is configured with — REQUIRED in production since S10 (the server refuses to start without it) |
+   | `ALLOWED_ORIGINS` | comma-separated browser origins allowed to call the API; production defaults to `https://shotlog-app.vercel.app` when unset (S10) |
+   | `NODE_ENV` | `production` on Railway (Nixpacks sets it) — turns on the CORS allowlist and disables `AUTH_DEBUG_LINKS` |
    | `ADMIN_EMAIL` | your login email |
    | `ADMIN_PASSWORD` | a strong password (change-password works in-app after) |
    | `ADMIN_NAME` | display name |
@@ -63,3 +66,8 @@ returns.
   `User.onboardedAt`, and the `PasswordReset` table; `migrate deploy` runs
   it on start. Existing accounts see the one-time welcome on their next
   sign-in (onboardedAt is null until acknowledged).
+
+## Web build variables (Vercel, S10)
+
+- `VITE_CONTACT_EMAIL` — a mailbox someone reads; sent with address lookups so
+  OpenStreetMap's Nominatim can identify the app, as its usage policy asks.

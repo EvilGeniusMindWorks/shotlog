@@ -25,7 +25,7 @@ export interface AuditEntryView {
 
 export const TABLE_LABEL: Record<string, string> = {
   blastDays: 'Work Day',
-  blastLogs: 'Blast Log',
+  blastLogs: 'Blasting Log',
   shots: 'Shot',
   explosiveUsages: 'Explosives',
   seismoReadings: 'Seismo Reading',

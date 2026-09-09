@@ -25,3 +25,7 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      # S10: what we ship must be permissively licensed and free of unaccepted
+      # high/critical advisories (scripts/audit.mjs carries the written allowlist)
+      - run: node scripts/licenses.mjs --check
+      - run: node scripts/audit.mjs

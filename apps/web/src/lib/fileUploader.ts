@@ -27,7 +27,10 @@ async function presignAndPut(
     logSyncEvent(`file upload presign failed (${presign.status}) for ${fileName}`);
     return null;
   }
-  const { url, key } = (await presign.json()) as { url: string; key: string };
+  const { url, key, exists } = (await presign.json()) as { url?: string; key: string; exists?: boolean };
+  // Stored on an earlier attempt (an interrupted filing retried): nothing to
+  // send, and a bucket lock would refuse the overwrite anyway (S10)
+  if (exists || !url) return key;
   const put = await fetch(url, { method: 'PUT', headers: { 'content-type': mimeType }, body: blob });
   if (!put.ok) {
     logSyncEvent(`file upload PUT failed (${put.status}) for ${fileName}`);

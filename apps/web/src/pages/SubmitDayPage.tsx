@@ -162,7 +162,7 @@ export function SubmitDayPage() {
               sourceId: log.id,
               blastDayId: day.id,
               jobId: day.jobId,
-              title: `Blast Log — ${label}`,
+              title: `Blasting Log — ${label}`,
               date: day.date,
               pdf: await buildBlastLogPdf(day.id),
               attachments: await collectDayAttachments(day.id),

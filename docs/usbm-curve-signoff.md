@@ -79,9 +79,9 @@ the worse. **The 80% warning band is the app's choice, not a standard.**
 2. **State and local limits are planning-side only, and thin.** The shot
    *designer* (predicted PPV) stacks: the USBM limit at an assumed 15 Hz,
    the OSMRE distance limit, a flat **2.0 in/s for Massachusetts jobs**
-   (labelled "MA 540 CMR" in the code — that citation looks wrong; MA
-   blasting rules live in 527 CMR and we need the correct section and
-   value), and any per-job local limit an admin typed on the job. The
+   (labelled "MA 527 CMR 13" in the code since S10 — 540 CMR was the motor
+   vehicle code; the exact section and the 2.0 in/s value still need your
+   confirmation), and any per-job local limit an admin typed on the job. The
    *seismo badge* on actual readings applies the federal curve and
    distance table only — no state or local limit. New Hampshire and other
    states have nothing. The Reference page was corrected in S5 to say

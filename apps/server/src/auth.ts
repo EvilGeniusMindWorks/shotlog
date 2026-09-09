@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { prisma } from './db.js';
 import { parsePayloadSafe, upsertRecord } from './records.js';
 import { APP_URL, emailEnabled, resetMail, sendEmail } from './email.js';
-import { rateLimit } from './rateLimit.js';
+import { loginRateLimit, rateLimit, refreshRateLimit } from './rateLimit.js';
 
 const JWT_SECRET = process.env.JWT_SECRET ?? '';
 if (!JWT_SECRET) {
@@ -18,7 +18,9 @@ const REFRESH_TTL_DAYS = 30;
 const RESET_TTL_MINUTES = 60;
 // Dev/harness only: when email is OFF, /auth/forgot may echo the reset link
 // so the flow can be exercised without a mailbox. Never set in production.
-const DEBUG_LINKS = process.env.AUTH_DEBUG_LINKS === '1';
+// Never in production: a stray env var must not turn forgot-password into a
+// token dispenser (S10)
+const DEBUG_LINKS = process.env.AUTH_DEBUG_LINKS === '1' && process.env.NODE_ENV !== 'production';
 
 /**
  * Platform admins — the software vendor (Matthew), NOT a company role.
@@ -220,7 +222,7 @@ export const authRouter = Router();
 
 const loginSchema = z.object({ email: z.string().email(), password: z.string().min(1) });
 
-authRouter.post('/login', async (req, res) => {
+authRouter.post('/login', loginRateLimit, async (req, res) => {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: 'email and password required' });
@@ -233,6 +235,7 @@ authRouter.post('/login', async (req, res) => {
     res.status(401).json({ error: 'invalid credentials' });
     return;
   }
+  loginRateLimit.reset(req);
   res.json({
     accessToken: signAccess(user),
     refreshToken: await issueRefreshToken(user.id),
@@ -351,7 +354,7 @@ authRouter.post('/reset/:token', rateLimit, async (req, res) => {
 
 const refreshSchema = z.object({ refreshToken: z.string().min(1) });
 
-authRouter.post('/refresh', async (req, res) => {
+authRouter.post('/refresh', refreshRateLimit, async (req, res) => {
   const parsed = refreshSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: 'refreshToken required' });

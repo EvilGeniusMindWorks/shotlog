@@ -23,11 +23,15 @@ const TILE_LAYERS = {
     maxNativeZoom: 19,
   },
   satellite: {
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    attribution: '© Esri',
-    // Esri imagery has no tiles above ~z17 in rural areas — request z17 and
-    // let Leaflet upscale, instead of rendering blank gray
-    maxNativeZoom: 17,
+    // USGS National Map orthoimagery (NAIP and partners): US government
+    // work, public domain — safe to snapshot into the shot record and the
+    // customer's PDF. Replaced Esri's public endpoint, whose terms do not
+    // cover a commercial app or stored tiles (S10, Sep 2026).
+    url: 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Imagery: USDA, USGS The National Map',
+    // Native detail is ~0.6–1 m/px; above z18 Leaflet upscales rather than
+    // showing blank tiles
+    maxNativeZoom: 18,
   },
 };
 

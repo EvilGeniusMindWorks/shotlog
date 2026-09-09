@@ -396,7 +396,7 @@ export function WorkDayList() {
         <ListSkeleton rows={3} />
       ) : summaries !== undefined && filtered.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
-          <p className="text-lg mb-2">No blast days{search || statusFilter !== 'all' ? ' match' : ' yet'}</p>
+          <p className="text-lg mb-2">No work days{search || statusFilter !== 'all' ? ' match' : ' yet'}</p>
           <p className="text-sm">Tap "+" to get started</p>
         </div>
       ) : view === 'cards' ? (

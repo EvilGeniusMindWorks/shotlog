@@ -1,5 +1,11 @@
 // Product catalog seed — 59 products across 4 manufacturers, weight
-// multipliers from the spec addendum. Seeded SERVER-SIDE per company on
+// multipliers from the spec addendum.
+//
+// Provenance (Matthew, 2026-09-09): the names and per-unit weights were typed
+// from the manufacturers' PRINTED catalogs. Weights and counts are facts and
+// not copyrightable; the selection/arrangement of a printed catalog can carry
+// a thin copyright, so this is on the list for the lawyer's review before
+// Production (docs/queue.md). Manufacturer names are nominative use. Seeded SERVER-SIDE per company on
 // bootstrap (see apps/server); devices receive the catalog via sync and
 // admins manage it from /admin/catalog afterwards.
 //

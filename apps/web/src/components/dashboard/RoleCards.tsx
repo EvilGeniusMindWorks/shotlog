@@ -169,7 +169,7 @@ export function DrillingReviewCard() {
               <p className="text-xs text-navy truncate">“{log.completionNote}”</p>
             )}
           </div>
-          <Badge variant="submitted">complete</Badge>
+          <Badge variant="submitted">Complete</Badge>
           <span className="text-sm text-safety-orange font-medium">Review</span>
         </button>
       ))}

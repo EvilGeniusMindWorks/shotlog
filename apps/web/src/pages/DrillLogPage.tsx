@@ -38,6 +38,8 @@ const CONDITIONS: { code: HoleConditionCode; label: string }[] = [
 ];
 
 const STATUS_BADGE = { open: 'draft', complete: 'submitted', accepted: 'approved' } as const;
+/** The crew's words, not the code's (S10) */
+export const DRILL_LOG_STATUS_LABEL = { open: 'Open', complete: 'Complete', accepted: 'Accepted' } as const;
 
 export function DrillLogPage() {
   // Serves BOTH routes: /blast-day/:id/drill-log/:logId (shot-parented) and
@@ -334,7 +336,7 @@ export function DrillLogPage() {
               · {holes.length} holes · {footage.toFixed(0)} ft
             </p>
           </div>
-          <Badge variant={STATUS_BADGE[log.status]}>{log.status}</Badge>
+          <Badge variant={STATUS_BADGE[log.status]} data-log-status={log.status}>{DRILL_LOG_STATUS_LABEL[log.status]}</Badge>
           {/* S9b follow-up (Matthew, Sep 9): a log opened by mistake on a finished
               pattern could not be removed anywhere — the lifecycle menu, with an
               empty log always deletable by whoever may delete field records */}
@@ -384,7 +386,7 @@ export function DrillLogPage() {
             )}
           {log.status === 'accepted' && canDrillLogTransition('accepted', 'complete') && (
             <Button size="sm" variant="secondary" onClick={() => void update({ status: 'complete' })}>
-              Un-accept
+              Reopen
             </Button>
           )}
           <button

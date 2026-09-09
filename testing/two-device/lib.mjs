@@ -71,6 +71,9 @@ export function report() {
       }
     },
     summary() {
+      const errs = browserErrors({ clear: true });
+      if (errs.length) results.push(`NOTE browser errors seen: ${errs.length} — first: [${errs[0].kind}] ${errs[0].text.slice(0, 160)}`);
+      if (errs.length && process.env.HARNESS_ERRORS) for (const e of errs) results.push(`NOTE   [${e.kind}] ${e.url} — ${e.text.slice(0, 200)}`);
       return results.join('\n');
     },
   };
@@ -82,6 +85,27 @@ export function report() {
  *  server URL, recent activity, a legacy device PIN (so sign-in lands in
  *  the app, not on Set PIN), tours done, first-week card hidden, profile
  *  nag snoozed. Pass `legacyPin: false` to exercise the PIN screens. */
+const BROWSER_ERRORS = (globalThis.__browserErrors ??= []);
+// Noise that is not a product bug: network failures while a section is
+// offline, favicon/tile 404s, devtools nags
+const ERROR_NOISE = [/Failed to load resource/i, /net::ERR_/i, /favicon/i, /React DevTools/i, /\[vite\]/i, /WebSocket connection to 'ws:\/\/localhost/i];
+function attachErrorSpy(p) {
+  const push = (kind, text) => {
+    // the harness's own init script touching localStorage on about:blank
+    if (p.url() === 'about:blank' || p.url() === '') return;
+    if (ERROR_NOISE.some((re) => re.test(text))) return;
+    BROWSER_ERRORS.push({ kind, text: String(text).slice(0, 300), url: p.url() });
+  };
+  p.on('console', (m) => { if (m.type() === 'error') push('console', m.text()); });
+  p.on('pageerror', (e) => push('pageerror', e?.message ?? e));
+}
+/** Errors the spy has seen since the last clear — a harness asserts on this */
+export function browserErrors({ clear = false } = {}) {
+  const out = BROWSER_ERRORS.slice();
+  if (clear) BROWSER_ERRORS.length = 0;
+  return out;
+}
+
 export async function mkCtx(browser, opts = {}) {
   const {
     legacyPin = true,
@@ -93,6 +117,10 @@ export async function mkCtx(browser, opts = {}) {
     ...rest
   } = opts;
   const ctx = await browser.newContext({ viewport, ...rest });
+  // Error spy (S10): every page in every harness context reports console
+  // errors, page errors and unhandled rejections into one list. Existing
+  // harnesses get a NOTE in their summary; new ones assert on browserErrors().
+  ctx.on('page', (p) => attachErrorSpy(p));
   await ctx.addInitScript(`
     localStorage.setItem('shotlog-server-url', '${API}');
     localStorage.setItem('shotlog-last-active', String(Date.now()));

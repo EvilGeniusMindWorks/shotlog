@@ -3,7 +3,7 @@
 // directly against short-lived presigned URLs, company-scoped by key prefix.
 import { Router } from 'express';
 import { z } from 'zod';
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { requireAuth, type AuthedRequest } from './auth.js';
 
@@ -61,11 +61,15 @@ const presignUploadSchema = z.object({
   size: z.number().int().positive(),
 });
 
+/** What the app's pickers offer: photos, videos, PDFs. Anything else (HTML,
+ *  scripts, archives) is refused so the company's file store never holds an
+ *  executable payload behind a signed link (S10). */
+function allowedMime(mimeType: string): boolean {
+  const t = mimeType.toLowerCase();
+  return t.startsWith('image/') || t.startsWith('video/') || t === 'application/pdf';
+}
+
 filesRouter.post('/presign-upload', requireAuth, async (req: AuthedRequest, res) => {
-  if (!s3) {
-    res.status(503).json({ error: 'file storage not configured' });
-    return;
-  }
   const parsed = presignUploadSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: 'invalid presign request' });
@@ -76,7 +80,25 @@ filesRouter.post('/presign-upload', requireAuth, async (req: AuthedRequest, res)
     res.status(413).json({ error: `file too large (max ${MAX_FILE_BYTES} bytes)` });
     return;
   }
+  if (!allowedMime(mimeType)) {
+    res.status(415).json({ error: 'file type not accepted (photos, videos and PDFs only)' });
+    return;
+  }
+  if (!s3) {
+    res.status(503).json({ error: 'file storage not configured' });
+    return;
+  }
   const key = `c/${req.companyId}/a/${attachmentId}/${sanitizeFileName(fileName)}`;
+  // Already stored (an interrupted filing retried): say so instead of handing
+  // out a PUT that a bucket lock would refuse as an overwrite (S10)
+  const exists = await s3
+    .send(new HeadObjectCommand({ Bucket: R2_BUCKET, Key: key }))
+    .then(() => true)
+    .catch(() => false);
+  if (exists) {
+    res.json({ key, exists: true });
+    return;
+  }
   const url = await getSignedUrl(
     s3,
     new PutObjectCommand({ Bucket: R2_BUCKET, Key: key, ContentType: mimeType }),

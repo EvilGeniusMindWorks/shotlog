@@ -626,7 +626,7 @@ function ComplianceInputs({
               : '> 5,000 ft',
       });
     }
-    if (ctx?.state === 'MA') regs.push({ name: 'MA 540 CMR', limit: 2.0 });
+    if (ctx?.state === 'MA') regs.push({ name: 'MA 527 CMR 13', limit: 2.0 }); // section and value still on the engineer's sign-off list
     if (ctx?.localPPVLimit && ctx.localPPVLimit > 0) {
       regs.push({ name: ctx.localRegName || 'Local Bylaw', limit: ctx.localPPVLimit, note: 'override' });
     }

@@ -208,7 +208,7 @@ export function ReferencePage() {
             <CardContent className="space-y-2">
               {[
                 ['Federal', 'USBM RI 8507 (frequency curve) + OSMRE (distance limits) — what every badge is checked against today', true],
-                ['State', 'Shot designer only: a flat 2.0 in/s cap on Massachusetts jobs (citation under engineer review). Seismo badges do not apply state limits yet', false],
+                ['State', 'Shot designer only: a flat 2.0 in/s cap on Massachusetts jobs, cited as 527 CMR 13 (section and value under engineer review). Seismo badges do not apply state limits yet', false],
                 ['Local / Municipal', 'Shot designer only: a per-job limit typed on the job. Seismo badges do not apply it yet', false],
               ].map(([tier, desc, active]) => (
                 <div

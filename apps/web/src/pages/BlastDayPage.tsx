@@ -487,7 +487,7 @@ export function BlastDayPage() {
               {(
                 [
                   ['hub', 'Day', CalendarCheck],
-                  ['blast-log', 'Blast Log', FileText],
+                  ['blast-log', 'Blasting Log', FileText],
                   ['daily-report', 'Daily Report', ClipboardList],
                 ] as const
               ).map(([key, label, Icon]) => {

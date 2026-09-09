@@ -97,7 +97,7 @@ export function JobDetailPage() {
         [ctx?.address, ctx?.city, ctx?.state].filter(Boolean).join(', ') || 'No address'
       }
       stats={[
-        { label: 'Blast Days', value: String(blastDays.length) },
+        { label: 'Work days', value: String(blastDays.length) },
         { label: 'Total Shots', value: String(stats.shots) },
         { label: 'Site K', value: String(ctx?.kFactor ?? job.kFactor ?? '—') },
         { label: 'Avg PF', value: avgPF > 0 ? avgPF.toFixed(2) : '—' },

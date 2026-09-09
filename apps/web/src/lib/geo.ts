@@ -77,6 +77,18 @@ function finish(a: number, b: number, ha?: string, hb?: string): LatLng | null {
 
 const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
 const headers = { Accept: 'application/json' };
+// Nominatim's usage policy asks that an application identify itself. A
+// browser cannot set User-Agent, so the Referer (sent by default cross-origin)
+// plus the documented `email` parameter carry the identity (S10). Set
+// VITE_CONTACT_EMAIL in the web build to a mailbox someone reads.
+const CONTACT = (import.meta.env.VITE_CONTACT_EMAIL as string | undefined) ?? '';
+/** A Nominatim search URL with the app's identity attached */
+export function nominatimUrl(params: Record<string, string>): string {
+  const p = new URLSearchParams({ format: 'json', ...params });
+  if (CONTACT) p.set('email', CONTACT);
+  return `${NOMINATIM}?${p.toString()}`;
+}
+const FETCH_OPTS: RequestInit = { headers, referrerPolicy: 'strict-origin-when-cross-origin' };
 type Row = { lat: string; lon: string; display_name: string };
 
 function toCandidates(rows: Row[]): GeoCandidate[] {
@@ -102,24 +114,24 @@ export function splitAddress(q: string): { street?: string; city?: string; state
 export async function searchAddress(q: string, opts: { limit?: number } = {}): Promise<{ candidates: GeoCandidate[]; fellBack: boolean }> {
   const limit = opts.limit ?? 5;
   if (!navigator.onLine) return { candidates: [], fellBack: false };
-  const free = await fetch(`${NOMINATIM}?format=json&limit=${limit}&q=${encodeURIComponent(q)}`, { headers })
+  const free = await fetch(nominatimUrl({ limit: String(limit), q }), FETCH_OPTS)
     .then((r) => (r.ok ? (r.json() as Promise<Row[]>) : []))
     .catch(() => [] as Row[]);
   if (free.length > 0) return { candidates: toCandidates(free), fellBack: false };
   const parts = splitAddress(q);
   if (!parts) return { candidates: [], fellBack: false };
-  const params = new URLSearchParams({ format: 'json', limit: String(limit), country: 'us' });
-  if (parts.street) params.set('street', parts.street);
-  if (parts.city) params.set('city', parts.city);
-  if (parts.state) params.set('state', parts.state);
-  const structured = await fetch(`${NOMINATIM}?${params.toString()}`, { headers })
+  const params: Record<string, string> = { limit: String(limit), country: 'us' };
+  if (parts.street) params.street = parts.street;
+  if (parts.city) params.city = parts.city;
+  if (parts.state) params.state = parts.state;
+  const structured = await fetch(nominatimUrl(params), FETCH_OPTS)
     .then((r) => (r.ok ? (r.json() as Promise<Row[]>) : []))
     .catch(() => [] as Row[]);
   if (structured.length > 0) return { candidates: toCandidates(structured), fellBack: true };
   // the town alone, so the map at least opens in the right place
   if (parts.street && parts.city) {
-    const town = new URLSearchParams({ format: 'json', limit: '3', country: 'us', city: parts.city, ...(parts.state ? { state: parts.state } : {}) });
-    const rows = await fetch(`${NOMINATIM}?${town.toString()}`, { headers })
+    const town = { limit: '3', country: 'us', city: parts.city, ...(parts.state ? { state: parts.state } : {}) };
+    const rows = await fetch(nominatimUrl(town), FETCH_OPTS)
       .then((r) => (r.ok ? (r.json() as Promise<Row[]>) : []))
       .catch(() => [] as Row[]);
     return { candidates: toCandidates(rows).map((c) => ({ ...c, label: `${c.label} (town — street not found)` })), fellBack: true };

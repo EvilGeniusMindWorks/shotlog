@@ -5,6 +5,7 @@
 // wins (the machine went back out). Pins come from a one-time address
 // geocode saved to the site (plus a device cache for roles that can't
 // write sites) — offline afterward.
+import { nominatimUrl } from '@/lib/geo';
 import { db } from '@/db';
 import { projectTable } from '@/db/projections';
 import type { Equipment, Site } from '@/db/schema';
@@ -198,10 +199,10 @@ export async function geocodeSite(site: Site): Promise<{ lat: number; lng: numbe
   const q = [site.address, site.city, site.state, site.zip].filter(Boolean).join(', ');
   if (!q) return null;
   try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`,
-      { headers: { Accept: 'application/json' } },
-    );
+    const res = await fetch(nominatimUrl({ limit: '1', q }), {
+      headers: { Accept: 'application/json' },
+      referrerPolicy: 'strict-origin-when-cross-origin',
+    });
     const results = (await res.json()) as { lat: string; lon: string }[];
     if (!results[0]) return null;
     const geo = { lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon) };

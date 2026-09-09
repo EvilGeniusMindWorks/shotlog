@@ -14,6 +14,8 @@ Everything above them is what to do, in order, once they are made.
 | G3 | `npm audit --omit=dev` clean | see S5 check-off | done in S5 |
 | G4 | USBM RI 8507 curve sign-off — docs/usbm-curve-signoff.md handed to a blasting engineer and signed | ❌ | Matthew → engineer |
 | G5 | Test-user decision (below) | ❌ | Matthew |
+| G7 | Backups: Railway Pro — point-in-time recovery ON and a daily volume backup schedule; Cloudflare R2 bucket private, no lifecycle rule beyond the multipart-abort default, API token scoped to the one bucket | ✅ 2026-09-09 (Matthew); bucket lock next, after S10 deploys | Matthew |
+| G8 | A rehearsed restore into a scratch database + docs/disaster-recovery.md | ❌ queued (docs/queue.md B) | Claude |
 | G6 | Prod smoke as admin: People · Roles · Jobs · Records · Admin › Feedback open; `/health` shows the current commit | ✅ each deploy | Claude |
 
 ## 1. Invite order (recommended)
@@ -47,6 +49,11 @@ the link and text it; it works once and expires in 14 days.
    blocked without a license on file.
 5. Stuck? ? → **About this screen**. Broken? ? → **Send feedback** — it
    works with no signal and goes straight to Matthew.
+6. **If the app will not work:** it runs fully offline — if you can sign in
+   with your PIN you can log the day and it syncs when signal returns. If you
+   cannot sign in at all, use the paper form and enter it later. Otherwise
+   text or call Matthew: _[number]_, _[hours]_ — reply within _[time]_ on
+   blast days. (Matthew to fill in; S10.)
 
 ## 3. What to watch, daily, for the first two weeks
 

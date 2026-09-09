@@ -37,6 +37,11 @@ import {
 
 // Must match the HS256 JWKS entry in the PowerSync service config
 // (infra/powersync/service.yaml locally; the deployed service config in prod).
+if (process.env.NODE_ENV === 'production' && !process.env.POWERSYNC_JWT_SECRET) {
+  // Fail loudly: a missing secret must never silently sign production sync
+  // tokens with the dev value (S10)
+  throw new Error('POWERSYNC_JWT_SECRET env var is required in production');
+}
 const POWERSYNC_JWT_SECRET =
   process.env.POWERSYNC_JWT_SECRET ?? 'spike-shared-secret-for-local-dev-only';
 const POWERSYNC_JWT_KID = process.env.POWERSYNC_JWT_KID ?? 'shotlog-spike';

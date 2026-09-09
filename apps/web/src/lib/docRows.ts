@@ -48,10 +48,10 @@ export interface DocRow {
 }
 
 export const DOC_KIND_LABEL: Record<DocKind, string> = {
-  blast_log: 'Blast Log',
+  blast_log: 'Blasting Log',
   daily_report: 'Daily Report',
   drill_log: 'Drill Log',
-  drill_checklist: 'Checklist',
+  drill_checklist: 'Rig Checklist',
   incident: 'Incident',
   time_card: 'Time Card',
   repair_ticket: 'Repair Ticket',

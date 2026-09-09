@@ -49,7 +49,8 @@ export function LocatorMap({
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
-    const map = L.map(containerRef.current, { zoomControl: !compact, attributionControl: false });
+    // The OSM credit is a licence condition, not clutter — attribution stays on (S10)
+    const map = L.map(containerRef.current, { zoomControl: !compact });
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
       maxNativeZoom: 19,
