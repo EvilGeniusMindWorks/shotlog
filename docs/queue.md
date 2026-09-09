@@ -50,3 +50,25 @@ is built, move its line to docs/decisions.md with the round that shipped it.
   floors documented and enforced (ATF 5 y, MSHA 3 y, DOT 90 d).
 - Cost sheet and a floor price; "ShotLog" trademark clearance; the signed
   service agreement; sunlight-and-gloves session on the real tablet.
+
+## Backlog — raised during Mark and Joe's testing (freeze from Sep 9 2026 evening)
+
+Running list. Nothing here is scheduled; Matthew decides when the freeze lifts and what
+becomes a round. Each item says what the app does today so the plan starts from facts.
+
+- **Documents that stand on their own for a day (Matthew, Sep 10 2026).** A gas-main
+  leak stopped drilling and blasting; Mark and Joe still had a day to account for, so
+  the only paper that day is time cards. Today: every work day carries a daily report,
+  and blasting-type days add a blast log; a driller's own time card can exist without a
+  day (his home "My hours"), but a blaster's time cards live on the day's daily report,
+  so a "time cards only" day means creating a work day of a non-blasting type first.
+  Ask: let the drill report, daily log, blast report and time cards each be started and
+  finished independently on a date, while anything they share (job, crew, hours,
+  equipment, pattern) is entered once and flows to the others. Plan-first: map which
+  facts each paper needs, which are shared, and what "a day with only time cards" looks
+  like on the dashboard and in Records. Related root question: WorkDay-vs-BlastDay
+  in docs/paper-forms-analysis.md.
+- **First-week checklist (Mark, Sep 10 2026): "will it always show up?"** Today it
+  stays on the home screen until every item on it is done, or until Hide is tapped on
+  that device; it is not time-limited. Consider: hide itself after the first filed day
+  or after 14 days, and say so on the card.
