@@ -3,6 +3,7 @@
 // hazards exactly where they are. Accept keeps its meaning (locks holes)
 // and flows into the readiness review.
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { db, useLiveQuery } from '@/db';
 import type { BlastDay, DrillLog, DrillLogHole, Shot } from '@/db/schema';
 import { dayDrillLogs } from '@/hooks/useDayPhases';
@@ -11,7 +12,7 @@ import { getSessionUser } from '@/lib/session';
 import { formatDate, nowISO } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { PatternGrid } from '@/components/design/PatternGrid';
-import { getPlanHoles, planToDiagram } from '@/hooks/useDrillPlans';
+import { getPlanHoles, planToDiagram, drillLogRoute } from '@/hooks/useDrillPlans';
 import { hasDrillPlan, materializeDrillPlan, parseDiagram, type ShotDiagram } from '@/lib/shotDiagram';
 
 export const DRILLER_COLORS = ['#2d4a75', '#b7791f', '#2f855a', '#805ad5', '#c05621', '#319795'];
@@ -48,6 +49,7 @@ export function MergedDrillingView({
   onAccepted: () => void;
 }) {
   const [selected, setSelected] = useState<MergedHole | null>(null);
+  const navigate = useNavigate();
   const data = useLiveQuery(async () => {
     const logs = await dayDrillLogs(day, shots);
     const drillers = new Map<string, { name: string; color: string; count: number }>();
@@ -267,8 +269,16 @@ export function MergedDrillingView({
 
       <div className="bg-white border border-gray-200 rounded-xl p-3">
         <p className="text-[10px] font-bold tracking-widest text-gray-400 uppercase mb-1">Logs</p>
+        {/* Each row opens the log itself (Matthew, Sep 9: the rows were not
+            tappable, so a stray log had no door to the page that can delete it) */}
         {logs.map((l) => (
-          <div key={l.id} className="flex items-center gap-2 py-1.5 border-t border-gray-100 first:border-t-0 text-sm">
+          <button
+            key={l.id}
+            type="button"
+            className="w-full flex items-center gap-2 py-1.5 border-t border-gray-100 first:border-t-0 text-sm text-left hover:bg-gray-50 rounded-md"
+            data-review-log={l.id}
+            onClick={() => navigate(drillLogRoute(l))}
+          >
             <span className="flex-1 min-w-0 truncate">
               {l.drillerName || 'Unknown'}
               {l.date && <span className="text-gray-400"> · {formatDate(l.date)}</span>}
@@ -276,7 +286,8 @@ export function MergedDrillingView({
             <Badge variant={l.status === 'accepted' ? 'approved' : l.status === 'complete' ? 'submitted' : 'draft'}>
               {l.status}
             </Badge>
-          </div>
+            <span className="text-gray-400 text-xs">open ›</span>
+          </button>
         ))}
       </div>
 
