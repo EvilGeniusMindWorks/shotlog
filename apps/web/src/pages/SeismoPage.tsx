@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { AdvisoryTag } from '@/lib/complianceAdvisory';
 import { ask } from '@/components/ui/ask-sheet';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Camera, Loader2, Pencil, Plus, ScanText, Trash2 } from 'lucide-react';
@@ -73,10 +74,13 @@ export function SeismoPage() {
             <p className="text-sm text-gray-500 truncate">{job?.name}</p>
           </div>
           {readings.length > 0 && (
-            <Badge variant={STATUS_VARIANT[worst]}>
-              {readings.length} graph{readings.length > 1 ? 's' : ''} ·{' '}
-              {worst === 'compliant' ? 'Compliant' : worst === 'warning' ? 'Warning' : 'Violation'}
-            </Badge>
+            <span className="inline-flex items-center gap-1">
+              <Badge variant={STATUS_VARIANT[worst]}>
+                {readings.length} graph{readings.length > 1 ? 's' : ''} ·{' '}
+                {worst === 'compliant' ? 'Compliant' : worst === 'warning' ? 'Warning' : 'Violation'}
+              </Badge>
+              <AdvisoryTag />
+            </span>
           )}
         </div>
       </div>
@@ -199,10 +203,11 @@ function ReadingCard({ reading, shot, onEdit }: { reading: SeismoReading; shot: 
                 <span className="text-xs text-gray-500">{reading.seismographId}</span>
               )}
               {/* Compliance explains itself — tap the flag for the why */}
-              <button className="ml-auto" onClick={() => setShowWhy(true)}>
+              <button className="ml-auto inline-flex items-center gap-1" onClick={() => setShowWhy(true)}>
                 <Badge variant={STATUS_VARIANT[reading.complianceStatus]}>
                   {reading.complianceStatus}
                 </Badge>
+                <AdvisoryTag />
               </button>
             </div>
             <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-sm">
@@ -549,6 +554,7 @@ function AddReadingForm({
             <Badge variant={STATUS_VARIANT[compliance.osm.status]}>
               OSM: {maxPPV.toFixed(3)} vs {compliance.osm.limit.toFixed(2)} in/s
             </Badge>
+            <AdvisoryTag />
           </div>
         )}
 

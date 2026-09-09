@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { AdvisoryTag } from '@/lib/complianceAdvisory';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Check, Grid3x3, Layers3, Map as MapIcon, Ruler, Send } from 'lucide-react';
 import { applyAsDrilled, drilledSince } from '@/lib/shotDiagram';
@@ -338,6 +339,7 @@ function DesignPlanInner({
               <Badge variant={ppv <= osmLimit ? 'compliant' : 'violation'}>
                 {ppv <= osmLimit ? '✓' : '✗'} OSM
               </Badge>
+              <AdvisoryTag className="self-center" />
               <Badge variant="compliant">✓ SD = {sd.toFixed(1)}</Badge>
               <Badge variant="compliant">✓ PPV = {ppv.toFixed(2)} in/s</Badge>
               <Badge variant="secondary">why?</Badge>

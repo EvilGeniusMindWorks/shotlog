@@ -2,6 +2,7 @@
 // intent vs what the drill actually found, hazards phrased as QUESTIONS
 // (the decision logic stays in the blaster's head), and the design
 // numbers that seed every shot. Confirm flows into the shots.
+import { AdvisoryTag } from '@/lib/complianceAdvisory';
 import { useState } from 'react';
 import { db, useLiveQuery } from '@/db';
 import type { BlastDay, BlastLog, HoleCondition, Shot } from '@/db/schema';
@@ -200,10 +201,11 @@ export function ReadinessView({
           <span className="flex-1 text-gray-600">Predicted PPV</span>
           <span className="font-mono font-bold">{ppv != null ? `${ppv.toFixed(2)} in/s` : '—'}</span>
           {passes !== undefined && (
-            <button onClick={() => setShowWhy(true)}>
+            <button className="inline-flex items-center gap-1" onClick={() => setShowWhy(true)}>
               <Badge variant={passes ? 'compliant' : 'violation'}>
                 {passes ? 'passes' : 'exceeds'}
               </Badge>
+              <AdvisoryTag />
             </button>
           )}
         </div>

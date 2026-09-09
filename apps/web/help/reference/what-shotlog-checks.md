@@ -8,6 +8,8 @@ status: draft
 
 The compliance badges on a shot compare the predicted and measured values against published limits.
 
+> **Advisory, for now.** Every compliance badge carries a small "advisory" tag until a blasting engineer has signed off the USBM curve as ShotLog implements it. The numbers are computed exactly as described below; the tag says a licensed person has not yet checked that description. It disappears when the sign-off lands.
+
 ## USBM RI 8507
 
 The frequency-dependent limit on peak particle velocity: lower at low frequencies where houses respond most, rising to 2.0 in/s from about 40 Hz. A measured reading's PPV and frequency are placed on that curve.

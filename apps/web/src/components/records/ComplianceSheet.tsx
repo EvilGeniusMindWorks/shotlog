@@ -3,6 +3,7 @@
 // Every number here is already computed by the engine — this sheet just
 // stops hiding the reasoning. Works for predicted (design-time) and
 // measured (seismo) values.
+import { AdvisoryNote } from '@/lib/complianceAdvisory';
 import {
   checkCompliance,
   maxChargeWeight,
@@ -104,6 +105,7 @@ export function ComplianceSheet({ facts, onClose }: { facts: ComplianceFacts; on
             tone={fails ? 'bad' : 'good'}
           />
           {governing && <Row label={governing.label} value={`${governing.value.toFixed(2)} in/s`} />}
+          <AdvisoryNote className="mt-2" />
           {localReg && usbm != null && (
             <Row label={`USBM RI8507 (${frequencyHz} Hz) would allow`} value={`${usbm.toFixed(2)} in/s`} />
           )}

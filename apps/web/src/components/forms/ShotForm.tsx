@@ -1,4 +1,5 @@
 import { useCallback, useState, type ReactNode } from 'react';
+import { COMPLIANCE_ADVISORY } from '@/lib/complianceAdvisory';
 import { useNavigate } from 'react-router-dom';
 import { Activity, BarChart3, Flame, MapPin, Wrench } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
@@ -217,7 +218,7 @@ export function ShotForm({ shot, allShots, explosiveUsage, kFactor: _kFactor, bl
         <SubSection
           icon={<IconChip tint="navy"><Activity className="h-4 w-4" /></IconChip>}
           title="Seismo Readings"
-          summary={seismo.length > 0 ? `${seismo.length} graph${seismo.length > 1 ? 's' : ''} · ${seismoWorst}` : 'No readings yet'}
+          summary={seismo.length > 0 ? `${seismo.length} graph${seismo.length > 1 ? 's' : ''} · ${seismoWorst}${COMPLIANCE_ADVISORY ? ' (advisory)' : ''}` : 'No readings yet'}
           navigate={() => navigate(`/blast-day/${blastDayId}/seismo/${shot.id}`)}
         />
       )}

@@ -2,6 +2,7 @@
 // paper form (same structure as PrintBlastLogPage). The design-plan
 // diagrams port to PDF-native SVG: map snapshots embed as images, the
 // projected site schematic and timed shot diagram redraw as vectors.
+import { COMPLIANCE_ADVISORY } from '@/lib/complianceAdvisory';
 import { pdf, Circle, Line, Polygon, Rect, Svg, Text as SvgText } from '@react-pdf/renderer';
 import { db } from '@/db';
 import { getJobView } from '@/lib/jobContext';
@@ -332,6 +333,8 @@ function ComplianceTable({ shot }: { shot: Shot }) {
     ['Max Pounds Per Delay:', dash(dp.maxPoundsPerDelay, ' lbs')],
     ['Scale Distance:', dp.scaledDistance ? dp.scaledDistance.toFixed(1) : '—'],
     ['Predicted PPV: K Factor:', `${dp.predictedPPV ? `${dp.predictedPPV.toFixed(2)} in/s · ` : ''}K=${dp.kFactor}`],
+    // D2 (2026-09-09): advisory until a blasting engineer signs off the USBM curve
+    ...(COMPLIANCE_ADVISORY ? ([['Compliance status:', 'advisory — pending engineer review']] as [string, string][]) : []),
   ];
   return (
     <T>
