@@ -396,7 +396,7 @@ function ImportFromDrillPlan({ shot }: { shot: Shot }) {
         </button>
       )}
       {open && (
-        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-[60] p-0 sm:p-4">
           <div className="w-full sm:max-w-sm bg-white rounded-t-xl sm:rounded-xl p-4 space-y-2 max-h-[80vh] overflow-auto">
             <p className="font-bold">Import from drill plan</p>
             <p className="text-xs text-gray-500">

@@ -299,6 +299,9 @@ export interface BlastDay extends BaseRecord {
    *  day for fixes, shown inline on the needs-attention strip; cleared on
    *  the next submit (server clears it on any forward transition too) */
   sendBackNote?: string;
+  /** S9a: what the filing pre-flight let through as amber ("no crew on the
+   *  daily report", …) — the office sees "filed with N notes"; replaced on refile */
+  filedNotes?: string[];
   conditions: BlastDayConditions;
   typeOfWork: WorkType;
   fireDetail: boolean;

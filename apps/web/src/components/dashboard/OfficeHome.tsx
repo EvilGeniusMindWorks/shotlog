@@ -31,6 +31,8 @@ interface ApprovalRow {
   checklist: boolean;
   drillLog: boolean;
   seismoMissing: boolean;
+  /** S9a: amber items the blaster filed past */
+  notes: number;
 }
 
 interface CardGroup {
@@ -72,10 +74,10 @@ function useQueue(): QueueData | undefined {
     );
     const days = await projectTable<{
       date: string; jobId: string; status: string; typeOfWork: string | null;
-      sendBackNote: string | null; updatedAt: string;
+      sendBackNote: string | null; updatedAt: string; filedNotes: string | null;
     }>('blastDays', {
       date: 'date', jobId: 'jobId', status: 'status', typeOfWork: 'typeOfWork',
-      sendBackNote: 'sendBackNote', updatedAt: 'updatedAt',
+      sendBackNote: 'sendBackNote', updatedAt: 'updatedAt', filedNotes: 'filedNotes',
     });
     const logs = await projectTable<{ blastDayId: string; blasterName: string | null }>('blastLogs', {
       blastDayId: 'blastDayId', blasterName: 'blasterName',
@@ -131,6 +133,8 @@ function useQueue(): QueueData | undefined {
           checklist: checklistKeys.has(`${d.jobId}|${d.date}`),
           drillLog: daysWithDrillLog.has(d.id),
           seismoMissing: isBlastingWork((d.typeOfWork ?? 'blasting') as WorkType) && shotIds.some((s) => !readShots.has(s)),
+          // json_extract hands an array back as JSON text
+          notes: countJson(d.filedNotes),
         };
       })
       .sort((a, b) => a.date.localeCompare(b.date));
@@ -226,6 +230,16 @@ function Section({ id, title, count, more, children }: { id: string; title: stri
   );
 }
 
+function countJson(text: string | null): number {
+  if (!text) return 0;
+  try {
+    const v = JSON.parse(text) as unknown;
+    return Array.isArray(v) ? v.length : 0;
+  } catch {
+    return 0;
+  }
+}
+
 export function OfficeHome() {
   const navigate = useNavigate();
   const me = getSessionUser();
@@ -274,6 +288,7 @@ export function OfficeHome() {
               </p>
             </div>
             {a.seismoMissing && <Badge variant="warning">seismo missing</Badge>}
+            {a.notes > 0 && <Badge variant="warning" data-filed-notes={a.notes}>filed with {a.notes} note{a.notes > 1 ? 's' : ''}</Badge>}
             <Button size="sm" onClick={() => navigate(`/admin/approvals?day=${a.dayId}`)}>Review</Button>
           </div>
         ))}

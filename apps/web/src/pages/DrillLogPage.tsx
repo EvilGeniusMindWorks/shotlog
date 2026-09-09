@@ -818,7 +818,7 @@ export function DrillLogPage() {
 
         {/* Handoff-note prompt (complete: driller → blaster; reopen: reverse) */}
         {notePrompt && (
-          <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-[60] p-0 sm:p-4">
             <div className="w-full sm:max-w-sm bg-white rounded-t-xl sm:rounded-xl p-4 space-y-3">
               <p className="font-bold">
                 {notePrompt === 'complete' ? 'Mark complete' : 'Send back to the driller'}

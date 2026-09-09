@@ -70,8 +70,10 @@ export async function buildEquipmentTimeline(equip: Equipment): Promise<Equipmen
       at: t.createdAt,
       kind: 'ticket_open',
       title: `Repair ticket opened — ${t.openedByName}`,
-      sub: `${t.description}${t.outOfService ? ' · OUT OF SERVICE' : ''}`,
+      sub: `${t.description}${t.outOfService ? ' · OUT OF SERVICE' : ''}${t.status === 'open' ? ' · open — tap to resolve' : ''}`,
       flag: true,
+      // S9a: the ticket's own screen (resolve lives there)
+      to: `/tickets/${t.id}`,
     });
     if (t.status === 'resolved' && t.resolvedAt) {
       events.push({

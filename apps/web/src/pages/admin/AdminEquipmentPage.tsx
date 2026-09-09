@@ -115,9 +115,15 @@ export function AdminEquipmentPage() {
   const equipment = useLiveQuery(() => db.equipment.toArray()) ?? [];
   const openTickets = useOpenTickets();
   // asset id → whether any open ticket has it out of service
+  // machine → is any open ticket out-of-service (badge colour); ticketId → the ticket to open (S9a)
   const ticketed = useMemo(() => {
     const m = new Map<string, boolean>();
     for (const t of openTickets) m.set(t.equipmentId, (m.get(t.equipmentId) ?? false) || t.outOfService);
+    return m;
+  }, [openTickets]);
+  const ticketFor = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const t of [...openTickets].sort((a, b) => Number(b.outOfService) - Number(a.outOfService))) if (!m.has(t.equipmentId)) m.set(t.equipmentId, t.id);
     return m;
   }, [openTickets]);
   const [tab, setTab] = useState<string>(() => {
@@ -338,9 +344,14 @@ export function AdminEquipmentPage() {
                 <DueChip label="DOT" date={item.dotInspectionDue} />
                 <DueChip label="calibration" date={item.calibrationDue} />
                 {ticketed.has(item.id) && (
-                  <Badge variant={oos ? 'violation' : 'warning'} data-equip-repair>
-                    {oos ? 'out of service' : 'repair open'}
-                  </Badge>
+                  <button
+                    type="button"
+                    title="Open the repair ticket"
+                    data-equip-repair
+                    onClick={() => navigate(`/tickets/${ticketFor.get(item.id)}`)}
+                  >
+                    <Badge variant={oos ? 'violation' : 'warning'}>{oos ? 'out of service' : 'repair open'}</Badge>
+                  </button>
                 )}
                 {(item.category === 'rock_drill' || item.category === 'equip_drill') && (
                   <Button variant="ghost" size="icon" title="Daily checklist"

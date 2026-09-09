@@ -20,7 +20,7 @@ export function PeekSheet({
 }) {
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center sm:justify-center"
+      className="fixed inset-0 z-[60] bg-black/40 flex items-end sm:items-center sm:justify-center"
       onClick={onClose}
     >
       <div

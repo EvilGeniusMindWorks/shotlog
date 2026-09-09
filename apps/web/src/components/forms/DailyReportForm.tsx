@@ -10,7 +10,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { canEditApprovedDay } from '@/lib/perms';
+import { canEditApprovedDay, can } from '@/lib/perms';
+import { getSessionUser } from '@/lib/session';
+import { propagateHourMeter } from '@/hooks/useMaintenance';
 
 /** S4 (I3): an empty section is ONE row, not a card of nothing — tap to add
  *  the first line. On a locked day an empty section is simply absent. */
@@ -214,7 +216,7 @@ function EquipmentSection({
         )
         .toArray();
       const rigIds = [...new Set(logs.map((l) => l.drillRigEquipmentId).filter((x): x is string => Boolean(x)))];
-      const out: { rigId: string; asset: string; start: number | null; end: number | null; who?: string }[] = [];
+      const out: { rigId: string; asset: string; start: number | null; end: number | null; who?: string; logId?: string; logOwnerId?: string }[] = [];
       for (const rigId of rigIds) {
         const rig = await db.equipment.get(rigId);
         if (!rig) continue;
@@ -226,16 +228,35 @@ function EquipmentSection({
           .filter((l) => l.drillRigEquipmentId === rigId && l.endingHours != null)
           .map((l) => l.endingHours as number)
           .sort((a, b) => b - a);
+        // S9a: the newest log on this rig is where a missed end-of-day meter lands
+        const rigLogs = logs.filter((l) => l.drillRigEquipmentId === rigId).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
         out.push({
           rigId,
           asset: rig.assetNumber,
           start: chk?.startingHours ?? null,
           end: ends[0] ?? null,
-          who: logs.find((l) => l.drillRigEquipmentId === rigId)?.drillerName,
+          who: rigLogs[0]?.drillerName,
+          logId: rigLogs[0]?.id,
+          logOwnerId: rigLogs[0]?.drillerUserId,
         });
       }
       return out;
     }, [blastDay.id, blastDay.jobId, blastDay.date]) ?? [];
+
+  // S9a: end-of-day meter door on the rig row (see derived rigs above)
+  const [meterEdit, setMeterEdit] = useState<string | null>(null);
+  const [meterValue, setMeterValue] = useState('');
+  const canEnterMeter = (ownerId?: string) => {
+    const me = getSessionUser();
+    return Boolean(me && (me.id === ownerId || can('drillLogs', 'PATCH')));
+  };
+  const saveMeter = async (d: { rigId: string; logId?: string }) => {
+    const v = parseFloat(meterValue);
+    if (!d.logId || !Number.isFinite(v)) return;
+    await db.drillLogs.update(d.logId, { endingHours: v, updatedAt: nowISO() });
+    await propagateHourMeter(d.rigId, v);
+    setMeterEdit(null);
+  };
 
   const addEntry = async () => {
     const now = nowISO();
@@ -313,7 +334,38 @@ function EquipmentSection({
               <div key={d.rigId} className="flex items-center gap-2 text-sm py-1 flex-wrap" data-derived-rig={d.asset}>
                 <span className="font-mono font-bold text-xs bg-blue-50 text-navy rounded-lg px-2 py-0.5">{d.asset}</span>
                 <span className="font-mono text-gray-700">
-                  {d.start ?? '—'} → {d.end ?? '—'} h
+                  {d.start ?? '—'} →{' '}
+                  {/* S9a: the second door for the rig's end-of-day meter — the driller
+                      who owns the log (or anyone who logs equipment) taps the blank */}
+                  {meterEdit === d.rigId ? (
+                    <span className="inline-flex items-center gap-1">
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        className="h-7 w-24 inline-block"
+                        autoFocus
+                        aria-label={`${d.asset} meter at end of day`}
+                        data-rig-meter-input={d.asset}
+                        value={meterValue}
+                        placeholder={d.start != null ? String(d.start) : ''}
+                        onChange={(e) => setMeterValue(e.target.value)}
+                      />
+                      <Button size="sm" className="h-7" data-rig-meter-save={d.asset} disabled={!meterValue.trim()} onClick={() => void saveMeter(d)}>Save</Button>
+                      <Button size="sm" variant="ghost" className="h-7" onClick={() => setMeterEdit(null)}>Cancel</Button>
+                    </span>
+                  ) : d.end == null && d.logId && blastDay.status === 'draft' && canEnterMeter(d.logOwnerId) ? (
+                    <button
+                      type="button"
+                      className="underline decoration-dotted text-safety-orange"
+                      aria-label={`Enter ${d.asset} meter at end of day`}
+                      data-rig-meter-enter={d.asset}
+                      onClick={() => { setMeterEdit(d.rigId); setMeterValue(''); }}
+                    >
+                      — h · enter end-of-day meter
+                    </button>
+                  ) : (
+                    <>{d.end ?? '—'} h</>
+                  )}
                 </span>
                 {d.who && <span className="text-xs text-gray-400">· {d.who}</span>}
                 <span className="ml-auto text-[10px] uppercase tracking-wide text-gray-400">checklist · drill log</span>

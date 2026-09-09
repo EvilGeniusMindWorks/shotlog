@@ -215,3 +215,10 @@ page · customer/site/job create (new) · contacts · My Records · reference
   same pages (Pages, not columns). The flat jobs list is gone — recent chips
   and the search box (customers · sites · jobs, with paths) are the way to a
   known job. Lists windowed to 15.
+- **Persona evaluation (2026-09-08):** both agent "Barrys" filed the day with
+  the shot unsigned and nothing stopped them — then the signature was locked.
+  Both found the off-plan hole only by counting, and looked for the seismo
+  distance on the reading (it lives on Design plan › Compliance). The plan
+  grid's Rows/Cols buttons and holes have no accessible names. **S9a batch 1:**
+  filing pre-flight (red blocks on an unsigned shot; amber files with notes).
+  Batch 3: off-plan badge, seismo Edit + distance line, grid names.

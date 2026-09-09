@@ -10,7 +10,7 @@ When the pattern is done, sign the log. That hands it to the blaster, who accept
 
 ## Signing
 
-Scroll to the signature at the bottom, sign, and tap **Mark complete** right there (it is at the top too, if you prefer). The app asks for the rig's **end-of-day hour meter** once, prefilled from the morning — it closes the day's hours for the shop.
+Scroll to the signature at the bottom, sign, and tap **Mark complete** right there (it is at the top too, if you prefer). The app asks for the rig's **end-of-day hour meter** once, prefilled from the morning — it closes the day's hours for the shop. Missed it? Open the day's **Daily report**: your rig's row reads "R1004 · 4,120 → — h", and the — is a button.
 
 ## What the blaster sees
 

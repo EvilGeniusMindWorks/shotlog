@@ -18,9 +18,13 @@ Filing turns the day into the record the office keeps: a signed PDF of the blast
 
 ## Filing
 
-Tap **Continue** on the day, or open the day and tap **File this day**. You get a preview of both PDFs. Anything missing is listed above the button — fix it from there, you do not need to hunt for it.
+Tap **Continue** on the day, or open the day and tap **Submit to Office**. Before anything is built, the app checks the day and lists what it found:
 
-Tap **File**. The day shows **Filed**, the PDFs are stored, and the office sees the day in its queue.
+- **Red** stops you: a shot without its responsible blaster's signature. Tap the line to go and sign it.
+- **Amber** does not stop you: no structure distance while there are seismo readings, no crew on the daily report, a shot with no explosives. You can file anyway — the office sees "filed with 2 notes" beside the day.
+- **Green** ticks are the things that are fine: drill log accepted, explosives entered, time cards filed.
+
+Tap **File this day**. The day shows **Filed**, the PDFs are stored, and the office sees the day in its queue.
 
 > **No signal?** File anyway. The PDFs are made on your device and upload on their own when you have a connection again. The day shows "Filed · waiting to upload" until then.
 

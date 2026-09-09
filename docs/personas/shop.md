@@ -115,3 +115,10 @@ Shop home (queue + PM due) · repair ticket · equipment list + detail
   queue — the shop home is the queue's one place. The Fleet nav item opens
   the equipment list with its new grouped tabs, search and filters (Repair
   open · Out of service are one tap).
+- **Persona evaluation (2026-09-08):** two agent "Sams" could not resolve a
+  ticket — the resolve UI had gone with the admin repair queue in S8b
+  (`resolveTicket()` had no caller). Also: fleet status chips AND together
+  ("what's down?" returned nothing); no way to open a ticket by hand or to
+  inspect a truck (known gap — DVIR / Equipment Safety Inspection & Repair
+  Report are the paper forms). **S9a batch 1:** the ticket screen is back
+  (`/tickets/:id`, three doors). Batch 3: status chips OR + "Unavailable".

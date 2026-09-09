@@ -178,3 +178,10 @@ report (solo submit) · My Records · jobs list
   pattern (same rows × columns, planned depth under each open hole); row
   handles and "Select all open" log many holes in one tap; the logged list
   is windowed (latest 8) — the grid is the overview.
+- **Persona evaluation (2026-09-08):** both agent "Dinises" found the plan in
+  one tap ("Assigned to you"), logged rows with the handles, marked wet and
+  skipped — and then could not tap **Complete**: the Mark complete sheet
+  rendered behind the phone's bottom nav, hiding the end-of-day meter field
+  with it. The fifth row the blaster added appeared silently. **S9a batch 1:**
+  sheets above the nav; the meter also enterable from the rig row on the
+  day's daily report. Later: a "plan changed" badge on the log.

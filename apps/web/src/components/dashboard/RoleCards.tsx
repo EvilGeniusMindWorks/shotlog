@@ -1011,7 +1011,9 @@ export function MechanicHome() {
               </span>
               <button
                 className="flex-1 min-w-0 flex items-center gap-2 text-left hover:bg-gray-50 rounded-lg py-0.5"
-                onClick={() => navigate(`/equipment/${item.equipmentId}`)}
+                data-shop-item={item.key}
+                // S9a: a ticket row opens the ticket (resolve lives there); a service row, the machine
+                onClick={() => navigate(item.kind === 'ticket' ? `/tickets/${item.key.slice('ticket:'.length)}` : `/equipment/${item.equipmentId}`)}
               >
                 <span className="font-mono font-bold text-xs bg-blue-50 text-navy rounded-lg px-2 py-0.5 shrink-0">
                   {item.asset}

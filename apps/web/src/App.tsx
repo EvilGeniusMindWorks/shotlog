@@ -29,6 +29,7 @@ import { DrillPlanPage } from '@/pages/DrillPlanPage';
 import { MyRecordsPage } from '@/pages/MyRecordsPage';
 import { CompanyRecordsPage } from '@/pages/CompanyRecordsPage';
 import { EquipmentPage } from '@/pages/EquipmentPage';
+import { RepairTicketPage } from '@/pages/RepairTicketPage';
 import { CrewPage } from '@/pages/CrewPage';
 import { SubmitDayPage } from '@/pages/SubmitDayPage';
 import { SubmitDrillLogPage } from '@/pages/SubmitDrillLogPage';
@@ -134,6 +135,7 @@ export function App() {
           <Route path="/records" element={<RecordsRouter />} />
           <Route path="/drill-logs" element={<MyRecordsPage />} />
           <Route path="/equipment/:id" element={<EquipmentPage />} />
+          <Route path="/tickets/:id" element={<RepairTicketPage />} />
           <Route path="/equipment-locator" element={<EquipmentLocatorPage />} />
           <Route path="/drilling" element={<DrillingPage />} />
           <Route path="/crew/:id" element={<CrewPage />} />

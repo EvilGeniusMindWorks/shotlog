@@ -153,7 +153,7 @@ function JobPickSheet({
 }) {
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
+      className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-[60] p-0 sm:p-4"
       onClick={onClose}
     >
       <div
@@ -205,7 +205,7 @@ function IncidentTypeSheet({ onClose }: { onClose: () => void }) {
   };
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
+      className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-[60] p-0 sm:p-4"
       onClick={onClose}
     >
       <div
