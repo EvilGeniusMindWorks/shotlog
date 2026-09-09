@@ -64,7 +64,10 @@ export function useDayPhases(
     }
     // S9b follow-up (Matthew, Sep 9): an open log with NO holes — one a tap opened
     // by mistake on a finished pattern — must not drag the phase back to "in progress"
-    const counted = logs.filter((l) => !(l.status === 'open' && (holesByLog.get(l.id) ?? 0) === 0));
+    // …but a freshly SENT plan is an empty open log too — only ignore an empty
+    // log when other logs on the day already carry holes (that is a stray)
+    const anyHoles = logs.some((l) => (holesByLog.get(l.id) ?? 0) > 0);
+    const counted = logs.filter((l) => !(anyHoles && l.status === 'open' && (holesByLog.get(l.id) ?? 0) === 0));
     const drillerNames = [...new Set(counted.map((l) => l.drillerName).filter(Boolean))];
     const allAccepted = counted.length > 0 && counted.every((l) => l.status === 'accepted');
     const allComplete = counted.length > 0 && counted.every((l) => l.status !== 'open');
