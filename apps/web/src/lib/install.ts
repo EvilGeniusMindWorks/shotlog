@@ -42,6 +42,16 @@ export function isIOS(): boolean {
   return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 }
 
+/** Android (any browser) — the manual route when Chrome never offered its prompt */
+export function isAndroid(): boolean {
+  return /Android/i.test(navigator.userAgent);
+}
+
+/** Samsung Internet words its menu differently from Chrome */
+export function isSamsungInternet(): boolean {
+  return /SamsungBrowser/i.test(navigator.userAgent);
+}
+
 export function canPromptInstall(): boolean {
   return deferred !== null;
 }
@@ -77,12 +87,14 @@ export function installDismissed(): boolean {
 export interface InstallState {
   standalone: boolean;
   ios: boolean;
+  android: boolean;
+  samsung: boolean;
   canPrompt: boolean;
   dismissed: boolean;
 }
 
 function read(): InstallState {
-  return { standalone: isStandalone(), ios: isIOS(), canPrompt: canPromptInstall(), dismissed: installDismissed() };
+  return { standalone: isStandalone(), ios: isIOS(), android: isAndroid(), samsung: isSamsungInternet(), canPrompt: canPromptInstall(), dismissed: installDismissed() };
 }
 
 export function useInstallState(): InstallState {

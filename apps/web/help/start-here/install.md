@@ -11,7 +11,7 @@ ShotLog runs in the browser, but it is meant to be installed: an icon on the hom
 ## Android tablet or phone (Chrome)
 
 1. Open ShotLog in Chrome and sign in.
-2. Chrome offers **Add ShotLog to Home screen** — tap it. If it does not, open Chrome's menu (⋮) and choose **Add to Home screen** or **Install app**.
+2. Chrome offers **Add ShotLog to Home screen** — tap it. If it does not, open Chrome's menu (⋮) and choose **Install app** or **Add to Home screen**. In Samsung Internet the menu says **Add page to → Home screen**. The Install card in Settings shows the steps for the browser you are in.
 3. Open ShotLog from the new icon from now on.
 
 ## iPhone or iPad (Safari)

@@ -12,7 +12,9 @@ export function InstallCard({ always = false, tone = 'card' }: { always?: boolea
   const s = useInstallState();
   if (s.standalone) return null;
   if (!always && s.dismissed) return null;
-  if (!s.canPrompt && !s.ios) return null;
+  // Android without Chrome's prompt (Samsung Internet, Firefox, a prompt Chrome
+  // already spent): the manual route, never nothing (S9b follow-up, 2026-09-09)
+  if (!s.canPrompt && !s.ios && !s.android) return null;
 
   const shell =
     tone === 'card'
@@ -38,10 +40,22 @@ export function InstallCard({ always = false, tone = 'card' }: { always?: boolea
                 <span className="text-gray-400">3.</span> Open ShotLog from the icon from now on
               </li>
             </ol>
-          ) : (
+          ) : s.canPrompt ? (
             <p className="text-sm text-gray-600">
               Opens like an app, works offline, and keeps you signed in with your PIN.
             </p>
+          ) : (
+            <ol className="text-sm text-gray-600 space-y-1 list-none" data-install-manual={s.samsung ? 'samsung' : 'android'}>
+              <li className="flex items-center gap-2">
+                <span className="text-gray-400">1.</span> Open the browser menu <b>⋮</b> (top right)
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-gray-400">2.</span> Choose {s.samsung ? <><b>Add page to</b> → <b>Home screen</b></> : <><b>Install app</b> (or <b>Add to Home screen</b>)</>}
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-gray-400">3.</span> Open ShotLog from the icon from now on
+              </li>
+            </ol>
           )}
         </div>
       </div>
