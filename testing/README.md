@@ -16,7 +16,9 @@ npm run e2e -- 37 45 46 -p     # several in parallel (own page each, shared brow
 npm run e2e -- 49 --headed     # watch it
 ```
 
-`node testing/run.mjs …` is the same thing. Exit code 1 on any FAIL/ERROR.
+`node testing/run.mjs …` is the same thing.
+
+**Pre-push hook** (`git config core.hooksPath .githooks`, once per clone): typechecks the web app and runs the harnesses mapped to the changed files in `harness-map.json` (serially, up to six) when the local API is up. `SKIP_HOOK=1 git push` bypasses. New harnesses: `node scripts/harness-new.mjs "<title>" --sections "a|b" --files "x,y"` (file, README line, map entry). Deploys: `node scripts/deploy.mjs --message-file … --markers …` (see .claude/skills). Exit code 1 on any FAIL/ERROR.
 Typical times on the local stack: 15–60 s per harness; five in parallel
 in about a minute. (Through the Playwright MCP each took 2–4 minutes and
 echoed its whole script — do not go back to that path for regressions.)

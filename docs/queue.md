@@ -9,10 +9,8 @@ is built, move its line to docs/decisions.md with the round that shipped it.
 - Crash reporting on the live app and the API (Sentry, free tier), with the
   Express global error handler; today a crash reaches Matthew only if someone
   taps Report.
-- Four shortcuts: /round (plan page, decisions row, harness scaffold, README
-  line), /deploy (commit, push, poll every chunk, check-off), /harness-new with
-  a file→harness map and a pre-push hook, /release-notes (git log since the
-  last tag → a plain-English "what changed" for Mark). Tag releases.
+- ~~Four shortcuts~~ SHIPPED Sep 9 evening (see decisions.md): /round, /deploy,
+  /harness-new + pre-push hook, /release-notes + the first What's new page.
 - Open items move to GitHub Issues; decisions.md keeps decisions only.
 - Testing layers: property tests (fast-check) over calculations, hole
   distribution and the status-transition graphs; the permission contract

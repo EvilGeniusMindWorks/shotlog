@@ -36,6 +36,7 @@ Android tablet (primary), phone, PC/Mac — all via PWA. Full functionality offl
 - Testing: Vitest for unit tests, especially the calculations module
 - Browser harnesses: `npm run e2e -- <n> [--only k] [-p]` (see testing/README.md) — never through the Playwright MCP for regressions; new harnesses take `(page, lib)` and use `lib.report()` sections
 - Typecheck: `npm run typecheck:web` (incremental); the dev API runs under `tsx watch`
+- Skills (`.claude/skills`): `/round` (plan page → docs → build → harness → deploy → check-off, with `scripts/round.mjs` scaffolding), `/deploy` (`scripts/deploy.mjs`: commit, push, wait until live, live checks), `/harness-new` (`scripts/harness-new.mjs` + `testing/harness-map.json` + the pre-push hook), `/release-notes` (`scripts/release-notes.mjs` → `help/start-here/whats-new.md`, then a `release/*` tag). Plan pages stay in plain language — no file names or code (Matthew, Sep 9 2026)
 
 ## Spec Documents (in ~/Downloads/files-20/)
 - `BlastLog-Pro-Spec.md` — Main spec: data model, field mapping, architecture

@@ -16,7 +16,7 @@ async (page, lib) => {
     R.ok('the header offers Sign in, not Back to ShotLog', (await P0.locator('[data-help-to-app]').innerText()) === 'Sign in');
     await P0.locator('[data-help-section-link="start-here"]').click();
     await P0.locator('[data-help-section="start-here"]').waitFor({ timeout: 5000 });
-    R.ok('Start here lists its seven pages', (await P0.locator('[data-help-page-link]').count()) === 7);
+    R.ok('Start here lists its eight pages (What\'s new joined in S10)', (await P0.locator('[data-help-page-link]').count()) === 8);
     await P0.locator('[data-help-page-link="your-pin"]').click();
     await P0.locator('[data-help-article="your-pin"]').waitFor({ timeout: 5000 });
     const art = await P0.locator('[data-help-article]').innerText();

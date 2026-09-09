@@ -13,7 +13,13 @@
     "test": "npm run test -w packages/shared",
     "typecheck": "tsc --build && tsc --noEmit -p apps/web",
     "typecheck:web": "tsc --noEmit -p apps/web",
-    "e2e": "node testing/run.mjs"
+    "e2e": "node testing/run.mjs",
+    "deploy": "node scripts/deploy.mjs",
+    "round": "node scripts/round.mjs",
+    "harness:new": "node scripts/harness-new.mjs",
+    "release-notes": "node scripts/release-notes.mjs",
+    "licenses": "node scripts/licenses.mjs",
+    "audit": "node scripts/audit.mjs"
   },
   "engines": {
     "node": ">=18.0.0"
