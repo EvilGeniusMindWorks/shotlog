@@ -14,7 +14,7 @@ Your session name and device are given in your brief. Set the device on your ver
 |---|---|
 | Go to an address | `open <url>` |
 | Look at the screen | `snapshot` (an accessibility tree: what a screen reader would say — buttons, links, text, fields). Add a number for more: `snapshot 30000` |
-| Tap something you can see | `click "Its text"` or `click button "Its name"` / `click link "…"` / `click tab "…"`. If several match, add an index: `click "Continue" 1` |
+| Tap something you can see | **By number:** every snapshot ends with a numbered list of everything tappable — `click 12`, `fill 7 the value`, `select 9 option`. Or by words: `click "Its text"`, `click button "Its name"`, `click link "…"`, `click tab "…"`; if several match, add an index: `click "Continue" 1` |
 | Type into a field | `fill "Field label or placeholder" the value` |
 | Type into whatever is focused | `type words` · `press Enter` · `press Escape` · `press Tab` |
 | Pick from a dropdown | `select "Label" value-or-option-text` |
@@ -26,6 +26,7 @@ Your session name and device are given in your brief. Set the device on your ver
 | Go back | `back` |
 | See it as a picture | `screenshot` → prints a PNG path; open it with the Read tool when the tree is not enough |
 | Sign on a signature pad | `'{"op":"sign"}'` draws a signature on the visible pad |
+| A browser dialog appears (the screen says `!!! DIALOG`) | Read it like a person would, then `dialog accept`, `dialog accept some text` (for a question that wants text) or `dialog dismiss`. Nothing else works until you answer it. |
 
 Every command returns the screen afterwards. An `ERROR:` line means nothing happened; the screen follows so you can re-plan.
 

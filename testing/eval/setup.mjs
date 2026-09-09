@@ -7,6 +7,7 @@
 //
 //   node testing/eval/setup.mjs            (local stack must be up)
 //   node testing/eval/setup.mjs --clean    delete the eval companies and stop
+//   node testing/eval/setup.mjs --force --lean   rebuild, and prune the dev roster's harness names
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -65,7 +66,7 @@ for (const [arm, name] of Object.entries(ARMS)) {
   console.log(`${arm}: ${name} ${cid} (${c.body.copied} reference records)`);
 
   // Granite Ridge / Ledgeville Pit / Phase 1 — written server-side like the rehearsal fixture
-  const seeded = execFileSync('npx', ['tsx', path.resolve('testing/eval/seed-hierarchy.mts'), cid], {
+  const seeded = execFileSync('npx', ['tsx', path.resolve('testing/eval/seed-hierarchy.mts'), cid, ...(process.argv.includes('--lean') ? ['--lean'] : [])], {
     cwd: path.resolve('apps/server'),
     env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL ?? 'postgresql://postgres:spikepass@localhost:5434/shotlog' },
     encoding: 'utf8',

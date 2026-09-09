@@ -990,7 +990,7 @@ Eight agents played Barry / Dinis / Sam / Evette+Tony through one day, with and 
 | 4 | Send Back via native prompt(); no reason on the returned day | ask sheet (11 confirm() + 1 prompt() replaced), reason required, `sendBackBy/At`, day banner | 2 | ✅ shipped 2026-09-09 (harness61 13/13) |
 | 5 | Read-only role's edit silently reverts under a green chip | ReadOnlyWrap (disabled fieldset + who-can line); discarded writes toast | 2 | ✅ shipped (harness61) |
 | 7 | Office shown Approve/Send Back it cannot use; supervisor cannot invite | Approvals gated on approve_days with a line; logins follow manage_people | 2 | ✅ shipped (harness61) |
-| 8 | Fleet chips AND — "what's down?" returns nothing | Unavailable · In shop · Out of service · Repair open OR together | 3 | ✅ built (harness62) |
-| 9 | Plan grid buttons/holes unnamed; how to leave a hole out unclear | aria names + keyboard on both grid editors; footer copy | 3 | ✅ built (harness62) |
-| 10 | Off-plan holes invisible; seismo reading not editable, distance elsewhere | off-plan count in the header; Edit on readings; distance line with link | 3 | ✅ built (harness62) |
+| 8 | Fleet chips AND — "what's down?" returns nothing | Unavailable · In shop · Out of service · Repair open OR together | 3 | ✅ shipped 2026-09-09 (harness62 13/13) |
+| 9 | Plan grid buttons/holes unnamed; how to leave a hole out unclear | aria names + keyboard on both grid editors; footer copy | 3 | ✅ shipped 2026-09-09 (harness62 13/13) |
+| 10 | Off-plan holes invisible; seismo reading not editable, distance elsewhere | off-plan count in the header; Edit on readings; distance line with link | 3 | ✅ shipped 2026-09-09 (harness62 13/13) |
 | — | Harness: coordinator, numbered refs, dialogs surfaced, snapshot seed, template company | next | 3 | ⏳ |

@@ -6,7 +6,9 @@
 //   b A-dinis open http://localhost:5199/enroll/abc          (device from EVAL_DEVICE or "phone")
 //   b A-dinis snapshot                                         accessibility tree of the screen
 //   b A-dinis click "Sign in"                                  by visible text (buttons, links, rows…)
+//   b A-dinis click 12                                          by the number the snapshot gave it (fill 7 text · select 9 value work too)
 //   b A-dinis click button "Sign in"                           by role + name
+//   b A-dinis dialog accept [text] | dialog dismiss              answer a native dialog the screen shows
 //   b A-dinis fill "Email" you@example.com                     by label / placeholder
 //   b A-dinis type "some words"                                keyboard into the focused field
 //   b A-dinis press Enter
@@ -32,11 +34,13 @@ else {
   switch (op) {
     case 'open': a.url = rest[0]; break;
     case 'click': case 'check':
-      if (rest.length >= 2 && roles.has(rest[0])) { a.role = rest[0]; a.name = rest[1]; if (rest[2] != null) a.nth = Number(rest[2]); }
+      if (/^\d+$/.test(rest[0] ?? '')) a.ref = Number(rest[0]);
+      else if (rest.length >= 2 && roles.has(rest[0])) { a.role = rest[0]; a.name = rest[1]; if (rest[2] != null) a.nth = Number(rest[2]); }
       else { a.text = rest[0]; if (rest[1] != null) a.nth = Number(rest[1]); }
       break;
-    case 'fill': a.label = rest[0]; a.value = rest.slice(1).join(' '); break;
-    case 'select': a.label = rest[0]; a.value = rest[1]; break;
+    case 'fill': if (/^\d+$/.test(rest[0] ?? '')) { a.ref = Number(rest[0]); a.value = rest.slice(1).join(' '); } else { a.label = rest[0]; a.value = rest.slice(1).join(' '); } break;
+    case 'select': if (/^\d+$/.test(rest[0] ?? '')) { a.ref = Number(rest[0]); a.value = rest[1]; } else { a.label = rest[0]; a.value = rest[1]; } break;
+    case 'dialog': a.answer = rest[0] === 'dismiss' ? 'dismiss' : 'accept'; if (rest[0] !== 'dismiss' && rest[0] !== 'accept') a.text = rest.join(' '); else if (rest[1] != null) a.text = rest.slice(1).join(' '); break;
     case 'type': a.text = rest.join(' '); break;
     case 'press': a.key = rest[0]; break;
     case 'upload': a.files = rest; break;
@@ -57,7 +61,7 @@ async function post(body) {
   return { ok: r.ok, text: await r.text() };
 }
 let r = await post(a);
-if (!r.ok && a.op === 'fill' && a.label) {
+if (!r.ok && a.op === 'fill' && a.label && a.ref == null) {
   const alt = await post({ ...a, label: undefined, placeholder: a.label });
   if (alt.ok) r = alt;
   else {

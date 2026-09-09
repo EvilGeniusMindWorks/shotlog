@@ -4,6 +4,7 @@
 //
 //   node testing/eval/briefs.mjs A barry-am      → prints the prompt for that agent
 //   steps: barry-am · dinis · barry-pm · sam · evette · barry-refile · judge
+//   snapshot re-run (S9a before/after): dinis-enrol · dinis-after · sam-after · judge-after
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -12,7 +13,9 @@ const setup = JSON.parse(fs.readFileSync(path.resolve('testing/eval/out/setup.js
 const A = setup.arms[arm];
 if (!A && step !== 'judge') throw new Error(`no arm ${arm} in setup.json`);
 const WEB = 'http://localhost:5199';
-const OUTDIR = path.resolve('testing/eval/out');
+// EVAL_RUN=after keeps a re-run's records apart from the first run's
+const OUTDIR = path.resolve('testing/eval/out', process.env.EVAL_RUN ?? '');
+fs.mkdirSync(OUTDIR, { recursive: true });
 const dow = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }); };
 
 const armRule = arm === 'A'
@@ -188,6 +191,66 @@ Evette sent the day back. Fix it and refile. (Same session as this afternoon: \`
 1. Find the returned day, read the note, add the seismo distance (450 ft), refile. **Done when:** the day reads Filed again as version 2.`,
   },
 };
+
+// ── S9a before/after: the same people, starting from a snapshot ────────────
+steps['dinis-enrol'] = {
+  session: 'dinis', device: 'phone', who: 'dinis',
+  text: `# Dinis — on the phone (first sitting: your account)
+
+${persona.dinis}
+
+Your invitation email says: "Mark Costa invited you to ShotLog as a driller at Eval ${arm}. Open this link to create your account: ${inv('dinis').link}". Your email address is ${inv('dinis').email}. Choose any password of 8+ characters and write it in your record file.
+
+## Task, this sitting
+
+1. Open the invitation, set a password and PIN, reach your home. **Done when:** your home shows your three tiles. Then STOP and end your turn — the office is loading last week's work onto your account; you will be told when to continue.`,
+};
+steps['dinis-after'] = {
+  session: 'dinis', device: 'phone', who: 'dinis',
+  text: `# Dinis — on the phone (second sitting)
+
+${persona.dinis} You created your account earlier today (your record file has the password); the office has since loaded the week's work. You are back on the phone, in the cab.
+
+Barry's text: *"Your Bench 3 east pattern is half drilled from yesterday — finish it today. Do your checklist first. Hydraulic leak on the other rig is with the shop."*
+
+## Tasks, in order
+
+2. Rig checklist for the rig you are drilling with today (the plan says which): starting hours as the meter shows. Everything passes except the horn — note it as a repair, but do NOT take the rig out of service. Sign and file. **Done when:** it reads filed.
+3. Find the plan on your home and open its drill log. It is part-drilled: log every remaining planned hole as planned, except make one of them **wet**. **Done when:** every planned position is drilled or skipped.
+4. Enter the end-of-day rig hours (the morning reading + 7) and sign the log complete. **Done when:** the log reads complete and the day's daily report shows the rig's hours "start → end".
+5. Enter your hours for the day. **Done when:** your time card shows on the day.`,
+};
+steps['sam-after'] = {
+  session: 'sam', device: 'wide', who: 'sam',
+  text: `# Sam — the shop, wide screen
+
+${persona.sam}
+
+Mark's note: *"Two things from the field: yesterday's hydraulic leak on the drill has it out of service — get it back if you can. Dinis also reported the horn on his rig this morning. Keep the meters honest: the drill with the leak actually reads 4,231 on the meter, not what the app says."*
+
+Your invitation email says: "Mark Costa invited you to ShotLog as a mechanic at Eval ${arm}. Open this link to create your account: ${inv('sam').link}". Your email address is ${inv('sam').email}. Choose any password of 8+ characters.
+
+## Tasks, in order
+
+1. Open the invitation, set a password and PIN, reach your home. **Done when:** My Shop shows Down · Tickets · Due soon.
+2. Work the queue: resolve the hydraulic-leak ticket ("boom cylinder seal replaced") and confirm the rig is back in service. **Done when:** the ticket is gone and the rig is Active.
+3. Resolve the horn ticket on the other rig ("horn relay replaced"). **Done when:** the ticket is gone.
+4. Correct the leak rig's hour meter to 4,231. **Done when:** the machine's page shows 4,231 with your correction in its history.
+5. Log an engine service on it done today at 4,231 h. **Done when:** the service shows and the due count changes.
+6. Find where that rig last worked. **Done when:** you can name the site.
+7. In the fleet list, show everything that is unavailable — in the shop or out of service — in one view. **Done when:** the list shows exactly those.`,
+};
+
+if (step === 'judge-after') {
+  console.log(`# The judge — before and after
+
+Round S9a changed the app after the first persona evaluation. Two roles re-ran from a snapshot of a working day, in both arms (A with the guide when stuck, B without): Dinis (the driller) and Sam (the shop). Compare their new records with their records from the first run, task by task, and say what changed.
+
+Read first: \`${OUTDIR}/run-notes.md\` (the first run's interventions and artifacts) and \`${OUTDIR}/judge.md\` (the first run's verdicts). Then the new records \`${OUTDIR}/after/A-dinis.md\`, \`after/B-dinis.md\`, \`after/A-sam.md\`, \`after/B-sam.md\` against the first run's \`${OUTDIR}/A-dinis.md\` … \`B-sam.md\`, and the new tap logs \`after/*.log.jsonl\` (ok:false lines are taps that did nothing). The briefs differ slightly (the re-run starts from a snapshot: \`node testing/eval/briefs.mjs A dinis-after\`, \`A sam-after\`) — compare like with like: checklist, remaining drilling, end-of-day meter, sign complete, time card; enrol, resolve tickets, meter correction, service, last worksite, fleet filter. Read nothing else.
+
+Write \`${OUTDIR}/after/judge-after.md\`: (1) per role, per task: before → after, finished? taps, wrong turns, the agent's own words on the fixed thing (Mark complete reachable? meter entered? ticket resolved? fleet filter answered "what's down"?); (2) what is still confusing, ranked, quoting; (3) anything new the changes broke or made worse; (4) a one-paragraph verdict: did S9a batches 1 and 3 fix what the first run found, for these two roles?`);
+  process.exit(0);
+}
 
 if (step === 'judge') {
   console.log(`# The judge

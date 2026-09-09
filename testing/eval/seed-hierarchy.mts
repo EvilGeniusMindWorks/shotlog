@@ -10,6 +10,25 @@ import { prisma } from '../../apps/server/src/db.js';
 
 const cid = process.argv[2];
 if (!cid) throw new Error('companyId required');
+// --lean: drop the dev company's harness leftovers from the copied roster (142
+// names in the first run — "H10-745589 Dinis", "s1-…", "bee-…") so the send
+// list looks like a real company's
+if (process.argv.includes('--lean') || process.argv.includes('--lean-only')) {
+  // Roster rows copied from the dev company whose userId is not a user HERE are
+  // unlinked names; drop the ones that look like harness leftovers, then cap
+  // the rest so the send list looks like a real company's (a dozen names)
+  const mine = new Set((await prisma.user.findMany({ where: { companyId: cid }, select: { id: true } })).map((u) => u.id));
+  const rows = await prisma.record.findMany({ where: { companyId: cid, tableName: 'crewMembers' } });
+  const parsed = rows.map((r) => { try { return { r, p: JSON.parse(r.payload) as { name?: string; userId?: string } }; } catch { return null; } }).filter((x): x is { r: typeof rows[number]; p: { name?: string; userId?: string } } => Boolean(x));
+  const unlinked = parsed.filter(({ p }) => !p.userId || !mine.has(p.userId));
+  const junk = unlinked.filter(({ p }) => /\d/.test(p.name ?? '') || /^(harness|auto |test |s1|bee|dbg|probe|foreman|h\d)/i.test(p.name ?? '') || !/^[A-Za-z' .-]+ [A-Za-z' .-]+$/.test(p.name ?? ''));
+  const keepable = unlinked.filter((x) => !junk.includes(x)).sort((a, b) => (a.p.name ?? '').localeCompare(b.p.name ?? ''));
+  const overflow = keepable.slice(12);
+  const gone = [...junk, ...overflow].map(({ r }) => r.id);
+  if (gone.length) await prisma.record.deleteMany({ where: { id: { in: gone } } });
+  console.log(`lean roster: removed ${gone.length} (${junk.length} harness names, ${overflow.length} beyond a dozen), ${rows.length - gone.length} left`);
+  if (process.argv.includes('--lean-only')) { await prisma.$disconnect(); process.exit(0); }
+}
 const now = new Date().toISOString();
 const today = now.slice(0, 10);
 const daysFromNow = (n: number) => { const d = new Date(`${today}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
