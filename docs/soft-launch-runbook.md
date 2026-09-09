@@ -52,8 +52,8 @@ the link and text it; it works once and expires in 14 days.
 6. **If the app will not work:** it runs fully offline — if you can sign in
    with your PIN you can log the day and it syncs when signal returns. If you
    cannot sign in at all, use the paper form and enter it later. Otherwise
-   text or call Matthew: _[number]_, _[hours]_ — reply within _[time]_ on
-   blast days. (Matthew to fill in; S10.)
+   call or text **877-EVIL-PRO**, Monday to Friday 9–5 — you will hear back
+   within 48 hours.
 
 ## 3. What to watch, daily, for the first two weeks
 

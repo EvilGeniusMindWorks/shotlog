@@ -15,6 +15,8 @@ import { parseCoordinates, searchAddress, formatLatLng, type GeoCandidate } from
 
 type PinMode = 'pan' | 'blast' | 'structure' | 'measure';
 
+const ARCGIS_KEY = (import.meta.env.VITE_ARCGIS_KEY as string | undefined) ?? '';
+
 const TILE_LAYERS = {
   street: {
     url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -22,17 +24,25 @@ const TILE_LAYERS = {
     // OSM serves tiles at every zoom we allow
     maxNativeZoom: 19,
   },
-  satellite: {
-    // USGS National Map orthoimagery (NAIP and partners): US government
-    // work, public domain — safe to snapshot into the shot record and the
-    // customer's PDF. Replaced Esri's public endpoint, whose terms do not
-    // cover a commercial app or stored tiles (S10, Sep 2026).
-    url: 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}',
-    attribution: 'Imagery: USDA, USGS The National Map',
-    // Native detail is ~0.6–1 m/px; above z18 Leaflet upscales rather than
-    // showing blank tiles
-    maxNativeZoom: 18,
-  },
+  satellite: ARCGIS_KEY
+    ? {
+        // Esri World Imagery through a keyed ArcGIS Location Platform endpoint
+        // (licensed for a commercial app; 2M tiles/month free). Set
+        // VITE_ARCGIS_KEY in the web build to turn this on.
+        url: `https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}?token=${ARCGIS_KEY}`,
+        attribution: 'Powered by Esri — Esri, Maxar, Earthstar Geographics, and the GIS User Community',
+        // rural New England has no tiles above ~z17; upscale from there
+        maxNativeZoom: 17,
+      }
+    : {
+        // USGS National Map orthoimagery (NAIP and partners): US government
+        // work, public domain — safe to snapshot into the shot record and the
+        // customer's PDF. No key, but the cached tiles stop at z16 in
+        // Massachusetts (z17+ is a slow 404), so upscale from z16.
+        url: 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}',
+        attribution: 'Imagery: USDA, USGS The National Map',
+        maxNativeZoom: 16,
+      },
 };
 
 const blastIcon = L.divIcon({

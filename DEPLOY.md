@@ -71,3 +71,7 @@ returns.
 
 - `VITE_CONTACT_EMAIL` — a mailbox someone reads; sent with address lookups so
   OpenStreetMap's Nominatim can identify the app, as its usage policy asks.
+- `VITE_ARCGIS_KEY` — an ArcGIS Location Platform API key (basemap scope). When
+  set, the site map's satellite layer is Esri World Imagery through the keyed
+  endpoint (2M tiles/month free); when unset it is USGS public-domain imagery,
+  which stops at zoom 16 in Massachusetts. Redeploy after changing either.

@@ -11,7 +11,8 @@ Dual-licensed packages and the option taken:
 
 Map data and services:
   Street map tiles © OpenStreetMap contributors (ODbL), tile.openstreetmap.org
-  Aerial imagery: USDA, USGS The National Map orthoimagery (US government work, public domain)
+  Aerial imagery: USDA, USGS The National Map orthoimagery (US government work, public domain);
+    with an ArcGIS key: Esri World Imagery — Esri, Maxar, Earthstar Geographics, and the GIS User Community
   Address search: Nominatim (OpenStreetMap), used under its usage policy
 
 Packages:
