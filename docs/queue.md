@@ -72,3 +72,17 @@ becomes a round. Each item says what the app does today so the plan starts from 
   stays on the home screen until every item on it is done, or until Hide is tapped on
   that device; it is not time-limited. Consider: hide itself after the first filed day
   or after 14 days, and say so on the card.
+- **A job can be created with a customer but no site, and the app invents a nameless
+  customer and site for it (Matthew, Sep 10 2026; reproduced locally).** Path: Start work
+  → Which job? → tap a customer → "+ New job for <customer>" → the Site field says
+  "Pick site…" and is not required → Create is enabled. `createJob` then sees no siteId
+  and calls `ensureCustomerAndSite` with the picker's customerName, which is EMPTY on
+  that path (the dialog passes only customerId), so it creates a customer named "" and
+  a site named "" with no address, and the job's siteId points at that site while its
+  customerId points at the real customer. On the Customers page it reads as a site
+  with no customer. Fix (when the freeze lifts): (1) the Site field is required —
+  pick one or "+ New site" with a name/address; (2) `createJob` resolves the picked
+  customer by id, never by a name that may be blank, and never creates a customer
+  with an empty name; (3) a one-time cleanup in Beta: repoint the job to the real site
+  and delete the blank customer/site (platform admin). Harness: create through the
+  dialog with no site → refused; through "+ New site" → site under the picked customer.
