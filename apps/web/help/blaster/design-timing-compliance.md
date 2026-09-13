@@ -17,7 +17,7 @@ Open the shot's **Design** (or **Continue › Confirm design & build timing** af
 The site map opens where it last was for this shot; for a new shot, on the site's saved spot, else on the job's address, else on western Massachusetts — a line under the map says which. To move it:
 
 - **Type anything** in the location bar: an address, a place name, or coordinates ("42.4412, -72.6321", degrees-minutes-seconds, or "N 42.44 W 72.63" as a phone's map app copies them). An address shows up to five matches with their town — pick the right one. Coordinates go straight to the map, no signal needed.
-- **Job's address** searches the job's address in one tap. **My GPS** uses the device and shows the fix's accuracy; wait a few seconds for a better one before taking it.
+- **Job's address** searches the job's address in one tap. **Center on me** brings the map to where you stand — the blue dot with its accuracy circle.
 - **Drag the blast pin** to the exact spot — the pin is what the record keeps, and the compliance distances measure from it.
 - **Save as the site's spot** keeps the pin for the next shot at this site.
 
@@ -30,6 +30,16 @@ Each shot shows badges for **scaled distance** and **PPV** (peak particle veloci
 - The distance is to the nearest structure on the site record.
 - The charge weight per delay comes from the explosives and the timing.
 - A red badge is not a stop, but it is worth a note in the shot before filing, because the office will ask. The **Reference** page explains each check.
+
+## Where you stand, and the ring
+
+Allow location once and a blue dot follows you on the map while it is open, with a circle for how sure the phone is. **Center on me** brings the map back to you. Standing on the shot, **Pin the blast here** drops the blast pin under your feet; at a house, **Pin a structure here** does the same for a structure. The dot is never saved or printed.
+
+A ring sits around the blast pin — 250 ft unless you change it with the slider or the box beside it. It is saved with the shot and printed on the log's map. Structures inside it turn red and are listed under the map, nearest first, with their distances; the rest are greyed below.
+
+## Naming structures and the closest one
+
+Dropping a structure pin asks for a name ("Stevens residence"); skip keeps "Structure 3". Tap a pin to rename it. Names print on the log. Whenever the closest structure changes — a pin added or moved, the blast pin moved — the map offers its distance for the plan: **Use 180 ft for compliance**. It never fills the plan by itself. Using it also redoes the scaled distance and the predicted vibration, so the badge, the plan and the seismo page agree.
 
 ## Related
 

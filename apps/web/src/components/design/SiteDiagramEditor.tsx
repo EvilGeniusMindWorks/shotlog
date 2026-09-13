@@ -2,13 +2,20 @@ import { encodeCanvasJpeg } from '@/lib/imageCompress';
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Copy, Crosshair, Home, Layers, MapPin, Ruler, Search } from 'lucide-react';
+import { Copy, Crosshair, Home, Layers, LocateFixed, MapPin, Ruler, Search } from 'lucide-react';
 import { cn, generateId } from '@/lib/utils';
 import {
   closestStructure,
   distanceFt,
+  pointEast,
+  structuresByRing,
+  clampRing,
+  FT_PER_M,
+  RING_MAX_FT,
+  RING_MIN_FT,
   type SiteDiagram,
 } from '@/lib/siteDiagram';
+import { askText } from '@/components/ui/ask-sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { parseCoordinates, searchAddress, formatLatLng, type GeoCandidate } from '@/lib/geo';
@@ -52,13 +59,15 @@ const blastIcon = L.divIcon({
   iconAnchor: [15, 15],
 });
 
-const structureIcon = (label: string) =>
+// S12: a structure inside the ring is red; outside, navy
+const structureIcon = (label: string, inside = false) =>
   L.divIcon({
-    className: '',
-    html: `<div style="display:flex;flex-direction:column;align-items:center;"><div style="width:24px;height:24px;border-radius:4px;background:#1a365d;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">⌂</div><div style="background:white;border-radius:3px;padding:0 4px;font-size:10px;font-weight:700;color:#1a365d;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.3);">${label}</div></div>`,
+    className: inside ? 'structure-pin structure-pin-inside' : 'structure-pin',
+    html: `<div style="display:flex;flex-direction:column;align-items:center;"><div style="width:24px;height:24px;border-radius:4px;background:${inside ? '#b4452e' : '#1a365d'};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">⌂</div><div style="background:white;border-radius:3px;padding:0 4px;font-size:10px;font-weight:700;color:${inside ? '#b4452e' : '#1a365d'};white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.3);">${label}</div></div>`,
     iconSize: [24, 40],
     iconAnchor: [12, 12],
   });
+const GOOD_FIX_M = 30; // ≈ 100 ft: good enough to drop a pin from where you stand
 
 interface Props {
   value: SiteDiagram;
@@ -71,6 +80,8 @@ interface Props {
   siteName?: string;
   onSaveSiteSpot?: (spot: { lat: number; lng: number }) => void | Promise<void>;
   onUseClosest?: (distanceFeet: number, label: string) => void;
+  /** S12: what the plan currently holds — the offer shows when the map's closest differs */
+  planClosest?: { distance: number; label: string };
   /** Called with a rendered PNG of the map + annotations after edits settle */
   onSnapshot?: (blob: Blob) => void;
   /** Sibling shots this diagram can be cloned to */
@@ -108,6 +119,21 @@ async function captureSnapshot(
 
     const toPt = (lat: number, lng: number) => map.latLngToContainerPoint([lat, lng]);
 
+    // S12: the distance ring, sized from the map's own projection
+    if (value.blastPin) {
+      const b = toPt(value.blastPin.lat, value.blastPin.lng);
+      const e = toPt(pointEast(value.blastPin, value.ringFt).lat, pointEast(value.blastPin, value.ringFt).lng);
+      const rPx = Math.abs(e.x - b.x);
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, rPx, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(221,107,32,0.10)';
+      ctx.fill();
+      ctx.strokeStyle = '#dd6b20';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
     // Distance lines
     if (value.blastPin) {
       const b = toPt(value.blastPin.lat, value.blastPin.lng);
@@ -131,10 +157,11 @@ async function captureSnapshot(
       ctx.lineWidth = 3;
       ctx.stroke();
     }
-    // Structure pins + labels
+    // Structure pins + labels (red inside the ring)
     for (const s of value.structures) {
       const p = toPt(s.lat, s.lng);
-      ctx.fillStyle = '#1a365d';
+      const inside = value.blastPin ? distanceFt(value.blastPin, s) <= value.ringFt : false;
+      ctx.fillStyle = inside ? '#b4452e' : '#1a365d';
       ctx.fillRect(p.x - 10, p.y - 10, 20, 20);
       ctx.strokeStyle = 'white';
       ctx.lineWidth = 2;
@@ -146,7 +173,7 @@ async function captureSnapshot(
       const w = ctx.measureText(label).width;
       ctx.fillStyle = 'white';
       ctx.fillRect(p.x - w / 2 - 3, p.y + 12, w + 6, 15);
-      ctx.fillStyle = '#1a365d';
+      ctx.fillStyle = inside ? '#b4452e' : '#1a365d';
       ctx.fillText(label, p.x - w / 2, p.y + 23);
     }
 
@@ -168,6 +195,7 @@ export function SiteDiagramEditor({
   siteName,
   onSaveSiteSpot,
   onUseClosest,
+  planClosest,
   onSnapshot,
   cloneTargets,
   onClone,
@@ -185,8 +213,14 @@ export function SiteDiagramEditor({
   const [showLatLng, setShowLatLng] = useState(false);
   const [latText, setLatText] = useState('');
   const [lngText, setLngText] = useState('');
+  // S12: the where-I-am dot. A live watch while the map is mounted (never in
+  // the background); starts on its own once location was allowed before,
+  // otherwise on "Center on me". Never saved, never in the snapshot.
   const [gps, setGps] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
+  const [gpsState, setGpsState] = useState<'off' | 'asking' | 'on' | 'denied' | 'unavailable'>('off');
   const gpsWatch = useRef<number | null>(null);
+  const meLayerRef = useRef<L.LayerGroup | null>(null);
+  const [dismissedOffer, setDismissedOffer] = useState<string | null>(null);
   const [openedOn, setOpenedOn] = useState<string>(value.center ? "this shot's map" : '');
   const [online, setOnline] = useState<boolean>(typeof navigator === 'undefined' ? true : navigator.onLine);
   useEffect(() => {
@@ -302,6 +336,11 @@ export function SiteDiagramEditor({
     compactAttribution(map);
     mapRef.current = map;
     pinsRef.current = L.layerGroup().addTo(map);
+    // Every layer group belongs to THIS map instance: React's development
+    // double-mount throws the first map away, and a group made lazily on it
+    // would keep drawing into a map that no longer exists (S12's dot did)
+    meLayerRef.current = L.layerGroup().addTo(map);
+    measureLayerRef.current = L.layerGroup().addTo(map);
     // The container can be mid-layout when the map mounts — recalc once settled
     window.setTimeout(() => map.invalidateSize(), 100);
     if (!v.center) openOnRef.current();
@@ -322,19 +361,16 @@ export function SiteDiagramEditor({
         }));
         setMode('pan');
       } else if (m === 'structure') {
+        const id = generateId();
         mutateRef.current((cur) => ({
           ...cur,
           structures: [
             ...cur.structures,
-            {
-              id: generateId(),
-              lat: e.latlng.lat,
-              lng: e.latlng.lng,
-              label: `Structure ${cur.structures.length + 1}`,
-            },
+            { id, lat: e.latlng.lat, lng: e.latlng.lng, label: `Structure ${cur.structures.length + 1}` },
           ],
         }));
         setMode('pan');
+        void nameStructureRef.current(id);
       }
     });
     map.on('moveend zoomend', () => {
@@ -357,6 +393,9 @@ export function SiteDiagramEditor({
     return () => {
       map.remove();
       mapRef.current = null;
+      pinsRef.current = null;
+      meLayerRef.current = null;
+      measureLayerRef.current = null;
     };
   }, []);
 
@@ -378,8 +417,8 @@ export function SiteDiagramEditor({
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    if (!measureLayerRef.current) measureLayerRef.current = L.layerGroup().addTo(map);
     const layer = measureLayerRef.current;
+    if (!layer) return;
     layer.clearLayers();
     for (const p of measurePts) {
       L.circleMarker(p, { radius: 5, color: '#7c3aed', fillColor: '#7c3aed', fillOpacity: 1 }).addTo(layer);
@@ -410,16 +449,17 @@ export function SiteDiagramEditor({
     pins.clearLayers();
     const { blastPin, structures } = value;
     if (blastPin) {
-      // Dashed blast-zone rectangle around the pin (wireframe style)
-      const dLat = 0.00022;
-      const dLng = 0.0003;
-      L.rectangle(
-        [
-          [blastPin.lat - dLat, blastPin.lng - dLng],
-          [blastPin.lat + dLat, blastPin.lng + dLng],
-        ],
-        { color: '#dd6b20', weight: 2, dashArray: '6,4', fill: false, interactive: false },
-      ).addTo(pins);
+      // S12: the distance ring (a true circle in metres) — was a fixed dashed box
+      L.circle(blastPin, {
+        radius: value.ringFt / FT_PER_M,
+        color: '#dd6b20',
+        weight: 2,
+        dashArray: '6,4',
+        fill: true,
+        fillOpacity: 0.08,
+        interactive: false,
+        className: 'blast-ring',
+      }).addTo(pins);
       L.marker(blastPin, { icon: blastIcon })
         .addTo(pins)
         .bindPopup(
@@ -428,11 +468,12 @@ export function SiteDiagramEditor({
     }
     for (const s of structures) {
       const dist = blastPin ? Math.round(distanceFt(blastPin, s)) : null;
+      const inside = dist !== null && dist <= value.ringFt;
       const label = dist !== null ? `${s.label} — ${dist} ft` : s.label;
-      L.marker(s, { icon: structureIcon(label) })
+      L.marker(s, { icon: structureIcon(label, inside) })
         .addTo(pins)
         .bindPopup(
-          `<b>${s.label}</b>${dist !== null ? `<br/>${dist} ft from blast` : ''}<br/><button data-remove="${s.id}" style="color:#c53030;">Remove</button>`,
+          `<b>${s.label}</b>${dist !== null ? `<br/>${dist} ft from blast${inside ? ' · inside the ring' : ''}` : ''}<br/><button data-rename="${s.id}" style="color:#1a365d;margin-right:8px;">Rename</button><button data-remove="${s.id}" style="color:#c53030;">Remove</button>`,
         );
       if (blastPin) {
         L.polyline([blastPin, s], {
@@ -451,6 +492,12 @@ export function SiteDiagramEditor({
     if (!container) return;
     const onClick = (e: Event) => {
       const target = e.target as HTMLElement;
+      const renameId = target.dataset?.rename;
+      if (renameId) {
+        mapRef.current?.closePopup();
+        void nameStructureRef.current(renameId);
+        return;
+      }
       const removeId = target.dataset?.remove;
       if (!removeId) return;
       if (removeId === 'blast') {
@@ -522,38 +569,95 @@ export function SiteDiagramEditor({
     setOpenedOn(siteSpotLabel === 'Work spot' ? "the job's work spot" : siteSpotLabel === 'Address point' ? "the site's address point" : "the site's spot");
   };
 
-  /** My GPS: watch for up to ten seconds so the fix can improve; "Use this" takes it */
-  const myLocation = () => {
+  /** Name (or rename) a structure pin through the app's one kind of dialog */
+  const nameStructure = async (id: string) => {
+    const cur = liveRef.current.structures.find((s) => s.id === id);
+    if (!cur) return;
+    const name = await askText({
+      title: 'Name this structure',
+      body: 'The name prints on the log. Skip keeps the number.',
+      label: 'Structure',
+      placeholder: 'Stevens residence',
+      initial: /^Structure \d+$/.test(cur.label) ? '' : cur.label,
+      confirmLabel: 'Save',
+      cancelLabel: 'Skip',
+    });
+    if (name == null || !name.trim()) return;
+    mutateRef.current((v) => ({ ...v, structures: v.structures.map((s) => (s.id === id ? { ...s, label: name.trim().slice(0, 60) } : s)) }));
+  };
+  const nameStructureRef = useRef(nameStructure);
+  nameStructureRef.current = nameStructure;
+
+  /** The live watch behind the where-I-am dot */
+  const startWatch = () => {
     if (!navigator.geolocation) {
-      setBusy('This device has no location service');
-      window.setTimeout(() => setBusy(null), 2000);
+      setGpsState('unavailable');
       return;
     }
-    if (gpsWatch.current != null) navigator.geolocation.clearWatch(gpsWatch.current);
-    setGps(null);
-    setBusy('Locating…');
+    if (gpsWatch.current != null) return;
+    setGpsState('asking');
     gpsWatch.current = navigator.geolocation.watchPosition(
       (pos) => {
-        setBusy(null);
+        setGpsState('on');
         setGps({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
       },
-      () => {
-        setBusy('Location unavailable');
-        window.setTimeout(() => setBusy(null), 2000);
+      (err) => {
+        setGpsState(err.code === 1 ? 'denied' : 'unavailable');
+        if (gpsWatch.current != null) navigator.geolocation.clearWatch(gpsWatch.current);
+        gpsWatch.current = null;
       },
-      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 0 },
+      { enableHighAccuracy: true, maximumAge: 5_000 },
     );
-    window.setTimeout(() => {
-      if (gpsWatch.current != null) navigator.geolocation.clearWatch(gpsWatch.current);
+  };
+  // Start on mount when location was allowed before; stop when the map leaves the screen
+  useEffect(() => {
+    let live = true;
+    const perms = (navigator as Navigator & { permissions?: Permissions }).permissions;
+    if (perms?.query) {
+      perms
+        .query({ name: 'geolocation' as PermissionName })
+        .then((st) => {
+          if (live && st.state === 'granted') startWatch();
+        })
+        .catch(() => undefined);
+    }
+    return () => {
+      live = false;
+      if (gpsWatch.current != null) navigator.geolocation?.clearWatch(gpsWatch.current);
       gpsWatch.current = null;
-    }, 10_000);
-  };
-  const useGps = () => {
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // Draw the dot and its accuracy circle
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const layer = meLayerRef.current;
+    if (!layer) return;
+    layer.clearLayers();
     if (!gps) return;
-    flyTo(gps.lat, gps.lng, 17);
-    setOpenedOn(`my GPS (±${Math.round(gps.accuracy)} m)`);
-    setGps(null);
+    L.circle(gps, { radius: gps.accuracy, color: '#2b5fa8', weight: 1, opacity: 0.5, fillColor: '#2b5fa8', fillOpacity: 0.12, interactive: false, className: 'me-accuracy' }).addTo(layer);
+    L.circleMarker(gps, { radius: 7, color: 'white', weight: 2, fillColor: '#2b5fa8', fillOpacity: 1, interactive: false, className: 'me-dot' }).addTo(layer);
+  }, [gps]);
+  const centerOnMe = () => {
+    if (gpsWatch.current == null) startWatch();
+    if (gps) {
+      flyTo(gps.lat, gps.lng, 17);
+      setOpenedOn(`where you stand (±${Math.round(gps.accuracy * FT_PER_M)} ft)`);
+    }
   };
+  const goodFix = Boolean(gps && gps.accuracy <= GOOD_FIX_M);
+  const pinBlastHere = () => {
+    if (!gps || !goodFix) return;
+    mutate((cur) => ({ ...cur, blastPin: { lat: gps.lat, lng: gps.lng } }));
+  };
+  const pinStructureHere = () => {
+    if (!gps || !goodFix) return;
+    const id = generateId();
+    mutate((cur) => ({ ...cur, structures: [...cur.structures, { id, lat: gps.lat, lng: gps.lng, label: `Structure ${cur.structures.length + 1}` }] }));
+    void nameStructure(id);
+  };
+  const setRing = (ft: number) => mutate((cur) => ({ ...cur, ringFt: clampRing(ft) }));
   const goLatLng = () => {
     const c = parseCoordinates(`${latText}, ${lngText}`);
     if (!c) {
@@ -578,6 +682,25 @@ export function SiteDiagramEditor({
   };
 
   const closest = closestStructure(value);
+  const byRing = structuresByRing(value);
+  // S12: the offer — when the map's closest structure differs from what the plan holds
+  const closestRounded = closest ? Math.round(closest.distance) : null;
+  const planHas = Boolean(planClosest && planClosest.distance > 0);
+  const differs =
+    closest != null && closestRounded != null && (!planHas || planClosest!.distance !== closestRounded || planClosest!.label !== closest.pin.label);
+  const offerKey = closest ? `${closest.pin.id}:${closestRounded}` : null;
+  const showOffer = Boolean(onUseClosest && closest && differs && dismissedOffer !== offerKey);
+  const fixLine = !gps
+    ? gpsState === 'asking'
+      ? 'Finding you…'
+      : gpsState === 'denied'
+        ? "Location is off for ShotLog in the phone's settings."
+        : gpsState === 'unavailable'
+          ? 'No location fix right now.'
+          : null
+    : goodFix
+      ? `Fix ±${Math.round(gps.accuracy * FT_PER_M)} ft — good. The dot follows you while this screen is open.`
+      : `Weak fix ±${Math.round(gps.accuracy * FT_PER_M)} ft — wait a moment, or step away from the truck; the pin buttons wait for a better one.`;
 
   return (
     <div className="space-y-2">
@@ -624,8 +747,8 @@ export function SiteDiagramEditor({
               <MapPin className="h-4 w-4 mr-1" /> {siteSpotLabel ?? (siteName ? `${siteName}'s spot` : "Site's spot")}
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={myLocation} data-location-gps>
-            <Crosshair className="h-4 w-4 mr-1" /> My GPS
+          <Button variant="outline" size="sm" onClick={centerOnMe} data-location-gps>
+            <LocateFixed className="h-4 w-4 mr-1" /> Center on me
           </Button>
           <Button variant="outline" size="sm" onClick={() => setShowLatLng((v) => !v)} data-location-latlng>
             Coordinates…
@@ -636,10 +759,19 @@ export function SiteDiagramEditor({
             </Button>
           )}
         </div>
-        {gps && (
-          <div className="flex items-center gap-2 text-xs text-gray-600" data-location-gps-fix>
-            GPS fix {formatLatLng(gps)} · ±{Math.round(gps.accuracy)} m{gps.accuracy > 30 ? ' — wait a moment for a better one, or' : ' —'}
-            <Button size="sm" className="h-7" onClick={useGps} data-location-gps-use>Use this</Button>
+        {(gps || gpsState !== 'off') && (
+          <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600" data-location-gps-fix data-me-good={goodFix ? '1' : '0'}>
+            <span data-me-line>{fixLine}</span>
+            {gps && (
+              <>
+                <Button size="sm" className="h-7" onClick={pinBlastHere} disabled={!goodFix} data-me-pin-blast>
+                  <Crosshair className="h-3.5 w-3.5 mr-1" /> Pin the blast here
+                </Button>
+                <Button size="sm" variant="outline" className="h-7" onClick={pinStructureHere} disabled={!goodFix} data-me-pin-structure>
+                  <Home className="h-3.5 w-3.5 mr-1" /> Pin a structure here
+                </Button>
+              </>
+            )}
           </div>
         )}
         {showLatLng && (
@@ -700,6 +832,37 @@ export function SiteDiagramEditor({
         </Button>
       </div>
 
+      {/* S12: the ring */}
+      {value.blastPin && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2" data-ring-control>
+          <span className="text-sm font-medium whitespace-nowrap">Ring</span>
+          <input
+            type="range"
+            min={RING_MIN_FT}
+            max={RING_MAX_FT}
+            step={10}
+            value={value.ringFt}
+            onChange={(e) => setRing(Number(e.target.value))}
+            className="flex-1 min-w-[120px]"
+            aria-label="Ring radius in feet"
+            data-ring-slider
+          />
+          <Input
+            type="number"
+            inputMode="numeric"
+            min={RING_MIN_FT}
+            max={RING_MAX_FT}
+            step={10}
+            value={value.ringFt}
+            onChange={(e) => setRing(Number(e.target.value) || value.ringFt)}
+            className="w-20 h-8"
+            aria-label="Ring radius in feet"
+            data-ring-input
+          />
+          <span className="text-sm text-gray-600">ft · <b data-ring-inside-count>{byRing.inside.length}</b> inside</span>
+        </div>
+      )}
+
       {(mode !== 'pan' || busy) && (
         <div
           className={cn(
@@ -748,17 +911,59 @@ export function SiteDiagramEditor({
         </div>
       )}
 
-      {/* Closest structure → compliance auto-fill */}
-      {closest && (
-        <div className="flex items-center justify-between bg-navy-50 rounded-lg px-3 py-2">
-          <span className="text-sm">
-            Closest structure: <b>{closest.pin.label}</b> —{' '}
-            <span className="font-mono font-bold">{Math.round(closest.distance)} ft</span>
-          </span>
-          {onUseClosest && (
-            <Button size="sm" onClick={() => onUseClosest(Math.round(closest.distance), closest.pin.label)}>
-              Use for Compliance
-            </Button>
+      {/* S12: the closest structure — offered for compliance, never filled in by itself */}
+      {closest && closestRounded != null && (
+        showOffer ? (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm" data-closest-offer>
+            <p>
+              Closest structure is now <b>{closest.pin.label}</b> at <span className="font-mono font-bold">{closestRounded} ft</span>
+              {planHas ? <span className="text-gray-600"> — the plan says {planClosest!.distance} ft{planClosest!.label ? ` (${planClosest!.label})` : ''}.</span> : <span className="text-gray-600"> — the plan has no compliance distance yet.</span>}
+            </p>
+            <div className="flex flex-wrap gap-2 mt-1.5">
+              <Button size="sm" onClick={() => onUseClosest?.(closestRounded, closest.pin.label)} data-closest-offer-use>
+                Use {closestRounded} ft for compliance
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setDismissedOffer(offerKey)} data-closest-offer-keep>
+                {planHas ? `Keep ${planClosest!.distance}` : 'Not now'}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between bg-navy-50 rounded-lg px-3 py-2 text-sm" data-closest-line>
+            <span>
+              Closest structure: <b>{closest.pin.label}</b> — <span className="font-mono font-bold">{closestRounded} ft</span>
+              {planHas && !differs && <span className="text-green-700"> · used for compliance</span>}
+            </span>
+            {onUseClosest && differs && (
+              <Button size="sm" variant="outline" onClick={() => onUseClosest(closestRounded, closest.pin.label)} data-closest-use>
+                Use for compliance
+              </Button>
+            )}
+          </div>
+        )
+      )}
+      {value.blastPin && value.structures.length > 0 && (
+        <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm space-y-1" data-structure-list>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+            Within {value.ringFt} ft <span className="ml-1 rounded-full bg-red-100 text-red-700 px-1.5 normal-case tracking-normal" data-ring-inside-badge>{byRing.inside.length}</span>
+          </p>
+          {byRing.inside.length === 0 && <p className="text-xs text-gray-500">Nothing inside the ring.</p>}
+          {byRing.inside.map((x) => (
+            <div key={x.pin.id} className="flex items-center justify-between" data-structure-row={x.pin.id} data-inside="1">
+              <span className="text-red-700 font-medium">{x.pin.label}</span>
+              <span className="font-mono">{Math.round(x.distance)} ft</span>
+            </div>
+          ))}
+          {byRing.outside.length > 0 && (
+            <>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 pt-1">Beyond</p>
+              {byRing.outside.map((x) => (
+                <div key={x.pin.id} className="flex items-center justify-between text-gray-500" data-structure-row={x.pin.id} data-inside="0">
+                  <span>{x.pin.label}</span>
+                  <span className="font-mono">{Number.isFinite(x.distance) ? `${Math.round(x.distance)} ft` : '—'}</span>
+                </div>
+              ))}
+            </>
           )}
         </div>
       )}

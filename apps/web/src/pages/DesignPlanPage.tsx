@@ -20,7 +20,7 @@ import {
   delayWindowSizes,
   type ShotDiagram,
 } from '@/lib/shotDiagram';
-import { parseSiteDiagram, serializeSiteDiagram, type SiteDiagram } from '@/lib/siteDiagram';
+import { parseSiteDiagram, serializeSiteDiagram, type SiteDiagram, structuresByRing } from '@/lib/siteDiagram';
 import {
   scaledDistance,
   predictedPPV,
@@ -216,17 +216,19 @@ function DesignPlanInner({
     saveTimer.current = window.setTimeout(flush, 400);
   };
 
+  // S12: using the closest structure also redoes the scaled distance and the
+  // predicted vibration at once — the badge, the plan and the seismo page
+  // used to disagree until another field was touched.
   const useClosestForCompliance = (distanceFeet: number, label: string) => {
     void db.shots.get(shot.id).then((current) => {
       if (!current) return;
-      return db.shots.update(shot.id, {
-        designPlan: {
-          ...current.designPlan,
-          closestStructureDistance: distanceFeet,
-          closestStructureLocation: label,
-        },
-        updatedAt: nowISO(),
-      });
+      const plan = { ...current.designPlan, closestStructureDistance: distanceFeet, closestStructureLocation: label };
+      if (plan.closestStructureDistance > 0 && plan.maxPoundsPerDelay > 0) {
+        plan.scaledDistance = scaledDistance(plan.closestStructureDistance, plan.maxPoundsPerDelay);
+        const k = plan.kFactor || (ctx?.kFactor ?? 180);
+        plan.predictedPPV = plan.scaledDistance > 0 && k > 0 ? predictedPPV(k, plan.scaledDistance) : 0;
+      }
+      return db.shots.update(shot.id, { designPlan: plan, updatedAt: nowISO() });
     });
   };
 
@@ -408,7 +410,7 @@ function DesignPlanInner({
           title="Site Diagram"
           subtitle={
             siteDiagram.blastPin
-              ? `${siteDiagram.structures.length} structure${siteDiagram.structures.length === 1 ? '' : 's'} pinned · ${siteDiagram.baseLayer}`
+              ? `${siteDiagram.structures.length} structure${siteDiagram.structures.length === 1 ? '' : 's'} · ${structuresByRing(siteDiagram).inside.length} within ${siteDiagram.ringFt} ft · ${siteDiagram.baseLayer}`
               : 'Find the site, pin the blast & structures'
           }
         >
@@ -431,6 +433,7 @@ function DesignPlanInner({
                 : undefined
             }
             onUseClosest={useClosestForCompliance}
+            planClosest={{ distance: shot.designPlan.closestStructureDistance, label: shot.designPlan.closestStructureLocation }}
             onSnapshot={saveSnapshot}
             cloneTargets={cloneTargets}
             onClone={cloneSiteTo}

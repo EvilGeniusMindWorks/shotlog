@@ -34,7 +34,8 @@
   ],
   "apps/web/src/components/design/SiteDiagramEditor.tsx": [
     67,
-    68
+    68,
+    70
   ],
   "apps/web/src/components/forms/DailyReportForm.tsx": [
     60,
@@ -79,7 +80,8 @@
     62,
     64,
     67,
-    68
+    68,
+    70
   ],
   "apps/web/src/pages/DrillChecklistPage.tsx": [
     63,
@@ -96,7 +98,8 @@
   ],
   "apps/web/src/pages/PrintBlastLogPage.tsx": [
     64,
-    69
+    69,
+    70
   ],
   "apps/web/src/pages/PrintDailyReportPage.tsx": [
     68,
@@ -117,7 +120,8 @@
   ],
   "apps/web/src/pdfdocs/blastLog.tsx": [
     64,
-    69
+    69,
+    70
   ],
   "packages/shared/src/capabilities.ts": [
     30
@@ -163,5 +167,8 @@
   ],
   "apps/web/src/main.tsx": [
     69
+  ],
+  "apps/web/src/lib/siteDiagram.ts": [
+    70
   ]
 }

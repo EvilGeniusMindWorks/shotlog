@@ -231,3 +231,9 @@ page · customer/site/job create (new) · contacts · My Records · reference
 - The first-week card leaves on its own: all done, or the first day Mark files, or 14 days — and says so. It comes back from the ? menu.
 - "Which job?" puts jobs within two miles at the top with the distance when Mark allows his location; it never picks for him. Starting a day at a site with no map spot offers to remember where he is standing.
 - A crash on his phone reaches Matthew without a Report tap; the Report button still adds his own words.
+
+## Round S12 — where I am, and a ring around the blast (2026-09-13, plan artifact 4a8a1f2a)
+
+- On the site map Mark sees a blue dot where he stands, with its accuracy; "Pin the blast here" drops the blast pin under his feet. The dot is him, not the record.
+- A 250 ft ring (his number to change) sits around the blast pin, saved with each shot and printed on the log's map; the structures inside are listed by name, nearest first.
+- Structure pins get names when dropped; the closest one is offered for the plan's compliance distance whenever it changes — offered, never filled in — and using it redoes the scaled-distance maths at once.

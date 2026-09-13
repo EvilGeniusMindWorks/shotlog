@@ -8,7 +8,7 @@ import { db } from '@/db';
 import { getJobView } from '@/lib/jobContext';
 import { distributeByHoles, powderFactor } from '@shotlog/shared';
 import { DELAY_COLORS, computeFiringTimes, parseDiagram } from '@/lib/shotDiagram';
-import { distanceFt, parseSiteDiagram } from '@/lib/siteDiagram';
+import { distanceFt, parseSiteDiagram, ringCaption } from '@/lib/siteDiagram';
 import { snapshotCredit } from '@/lib/mapProviders';
 import { fmtLbs, fmtPF } from '@/lib/format';
 import { LAYER_STYLES } from '@/components/design/TypicalColumnBuilder';
@@ -100,7 +100,7 @@ function SiteSchematic({ shot }: { shot: Shot }) {
       Math.sign(s.lat - blast.lat);
     return { s, east, north, dist: Math.round(distanceFt(blast, s)) };
   });
-  const maxSpan = Math.max(...pts.map((p) => Math.max(Math.abs(p.east), Math.abs(p.north))), 100);
+  const maxSpan = Math.max(...pts.map((p) => Math.max(Math.abs(p.east), Math.abs(p.north))), site.ringFt, 100);
   const scale = (Math.min(W, H) / 2 - 24) / maxSpan;
   const bx = W / 2;
   const by = H / 2;
@@ -138,7 +138,8 @@ function SiteSchematic({ shot }: { shot: Shot }) {
           </SvgText>
         );
       })}
-      <Rect x={bx - 20} y={by - 12} width={40} height={24} fill="none" stroke="#DD6B20" strokeWidth={1.5} strokeDasharray="4,2" />
+      {/* S12: the distance ring (was a fixed dashed box) */}
+      <Circle cx={bx} cy={by} r={site.ringFt * scale} fill="none" stroke="#DD6B20" strokeWidth={1.2} strokeDasharray="4,2" />
       <SvgText x={bx - 12} y={by + 3} fill="#DD6B20" style={{ fontSize: 7, fontFamily: 'Helvetica-Bold' }}>
         BLAST
       </SvgText>
@@ -706,11 +707,14 @@ function BlastLogDoc(d: Data) {
                 {snapshotUrls[s.id] ? (
                   <View>
                     <Image src={snapshotUrls[s.id]} style={{ width: '100%', height: 100, objectFit: 'cover' }} />
-                    {/* the imagery source's required credit travels with the snapshot */}
-                    <Text style={{ fontSize: 4.5, color: '#555' }}>{snapshotCredit(parseSiteDiagram(s.designPlan.siteSketchData).baseLayer)}</Text>
+                    {/* the ring and what is inside it, then the imagery source's required credit */}
+                    <Text style={{ fontSize: 4.5, color: '#555' }}>{[ringCaption(parseSiteDiagram(s.designPlan.siteSketchData), 120), snapshotCredit(parseSiteDiagram(s.designPlan.siteSketchData).baseLayer)].filter(Boolean).join(' · ')}</Text>
                   </View>
                 ) : (
-                  <SiteSchematic shot={s} />
+                  <View>
+                    <SiteSchematic shot={s} />
+                    <Text style={{ fontSize: 4.5, color: '#555' }}>{ringCaption(parseSiteDiagram(s.designPlan.siteSketchData), 120)}</Text>
+                  </View>
                 )}
               </View>
               <View style={{ flex: 1.3, borderWidth: 0.75, borderColor: '#000', minHeight: 118, padding: 2 }}>

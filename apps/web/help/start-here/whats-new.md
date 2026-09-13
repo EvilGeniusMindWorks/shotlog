@@ -15,6 +15,9 @@ Short notes on what changed, newest first. Ask in ? → **Send feedback** if som
 - **The first-week card leaves on its own** — when every item is done, the first day you file, or after two weeks — and says which on its face. **?** → **Show the first-week list** brings it back.
 - **Nearby jobs.** In **Which job?** turn on **Use my location** and jobs within two miles appear as **Nearby** chips with the distance. It never picks for you. A site's address becomes its map point on its own; a job whose site has no point offers **Save this spot** when you start a day there.
 - **A job can have a work spot** — where the dig is, when that is away from the street address. Set it from the site map with **Save as this job's work spot**, from **Use where I am** on the job page, or copy the previous job's spot at the same site. The map and nearby jobs use it.
+- **Where you stand, on the site map.** Allow location once and a blue dot follows you while the map is open, with a circle for how sure the phone is. **Center on me** brings the map back; **Pin the blast here** and **Pin a structure here** drop pins under your feet.
+- **A ring around the blast.** 250 ft unless you change it, saved with each shot and printed on the log's map. Structures inside it turn red and are listed by name, nearest first. Dropping a structure pin now asks for its name.
+- **The closest structure is offered, not filled in.** When it changes, the map offers **Use 180 ft for compliance**; taking it also redoes the scaled distance and predicted vibration, so the badge, the plan and the seismo page agree.
 - **If a screen breaks, the report sends itself.** "Something broke" shows a six-character **report code** you can read out on the phone; **Send a report** adds your own words. Nothing you typed, no photos and no signatures go with it.
 
 ## September 9, 2026

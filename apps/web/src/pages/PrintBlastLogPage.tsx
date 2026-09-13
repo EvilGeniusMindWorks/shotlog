@@ -7,7 +7,7 @@ import { ColumnVisual } from '@/components/design/TypicalColumnBuilder';
 import { distributeByHoles, powderFactor } from '@shotlog/shared';
 import { validateForPrint } from '@/lib/validation';
 import { DELAY_COLORS, computeFiringTimes, parseDiagram } from '@/lib/shotDiagram';
-import { distanceFt, parseSiteDiagram } from '@/lib/siteDiagram';
+import { distanceFt, parseSiteDiagram, ringCaption } from '@/lib/siteDiagram';
 import { snapshotCredit } from '@/lib/mapProviders';
 import { fmtLbs, fmtPF } from '@/lib/format';
 import type { Shot } from '@/db/schema';
@@ -595,7 +595,10 @@ function PrintSiteDiagram({ shot }: { shot: Shot }) {
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           onError={() => setImgFailed(true)}
         />
-        <div style={{ fontSize: 6, color: '#555', lineHeight: 1.2 }} data-map-credit>{snapshotCredit(site.baseLayer)}</div>
+        <div style={{ fontSize: 6, color: '#555', lineHeight: 1.2 }} data-map-credit>
+          {ringCaption(site) ? <span data-ring-caption>{ringCaption(site)} · </span> : null}
+          {snapshotCredit(site.baseLayer)}
+        </div>
       </div>
     );
   }
@@ -615,7 +618,8 @@ function PrintSiteDiagram({ shot }: { shot: Shot }) {
       Math.sign(s.lat - blast.lat);
     return { s, east, north, dist: Math.round(distanceFt(blast, s)) };
   });
-  const maxSpan = Math.max(...pts.map((p) => Math.max(Math.abs(p.east), Math.abs(p.north))), 100);
+  // the ring must fit the box too
+  const maxSpan = Math.max(...pts.map((p) => Math.max(Math.abs(p.east), Math.abs(p.north))), site.ringFt, 100);
   const scale = (Math.min(W, H) / 2 - 30) / maxSpan;
   const bx = W / 2;
   const by = H / 2;
@@ -624,6 +628,7 @@ function PrintSiteDiagram({ shot }: { shot: Shot }) {
 
   return (
     <div className="site-diagram" style={{ border: 'none', background: '#fafaf5' }}>
+      <div style={{ fontSize: 6, color: '#555', lineHeight: 1.2 }} data-ring-caption>{ringCaption(site)}</div>
       <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: '100%' }}>
         {/* Distance lines */}
         {pts.map((p) => (
@@ -647,18 +652,8 @@ function PrintSiteDiagram({ shot }: { shot: Shot }) {
             </text>
           </g>
         ))}
-        {/* Blast zone */}
-        <rect
-          x={bx - 22}
-          y={by - 14}
-          width={44}
-          height={28}
-          rx={3}
-          fill="none"
-          stroke="#DD6B20"
-          strokeWidth={2}
-          strokeDasharray="4,2"
-        />
+        {/* S12: the distance ring (was a fixed dashed box) */}
+        <circle cx={bx} cy={by} r={site.ringFt * scale} fill="none" stroke="#DD6B20" strokeWidth={1.5} strokeDasharray="4,2" data-print-ring />
         <text x={bx} y={by + 4} textAnchor="middle" fontSize={8} fill="#DD6B20" fontWeight={700}>
           BLAST
         </text>
