@@ -18,6 +18,10 @@ The **?** button — in the sidebar on a wide screen, in the top bar on a phone 
 
 ![The ? menu](help-menu.png)
 
+## When something breaks
+
+If a screen fails, the app shows "Something broke" with Reload, Home and Report. The failure itself is already on its way to the people who look after ShotLog — which screen, which build, what kind of phone — so you do not have to describe it. Nothing you typed, no photos and no signatures go with it. **Report** adds your own words, which helps.
+
 ## Sending feedback
 
 Something confusing, wrong or missing? Tap **Send feedback**, type a couple of words, and send. A screenshot of the screen you were on goes with it automatically, along with which screen it was, so you do not have to explain where you were. It works without signal and sends when you have some.

@@ -8,6 +8,10 @@ status: draft
 
 The **+** button opens one short dialog. It asks the questions in the order that gets you to the job fastest.
 
+## Nearby jobs
+
+With more than one active job, the first question is **Which job?** Turn on **Use my location** and the jobs whose site is within two miles come to the top with the distance; the rest follow in the usual order. It never picks for you — tap the one you mean. A job with no spot on the map yet says so; the first time you start a day there, the app offers to remember where you are standing as the site's spot, so next time it shows a distance. Offline, or with location turned off, the list is simply the usual list.
+
 ## The dialog
 
 1. **Name** (optional) — what you would call this day. Leave it blank and ShotLog names it by job and date.

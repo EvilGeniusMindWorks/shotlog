@@ -223,3 +223,11 @@ page · customer/site/job create (new) · contacts · My Records · reference
   filing pre-flight (red blocks on an unsigned shot; amber files with notes).
   Batch 3: off-plan badge, seismo Edit + distance line, grid names.
 - **Site map location (2026-09-09):** Matthew's three complaints — only the job's address, "not found" on a valid rural address, no way to use GPS or coordinates — become a location bar with four doors and a site that remembers its spot (decisions.md, plan artifact cec017d7).
+
+## Round S11 — the first week's small fixes (2026-09-13, plan artifact 5961f1d5)
+
+- Mark's first Beta job was made with the Site box left at "Pick site…"; the app invented a nameless customer and site. Now the site is required on a new job, the app never creates a nameless record, and an admin can move a job to another site.
+- Explosive weights read to four decimals everywhere (Mark's ask, Matthew's call: "4 everywhere"); the printed powder-factor line shows the exact pounds it divided.
+- The first-week card leaves on its own: all done, or the first day Mark files, or 14 days — and says so. It comes back from the ? menu.
+- "Which job?" puts jobs within two miles at the top with the distance when Mark allows his location; it never picks for him. Starting a day at a site with no map spot offers to remember where he is standing.
+- A crash on his phone reaches Matthew without a Report tap; the Report button still adds his own words.

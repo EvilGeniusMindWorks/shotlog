@@ -21,6 +21,10 @@ The Dashboard is your day. It shows what you are working on, what is waiting for
 
 Unasked, ShotLog shows you only what you authored. Everyone's days are one tap away: **Work days › Everyone**. The switch is remembered on the device.
 
+## The first-week card
+
+New people see a short checklist on the home screen — license, signature, the walkthrough, a first day started and filed. It ticks itself as you go and leaves on its own: when every item is done, the first time you file a day, or after 14 days, whichever comes first. The card says which. Want it back? The **?** menu has **Show the first-week list**.
+
 ## The + button
 
 Starts work at a job: name the day if you like, pick the job, the date and the type of work, and copy from the last day there. See [Start work at a job](/help/blaster/start-work).

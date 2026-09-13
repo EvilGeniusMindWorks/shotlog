@@ -190,3 +190,7 @@ report (solo submit) · My Records · jobs list
   it was signed. Now: starting hours and the end-of-day meter start as real
   values with a "from the meter — change if the gauge differs" line; Mark
   complete carries the signature pad and reads "Sign and complete" until signed.
+- **S11 (2026-09-13):** the first-week card leaves after 14 days or when its
+  items are done (Joe never files a day, so the filed-day exit does not apply
+  to him); nearby jobs show in his "Which job?" sheet the same way as the
+  blaster's; a crash on his phone reaches Matthew on its own.

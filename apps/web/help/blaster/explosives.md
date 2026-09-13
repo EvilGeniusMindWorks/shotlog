@@ -14,6 +14,8 @@ You enter what you used the way you count it: **so many** of a product. ShotLog 
 2. Pick the manufacturer, then the product. The catalog has the common products with their weights already; your office keeps it up to date.
 3. Type the **quantity** — cases, boosters, caps, feet of cord. The weight fills in.
 
+Weights show to four decimals everywhere — on this form, the blasting log, the daily report, the printed and PDF copies and the records list — because the catalog's weights per unit go to four decimals (a 2.6315 lb stick, nineteen of them, is 49.9985 lb). The powder factor on the log divides those exact pounds and shows two decimals.
+
 The shot's totals (pounds per shot, pounds per delay, powder factor) update as you type. Pounds per delay is what the compliance checks use.
 
 ## A product that is not in the list
