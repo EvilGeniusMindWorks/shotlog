@@ -7,10 +7,10 @@
 //   node scripts/crash.mjs --list              # open crash groups
 //   node scripts/crash.mjs --group <fingerprint>
 //
-// Env: SHOTLOG_API (default https://shotlog-api.up.railway.app — override for
+// Env: SHOTLOG_API (default https://shotlogserver-production.up.railway.app — override for
 // local: http://localhost:4000), SHOTLOG_ADMIN_EMAIL + SHOTLOG_ADMIN_PASSWORD
 // (a platform admin), or SHOTLOG_TOKEN (a bearer token already in hand).
-const api = (process.env.SHOTLOG_API ?? 'https://shotlog-api.up.railway.app').replace(/\/$/, '');
+const api = (process.env.SHOTLOG_API ?? 'https://shotlogserver-production.up.railway.app').replace(/\/$/, '');
 const args = process.argv.slice(2);
 
 async function token() {
