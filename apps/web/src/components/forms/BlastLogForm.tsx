@@ -17,6 +17,7 @@ import { ChipSelect, ChipMultiSelect } from '@/components/ui/chip-select';
 import { SignatureField } from '@/components/ui/signature-field';
 import { getSessionUser } from '@/lib/session';
 import { dataUrlToBlob } from '@/lib/utils';
+import { fmtLbs, fmtPF } from '@/lib/format';
 import { Badge } from '@/components/ui/badge';
 import { ShotForm } from './ShotForm';
 import { ShotSignoff } from './ShotSignoff';
@@ -145,14 +146,14 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
       <div className="grid grid-cols-4 gap-2">
         <StatBox label="Shots" value={String(shots.length)} />
         <StatBox label="Holes" value={totalHoles ? String(totalHoles) : '—'} />
-        <StatBox label="Total Lbs" value={totalPounds ? totalPounds.toFixed(1) : '—'} />
-        <StatBox label="PF (lbs/yd³)" value={pf ? pf.toFixed(2) : '—'} accent />
+        <StatBox label="Total Lbs" value={totalPounds ? fmtLbs(totalPounds) : '—'} />
+        <StatBox label="PF (lbs/yd³)" value={pf ? fmtPF(pf) : '—'} accent />
       </div>
       <div className="border border-gray-200 rounded-lg bg-white px-3 py-2 text-xs text-gray-500 -mt-1">
         {pf > 0 ? (
           <>
-            PF = {totalPounds.toFixed(0)} lbs ÷ {totalYards.toFixed(0)} yd³ ={' '}
-            <b className="text-gray-800">{pf.toFixed(2)}</b> — {powderFactorAssessment(pf)}
+            PF = {fmtLbs(totalPounds)} lbs ÷ {totalYards.toFixed(0)} yd³ ={' '}
+            <b className="text-gray-800">{fmtPF(pf)}</b> — {powderFactorAssessment(pf)}
           </>
         ) : (
           <>PF = Total Lbs ÷ Total Yd³ — enter drill footage and explosives to calculate</>
@@ -265,7 +266,7 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
             <span className="text-sm text-gray-500">
               {shot.totals.numHoles > 0 && `${shot.totals.numHoles} holes`}
               {shot.totals.numHoles > 0 && shotLbs > 0 && ' · '}
-              {shotLbs > 0 && `${shotLbs.toFixed(1)} lbs`}
+              {shotLbs > 0 && `${fmtLbs(shotLbs)} lbs`}
             </span>
             <PlanNotSentChip shot={shot} />
             <span className="flex-1" />

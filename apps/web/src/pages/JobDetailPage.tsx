@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery, db } from '@/db';
 import { getPowerSync } from '@/db/powersync/client';
 import { formatDate } from '@/lib/utils';
+import { fmtLbs } from '@/lib/format';
 import { RecordShell } from '@/components/layout/RecordShell';
 import { useDraftRecord } from '@/hooks/useDraftRecord';
 import { getSessionUser } from '@/lib/session';
@@ -14,6 +15,8 @@ import { DocList } from '@/components/records/DocList';
 import { derivedKFactor, fitKFactor, powderFactor, scaledDistance } from '@shotlog/shared';
 import { can } from '@/lib/perms';
 import { LifecycleMenu } from '@/components/records/LifecycleMenu';
+import { MoveJobButton } from '@/components/forms/MoveJobSheet';
+import { JobLocationCard } from '@/components/forms/JobLocationCard';
 import { createDrillPlan, getPlanHoles } from '@/hooks/useDrillPlans';
 import { useJobContext, type JobContext } from '@/lib/jobContext';
 import { nowISO } from '@/lib/utils';
@@ -85,13 +88,16 @@ export function JobDetailPage() {
         </Badge>
       }
       actions={
-        <LifecycleMenu
-          table="jobs"
-          record={job}
-          label={job.name}
-          kind="job"
-          onDeleted={() => navigate('/jobs')}
-        />
+        <span className="flex items-center gap-2">
+          {isAdmin && <MoveJobButton job={job} />}
+          <LifecycleMenu
+            table="jobs"
+            record={job}
+            label={job.name}
+            kind="job"
+            onDeleted={() => navigate('/jobs')}
+          />
+        </span>
       }
       subline={
         [ctx?.address, ctx?.city, ctx?.state].filter(Boolean).join(', ') || 'No address'
@@ -110,6 +116,7 @@ export function JobDetailPage() {
           render: () => (
             <div className="space-y-4">
               <CustomerSiteCard job={job} ctx={ctx} />
+              <JobLocationCard job={job} site={ctx?.site} />
               <JobConfigCard job={job} />
             </div>
           ),
@@ -295,7 +302,7 @@ function JobActivity({ jobId, lbs }: { jobId: string; lbs: number }) {
       <div className="grid grid-cols-4 gap-2">
         <StatBox label={`Days${typeLine ? ` (${typeLine})` : ''}`} value={String(activity?.days ?? '—')} />
         <StatBox label="Ft Drilled" value={activity ? activity.footage.toFixed(0) : '—'} />
-        <StatBox label="Lbs Shot" value={lbs ? lbs.toFixed(0) : '—'} />
+        <StatBox label="Lbs Shot" value={lbs ? fmtLbs(lbs) : '—'} />
         <StatBox label="Open Incidents" value={String(activity?.incidents ?? '—')} />
       </div>
 

@@ -10,6 +10,7 @@ import { distributeByHoles, powderFactor } from '@shotlog/shared';
 import { DELAY_COLORS, computeFiringTimes, parseDiagram } from '@/lib/shotDiagram';
 import { distanceFt, parseSiteDiagram } from '@/lib/siteDiagram';
 import { snapshotCredit } from '@/lib/mapProviders';
+import { fmtLbs, fmtPF } from '@/lib/format';
 import { LAYER_STYLES } from '@/components/design/TypicalColumnBuilder';
 import type {
   BlastDay,
@@ -331,7 +332,7 @@ function ComplianceTable({ shot }: { shot: Shot }) {
     ['Distance of Closest Structure:', dash(dp.closestStructureDistance, ' ft')],
     ['Distance of Closest Borehole:', dash(dp.closestBoreholeDistance, ' ft')],
     ['Max Holes Per Delay:', dash(dp.maxHolesPerDelay)],
-    ['Max Pounds Per Delay:', dash(dp.maxPoundsPerDelay, ' lbs')],
+    ['Max Pounds Per Delay:', typeof dp.maxPoundsPerDelay === 'number' && dp.maxPoundsPerDelay ? `${fmtLbs(dp.maxPoundsPerDelay)} lbs` : dash(dp.maxPoundsPerDelay)],
     ['Scale Distance:', dp.scaledDistance ? dp.scaledDistance.toFixed(1) : '—'],
     ['Predicted PPV: K Factor:', `${dp.predictedPPV ? `${dp.predictedPPV.toFixed(2)} in/s · ` : ''}K=${dp.kFactor}`],
     // D2 (2026-09-09): advisory until a blasting engineer signs off the USBM curve
@@ -453,39 +454,39 @@ function BlastLogDoc(d: Data) {
             {/* Explosive Info */}
             <T style={{ marginTop: 4 }}>
               <TR>
-                <TD w={92} textStyle={K.boldItalic}>Product Type & Size:</TD>
+                <TD w={80} textStyle={K.boldItalic}>Product Type & Size:</TD>
                 <TD textStyle={[K.center, { fontSize: 6.5 }]}>Explosive Info</TD>
-                <TD w={42} textStyle={sectionHead} style={{ backgroundColor: '#e8e8e8' }}>Totals</TD>
+                <TD w={60} textStyle={sectionHead} style={{ backgroundColor: '#e8e8e8' }}>Totals</TD>
               </TR>
               {products.map((item, i) => {
                 const alloc = allocFor(item);
                 return (
                   <TR key={i}>
-                    <TD w={92} textStyle={[K.val, { fontSize: 7 }]}>{item.productName}</TD>
+                    <TD w={80} textStyle={[K.val, { fontSize: 7 }]}>{item.productName}</TD>
                     {shots.map((s) => (
                       <TD key={s.id} textStyle={[K.val, K.center, { fontSize: 7.5 }]}>{dash(alloc[s.id])}</TD>
                     ))}
-                    <TD w={42} textStyle={[K.val, K.center, { fontSize: 7.5 }]}>{dash(item.quantity)}</TD>
+                    <TD w={60} textStyle={[K.val, K.center, { fontSize: 7.5 }]}>{dash(item.quantity)}</TD>
                   </TR>
                 );
               })}
               {Array.from({ length: emptyProductRows }, (_, i) => (
                 <TR key={`empty-${i}`}>
-                  <TD w={92}> </TD>
+                  <TD w={80}> </TD>
                   {shots.map((s) => (
                     <TD key={s.id} textStyle={K.center}>—</TD>
                   ))}
-                  <TD w={42} textStyle={K.center}>—</TD>
+                  <TD w={60} textStyle={K.center}>—</TD>
                 </TR>
               ))}
               <TR style={{ backgroundColor: '#e8e8e8' }}>
-                <TD w={92} textStyle={[K.bold, K.right, { fontSize: 7.5 }]}>Total Pounds Shot:</TD>
+                <TD w={80} textStyle={[K.bold, K.right, { fontSize: 7.5 }]}>Total Pounds Shot:</TD>
                 {shots.map((s) => (
                   <TD key={s.id} textStyle={[K.val, K.center, { fontSize: 7.5 }]}>
-                    {(shotPounds.get(s.id) ?? 0).toFixed(1)}
+                    {fmtLbs(shotPounds.get(s.id) ?? 0)}
                   </TD>
                 ))}
-                <TD w={42} textStyle={[K.val, K.center, { fontSize: 9 }]}>{totalPounds.toFixed(1)}</TD>
+                <TD w={60} textStyle={[K.val, K.center, { fontSize: 9 }]}>{fmtLbs(totalPounds)}</TD>
               </TR>
             </T>
 
@@ -572,7 +573,7 @@ function BlastLogDoc(d: Data) {
                   <Text style={K.bold}>Calculations:</Text>
                   {pf > 0 ? (
                     <Text style={[K.val, { fontSize: 7 }]}>
-                      PF = {totalPounds.toFixed(0)} / {totalYards.toFixed(0)} = {pf.toFixed(2)} lbs/yd3
+                      PF = {fmtLbs(totalPounds)} / {totalYards.toFixed(0)} = {fmtPF(pf)} lbs/yd3
                     </Text>
                   ) : null}
                   <Text style={[K.muted, { fontSize: 6.5 }]}>

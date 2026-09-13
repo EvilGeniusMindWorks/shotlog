@@ -4,7 +4,9 @@ import { registerSW } from 'virtual:pwa-register';
 import { App } from './App';
 import { captureInstallPrompt } from './lib/install';
 import { installGlobalErrorCapture } from './lib/diagnostics';
+import { crashIdForCode, installCrashReporter } from './lib/crash';
 import { startFeedbackOutbox } from './lib/feedback';
+import { installSiteGeoQueue } from './lib/siteGeo';
 import { showToast } from './components/ui/undo-toast';
 import { openFeedbackComposer } from './components/feedback/FeedbackComposer';
 import { ErrorBoundary } from './components/feedback/ErrorBoundary';
@@ -18,16 +20,29 @@ captureInstallPrompt();
 // Diagnostics (Round S3): uncaught errors + unhandled rejections go to the
 // rolling error log and surface as ONE toast per minute with a Report action
 // (never a modal); queued feedback drains on online/foreground/timer.
+// S11: every captured error is ALSO sent as a crash report on its own (no
+// Report tap needed); the toast shows the six-character code and Report
+// attaches the person's words to that same crash.
+installCrashReporter();
 installGlobalErrorCapture((entry) =>
-  showToast('Something went wrong on this screen.', {
+  showToast(`Something went wrong on this screen.${entry.code ? ` Report code ${entry.code}.` : ''}`, {
     ms: 8000,
     action: {
       label: 'Report',
-      onClick: () => openFeedbackComposer({ kind: 'bug', message: `Error: ${entry.msg}\n\nWhat I was doing: ` }),
+      onClick: () =>
+        openFeedbackComposer({
+          kind: 'crash',
+          message: '',
+          parentId: entry.code ? crashIdForCode(entry.code) : undefined,
+          reportCode: entry.code,
+        }),
     },
   }),
 );
 startFeedbackOutbox();
+// S11: sites whose address could not be looked up (offline at the time) get
+// their map point at the next online moment
+installSiteGeoQueue();
 
 // Explicit SW registration with an hourly update check. Without this, a
 // long-lived installed PWA only checks for new versions on the browser's

@@ -117,9 +117,59 @@ model Feedback {
   /// Device clock at send time (informational)
   createdAt   DateTime
   receivedAt  DateTime @default(now())
+  /// S11 crash reporting (no vendor): sent by the app itself, not a person
+  auto        Boolean  @default(false)
+  /// Six characters shown on the "Something broke" screen; finds this row
+  reportCode  String   @default("")
+  /// Groups the same problem across people and builds (crash.ts)
+  fingerprint String   @default("")
+  /// { kind, stack, componentStack?, decodedStack?, breadcrumbs, context }
+  crash       Json?
+  /// A person's words about an automatic crash (kind crash, auto false)
+  parentId    String?
+  /// Web build id and git commit, when the device knew them
+  commit      String   @default("")
 
   @@index([companyId, status])
   @@index([receivedAt])
+  @@index([fingerprint])
+  @@index([reportCode])
+}
+
+/// S11: one line per distinct problem in Admin › Feedback › Crashes.
+/// Created on the first report with a fingerprint; the email goes out once.
+model CrashGroup {
+  fingerprint  String   @id
+  title        String
+  /// web | server
+  side         String   @default("web")
+  /// new | seen | fixed
+  status       String   @default("new")
+  fixedInBuild String?
+  note         String?
+  count        Int      @default(1)
+  /// [{ id, name }] — who hit it, distinct
+  people       Json     @default("[]")
+  firstSeen    DateTime @default(now())
+  lastSeen     DateTime @default(now())
+  lastBuild    String   @default("")
+  /// A representative Feedback row (decoded stack lives there)
+  sampleId     String
+  notifiedAt   DateTime?
+
+  @@index([status, lastSeen])
+}
+
+/// S11: the web build's source maps, uploaded by the build (scripts/build-web.mjs)
+/// so a minified crash trace reads as the real file and line. Never served.
+model SourceMap {
+  id        String   @id
+  buildId   String
+  file      String
+  map       String
+  createdAt DateTime @default(now())
+
+  @@index([buildId])
 }
 
 /// Crew enrollment invite: admin issues, crew member redeems once to

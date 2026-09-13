@@ -22,11 +22,29 @@ export const FEEDBACK_KINDS: { value: FeedbackKind; label: string; hint: string 
   { value: 'question', label: 'Question', hint: "not sure what to do here" },
 ];
 
+export interface CrashDetail {
+  kind: 'render' | 'error' | 'rejection';
+  message: string;
+  stack?: string;
+  componentStack?: string;
+  breadcrumbs: { at: string; kind: 'nav' | 'tap' | 'net' | 'sync' | 'app'; text: string }[];
+  context: Record<string, unknown>;
+}
+
 export interface FeedbackDraft {
   kind: FeedbackKind;
   message: string;
   /** JPEG data URL captured BEFORE the composer opened (null = none) */
   screenshot?: string | null;
+  /** S11: sent by the app itself (a crash), not typed by a person */
+  auto?: boolean;
+  crash?: CrashDetail;
+  /** S11: the six-character code shown to the person */
+  reportCode?: string;
+  /** S11: a person's words about an automatic crash report */
+  parentId?: string;
+  /** Use this id instead of minting one (the crash reporter mints early) */
+  id?: string;
 }
 
 interface OutboxItem extends DiagnosticsSnapshot {
@@ -35,6 +53,10 @@ interface OutboxItem extends DiagnosticsSnapshot {
   message: string;
   hasScreenshot: boolean;
   createdAt: string;
+  auto?: boolean;
+  crash?: CrashDetail;
+  reportCode?: string;
+  parentId?: string;
 }
 
 const shotKey = (id: string) => `feedback-shot-${id}`;
@@ -99,7 +121,7 @@ export async function captureScreenshot(): Promise<string | null> {
  * it is waiting for signal — the toast tells the truth either way.
  */
 export async function submitFeedback(draft: FeedbackDraft): Promise<'sent' | 'queued'> {
-  const id = generateId();
+  const id = draft.id ?? generateId();
   const diag = collectDiagnostics();
   let hasScreenshot = false;
   if (draft.screenshot) {
@@ -120,6 +142,10 @@ export async function submitFeedback(draft: FeedbackDraft): Promise<'sent' | 'qu
     message: draft.message.trim(),
     hasScreenshot,
     createdAt: nowISO(),
+    ...(draft.auto ? { auto: true } : {}),
+    ...(draft.crash ? { crash: draft.crash } : {}),
+    ...(draft.reportCode ? { reportCode: draft.reportCode } : {}),
+    ...(draft.parentId ? { parentId: draft.parentId } : {}),
   };
   writeOutbox([...readOutbox(), item]);
   await drainFeedbackOutbox();

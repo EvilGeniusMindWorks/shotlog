@@ -7,6 +7,7 @@ import { Pencil, Plus } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { authedFetch } from '@/lib/session';
 import { cn } from '@/lib/utils';
+import { fmtMultiplier } from '@/lib/format';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -236,7 +237,7 @@ export function AdminCatalogPage() {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate">{p.productName}</p>
                     <p className="text-xs text-gray-400">
-                      {p.weightMultiplier} lbs/{p.unitType}
+                      {fmtMultiplier(p.weightMultiplier)} lbs/{p.unitType}
                     </p>
                   </div>
                   <Badge variant="secondary">

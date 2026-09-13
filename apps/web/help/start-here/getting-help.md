@@ -20,7 +20,7 @@ The **?** button — in the sidebar on a wide screen, in the top bar on a phone 
 
 ## When something breaks
 
-If a screen fails, the app shows "Something broke" with Reload, Home and Report. The failure itself is already on its way to the people who look after ShotLog — which screen, which build, what kind of phone — so you do not have to describe it. Nothing you typed, no photos and no signatures go with it. **Report** adds your own words, which helps.
+If a screen fails, the app shows "Something broke" with Reload, Home and Report, and a short **report code**. The failure itself is already on its way to the people who look after ShotLog — which screen, which build, what kind of phone, the last few screens you opened — so you do not have to describe it. Nothing you typed, no photos and no signatures go with it. **Report** adds your own words, which helps; reading out the code on the phone finds your crash in seconds.
 
 ## Sending feedback
 

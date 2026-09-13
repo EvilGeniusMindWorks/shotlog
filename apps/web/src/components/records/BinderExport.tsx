@@ -11,6 +11,7 @@ import { fetchAuditRange, describeEntry, tableLabel } from '@/lib/audit';
 import { toCsv } from '@/lib/csv';
 import { getSessionUser } from '@/lib/session';
 import { todayISO } from '@/lib/utils';
+import { fmtLbsCsv } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,7 +36,7 @@ async function buildExplosivesCsv(from: string, to: string): Promise<string> {
     if (!usage) continue;
     const jobName = jobs.get(day.jobId) ?? '';
     for (const p of usage.products) {
-      rows.push([day.date, jobName, p.productName, p.manufacturer, p.category, p.quantity, p.unitType, p.totalWeight.toFixed(1)]);
+      rows.push([day.date, jobName, p.productName, p.manufacturer, p.category, p.quantity, p.unitType, fmtLbsCsv(p.totalWeight)]);
       totalLbs += p.totalWeight;
     }
     for (const d of usage.detonators) {
@@ -44,7 +45,7 @@ async function buildExplosivesCsv(from: string, to: string): Promise<string> {
     }
   }
   rows.push([]);
-  rows.push(['TOTAL LBS', totalLbs.toFixed(1)]);
+  rows.push(['TOTAL LBS', fmtLbsCsv(totalLbs)]);
   rows.push(['TOTAL DETONATORS', totalDets]);
   return toCsv(rows);
 }

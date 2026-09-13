@@ -37,8 +37,25 @@ export function emptyPick(initial?: Partial<CustomerSitePick>): CustomerSitePick
   };
 }
 
+/** S11 (Matthew, Sep 13 2026): a job always has a real site. A picked site,
+ *  or a new one with a name, state AND address — "Mark does not set this up
+ *  without knowing the details of the site". */
 export function pickReady(p: CustomerSitePick): boolean {
-  return Boolean(p.customerId || p.customerName.trim());
+  return pickWhyNot(p) === null;
+}
+
+/** The one line under a disabled Create button: what is still missing. */
+export function pickWhyNot(p: CustomerSitePick): string | null {
+  if (!p.customerId && !p.customerName.trim()) return 'Pick a customer, or add a new one.';
+  if (p.siteId) return null;
+  const missing = [
+    !p.siteName.trim() ? 'name' : '',
+    !p.state.trim() ? 'state' : '',
+    !p.address.trim() ? 'address' : '',
+  ].filter(Boolean);
+  if (missing.length === 3) return 'Pick a site, or add a new one — every job needs one.';
+  if (missing.length) return `A new site needs its ${missing.join(', ')}.`;
+  return null;
 }
 
 export function CustomerSitePicker({
@@ -114,7 +131,7 @@ export function CustomerSitePicker({
         )}
       </div>
       <div>
-        <Label>Site</Label>
+        <Label>Site *</Label>
         {!newCustomer ? (
           <Select
             data-pick-site
@@ -149,16 +166,17 @@ export function CustomerSitePicker({
       {newSite && (
         <>
           <div>
-            <Label>Site name</Label>
+            <Label>Site name *</Label>
             <Input
-              placeholder="defaults to the address"
+              data-pick-site-name
+              placeholder="Richmond pit"
               value={value.siteName}
               onChange={(e) => onChange({ ...value, siteName: e.target.value })}
             />
           </div>
           <div>
-            <Label>Address</Label>
-            <Input value={value.address} onChange={(e) => onChange({ ...value, address: e.target.value })} />
+            <Label>Address *</Label>
+            <Input data-pick-site-address value={value.address} onChange={(e) => onChange({ ...value, address: e.target.value })} />
           </div>
           <div className="flex gap-2">
             <div className="flex-1">
@@ -166,8 +184,9 @@ export function CustomerSitePicker({
               <Input value={value.city} onChange={(e) => onChange({ ...value, city: e.target.value })} />
             </div>
             <div className="w-16">
-              <Label>State</Label>
+              <Label>State *</Label>
               <Input
+                data-pick-site-state
                 value={value.state}
                 maxLength={2}
                 onChange={(e) => onChange({ ...value, state: e.target.value.toUpperCase().slice(0, 2) })}

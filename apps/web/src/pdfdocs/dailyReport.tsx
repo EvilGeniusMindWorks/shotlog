@@ -16,6 +16,7 @@ import type {
   WorkForceEntry,
 } from '@/db/schema';
 import { CHECK, Document, Footer, K, Page, T, TD, TR, Text, View, dash, fmtDate } from './kit';
+import { fmtLbs } from '@/lib/format';
 
 const AGENT_CATEGORIES: ProductCategory[] = ['bulk', 'anfo', 'anfo_wr', 'emulsion'];
 const HE_CATEGORIES: ProductCategory[] = ['gel_dynamite', 'cartridge'];
@@ -365,7 +366,7 @@ function DailyReportDoc(d: Data) {
                   <TR>
                     <TD w={220}> </TD>
                     <TD w={34} textStyle={K.center}>{group.unit}</TD>
-                    <TD w={55} textStyle={K.center}>—</TD>
+                    <TD w={68} textStyle={K.center}>—</TD>
                     <TD style={{ borderRightWidth: 0.75 }}> </TD>
                   </TR>
                 ) : (
@@ -373,8 +374,8 @@ function DailyReportDoc(d: Data) {
                     <TR key={i}>
                       <TD w={220} textStyle={K.right}>{p.productName}</TD>
                       <TD w={34} textStyle={K.center}>{group.unit}</TD>
-                      <TD w={55} textStyle={[K.val, K.center]}>
-                        {group.unit === 'LB' ? p.totalWeight.toFixed(0) : String(p.quantity)}
+                      <TD w={68} textStyle={[K.val, K.center]}>
+                        {group.unit === 'LB' ? fmtLbs(p.totalWeight) : String(p.quantity)}
                       </TD>
                       <TD> </TD>
                     </TR>
@@ -391,7 +392,7 @@ function DailyReportDoc(d: Data) {
             <TR>
               <TD w={220}> </TD>
               <TD w={34} textStyle={K.center}>EA</TD>
-              <TD w={55} textStyle={K.center}>—</TD>
+              <TD w={68} textStyle={K.center}>—</TD>
               <TD> </TD>
             </TR>
           ) : (
@@ -399,7 +400,7 @@ function DailyReportDoc(d: Data) {
               <TR key={i}>
                 <TD w={220} textStyle={K.right}>{`${dd.name} ${dd.unitLength}`}</TD>
                 <TD w={34} textStyle={K.center}>EA</TD>
-                <TD w={55} textStyle={[K.val, K.center]}>{String(dd.quantity)}</TD>
+                <TD w={68} textStyle={[K.val, K.center]}>{String(dd.quantity)}</TD>
                 <TD> </TD>
               </TR>
             ))
@@ -412,7 +413,7 @@ function DailyReportDoc(d: Data) {
             <TR>
               <TD w={220} textStyle={K.right}>Lead Line (LF)</TD>
               <TD w={34} textStyle={K.center}>LF</TD>
-              <TD w={55} textStyle={[K.val, K.center]}>{dash(explosiveUsage?.leadLine)}</TD>
+              <TD w={68} textStyle={[K.val, K.center]}>{dash(explosiveUsage?.leadLine)}</TD>
             </TR>
           </T>
         </View>
@@ -424,9 +425,9 @@ function DailyReportDoc(d: Data) {
           </Text>
           <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
             {[
-              [agentLbs.toFixed(0), 'Blasting Agents (lbs)'],
-              [heLbs.toFixed(0), 'High Explosives (lbs)'],
-              [boosterLbs.toFixed(1), 'Boosters (lbs)'],
+              [fmtLbs(agentLbs), 'Blasting Agents (lbs)'],
+              [fmtLbs(heLbs), 'High Explosives (lbs)'],
+              [fmtLbs(boosterLbs), 'Boosters (lbs)'],
             ].map(([v, label]) => (
               <View key={label} style={{ alignItems: 'center' }}>
                 <Text style={[K.val, { fontSize: 13 }]}>{v}</Text>
@@ -434,7 +435,7 @@ function DailyReportDoc(d: Data) {
               </View>
             ))}
             <View style={{ alignItems: 'center' }}>
-              <Text style={[K.val, { fontSize: 16, color: '#DD6B20' }]}>{totalLbs.toFixed(1)}</Text>
+              <Text style={[K.val, { fontSize: 16, color: '#DD6B20' }]}>{fmtLbs(totalLbs)}</Text>
               <Text style={[K.bold, { fontSize: 7, color: '#1a365d' }]}>TOTAL LBS SHOT</Text>
             </View>
             <View style={{ alignItems: 'center' }}>

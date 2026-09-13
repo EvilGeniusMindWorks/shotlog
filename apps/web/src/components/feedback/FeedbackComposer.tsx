@@ -22,6 +22,9 @@ export interface ComposerOptions {
   message?: string;
   /** Default true (Matthew's Q3 call); the crash screen passes false */
   screenshot?: boolean;
+  /** S11: the automatic crash report these words belong to */
+  parentId?: string;
+  reportCode?: string;
 }
 
 type OpenFn = (opts?: ComposerOptions) => void;
@@ -68,6 +71,8 @@ export function FeedbackHost() {
       initialKind={state.opts.kind}
       initialMessage={state.opts.message}
       screenshot={state.screenshot}
+      parentId={state.opts.parentId}
+      reportCode={state.opts.reportCode}
       onClose={() => setState({ phase: 'closed' })}
     />
   );
@@ -80,9 +85,13 @@ export function FeedbackComposer({
   screenshot,
   onClose,
   embedded,
+  parentId,
+  reportCode,
 }: {
   initialKind?: FeedbackKind;
   initialMessage?: string;
+  parentId?: string;
+  reportCode?: string;
   screenshot: string | null;
   onClose: () => void;
   /** Render inline (crash screen) instead of as an overlay sheet */
@@ -104,6 +113,7 @@ export function FeedbackComposer({
         kind,
         message,
         screenshot: includeShot ? screenshot : null,
+        ...(parentId ? { parentId } : {}),
       });
       showToast(
         outcome === 'sent'
@@ -132,7 +142,7 @@ export function FeedbackComposer({
           <h2 className="font-bold text-lg">{isCrash ? 'Send a crash report' : 'Send feedback'}</h2>
           <p className="text-sm text-gray-500">
             {isCrash
-              ? 'The error details are attached. Add what you were doing, if you can.'
+              ? `The error details ${parentId ? 'were already sent' : 'are attached'}${reportCode ? ` (report code ${reportCode})` : ''}. Add what you were doing, if you can.`
               : 'Goes straight to Matthew, who builds ShotLog — not to your company.'}
           </p>
         </div>

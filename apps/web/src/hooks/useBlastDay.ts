@@ -14,7 +14,7 @@ import { isBlastingWork } from '@/db/schema';
 import { generateId, nowISO, todayISO } from '@/lib/utils';
 import { getSessionUser } from '@/lib/session';
 import { authorStamp, myBucket } from '@/lib/dayOwnership';
-import { ensureCustomerAndSite, getJobContext, getJobView, getJobViews, nextJobNumber } from '@/lib/jobContext';
+import { createSite, ensureCustomerAndSite, getJobContext, getJobView, getJobViews, nextJobNumber } from '@/lib/jobContext';
 
 export function useBlastDays() {
   const blastDays = useLiveQuery(() =>
@@ -394,27 +394,48 @@ export async function addBlastLogToDay(blastDayId: string): Promise<string> {
   return blastLogId;
 }
 
-export async function createJob(data: Partial<Job> & { name: string; customer: string }): Promise<string> {
+export async function createJob(
+  data: Partial<Job> & { name: string; customer: string; siteName?: string },
+): Promise<string> {
   const now = nowISO();
   const id = generateId();
   // Explicit picks from the dropdowns win; otherwise one-form
-  // auto-structure turns the typed customer/address into records
+  // auto-structure turns the typed customer/address into records.
+  // S11 (Sep 13 2026): a job ALWAYS has a real customer and site. The old
+  // code re-ran the customer+site ensure whenever only the site was missing,
+  // with the form's empty legacy `customer` string — and made a customer
+  // named '' and a site named '' (Mark's first Beta job). Now: a picked site
+  // is used as is; a missing site is created under the picked customer from
+  // the typed name/state/address; anything blank refuses.
   let customerId = data.customerId;
   let siteId = data.siteId;
-  if (!customerId || !siteId) {
+  const typedSite = {
+    siteName: data.siteName?.trim() ?? '',
+    address: data.address?.trim() ?? '',
+    city: data.city?.trim() ?? '',
+    state: data.state?.trim() ?? '',
+  };
+  if (!siteId && (!typedSite.siteName || !typedSite.state || !typedSite.address)) {
+    throw new Error('A job needs a site: pick one, or give the new site a name, state and address.');
+  }
+  if (!customerId) {
+    if (!data.customer.trim()) throw new Error('A job needs a customer.');
     const ensured = await ensureCustomerAndSite({
       customerName: data.customer,
-      address: data.address ?? '',
-      city: data.city ?? '',
-      state: data.state ?? '',
+      ...typedSite,
       kFactor: data.kFactor,
     });
-    customerId = customerId ?? ensured.customerId;
+    customerId = ensured.customerId;
     siteId = siteId ?? ensured.siteId;
+  } else if (!siteId) {
+    siteId = await createSite(customerId, { name: typedSite.siteName, address: typedSite.address, city: typedSite.city, state: typedSite.state, kFactor: data.kFactor });
   }
   // Legacy mirror fields come from the PICKED records when selected
   const site = await db.sites.get(siteId);
   const customer = await db.customers.get(customerId);
+  if (!site || !customer || site.customerId !== customer.id) {
+    throw new Error('That site does not belong to that customer. Pick the site again.');
+  }
   const job: Job = {
     id,
     name: data.name,

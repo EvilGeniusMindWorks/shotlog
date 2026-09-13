@@ -2,6 +2,10 @@
 // should do once, in the DrillingWork voice. Items tick THEMSELVES from real
 // data where the record carries the person's id; the rest are tapped off by
 // hand. Dismissed per device ("Hide"); disappears on its own once all done.
+// S11 (Matthew, Sep 13 2026): it also leaves on the person's first filed day
+// or 14 days after they first signed in on this device, whichever comes
+// first, and says so on its face. "Show the first-week list" in the ? menu
+// brings it back (showFirstWeekCard) until every item is done.
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CheckCircle2, Circle, ChevronRight } from 'lucide-react';
@@ -12,6 +16,46 @@ import type { TourBucket } from './tourScripts';
 
 const HIDE_KEY = 'shotlog-first-week-hidden';
 const MANUAL_KEY = 'shotlog-first-week-manual';
+/** Set from the ? menu: ignore Hide and the automatic exits until all done */
+const SHOW_KEY = 'shotlog-first-week-show';
+const EVENT = 'shotlog-first-week';
+export const FIRST_WEEK_DAYS = 14;
+
+/** ? menu → "Show the first-week list": clears the per-device hide and the
+ *  automatic exits (filed day / 14 days) until every item is done. */
+export function showFirstWeekCard() {
+  try {
+    localStorage.removeItem(HIDE_KEY);
+    localStorage.setItem(SHOW_KEY, '1');
+  } catch {
+    /* private mode */
+  }
+  window.dispatchEvent(new Event(EVENT));
+}
+
+function readFlag(key: string): boolean {
+  try {
+    return localStorage.getItem(key) === '1';
+  } catch {
+    return false;
+  }
+}
+
+/** When the card leaves on its own: the first filed day, or day 14. */
+export function firstWeekExit(
+  onboardedAt: string | null | undefined,
+  filedOnce: boolean,
+  now = new Date(),
+): { leave: boolean; until: string } {
+  const start = onboardedAt ? new Date(onboardedAt) : null;
+  const end = start && !Number.isNaN(start.getTime()) ? new Date(start.getTime() + FIRST_WEEK_DAYS * 86_400_000) : null;
+  const expired = Boolean(end && now >= end);
+  const endText = end ? end.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
+  const until = end
+    ? `Here until you file your first day, or ${endText}, whichever comes first.`
+    : 'Here until you file your first day.';
+  return { leave: filedOnce || expired, until };
+}
 
 interface Item {
   key: string;
@@ -128,13 +172,16 @@ function useCtx(me: SessionUser | null): Ctx | undefined {
 
 export function FirstWeekCard() {
   const me = getRealSessionUser();
-  const [hidden, setHidden] = useState(() => {
-    try {
-      return localStorage.getItem(HIDE_KEY) === '1';
-    } catch {
-      return false;
-    }
-  });
+  const [hidden, setHidden] = useState(() => readFlag(HIDE_KEY));
+  const [forceShow, setForceShow] = useState(() => readFlag(SHOW_KEY));
+  useEffect(() => {
+    const onShow = () => {
+      setHidden(readFlag(HIDE_KEY));
+      setForceShow(readFlag(SHOW_KEY));
+    };
+    window.addEventListener(EVENT, onShow);
+    return () => window.removeEventListener(EVENT, onShow);
+  }, []);
   const [manual, setManual] = useState<Set<string>>(() => readSet(MANUAL_KEY));
   const ctx = useCtx(me);
   // Re-read the session flags (tourDoneAt flips after the walkthrough)
@@ -148,7 +195,11 @@ export function FirstWeekCard() {
   const items = ITEMS[tourBucket()] ?? ITEMS.field;
   const isDone = (it: Item) => (it.done ? it.done(ctx) : manual.has(it.key));
   const remaining = items.filter((it) => !isDone(it));
-  if (remaining.length === 0) return null;
+  // Brought back on purpose: show it even when everything is ticked (it says
+  // so); otherwise leave when all done, on the first filed day, or day 14
+  if (remaining.length === 0 && !forceShow) return null;
+  const exit = firstWeekExit(me.onboardedAt, ctx.submissionsMine > 0);
+  if (exit.leave && !forceShow) return null;
 
   const tick = (key: string) => {
     const next = new Set(manual);
@@ -163,6 +214,7 @@ export function FirstWeekCard() {
   const hide = () => {
     try {
       localStorage.setItem(HIDE_KEY, '1');
+      localStorage.removeItem(SHOW_KEY);
     } catch {
       /* private mode */
     }
@@ -213,6 +265,9 @@ export function FirstWeekCard() {
           );
         })}
       </ul>
+      <p className="mt-2 text-[11px] text-gray-400" data-first-week-until>
+        {forceShow ? (remaining.length === 0 ? 'Back by request — all done. Hide puts it away.' : 'Back by request — stays until every item is done, or Hide.') : exit.until}
+      </p>
     </div>
   );
 }

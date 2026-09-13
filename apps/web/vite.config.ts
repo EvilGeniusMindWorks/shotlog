@@ -11,10 +11,19 @@ export default defineConfig({
     format: 'es',
   },
   define: {
-    // Shown in Settings so any device can prove which build it runs
+    // Shown in Settings so any device can prove which build it runs.
+    // S11: scripts/build-web.mjs sets SHOTLOG_BUILD_ID so the source maps it
+    // uploads carry the same id the crash reports will name.
     __BUILD_ID__: JSON.stringify(
-      new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
+      process.env.SHOTLOG_BUILD_ID || new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
     ),
+    // The git commit (Vercel sets it) — a crash names the exact code
+    __COMMIT__: JSON.stringify(process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.SHOTLOG_COMMIT ?? ''),
+  },
+  build: {
+    // S11: maps are emitted WITHOUT the sourceMappingURL comment, uploaded to
+    // the API by scripts/build-web.mjs, then deleted from dist — never served
+    sourcemap: 'hidden',
   },
   plugins: [
     react(),

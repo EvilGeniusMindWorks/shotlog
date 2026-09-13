@@ -4,6 +4,7 @@
 // stops hiding the reasoning. Works for predicted (design-time) and
 // measured (seismo) values.
 import { AdvisoryNote } from '@/lib/complianceAdvisory';
+import { fmtLbs } from '@/lib/format';
 import {
   checkCompliance,
   maxChargeWeight,
@@ -152,7 +153,7 @@ export function ComplianceSheet({ facts, onClose }: { facts: ComplianceFacts; on
             </p>
             <Row
               label={`Max lbs/delay at ${distanceFt} ft`}
-              value={`≤ ${passLbs} lbs${passPPVAtLbs != null ? ` → ${passPPVAtLbs.toFixed(2)} in/s` : ''}`}
+              value={`≤ ${fmtLbs(passLbs)} lbs${passPPVAtLbs != null ? ` → ${passPPVAtLbs.toFixed(2)} in/s` : ''}`}
             />
             <Row label={`…or distance at ${chargeLbs} lbs`} value={`≥ ${passDist} ft`} />
           </div>

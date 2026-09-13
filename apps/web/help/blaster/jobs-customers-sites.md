@@ -24,7 +24,11 @@ Small job, no office setup yet? You can do it:
 2. On the customer's page, **+ New site** — address, state, Site K.
 3. On the site's page, **+ New job** — the customer and site are already filled in.
 
-A job always needs a site. If you start a job from the **+** dialog instead, the Site box is required: pick one of the customer's sites or tap **+ New site** and give it a name and address. Create stays grey until then.
+A job always needs a site. If you start a job from the **+** dialog instead, the Site box is required: pick one of the customer's sites or tap **+ New site** and give it a name, state and address. Create stays grey until then. The address becomes the site's point on the map on its own.
+
+## Where the work is
+
+The site's address is its main location. A job can also carry a **work spot** — where the dig actually is, which on a quarry or a subdivision can be well away from the street address. Set it from the site map ("Save as this job's work spot", from GPS or a tap) and the job page shows it with who set it and how far it is from the address. Nearby jobs, the map's opening view and the blast ring all use the work spot when there is one, the address otherwise. A new job at the same site offers the previous job's spot with one tap.
 
 ## Moving a job to another site
 

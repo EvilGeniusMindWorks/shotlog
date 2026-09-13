@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ArrowLeft, FileDown, Printer } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { useBlastDay } from '@/hooks/useBlastDay';
+import { fmtLbs } from '@/lib/format';
 import type { EquipmentEntry, ProductCategory, WorkForceEntry } from '@/db/schema';
 import './print-blast-log.css';
 
@@ -462,15 +463,15 @@ export function PrintDailyReportPage() {
                     <tr>
                       <td style={{ width: 220 }}></td>
                       <td className="center" style={{ width: 30 }}>{group.unit}</td>
-                      <td className="center" style={{ width: 55 }}>—</td>
+                      <td className="center" style={{ width: 74 }}>—</td>
                     </tr>
                   )}
                   {items.map((p, i) => (
                     <tr key={i}>
                       <td className="right" style={{ width: 220 }}>{p.productName}</td>
                       <td className="center" style={{ width: 30 }}>{group.unit}</td>
-                      <td className="val center" style={{ width: 55 }}>
-                        {group.unit === 'LB' ? p.totalWeight.toFixed(0) : p.quantity}
+                      <td className="val center" style={{ width: 74 }}>
+                        {group.unit === 'LB' ? fmtLbs(p.totalWeight) : p.quantity}
                       </td>
                     </tr>
                   ))}
@@ -488,7 +489,7 @@ export function PrintDailyReportPage() {
               <tr>
                 <td style={{ width: 220 }}></td>
                 <td className="center" style={{ width: 30 }}>EA</td>
-                <td className="center" style={{ width: 55 }}>—</td>
+                <td className="center" style={{ width: 74 }}>—</td>
               </tr>
             )}
             {(explosiveUsage?.detonators ?? []).map((d, i) => (
@@ -497,7 +498,7 @@ export function PrintDailyReportPage() {
                   {d.name} {d.unitLength}
                 </td>
                 <td className="center" style={{ width: 30 }}>EA</td>
-                <td className="val center" style={{ width: 55 }}>{d.quantity}</td>
+                <td className="val center" style={{ width: 74 }}>{d.quantity}</td>
               </tr>
             ))}
           </tbody>
@@ -510,7 +511,7 @@ export function PrintDailyReportPage() {
             <tr>
               <td className="right" style={{ width: 220 }}>Lead Line (LF)</td>
               <td className="center" style={{ width: 30 }}>LF</td>
-              <td className="val center" style={{ width: 55 }}>{dash(explosiveUsage?.leadLine)}</td>
+              <td className="val center" style={{ width: 74 }}>{dash(explosiveUsage?.leadLine)}</td>
             </tr>
           </tbody>
         </table>
@@ -522,19 +523,19 @@ export function PrintDailyReportPage() {
           </div>
           <div className="row">
             <div>
-              <div className="val" style={{ fontSize: 16 }}>{agentLbs.toFixed(0)}</div>
+              <div className="val" style={{ fontSize: 16 }}>{fmtLbs(agentLbs)}</div>
               <div style={{ fontSize: 8, color: '#666' }}>Blasting Agents (lbs)</div>
             </div>
             <div>
-              <div className="val" style={{ fontSize: 16 }}>{heLbs.toFixed(0)}</div>
+              <div className="val" style={{ fontSize: 16 }}>{fmtLbs(heLbs)}</div>
               <div style={{ fontSize: 8, color: '#666' }}>High Explosives (lbs)</div>
             </div>
             <div>
-              <div className="val" style={{ fontSize: 16 }}>{boosterLbs.toFixed(1)}</div>
+              <div className="val" style={{ fontSize: 16 }}>{fmtLbs(boosterLbs)}</div>
               <div style={{ fontSize: 8, color: '#666' }}>Boosters (lbs)</div>
             </div>
             <div className="divider">
-              <div className="val" style={{ fontSize: 20, color: '#DD6B20' }}>{totalLbs.toFixed(1)}</div>
+              <div className="val" style={{ fontSize: 20, color: '#DD6B20' }}>{fmtLbs(totalLbs)}</div>
               <div style={{ fontSize: 9, fontWeight: 'bold', color: '#1a365d' }}>TOTAL LBS SHOT</div>
             </div>
             <div className="divider">

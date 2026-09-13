@@ -36,6 +36,7 @@ import {
 } from './Tour';
 import { screenTourFor, type ScreenTourKey } from '@/components/guidance/tourScripts';
 import { HelpMenu } from '@/components/feedback/HelpMenu';
+import { addBreadcrumb } from '@/lib/breadcrumbs';
 import { RehearsalBar } from '@/components/rehearsal/RehearsalBar';
 import { ShotLogLogo } from '@/components/brand/ShotLogLogo';
 import { EnvTag } from '@/pages/admin/AdminCompaniesPage';
@@ -221,6 +222,10 @@ export function AppShell() {
   // the first time a screen with a tour opens — a beat after it renders,
   // never on top of the walkthrough, never right after another tour
   const shellLocation = useLocation();
+  // S11 breadcrumbs: every screen change is a line in a crash report
+  useEffect(() => {
+    addBreadcrumb('nav', `${shellLocation.pathname}${shellLocation.search}`);
+  }, [shellLocation.pathname, shellLocation.search]);
   const [screenTour, setScreenTour] = useState<ScreenTourKey | null>(null);
   useEffect(() => {
     const open = (e: Event) => setScreenTour((e as CustomEvent<ScreenTourKey>).detail);

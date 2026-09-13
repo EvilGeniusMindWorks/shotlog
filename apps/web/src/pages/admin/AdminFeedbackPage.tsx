@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { showToast } from '@/components/ui/undo-toast';
 import { cn } from '@/lib/utils';
+import { AdminCrashesTab } from './AdminCrashesTab';
 
 interface FeedbackRow {
   id: string;
@@ -52,8 +53,11 @@ function shortUA(ua: string): string {
 
 export function AdminFeedbackPage() {
   const { online } = useOutletContext<{ online: boolean }>();
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const focusId = params.get('id');
+  // S11: crashes (sent by the app itself) live apart from what people wrote
+  const tab: 'feedback' | 'crashes' = params.get('tab') === 'crashes' ? 'crashes' : 'feedback';
+  const [crashOpen, setCrashOpen] = useState<number | null>(null);
   const [rows, setRows] = useState<FeedbackRow[] | null>(null);
   const [meta, setMeta] = useState<{ recipients: string[]; emailEnabled: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -140,12 +144,34 @@ export function AdminFeedbackPage() {
     done: (rows ?? []).filter((r) => r.status === 'done').length,
   };
 
+  const tabBtn = (key: 'feedback' | 'crashes', label: string, count: number | null) => (
+    <button
+      type="button"
+      className={cn('px-3 py-1.5 rounded-full border text-sm', tab === key ? 'bg-navy text-white border-navy' : 'bg-white border-gray-300')}
+      data-feedback-tab={key}
+      onClick={() => setParams(key === 'crashes' ? { tab: 'crashes' } : {})}
+    >
+      {label}
+      {count != null && count > 0 && (
+        <span className={cn('ml-1.5 rounded-full px-1.5 text-[11px] font-semibold', tab === key ? 'bg-white/20' : key === 'crashes' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700')} data-feedback-tab-count={key}>
+          {count}
+        </span>
+      )}
+    </button>
+  );
+
   return (
     <div className="space-y-4" data-admin-feedback>
+      <div className="flex items-center gap-2 flex-wrap">
+        {tabBtn('feedback', 'Feedback', (rows ?? []).filter((r) => r.status === 'new').length)}
+        {tabBtn('crashes', 'Crashes', crashOpen)}
+      </div>
+      {tab === 'crashes' && <AdminCrashesTab online={online} onOpenCount={setCrashOpen} focusGroup={params.get('group')} />}
+      {tab === 'feedback' && <>
       <div className="flex items-start gap-2 flex-wrap">
         <p className="text-sm text-gray-500 flex-1 min-w-[200px]">
-          What users sent from the ? menu, plus crash reports the app caught. Platform-level:
-          only you see this.
+          What people sent from the ? menu. Crashes the app caught on its own are under the Crashes tab.
+          Platform-level: only you see this.
         </p>
         <Button variant="outline" size="sm" onClick={() => void load()} disabled={!online}>
           <RefreshCw className="h-4 w-4 mr-1" /> Refresh
@@ -359,6 +385,7 @@ export function AdminFeedbackPage() {
           );
         })}
       </div>
+      </>}
     </div>
   );
 }

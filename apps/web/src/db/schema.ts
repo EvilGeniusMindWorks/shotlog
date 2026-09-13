@@ -188,6 +188,11 @@ export interface Job extends BaseRecord, Archivable {
   /** Hierarchy links — set on every new job; backfilled on legacy jobs */
   customerId?: string;
   siteId?: string;
+  /** S11 (Matthew, Sep 13 2026, shape B): where THIS job's dig is, when it is
+   *  not the site's street address — a quarry bench, a lot in a subdivision.
+   *  Set from the site map (GPS or a tap). Anything that needs a location
+   *  reads shot centre → job work spot → site address point (site.geo). */
+  workSpot?: { lat: number; lng: number; setBy?: string; setByName?: string; setAt?: string; source?: 'gps' | 'map' | 'previous-job' };
   operation: 'construction' | 'quarry' | 'trench' | 'open';
   /** S7b: what a new day at this job is, unless the last day says otherwise
    *  (dialog prefill order: last day's type → this → role default) */

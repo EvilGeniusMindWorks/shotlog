@@ -110,7 +110,7 @@ async (page, lib) => {
     R.ok('picking one flies the map there', c && Math.abs(c.lat - 42.1301) < 0.001);
   });
 
-  await R.section('save as the site\'s spot; the next shot at the site opens there, on imagery', async () => {
+  await R.section('save as this job\'s work spot (S11 shape B); the next shot on the job opens there, on imagery', async () => {
     // drop the blast pin where the map is, then save
     await PB.getByRole('button', { name: /Pin Blast/ }).click();
     const map = PB.locator('.leaflet-container').first();
@@ -119,8 +119,9 @@ async (page, lib) => {
     await sleep(600);
     await PB.locator('[data-location-save-spot]').click();
     await sleep(1200);
-    const geo = await PB.evaluate(async (id) => { const { db } = await import('/src/db/index.ts'); return (await db.sites.get(id))?.geo ?? null; }, siteId);
-    R.ok(`the site's spot is saved (${geo ? `${geo.lat.toFixed(4)}, ${geo.lng.toFixed(4)}` : 'none'})`, geo && Math.abs(geo.lat - 42.1301) < 0.01);
+    // S11: the save goes to the JOB's work spot; the site keeps its address point
+    const geo = await PB.evaluate(async (dayId) => { const { db } = await import('/src/db/index.ts'); const day = await db.blastDays.get(dayId); return (await db.jobs.get(day.jobId))?.workSpot ?? null; }, dayId);
+    R.ok(`the job's work spot is saved (${geo ? `${geo.lat.toFixed(4)}, ${geo.lng.toFixed(4)}` : 'none'})`, geo && Math.abs(geo.lat - 42.1301) < 0.01 && geo.source === 'map');
     const made = await PB.evaluate(async ({ dayId }) => {
       const { db } = await import('/src/db/index.ts');
       const { createBlastDay } = await import('/src/hooks/useBlastDay.ts');
@@ -138,8 +139,8 @@ async (page, lib) => {
     const opened = await PB.locator('[data-location-opened]').innerText();
     const c = await centre(PB, shot2Id);
     const layer = await PB.evaluate(async (shotId) => { const { db } = await import('/src/db/index.ts'); const { parseSiteDiagram } = await import('/src/lib/siteDiagram.ts'); return parseSiteDiagram((await db.shots.get(shotId)).designPlan.siteSketchData).baseLayer; }, shot2Id);
-    R.ok(`the next shot opened on the site's spot ("${opened.slice(0, 40)}…"), on ${layer}`, /site's spot/.test(opened) && c && Math.abs(c.lat - 42.1301) < 0.01 && layer === 'satellite');
-    R.ok('the bar offers the site\'s spot as a button', (await PB.locator('[data-location-site]').count()) === 1);
+    R.ok(`the next shot opened on the job's work spot ("${opened.slice(0, 40)}…"), on ${layer}`, /work spot/.test(opened) && c && Math.abs(c.lat - 42.1301) < 0.01 && layer === 'satellite');
+    R.ok('the bar offers the work spot as a button', (await PB.locator('[data-location-site]').count()) === 1 && /Work spot/.test(await PB.locator('[data-location-site]').innerText()));
   });
 
   await R.section('offline: search says so; coordinates still work', async () => {
@@ -160,7 +161,7 @@ async (page, lib) => {
   });
 
   await R.section('cleanup', async () => {
-    await PB.evaluate(async (id) => { const { db } = await import('/src/db/index.ts'); const { nowISO } = await import('/src/lib/utils.ts'); await db.sites.update(id, { geo: undefined, updatedAt: nowISO() }); }, siteId).catch(() => undefined);
+    await PB.evaluate(async ({ siteId, dayId }) => { const { db } = await import('/src/db/index.ts'); const { nowISO } = await import('/src/lib/utils.ts'); await db.sites.update(siteId, { geo: undefined, updatedAt: nowISO() }); const day = await db.blastDays.get(dayId); if (day) await db.jobs.update(day.jobId, { workSpot: undefined, updatedAt: nowISO() }); }, { siteId, dayId }).catch(() => undefined);
     await sleep(1500);
     const removed = await lib.cleanupAsAdmin(browser, { days: [dayId, day2Id].filter(Boolean) }).catch(() => -1);
     R.ok(`cleanup removed ${removed} day(s)`, removed >= 0);

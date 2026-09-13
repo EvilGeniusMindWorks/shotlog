@@ -66,6 +66,8 @@ interface Props {
   jobAddress?: string;
   /** The site's remembered spot (site.geo) and a way to save one (site-map round, 2026-09-09) */
   siteSpot?: { lat: number; lng: number } | null;
+  /** S11: what `siteSpot` is — "Work spot" or "Address point" */
+  siteSpotLabel?: string;
   siteName?: string;
   onSaveSiteSpot?: (spot: { lat: number; lng: number }) => void | Promise<void>;
   onUseClosest?: (distanceFeet: number, label: string) => void;
@@ -162,6 +164,7 @@ export function SiteDiagramEditor({
   onChange,
   jobAddress,
   siteSpot,
+  siteSpotLabel,
   siteName,
   onSaveSiteSpot,
   onUseClosest,
@@ -259,7 +262,7 @@ export function SiteDiagramEditor({
     if (!map || liveRef.current.center || openedRef.current === 'real') return;
     if (siteSpot) {
       map.setView([siteSpot.lat, siteSpot.lng], 17);
-      setOpenedOn("the site's spot");
+      setOpenedOn(siteSpotLabel === 'Work spot' ? "the job's work spot" : siteSpotLabel === 'Address point' ? "the site's address point" : "the site's spot");
       if (liveRef.current.baseLayer !== 'satellite') mutateRef.current((cur) => ({ ...cur, baseLayer: 'satellite' }));
       openedRef.current = 'real';
       return;
@@ -516,7 +519,7 @@ export function SiteDiagramEditor({
   const goToSiteSpot = () => {
     if (!siteSpot) return;
     flyTo(siteSpot.lat, siteSpot.lng, 17);
-    setOpenedOn("the site's spot");
+    setOpenedOn(siteSpotLabel === 'Work spot' ? "the job's work spot" : siteSpotLabel === 'Address point' ? "the site's address point" : "the site's spot");
   };
 
   /** My GPS: watch for up to ten seconds so the fix can improve; "Use this" takes it */
@@ -562,12 +565,15 @@ export function SiteDiagramEditor({
     setOpenedOn(`coordinates ${formatLatLng(c)}`);
     setShowLatLng(false);
   };
+  // S11 shape B: the save goes to THIS JOB's work spot (the site keeps its
+  // address point); the label says so. `siteSpot` is whichever point the
+  // page resolved: the job's work spot, else the site's address point.
   const saveSiteSpot = async () => {
     if (!onSaveSiteSpot) return;
     const p = value.blastPin ?? value.center;
     if (!p) return;
     await onSaveSiteSpot({ lat: p.lat, lng: p.lng });
-    setBusy(`Saved as ${siteName ? `${siteName}'s` : "the site's"} spot — the next shot here opens on it`);
+    setBusy(`Saved as this job's work spot — the next shot here opens on it`);
     window.setTimeout(() => setBusy(null), 2500);
   };
 
@@ -615,7 +621,7 @@ export function SiteDiagramEditor({
           )}
           {siteSpot && (
             <Button variant="outline" size="sm" onClick={goToSiteSpot} data-location-site>
-              <MapPin className="h-4 w-4 mr-1" /> {siteName ? `${siteName}'s spot` : "Site's spot"}
+              <MapPin className="h-4 w-4 mr-1" /> {siteSpotLabel ?? (siteName ? `${siteName}'s spot` : "Site's spot")}
             </Button>
           )}
           <Button variant="outline" size="sm" onClick={myLocation} data-location-gps>
@@ -626,7 +632,7 @@ export function SiteDiagramEditor({
           </Button>
           {onSaveSiteSpot && (value.blastPin || value.center) && (
             <Button variant="outline" size="sm" onClick={() => void saveSiteSpot()} data-location-save-spot>
-              Save as {siteName ? `${siteName}'s` : "the site's"} spot
+              Save as this job's work spot
             </Button>
           )}
         </div>

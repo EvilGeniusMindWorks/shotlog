@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { createJob } from '@/hooks/useBlastDay';
 import type { WorkType } from '@/db/schema';
 import { WORK_TYPES, WORK_TYPE_LABEL } from '@/lib/prefs';
-import { CustomerSitePicker, emptyPick, pickReady, type CustomerSitePick } from './CustomerSitePicker';
+import { CustomerSitePicker, emptyPick, pickReady, pickWhyNot, type CustomerSitePick } from './CustomerSitePicker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -45,7 +45,9 @@ export function NewJobForm({
     defaultTypeOfWork: '' as WorkType | '',
   });
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const ready = form.name.trim().length > 0 && pickReady(pick);
+  const whyNot = !form.name.trim() ? 'Give the job a name.' : pickWhyNot(pick);
 
   const create = async () => {
     setBusy(true);
@@ -64,8 +66,11 @@ export function NewJobForm({
         city: pick.city,
         state: pick.state,
         kFactor: pick.kFactor,
+        siteName: pick.siteName,
       });
       onCreated(id);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not create the job.');
     } finally {
       setBusy(false);
     }
@@ -131,7 +136,12 @@ export function NewJobForm({
         Job # is assigned automatically (this year's next number) — editable on the job page, where
         hazards, precautions and contacts live too.
       </p>
-      <div className="flex justify-end gap-2">
+      <div className="flex items-center justify-end gap-3">
+        {(whyNot || error) && (
+          <span className={`text-xs ${error ? 'text-red-600' : 'text-gray-500'}`} data-new-job-why>
+            {error ?? whyNot}
+          </span>
+        )}
         <Button variant="outline" onClick={onCancel}>
           Cancel
         </Button>

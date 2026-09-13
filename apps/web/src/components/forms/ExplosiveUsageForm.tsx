@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Flame, Pencil, Search, Target, Trash2, X, Zap } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { nowISO } from '@/lib/utils';
+import { fmtLbs, fmtMultiplier } from '@/lib/format';
 import type {
   DetonatorLineItem,
   ExplosiveUsage,
@@ -141,7 +142,7 @@ export function ExplosiveUsageForm({ explosiveUsage, shots: _shots }: Props) {
           <div className="text-[11px] text-navy-300">Explosives + Boosters</div>
         </div>
         <span className="font-mono text-3xl font-bold text-safety-orange">
-          {(explosivesLbs + boosterLbs).toFixed(1)}
+          {fmtLbs(explosivesLbs + boosterLbs)}
         </span>
       </div>
       {detCount > 0 && (
@@ -177,7 +178,7 @@ function ProductLine({
       <div className="flex-1 min-w-0">
         <div className="text-sm font-semibold truncate">{item.productName}</div>
         <div className="text-[11px] text-gray-400">
-          {item.weightMultiplier} lbs/{item.unitType}
+          {fmtMultiplier(item.weightMultiplier)} lbs/{item.unitType}
         </div>
       </div>
       {editing ? (
@@ -198,7 +199,7 @@ function ProductLine({
         <span className="font-mono font-bold text-[15px]">{item.quantity}</span>
       )}
       <span className="font-mono text-xs text-gray-500 w-16 text-right shrink-0">
-        {item.totalWeight > 0 ? `${item.totalWeight.toFixed(1)} lbs` : '—'}
+        {item.totalWeight > 0 ? `${fmtLbs(item.totalWeight)} lbs` : '—'}
       </span>
       <button
         className="h-8 w-8 flex items-center justify-center text-gray-300 hover:text-gray-500"
@@ -417,7 +418,7 @@ function ProductPickerDialog({
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate">{p.productName}</p>
                     <p className="text-xs text-gray-500">
-                      {p.category.replace('_', ' ')} — {p.weightMultiplier} lbs/{p.unitType}
+                      {p.category.replace('_', ' ')} — {fmtMultiplier(p.weightMultiplier)} lbs/{p.unitType}
                     </p>
                   </div>
                 </button>

@@ -211,6 +211,40 @@ export function feedbackMail(opts: {
   };
 }
 
+/** S11: a NEW kind of crash (one email per problem, not per repeat) */
+export function crashMail(opts: {
+  to: string;
+  title: string;
+  fingerprint: string;
+  reportCode: string;
+  name: string;
+  company: string;
+  route: string;
+  buildId: string;
+  side: string;
+}): Mail {
+  const link = `${APP_URL}/admin/feedback?tab=crashes&group=${encodeURIComponent(opts.fingerprint)}`;
+  const where = [
+    `First hit by: ${opts.name} (${opts.company})`,
+    `Where: ${opts.side === 'server' ? 'the server, ' : ''}${opts.route || '/'}`,
+    `Build: ${opts.buildId || 'unknown'} · report code ${opts.reportCode}`,
+    'You get one email per new problem; repeats only raise the count in Admin.',
+  ];
+  return {
+    to: opts.to,
+    subject: `ShotLog crash — ${opts.title.slice(0, 90)}`,
+    text: `New crash in ShotLog:\n\n${opts.title}\n\n${where.join('\n')}\n\nOpen: ${link}`,
+    html: layout({
+      company: opts.company,
+      title: 'New crash',
+      intro: `<span style="display:block;border-left:3px solid #B4452E;padding:6px 12px;color:#172338">${esc(opts.title)}</span>`,
+      steps: where.map(esc),
+      cta: { label: 'Open the crash', url: link },
+      footer: 'Sent by ShotLog the first time it sees a problem. Mark it seen or fixed in Admin › Feedback › Crashes.',
+    }),
+  };
+}
+
 export function resetMail(opts: { to: string; name: string; company: string; link: string; ttlMinutes: number }): Mail {
   const first = opts.name.split(' ')[0] || opts.name;
   const text =

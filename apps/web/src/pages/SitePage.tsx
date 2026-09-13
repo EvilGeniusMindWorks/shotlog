@@ -28,6 +28,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ensureSiteGeo } from '@/lib/siteGeo';
 
 export function SitePage() {
   const { id } = useParams<{ id: string }>();
@@ -260,7 +261,7 @@ function GroundCard({ site, readOnly }: { site: Site; readOnly: boolean }) {
       </div>
       <div>
         <Label className="text-xs">Street</Label>
-        <Input value={draft.address} onChange={(e) => setField('address', e.target.value)} />
+        <Input value={draft.address} onChange={(e) => setField('address', e.target.value)} onBlur={() => void ensureSiteGeo(site.id, { force: true }).catch(() => undefined)} data-site-address />
       </div>
       <div>
         <Label className="text-xs">Street 2</Label>
@@ -272,7 +273,7 @@ function GroundCard({ site, readOnly }: { site: Site; readOnly: boolean }) {
       </div>
       <div>
         <Label className="text-xs">City</Label>
-        <Input value={draft.city} onChange={(e) => setField('city', e.target.value)} />
+        <Input value={draft.city} onChange={(e) => setField('city', e.target.value)} onBlur={() => void ensureSiteGeo(site.id, { force: true }).catch(() => undefined)} />
       </div>
       <div className="flex gap-2">
         <div className="w-16">

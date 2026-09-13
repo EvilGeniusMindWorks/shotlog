@@ -14,6 +14,16 @@ export interface ErrorLogEntry {
   msg: string;
   stack?: string;
   route?: string;
+  /** S11: the six-character report code of the crash report this became */
+  code?: string;
+}
+
+/** S11: every logged error is also handed to the crash reporter
+ *  (lib/crash.ts registers itself; kept as a hook to avoid an import cycle). */
+type CrashReporter = (entry: ErrorLogEntry) => { code: string } | null;
+let reporter: CrashReporter | null = null;
+export function setCrashReporter(fn: CrashReporter | null) {
+  reporter = fn;
 }
 
 export function getErrorLog(): ErrorLogEntry[] {
@@ -32,6 +42,14 @@ export function logError(entry: Omit<ErrorLogEntry, 'at' | 'route'>): ErrorLogEn
     msg: entry.msg.slice(0, 500),
     stack: entry.stack?.slice(0, 2000),
   };
+  if (reporter) {
+    try {
+      const r = reporter({ ...full, stack: entry.stack });
+      if (r) full.code = r.code;
+    } catch {
+      /* the reporter must never break the app */
+    }
+  }
   try {
     const entries = getErrorLog();
     entries.push(full);
@@ -110,9 +128,15 @@ export function buildId(): string {
   return typeof __BUILD_ID__ !== 'undefined' ? __BUILD_ID__ : 'dev';
 }
 
+/** The git commit the build came from (Vercel sets it); '' in dev */
+export function buildCommit(): string {
+  return typeof __COMMIT__ !== 'undefined' ? __COMMIT__ : '';
+}
+
 export interface DiagnosticsSnapshot {
   route: string;
   buildId: string;
+  commit: string;
   userAgent: string;
   viewport: string;
   online: boolean;
@@ -133,6 +157,7 @@ export function collectDiagnostics(): DiagnosticsSnapshot {
   return {
     route: currentRoute(),
     buildId: buildId(),
+    commit: buildCommit(),
     userAgent: navigator.userAgent.slice(0, 400),
     viewport: `${window.innerWidth}x${window.innerHeight}`,
     online: navigator.onLine,

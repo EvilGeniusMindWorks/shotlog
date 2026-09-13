@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import type { DaySummary } from '@/pages/Dashboard';
 import { formatDate, todayISO } from '@/lib/utils';
+import { fmtLbs } from '@/lib/format';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 
@@ -28,7 +29,7 @@ function DayRow({ s, navigate }: { s: DaySummary; navigate: (to: string) => void
         </p>
         <p className="text-xs text-gray-400">
           {s.shots > 0 ? `${s.shots} shot${s.shots === 1 ? '' : 's'}` : s.day.typeOfWork?.replace(/_/g, ' ')}
-          {s.totalLbs > 0 && ` · ${Math.round(s.totalLbs).toLocaleString()} lbs`}
+          {s.totalLbs > 0 && ` · ${fmtLbs(s.totalLbs)} lbs`}
         </p>
       </div>
       <Badge variant={sentBack ? 'violation' : (s.day.status as 'draft' | 'submitted' | 'approved')}>

@@ -6,6 +6,7 @@
 import { useLiveQuery, db } from '@/db';
 import { generateId, nowISO } from '@/lib/utils';
 import type { Customer, Job, JobContact, KFactorHistoryEntry, Site } from '@/db/schema';
+import { ensureSiteGeo } from '@/lib/siteGeo';
 
 export interface JobContext {
   job: Job;
@@ -167,6 +168,7 @@ export async function createSite(
     localPPVLimit?: number;
   } & Partial<Omit<Site, 'name'>>,
 ): Promise<string> {
+  if (!(data.name?.trim() || data.address.trim())) throw new Error('A site needs a name and an address.');
   const key = norm(data.address || data.name || '');
   const existing = (await db.sites.where('customerId').equals(customerId).toArray()).find(
     (s) => norm(s.address || s.name) === key && norm(s.city) === norm(data.city),
@@ -191,6 +193,7 @@ export async function createSite(
     updatedAt: now,
     syncStatus: 'local',
   } as Site);
+  void ensureSiteGeo(id).catch(() => undefined); // S11: the address becomes the site's map point
   return id;
 }
 
@@ -208,6 +211,10 @@ export async function ensureCustomerAndSite(input: {
   siteName?: string;
   kFactor?: number;
 }): Promise<{ customerId: string; siteId: string }> {
+  // S11: never create a nameless customer or site (that is how Beta got a
+  // ghost pair). A blank name here means a form slipped — stop, do not fill.
+  if (!input.customerName.trim()) throw new Error('A customer needs a name.');
+  if (!(input.siteName?.trim() || input.address.trim())) throw new Error('A site needs a name and an address.');
   const now = nowISO();
   const customers = await db.customers.toArray();
   let customer = customers.find((c) => norm(c.name) === norm(input.customerName));
@@ -243,6 +250,7 @@ export async function ensureCustomerAndSite(input: {
       syncStatus: 'local',
     };
     await db.sites.add(site);
+    void ensureSiteGeo(site.id).catch(() => undefined); // S11: the address becomes the site's map point
   }
   return { customerId: customer.id, siteId: site.id };
 }

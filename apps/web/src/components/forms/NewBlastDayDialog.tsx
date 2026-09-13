@@ -28,6 +28,9 @@ import { Select } from '@/components/ui/select';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { formatDate, todayISO } from '@/lib/utils';
 import { ArrowLeft, X } from 'lucide-react';
+import { fmtMiles, getFix, gpsPreferred, isFix, setGpsPreferred, GPS_FAILURE_TEXT, type GpsFix, type GpsFailure } from '@/lib/gps';
+import { orderByDistance, pickJobsFor, type PickJob } from '@/lib/nearbyJobs';
+import { setJobWorkSpot } from '@/lib/siteGeo';
 
 interface Props {
   onClose: () => void;
@@ -117,6 +120,7 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork, onOpen
       if (j.customerId) setCustomerId(j.customerId);
       if (j.siteId) setSiteId(j.siteId);
     }
+    offerSpotFor(id);
   };
   const pickCustomer = (id: string) => {
     setCustomerId(id);
@@ -207,6 +211,40 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork, onOpen
   // to find the button.
   const [showPicker, setShowPicker] = useState(false);
   const [pickQuery, setPickQuery] = useState('');
+  // ── S11 nearby jobs (Matthew, Sep 13 2026): the phone knows where it is;
+  // jobs within two miles of it float up with the distance. Never picks for
+  // you; the fix is used here for sorting only. A picked job with no point at
+  // all (no work spot, site without an address point) offers to remember
+  // where the person is standing as the job's work spot.
+  const [useGps, setUseGps] = useState(() => gpsPreferred());
+  const [fix, setFix] = useState<GpsFix | GpsFailure | 'asking' | null>(null);
+  const [spotOffer, setSpotOffer] = useState<PickJob | null>(null);
+  const [spotSaved, setSpotSaved] = useState(false);
+  // keyed by content, not identity — the jobs array is a fresh [] until the
+  // live query lands, and an identity dep would re-query on every render
+  const jobsKey = jobs.map((j) => `${j.id}:${j.updatedAt}`).join('|');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const pickJobs = useLiveQuery(() => pickJobsFor(jobs), [jobsKey]) ?? [];
+  useEffect(() => {
+    if (!showPicker || !useGps) {
+      if (!useGps) setFix(null);
+      return;
+    }
+    let live = true;
+    setFix((f) => (f && isFix(f) ? f : 'asking'));
+    void getFix().then((f) => live && setFix(f));
+    return () => {
+      live = false;
+    };
+  }, [showPicker, useGps]);
+  const here = fix && isFix(fix) ? fix : null;
+  const nearby = useMemo(() => orderByDistance(pickJobs, here).filter((j) => j.nearby), [pickJobs, here]);
+  const gpsLine = !useGps ? null : fix === 'asking' ? 'Finding you…' : fix && !isFix(fix) ? GPS_FAILURE_TEXT[fix] : here ? `±${Math.round(here.accuracy * 3.281)} ft` : null;
+  const offerSpotFor = (id: string) => {
+    const pj = pickJobs.find((x) => x.id === id);
+    setSpotSaved(false);
+    setSpotOffer(pj && !pj.point && here && can('jobs', 'PATCH') ? pj : null);
+  };
   useEffect(() => {
     if (jobId && showPicker && !showNewJob) setShowPicker(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -273,6 +311,30 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork, onOpen
               </span>
               <span className="text-gray-400">›</span>
             </button>
+            {job && spotOffer && spotOffer.id === job.id && here && (
+              <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm" data-day-spot-offer>
+                {spotSaved ? (
+                  <p className="text-green-700" data-day-spot-saved>Work spot saved — next time this job shows how far away it is.</p>
+                ) : (
+                  <>
+                    <p className="font-semibold">{spotOffer.siteName ?? 'This site'} has no point on the map yet</p>
+                    <p className="text-xs text-gray-600 mt-0.5">Save where you're standing as {spotOffer.name}'s work spot?</p>
+                    <div className="flex gap-2 mt-2">
+                      <Button
+                        size="sm"
+                        data-day-spot-offer-save
+                        onClick={() => void setJobWorkSpot(spotOffer.id, { lat: here.lat, lng: here.lng }, 'gps').then(() => setSpotSaved(true))}
+                      >
+                        Save this spot
+                      </Button>
+                      <Button size="sm" variant="outline" data-day-spot-offer-skip onClick={() => setSpotOffer(null)}>
+                        Not now
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
             {job && (
               <button
                 type="button"
@@ -457,6 +519,37 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork, onOpen
                 </>
               ) : level === 'customers' ? (
                 <>
+                  <div className="pb-1" data-pick-nearby-block>
+                    <label className="flex items-center gap-2 text-sm cursor-pointer" data-pick-gps>
+                      <input
+                        type="checkbox"
+                        checked={useGps}
+                        onChange={(e) => {
+                          setUseGps(e.target.checked);
+                          setGpsPreferred(e.target.checked);
+                        }}
+                      />
+                      Use my location
+                      {gpsLine && <span className="text-xs text-gray-400" data-pick-gps-line>{gpsLine}</span>}
+                    </label>
+                    {here && (
+                      <div className="mt-1">
+                        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Nearby</p>
+                        {nearby.length === 0 ? (
+                          <p className="text-xs text-gray-400" data-pick-nearby-none>No job within {2} miles of here.</p>
+                        ) : (
+                          <div className="flex flex-wrap gap-2">
+                            {nearby.map((j) => (
+                              <button key={j.id} className="inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-full border border-green-300 bg-green-50 text-sm font-medium" data-pick-nearby={j.id} onClick={() => { pickJob(j.id); setShowPicker(false); }}>
+                                {j.jobNumber ? `${j.jobNumber} · ` : ''}{j.name}
+                                <span className="text-[11px] font-semibold text-green-700" data-pick-nearby-miles>{j.miles != null ? fmtMiles(j.miles) : ''}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   {recent.length > 0 && (
                     <div className="pb-1">
                       <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Recent</p>

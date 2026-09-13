@@ -17,6 +17,7 @@ import { getJobView } from '@/lib/jobContext';
 import { isBlastingWork } from '@/db/schema';
 import { collectDayAttachments, fileSubmission } from '@/lib/archive';
 import { nowISO } from '@/lib/utils';
+import { fmtLbs } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 
 type Phase = 'init' | 'preflight' | 'blast_log' | 'daily_report';
@@ -74,7 +75,7 @@ export async function preflightDay(dayId: string): Promise<PreflightItem[]> {
     const usage = await db.explosiveUsages.where('blastLogId').equals(log.id).first();
     const lbs = usage?.totalPoundsShot ?? 0;
     if (!(lbs > 0)) items.push({ key: 'expl', level: 'amber', text: 'No explosives entered on the blasting log', to: `/blast-day/${dayId}?view=blast-log`, toLabel: 'Explosives' });
-    else items.push({ key: 'expl-ok', level: 'ok', text: `Explosives entered · ${lbs.toLocaleString()} lbs` });
+    else items.push({ key: 'expl-ok', level: 'ok', text: `Explosives entered · ${fmtLbs(lbs)} lbs` });
   }
 
   // AMBER — crew

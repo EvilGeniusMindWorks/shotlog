@@ -2,7 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { TABLE_PERMISSIONS } from '@shotlog/shared';
-import { authRouter, ensureAdminUser, requireAuth, requirePlatformAdmin } from './auth.js';
+import { authRouter, ensureAdminUser, requireAuth, requirePlatformAdmin, type AuthedRequest } from './auth.js';
+import { prisma } from './db.js';
 import { adminRouter } from './admin.js';
 import { enrollRouter, invitesRouter } from './enrollment.js';
 import { powersyncRouter } from './powersync.js';
@@ -18,6 +19,9 @@ import { countLegacyInlinePdfs, migrateLegacyInlinePdfs } from './legacyPdfs.js'
 import { countLegacyInlineImages, migrateLegacyInlineImages } from './legacyImages.js';
 import { seedCompanyReference } from './seed.js';
 import { isProduction } from './env.js';
+import { recordServerCrash } from './feedback.js';
+import { forgetMaps } from './crash.js';
+import { z } from 'zod';
 
 const app = express();
 // Behind Railway's load balancer: trust the first proxy hop so req.ip is the
@@ -88,6 +92,66 @@ app.use('/feedback', feedbackRouter);
 // by any company role. First occupant: rehearsal mode (Round S6).
 app.use('/platform/rehearsal', rehearsalRouter);
 app.use('/platform/companies', companiesRouter);
+
+// ── S11: crash reporting without a vendor ────────────────────────────────────
+// The web build uploads its source maps here (scripts/build-web.mjs, bearer
+// SOURCEMAP_TOKEN) so minified traces decode to real files and lines.
+// Maps are never served; a build's set replaces the previous one.
+const sourcemapSchema = z.object({
+  buildId: z.string().min(1).max(64),
+  files: z.array(z.object({ file: z.string().min(1).max(200), map: z.string().max(30_000_000) })).max(200),
+});
+app.post('/platform/sourcemaps', async (req, res) => {
+  const token = process.env.SOURCEMAP_TOKEN;
+  const given = (req.headers.authorization ?? '').replace(/^Bearer\s+/i, '');
+  if (!token || given !== token) {
+    res.status(401).json({ error: 'sourcemap token' });
+    return;
+  }
+  const parsed = sourcemapSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'invalid sourcemaps' });
+    return;
+  }
+  const { buildId, files } = parsed.data;
+  for (const f of files) {
+    await prisma.sourceMap.upsert({
+      where: { id: `${buildId}/${f.file}` },
+      create: { id: `${buildId}/${f.file}`, buildId, file: f.file, map: f.map },
+      update: { map: f.map },
+    });
+  }
+  forgetMaps(buildId);
+  // Keep the last 40 builds' maps; older ones cannot be matched to a device any more
+  const builds = await prisma.sourceMap.findMany({ distinct: ['buildId'], select: { buildId: true, createdAt: true }, orderBy: { createdAt: 'desc' } });
+  const stale = builds.slice(40).map((b: { buildId: string }) => b.buildId);
+  if (stale.length) await prisma.sourceMap.deleteMany({ where: { buildId: { in: stale } } });
+  console.log(`[sourcemaps] ${files.length} map(s) for build ${buildId}`);
+  res.json({ ok: true, files: files.length });
+});
+// Platform admin: throw on purpose to prove the inbox catches server failures
+app.post('/platform/crash-test', requireAuth, requirePlatformAdmin, (_req, _res) => {
+  throw new Error('Crash test from Admin (S11)');
+});
+
+// The API's first catch-all (S11): a failure in any route becomes a crash
+// line in Admin › Feedback › Crashes with a report code, instead of a log
+// line nobody reads. Must be registered after every router.
+app.use((err: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  void recordServerCrash(err, { method: req.method, originalUrl: req.originalUrl, userId: (req as AuthedRequest).userId }).then((code) => {
+    if (res.headersSent) return;
+    res.status(500).json({ error: 'server error', reportCode: code });
+  });
+});
+process.on('unhandledRejection', (reason) => {
+  void recordServerCrash(reason);
+});
+process.on('uncaughtException', (err) => {
+  void recordServerCrash(err).finally(() => {
+    console.error('[crash] uncaught exception — exiting so the host restarts', err);
+    process.exit(1);
+  });
+});
 
 const port = Number(process.env.PORT ?? 4000);
 

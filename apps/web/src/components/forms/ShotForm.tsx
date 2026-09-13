@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Activity, BarChart3, Flame, MapPin, Wrench } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { nowISO } from '@/lib/utils';
+import { fmtLbs } from '@/lib/format';
 import { distributeByHoles, totalSqFt, avgDrillDepth, totalYardsShot } from '@shotlog/shared';
 import { getPlanHoles } from '@/hooks/useDrillPlans';
 import { aggregateDrilling } from '@/hooks/useDrillLogs';
@@ -326,12 +327,12 @@ function ShotExplosives({
             <span className="font-mono font-bold text-sm">{qty || '—'}</span>
           )}
           <span className="font-mono text-xs text-gray-500 w-16 text-right">
-            {lbs > 0 ? `${lbs.toFixed(1)} lbs` : '—'}
+            {lbs > 0 ? `${fmtLbs(lbs)} lbs` : '—'}
           </span>
         </div>
       ))}
       <div className="text-right text-sm font-bold pt-1">
-        Shot subtotal: <span className="font-mono">{subtotal.toFixed(1)} lbs</span>
+        Shot subtotal: <span className="font-mono">{fmtLbs(subtotal)} lbs</span>
       </div>
     </div>
   );

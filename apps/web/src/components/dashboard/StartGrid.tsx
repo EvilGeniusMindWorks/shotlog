@@ -1,7 +1,12 @@
 // Doc-first launcher: big Start tiles per document type. Job-scoped docs get
 // a one-tap job pick (skipped entirely when there's a single active job); the
 // work-day container is found-or-created quietly by openTodaysDoc.
-import { useState } from 'react';
+// S11 (Matthew, Sep 13 2026): "Which job?" knows where the phone is —
+// jobs within two miles float up with the distance; never picks for you;
+// the fix is used on the phone for sorting only. A job with no point at all
+// (no work spot, site without an address point) offers to remember where
+// the person is standing as the job's work spot before it opens.
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -17,6 +22,11 @@ import { createIncident } from '@/pages/admin/AdminIncidentsPage';
 import type { IncidentType } from '@/db/schema';
 import { IconChip } from '@/components/ui/section-card';
 import { Button } from '@/components/ui/button';
+import { can } from '@/lib/perms';
+import { fmtMiles, getFix, gpsPreferred, isFix, setGpsPreferred, GPS_FAILURE_TEXT, type GpsFix, type GpsFailure } from '@/lib/gps';
+import { setJobWorkSpot } from '@/lib/siteGeo';
+
+import { orderByDistance, pickJobsFor, type PickJob } from '@/lib/nearbyJobs';
 
 type Tile =
   | { kind: LauncherDoc; label: string; hint: string; icon: JSX.Element }
@@ -76,12 +86,12 @@ export function StartGrid({ role }: { role: string }) {
   const [showIncident, setShowIncident] = useState(false);
   const [busy, setBusy] = useState(false);
   const jobs =
-    useLiveQuery(() =>
-      db.jobs
-        .filter((j) => j.isActive)
-        .toArray()
-        .then((xs) => [...xs].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))),
-    ) ?? [];
+    useLiveQuery(async () => {
+      const xs = [...(await db.jobs.filter((j) => j.isActive).toArray())].sort((a, b) =>
+        b.updatedAt.localeCompare(a.updatedAt),
+      );
+      return pickJobsFor(xs);
+    }) ?? [];
 
   const tiles = (ROLE_TILES[role] ?? []).map((k) => TILES[k]);
   if (tiles.length === 0) return null;
@@ -146,11 +156,46 @@ function JobPickSheet({
   onPick,
   onClose,
 }: {
-  jobs: { id: string; name: string; customer: string }[];
+  jobs: PickJob[];
   busy: boolean;
   onPick: (jobId: string) => void;
   onClose: () => void;
 }) {
+  const [useGps, setUseGps] = useState(() => gpsPreferred());
+  const [fix, setFix] = useState<GpsFix | GpsFailure | 'asking' | null>(null);
+  const [offer, setOffer] = useState<PickJob | null>(null);
+  useEffect(() => {
+    if (!useGps) {
+      setFix(null);
+      return;
+    }
+    let live = true;
+    setFix('asking');
+    void getFix().then((f) => live && setFix(f));
+    return () => {
+      live = false;
+    };
+  }, [useGps]);
+  const here = fix && isFix(fix) ? fix : null;
+  const ordered = orderByDistance(jobs, here);
+  const canSaveSpot = can('jobs', 'PATCH');
+  const pick = (j: PickJob) => {
+    // No point at all for this job and a fix in hand: offer once, then open
+    if (!j.point && here && canSaveSpot) {
+      setOffer(j);
+      return;
+    }
+    onPick(j.id);
+  };
+  const gpsLine = !useGps
+    ? null
+    : fix === 'asking'
+      ? 'Finding you…'
+      : fix && !isFix(fix)
+        ? GPS_FAILURE_TEXT[fix]
+        : here
+          ? `±${Math.round(here.accuracy * 3.281)} ft`
+          : null;
   return (
     <div
       className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-[60] p-0 sm:p-4"
@@ -166,16 +211,64 @@ function JobPickSheet({
             <X className="h-5 w-5" />
           </Button>
         </div>
-        <div className="space-y-1">
-          {jobs.map((j) => (
+        <label className="flex items-center gap-2 text-sm mb-2 cursor-pointer" data-jobpick-gps>
+          <input
+            type="checkbox"
+            checked={useGps}
+            onChange={(e) => {
+              setUseGps(e.target.checked);
+              setGpsPreferred(e.target.checked);
+            }}
+          />
+          Use my location
+          {gpsLine && <span className="text-xs text-gray-400" data-jobpick-gps-line>{gpsLine}</span>}
+        </label>
+        {offer && (
+          <div className="mb-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm" data-jobpick-offer>
+            <p className="font-semibold">{offer.siteName ?? 'This site'} has no point on the map yet</p>
+            <p className="text-xs text-gray-600 mt-0.5">
+              Save where you're standing as {offer.name}'s work spot? Next time it shows how far away it is.
+            </p>
+            <div className="flex gap-2 mt-2">
+              <Button
+                size="sm"
+                disabled={busy}
+                data-jobpick-offer-save
+                onClick={() => {
+                  if (here) void setJobWorkSpot(offer.id, { lat: here.lat, lng: here.lng }, 'gps');
+                  onPick(offer.id);
+                }}
+              >
+                Save and open
+              </Button>
+              <Button size="sm" variant="outline" disabled={busy} data-jobpick-offer-skip onClick={() => onPick(offer.id)}>
+                Just open
+              </Button>
+            </div>
+          </div>
+        )}
+        <div className="space-y-1" data-jobpick-list>
+          {ordered.map((j) => (
             <button
               key={j.id}
               disabled={busy}
               className="w-full flex flex-col items-start px-3 py-2.5 rounded-lg border border-gray-200 text-left hover:bg-gray-50 disabled:opacity-60"
-              onClick={() => onPick(j.id)}
+              onClick={() => pick(j)}
+              data-jobpick-job={j.id}
+              data-jobpick-nearby={j.nearby ? '1' : undefined}
             >
-              <span className="text-sm font-semibold">{j.name}</span>
-              <span className="text-xs text-gray-400">{j.customer}</span>
+              <span className="text-sm font-semibold flex items-center gap-2">
+                {j.name}
+                {j.nearby && j.miles != null && (
+                  <span className="text-[10px] font-semibold rounded-full bg-green-100 text-green-700 px-1.5 py-0.5" data-jobpick-miles>
+                    {fmtMiles(j.miles)}
+                  </span>
+                )}
+              </span>
+              <span className="text-xs text-gray-400">
+                {j.customer}
+                {here && !j.nearby && (j.miles != null ? ` · ${fmtMiles(j.miles)}` : ' · no address point yet')}
+              </span>
             </button>
           ))}
           {jobs.length === 0 && (

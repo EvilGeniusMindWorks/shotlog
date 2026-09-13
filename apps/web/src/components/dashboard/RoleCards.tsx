@@ -13,6 +13,7 @@ import { useMyChecklistsToday, useOpenTickets } from '@/hooks/useMaintenance';
 import { getSessionUser, getRealSessionUser, setViewRole } from '@/lib/session';
 import { listSubmissionSummaries, openSubmissionPdfById } from '@/lib/archive';
 import { formatDate, todayISO } from '@/lib/utils';
+import { fmtLbs } from '@/lib/format';
 import { isBlastingWork, type TimeCard } from '@/db/schema';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -1315,7 +1316,7 @@ export function AdminHome() {
                     </span>
                   </td>
                   <td className="py-2 pr-3 tabular-nums">{r.footage.toFixed(0)}</td>
-                  <td className="py-2 pr-3 tabular-nums">{r.lbs.toFixed(0)}</td>
+                  <td className="py-2 pr-3 tabular-nums">{fmtLbs(r.lbs)}</td>
                   <td className="py-2 pr-3">
                     {r.incidents > 0 ? <Badge variant="violation">{r.incidents}</Badge> : '0'}
                   </td>

@@ -5,6 +5,7 @@ import { db, useLiveQuery } from '@/db';
 import type { BlastDay, BlastLog, DrillLog, Shot } from '@/db/schema';
 import { getSessionUser } from '@/lib/session';
 import { getShotPlan } from '@/hooks/useDrillLogs';
+import { fmtLbs } from '@/lib/format';
 
 export type PhaseKey = 'drilling' | 'readiness' | 'shots' | 'seismo' | 'timecards' | 'file';
 export type PhaseState = 'done' | 'now' | 'todo' | 'later';
@@ -150,7 +151,7 @@ export function useDayPhases(
         key: 'readiness',
         label: 'Readiness review',
         sub: review
-          ? `design confirmed${review.maxPoundsPerDelay ? ` · max ${review.maxPoundsPerDelay} lbs/delay` : ''}`
+          ? `design confirmed${review.maxPoundsPerDelay ? ` · max ${Number.isFinite(review.maxPoundsPerDelay) ? fmtLbs(review.maxPoundsPerDelay) : review.maxPoundsPerDelay} lbs/delay` : ''}`
           : 'plan intent vs as-drilled → adjust',
         chip: review ? 'confirmed' : 'open',
         chipVariant: review ? 'compliant' : 'warning',

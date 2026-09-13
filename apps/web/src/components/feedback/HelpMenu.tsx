@@ -3,7 +3,7 @@
 // whenever the coach map knows the current route (Round S2).
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { BookOpen, CircleHelp, Footprints, Info, MessageSquarePlus, Route } from 'lucide-react';
+import { BookOpen, CircleHelp, Footprints, Info, ListChecks, MessageSquarePlus, Route } from 'lucide-react';
 import { helpForRoute, helpPath } from '@/help';
 import { cn } from '@/lib/utils';
 import { openFeedbackComposer } from './FeedbackComposer';
@@ -11,6 +11,7 @@ import { coachFor } from '@/components/guidance/coach';
 import { CoachSheet } from '@/components/guidance/CoachSheet';
 import { SCREEN_TOUR_TITLE, screenTourFor } from '@/components/guidance/tourScripts';
 import { startScreenTour, tourBucket } from '@/components/layout/Tour';
+import { showFirstWeekCard } from '@/components/guidance/FirstWeekCard';
 
 export function HelpMenu({
   variant,
@@ -101,6 +102,18 @@ export function HelpMenu({
         }}
       >
         <Route className="h-4 w-4 text-gray-500" /> Walkthrough
+      </button>
+      <button
+        role="menuitem"
+        className={item}
+        data-help-first-week
+        onClick={() => {
+          setOpen(false);
+          showFirstWeekCard();
+          if (location.pathname !== '/') navigate('/');
+        }}
+      >
+        <ListChecks className="h-4 w-4 text-gray-500" /> Show the first-week list
       </button>
       <button
         role="menuitem"

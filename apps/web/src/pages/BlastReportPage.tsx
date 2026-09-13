@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, FileDown, Printer } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { useBlastDay } from '@/hooks/useBlastDay';
+import { fmtLbs, fmtPF } from '@/lib/format';
 import {
   distributeByHoles,
   osmPPVLimit,
@@ -115,8 +116,8 @@ export function BlastReportPage() {
         <div className="report-kpis">
           <div><b>{shots.length}</b><span>Shots</span></div>
           <div><b>{totalHoles || '—'}</b><span>Holes</span></div>
-          <div><b>{totalLbs ? totalLbs.toFixed(0) : '—'}</b><span>Total Lbs</span></div>
-          <div><b>{pf ? pf.toFixed(2) : '—'}</b><span>Powder Factor</span></div>
+          <div><b>{totalLbs ? fmtLbs(totalLbs) : '—'}</b><span>Total Lbs</span></div>
+          <div><b>{pf ? fmtPF(pf) : '—'}</b><span>Powder Factor</span></div>
         </div>
 
         {heroSnapshot && <ReportSnapshot blob={heroSnapshot} />}
@@ -195,7 +196,7 @@ export function BlastReportPage() {
                             <tr key={i}>
                               <td>{a.name}</td>
                               <td>{a.qty}</td>
-                              <td>{a.lbs.toFixed(1)}</td>
+                              <td>{fmtLbs(a.lbs)}</td>
                             </tr>
                           ))}
                       </tbody>

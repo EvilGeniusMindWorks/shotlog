@@ -11,6 +11,7 @@ import type { DrilledOverlay } from '@/components/design/ShotDiagramEditor';
 import { useLiveQuery, db } from '@/db';
 import { useJobContext } from '@/lib/jobContext';
 import { nowISO } from '@/lib/utils';
+import { fmtLbs } from '@/lib/format';
 import {
   parseDiagram,
   serializeDiagram,
@@ -37,6 +38,7 @@ import { ShotDiagramEditor } from '@/components/design/ShotDiagramEditor';
 import { TypicalColumnBuilder } from '@/components/design/TypicalColumnBuilder';
 import { SiteDiagramEditor } from '@/components/design/SiteDiagramEditor';
 import { ComplianceSheet } from '@/components/records/ComplianceSheet';
+import { setJobWorkSpot } from '@/lib/siteGeo';
 
 export function DesignPlanPage() {
   const { id, shotId } = useParams<{ id: string; shotId: string }>();
@@ -299,7 +301,7 @@ function DesignPlanInner({
     times.size > 0
       ? {
           holes: maxHolesTimed,
-          lbs: perHoleLbs > 0 ? Math.round(maxHolesTimed * perHoleLbs * 10) / 10 : null,
+          lbs: perHoleLbs > 0 ? maxHolesTimed * perHoleLbs : null,
         }
       : null;
 
@@ -416,14 +418,15 @@ function DesignPlanInner({
             jobAddress={
               ctx ? [ctx.address, ctx.city, ctx.state].filter(Boolean).join(', ') : undefined
             }
-            siteSpot={ctx?.site?.geo ?? null}
+            siteSpot={job?.workSpot ?? ctx?.site?.geo ?? null}
+            siteSpotLabel={job?.workSpot ? 'Work spot' : ctx?.site?.geo ? 'Address point' : undefined}
             siteName={ctx?.site?.name}
             onSaveSiteSpot={
-              ctx?.site && can('sites', 'PATCH')
+              job && can('jobs', 'PATCH')
                 ? async (spot) => {
-                    // the slot the equipment locator already uses; the next shot here opens on it
-                    await db.sites.update(ctx.site!.id, { geo: spot, updatedAt: nowISO() });
-                    showToast(`Saved as ${ctx.site!.name}'s spot`);
+                    // S11 shape B: the job's work spot (the site keeps its address point)
+                    await setJobWorkSpot(job.id, spot, 'map');
+                    showToast('Saved as this job\'s work spot');
                   }
                 : undefined
             }
@@ -677,7 +680,7 @@ function ComplianceInputs({
             {delaySuggestion.lbs !== null && (
               <>
                 {' '}
-                · <b>{delaySuggestion.lbs}</b> lbs/delay
+                · <b>{fmtLbs(delaySuggestion.lbs)}</b> lbs/delay
                 <span className="text-xs text-gray-500"> (total ÷ holes)</span>
               </>
             )}

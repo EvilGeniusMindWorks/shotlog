@@ -9,6 +9,7 @@ import { validateForPrint } from '@/lib/validation';
 import { DELAY_COLORS, computeFiringTimes, parseDiagram } from '@/lib/shotDiagram';
 import { distanceFt, parseSiteDiagram } from '@/lib/siteDiagram';
 import { snapshotCredit } from '@/lib/mapProviders';
+import { fmtLbs, fmtPF } from '@/lib/format';
 import type { Shot } from '@/db/schema';
 import './print-blast-log.css';
 
@@ -247,10 +248,10 @@ export function PrintBlastLogPage() {
                   <td className="center">#</td>
                   {shots.map((s) => (
                     <td key={s.id} className="val center">
-                      {(shotPounds.get(s.id) ?? 0).toFixed(1)}
+                      {fmtLbs(shotPounds.get(s.id) ?? 0)}
                     </td>
                   ))}
-                  <td className="val center f11">{totalPounds.toFixed(1)}</td>
+                  <td className="val center f11">{fmtLbs(totalPounds)}</td>
                 </tr>
               </tbody>
             </table>
@@ -334,7 +335,7 @@ export function PrintBlastLogPage() {
                     {pf > 0 && (
                       <>
                         <span className="val">
-                          PF = {totalPounds.toFixed(0)} / {totalYards.toFixed(0)} = {pf.toFixed(2)} lbs/yd³
+                          PF = {fmtLbs(totalPounds)} / {totalYards.toFixed(0)} = {fmtPF(pf)} lbs/yd³
                         </span>
                         <br />
                       </>
@@ -906,7 +907,11 @@ function ComplianceTable({ shot }: { shot: Shot }) {
         </tr>
         <tr>
           <td>Max Pounds Per Delay:</td>
-          <td className="val">{dash(dp.maxPoundsPerDelay, ' lbs')}</td>
+          <td className="val">
+            {typeof dp.maxPoundsPerDelay === 'number' && dp.maxPoundsPerDelay
+              ? `${fmtLbs(dp.maxPoundsPerDelay)} lbs`
+              : dash(dp.maxPoundsPerDelay)}
+          </td>
         </tr>
         <tr>
           <td>Scale Distance:</td>

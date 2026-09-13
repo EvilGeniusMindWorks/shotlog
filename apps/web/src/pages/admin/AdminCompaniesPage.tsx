@@ -24,6 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { JobsMissingLinks } from '@/components/admin/JobsMissingLinks';
 
 type NewEnv = Exclude<Environment, 'sandbox'>;
 const ENV_OPTIONS: { value: NewEnv; label: string }[] = [
@@ -137,6 +138,7 @@ export function AdminCompaniesPage() {
       <p className="text-xs text-gray-400">
         Platform admin only. You are in <b>{current?.name ?? '—'}</b>; invites you send go there and the email follows its environment (Alpha and Beta send the testing invitation, Production the real one).
       </p>
+      <JobsMissingLinks />
 
       {adding && (
         <div className="rounded-xl border border-gray-200 bg-white p-3 space-y-3" data-company-form>

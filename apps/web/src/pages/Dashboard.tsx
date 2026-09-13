@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ListSkeleton } from '@/components/ui/skeleton';
 import { cn, formatDate } from '@/lib/utils';
+import { fmtLbs, fmtPF } from '@/lib/format';
 import { NewBlastDayDialog } from '@/components/forms/NewBlastDayDialog';
 import { AdminHome, DrillerHome, MechanicHome } from '@/components/dashboard/RoleCards';
 import { OfficeHome } from '@/components/dashboard/OfficeHome';
@@ -457,8 +458,8 @@ export function WorkDayList() {
                   </td>
                   <td className="px-3 py-2.5 font-mono">{s.shots}</td>
                   <td className="px-3 py-2.5 font-mono">{s.holes || '—'}</td>
-                  <td className="px-3 py-2.5 font-mono">{s.totalLbs ? s.totalLbs.toFixed(0) : '—'}</td>
-                  <td className="px-3 py-2.5 font-mono">{s.pf ? s.pf.toFixed(2) : '—'}</td>
+                  <td className="px-3 py-2.5 font-mono">{s.totalLbs ? fmtLbs(s.totalLbs) : '—'}</td>
+                  <td className="px-3 py-2.5 font-mono">{s.pf ? fmtPF(s.pf) : '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -536,8 +537,8 @@ function DayCard({ summary, onClick }: { summary: DaySummary; onClick: () => voi
         <div className="grid grid-cols-4 gap-1.5">
           <MiniMetric label="Shots" value={String(shots)} />
           <MiniMetric label="Holes" value={holes ? String(holes) : '—'} />
-          <MiniMetric label="Lbs" value={totalLbs ? totalLbs.toFixed(0) : '—'} />
-          <MiniMetric label="PF" value={pf ? pf.toFixed(2) : '—'} />
+          <MiniMetric label="Lbs" value={totalLbs ? fmtLbs(totalLbs) : '—'} />
+          <MiniMetric label="PF" value={pf ? fmtPF(pf) : '—'} />
         </div>
       </div>
     </button>
