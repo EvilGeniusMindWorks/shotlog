@@ -49,6 +49,14 @@ app.get('/health', async (_req, res) => {
   // after the boot migration (legacyPdfs.ts); null when the DB is unreachable
   const legacyInlinePdfs = await countLegacyInlinePdfs().catch(() => null);
   const legacyInlineImages = await countLegacyInlineImages().catch(() => null);
+  const sourcemaps = await prisma.sourceMap
+    .findFirst({ orderBy: { createdAt: 'desc' }, select: { buildId: true, createdAt: true } })
+    .then(async (latest) => ({
+      latestBuild: latest?.buildId ?? null,
+      uploadedAt: latest?.createdAt ?? null,
+      files: latest ? await prisma.sourceMap.count({ where: { buildId: latest.buildId } }) : 0,
+    }))
+    .catch(() => null);
   // `tables` surfaces the permission matrix size — a cheap deploy marker
   // proving which @shotlog/shared build this server is running. `commit`
   // (Railway-injected) pins the exact build even when the matrix is
@@ -69,6 +77,9 @@ app.get('/health', async (_req, res) => {
     production: isProduction(),
     legacyInlinePdfs,
     legacyInlineImages,
+    // S11: are crash traces decodable? The web build uploads its source maps
+    // (scripts/build-web.mjs); this shows the newest build that has them.
+    sourcemaps,
   });
 });
 
