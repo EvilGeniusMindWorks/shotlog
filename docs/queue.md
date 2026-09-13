@@ -117,3 +117,38 @@ becomes a round. Each item says what the app does today so the plan starts from 
   Needs from Matthew/Baystate: confirm the plan tier (Expert+), an admin creates the
   API key, and a look at how jobs are named in Connecteam. Plan-first item; sources:
   developer.connecteam.com (api-access, scheduler-shifts, scheduler-webhook).
+- **Suggest nearby jobs from GPS when starting a day (Matthew, Sep 13 2026).** Sites carry
+  a location once someone has saved the site's spot on the map or the one-time address
+  geocode has run; the device's GPS is already used by the site map. Ask: when the
+  Start work picker (or any document that begins by asking "which job?") opens and no
+  job is chosen, read the GPS fix and put jobs whose site is within a distance (say
+  2 miles, adjustable in Settings) at the top with the distance shown — "Richmond
+  Quarry · 0.4 mi" — never auto-picking. Sites without a spot fall back to the
+  normal list; the first time a job is used at a site with no spot, offer to save the
+  GPS fix as the site's spot so next time it is nearby.
+- **THEME — a day at a job: shared facts once, documents independent, a quick-entry
+  hub (Matthew, Sep 10 + 13 2026; three related asks).** (a) *Shared facts entered
+  once:* job, date, who is on site, which rig/equipment, weather, start time and the
+  like are asked again on the blast report, daily report, drill log, drill plan and rig
+  checklist. The first person to open the job that day enters them once (a "day
+  setup" that any role can start — Joe's checklist should not wait for Mark); everyone
+  else's document starts from those facts and only adds their own. (b) *Documents
+  independent* (Sep 10 gas-leak day): each paper can be started and finished on its
+  own for a date — time cards only, checklist only — without creating the others.
+  (c) *A quick-entry hub:* when someone opens a job for today, a screen of tiles —
+  one per document they are allowed to fill — showing what exists, who started it,
+  what is still empty, and a tap to open each. Matthew: "probably requires some
+  planning with a few options" → a plan page with two or three shapes for the hub
+  and the day-setup step, before any build. Root question: WorkDay-vs-BlastDay in
+  docs/paper-forms-analysis.md; today's model: every work day carries a daily
+  report, blasting days add a blast log, drill logs and checklists hang off the day
+  or a plan, a driller's own time card can stand alone.
+- **Evette: printing for the parent company, made simple (Matthew, Sep 13 2026).**
+  Baystate reports up to Balthazar. Today Records lets her select filed PDFs and tap
+  Print, but that opens each PDF in its own tab (up to six) to print one at a time;
+  the ZIP is the only bundle. Ask: one "Print pack" door — pick a job and a date
+  range (or a week), tick the document kinds Balthazar wants, and get ONE merged PDF
+  in page order with a cover sheet (job, dates, counts), which prints in one go or
+  emails as one attachment; a saved preset ("Balthazar weekly") so it is two taps
+  next time. Needs from Evette: which documents and in what order Balthazar expects,
+  and whether they want paper or PDF.
