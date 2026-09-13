@@ -4,7 +4,7 @@
 // said. Status is yours: new → seen → fixed in build X. "Copy for Claude"
 // puts the whole bundle on the clipboard as plain text.
 import { useCallback, useEffect, useState } from 'react';
-import { Check, Copy, RefreshCw, Trash2 } from 'lucide-react';
+import { Check, Copy, RefreshCw, Trash2, Zap } from 'lucide-react';
 import { authedFetch } from '@/lib/session';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -176,6 +176,28 @@ export function AdminCrashesTab({
 
   const visible = (groups ?? []).filter((g) => filter === 'all' || g.status !== 'fixed');
 
+  // Test crashes (Matthew, Sep 13 2026): prove the inbox and the decoded
+  // traces without waiting for a real failure. The web one goes through the
+  // same capture as a real error; the server one throws inside a route.
+  const [testing, setTesting] = useState<string | null>(null);
+  const testWeb = () => {
+    const err = new Error(`Test crash from Admin (${new Date().toLocaleTimeString()})`);
+    window.dispatchEvent(new ErrorEvent('error', { error: err, message: err.message }));
+    showToast('Test error thrown on this device — its line appears below in a few seconds.');
+    window.setTimeout(() => void load(), 3000);
+  };
+  const testServer = async () => {
+    setTesting('server');
+    try {
+      const res = await authedFetch('/platform/crash-test', { method: 'POST', body: '{}' });
+      const body = (await res.json().catch(() => null)) as { reportCode?: string } | null;
+      showToast(res.status === 500 && body?.reportCode ? `The server failed on purpose — report code ${body.reportCode}` : `Unexpected answer: HTTP ${res.status}`);
+      await load();
+    } finally {
+      setTesting(null);
+    }
+  };
+
   return (
     <div className="space-y-4" data-admin-crashes>
       <div className="flex items-start gap-2 flex-wrap">
@@ -192,6 +214,18 @@ export function AdminCrashesTab({
           New problems email {meta.recipients.join(', ') || 'nobody'} — {meta.emailEnabled ? 'email is on.' : 'email is OFF on the server.'}
         </p>
       )}
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-dashed border-gray-300 bg-gray-50 p-3" data-crash-test>
+        <span className="text-xs text-gray-500 flex-1 min-w-[200px]">
+          Prove it works: throw a harmless test error here, or make the server fail on purpose. Each becomes a line
+          below with a report code; the trace should read as a real file and line when this build's source maps are in.
+        </span>
+        <Button size="sm" variant="outline" onClick={testWeb} data-crash-test-web>
+          <Zap className="h-4 w-4 mr-1" /> Test crash on this device
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => void testServer()} disabled={!online || testing != null} data-crash-test-server>
+          <Zap className="h-4 w-4 mr-1" /> {testing === 'server' ? 'Failing…' : 'Test crash on the server'}
+        </Button>
+      </div>
       <div className="flex items-center gap-2 text-sm">
         <button className={cn('px-3 py-1.5 rounded-full border', filter === 'open' ? 'bg-navy text-white border-navy' : 'bg-white border-gray-300')} onClick={() => setFilter('open')}>
           Open ({(groups ?? []).filter((g) => g.status !== 'fixed').length})

@@ -305,6 +305,13 @@ async (page, lib) => {
     await sleep(800);
     const row = PA.locator('[data-crash-group]').filter({ hasText: `S11 harness crash ${stamp}` }).first();
     R.ok('the Crashes tab lists the problem', (await row.count()) === 1);
+    R.ok('the tab offers a test crash for the device and one for the server', (await PA.locator('[data-crash-test-web]').count()) === 1 && (await PA.locator('[data-crash-test-server]').count()) === 1);
+    await PA.locator('[data-crash-test-web]').click();
+    await sleep(3500);
+    const testRow = PA.locator('[data-crash-group]').filter({ hasText: 'Test crash from Admin' });
+    R.ok('the device test crash becomes a line', (await testRow.count()) >= 1);
+    const testFp = (await api('/feedback/crashes', {}, adminToken)).body?.groups?.find((g) => /Test crash from Admin/.test(g.title))?.fingerprint;
+    if (testFp) fingerprints.add(testFp);
     await row.locator('button').first().click();
     await PA.locator('[data-crash-detail] [data-crash-trace]').waitFor({ timeout: 8000 });
     R.ok('opening it shows the trace and the breadcrumbs', (await PA.locator('[data-crash-breadcrumbs]').count()) === 1);
