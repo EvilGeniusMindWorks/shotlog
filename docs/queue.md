@@ -152,3 +152,27 @@ becomes a round. Each item says what the app does today so the plan starts from 
   emails as one attachment; a saved preset ("Balthazar weekly") so it is two taps
   next time. Needs from Evette: which documents and in what order Balthazar expects,
   and whether they want paper or PDF.
+
+## Decided Sep 13 2026 — plan page "ShotLog Next Rounds" (artifact fa2ad9ef)
+
+Matthew's reactions (all Build; overall "Go when the freeze lifts"; order agreed):
+
+- **S11** (first, 2–3 days): job-with-no-site bug + Beta tidy (with Matthew watching);
+  explosive weights shown and printed to **four decimals everywhere**, PF from exact
+  pounds; first-week card leaves when **completed, or the first filed day, or 14 days,
+  whichever comes first**, and says so; nearby jobs from GPS in the picker; **crash
+  reporting (Sentry, web + API)**.
+- **S12**: "where I am" marker with accuracy, the blast ring (250 ft default, adjustable,
+  saved with the shot, printed), structures inside listed, closest-structure distance
+  offered from the nearest pin.
+- **Design week — the day-at-a-job theme: Option A "set up the day first", amended:**
+  whoever opens the job first fills the shared card; **every person who starts after
+  them sees what was set up and confirms or updates it** before their document opens.
+  Then the hub of tiles per role. Mockups with Mark, then a build plan → S13–S14.
+- **S15**: Evette's print pack (one merged PDF, cover sheet, preset); ask Evette which
+  documents, order, paper vs file.
+- **Connecteam**: talk first — Matthew confirms Baystate's plan tier and the key; the
+  plan as described is what he had in mind.
+
+Freeze stays until Matthew lifts it in a new session. Local commits on main are not
+pushed (docs only); push them first when the freeze lifts, then /round S11.
