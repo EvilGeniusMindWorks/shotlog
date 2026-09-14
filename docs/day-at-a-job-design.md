@@ -82,19 +82,33 @@ claim verified in code by Fable at extra high. Artifacts: scratchpad `day-theme-
   from the PowerSync row, not the payload's client-stamped `updatedAt`) is newer than my
   `confirmedAt` → the yellow "Shared details were updated — tap to reconfirm" banner. The
   per-device memory key includes the user id (shared tablets).
-- **Confirm card:** "Today at <job>" / "<name> set this up at <time>" / read-only pills / "On
-  site: Joe (6:30), Mark (7:10)" from confirmations / **Looks right, continue** (writes only my
-  confirmation row) / **Something's wrong — edit** (opens the card; Save sends a delta).
+- **Confirm card (the fact sheet):** "Today at <job>" / "<name> set this up at <time>" / one
+  label-value row per fact with its source (NWS 6:28 · confirmed by Joe) / "On site: Joe (6:30),
+  Mark (7:10)" from confirmations / **Looks right, continue** (writes only my confirmation row) /
+  **Something's wrong — edit** (opens the card form; Save sends a delta with the base version).
 - **Where the confirm appears:** blaster/supervisor — opening the day from Today, +, or the
   job page. Driller — the trio stays direct; the confirm appears the first time a job is known
   for them that day (opening the drill log for a plan, or a time card for the job). A checklist
   with no job never waits.
-- **Field-level merge for the card (server, blastDays only):** the card form sends only the
-  changed leaf paths (dotted keys through the facade's keypath support); the server's upsert
-  for `blastDays` PATCH ops applies them with `jsonb_set` per path instead of the COALESCE
-  whole-payload replace. Two people fixing different facts both keep their fixes; the same
-  fact fixed twice is last-arrival-wins and the banner says so. Other tables keep today's
-  whole-record semantics (blast radius limited to the card).
+- **Field-level merge + version check for the card (server, blastDays only):** the card form
+  sends only the changed leaf paths (dotted keys through the facade's keypath support) plus
+  `cardVersion`, the version the edit was based on; the server applies the paths with
+  `jsonb_set` and bumps `cardVersion` when the base matches. When the base is STALE for a
+  path someone else changed since, that path is not applied: the op comes back to the device
+  as `held` with the current value and its author, and the app shows a "Needs your decision"
+  item on the home (both values, who set each, one tap; the choice re-sends with the current
+  base). Confirmations never conflict (own row). Different facts merge quietly; the same fact
+  changed twice is asked, never silently lost. Other tables keep today's whole-record
+  semantics (blast radius limited to the card). The "updated — tap to reconfirm" banner stays
+  for people who confirmed an older card.
+- **NWS weather (verified Sep 14 against api.weather.gov, CORS `*`, needs a User-Agent):**
+  `/points/{lat},{lng}` → `properties.observationStations` → pick the NEAREST station by
+  distance from the returned station coordinates (the list is not reliably sorted) →
+  `/stations/{id}/observations/latest` → `temperature.value` (°C), `textDescription`,
+  `windDirection.value` (degrees), `windSpeed`, `precipitationLastHour` (often null);
+  24-hour precipitation from `/stations/{id}/observations?start=…` summed, only when online
+  and cheap. Store `nws {station, name, observedAt, tempF, text, windDeg, precipIn24h}` on
+  the day beside the confirmed values.
 - **Type of work guard (server):** a `blastDays` PATCH that changes `typeOfWork` from a
   blasting type to a non-blasting one is discarded when a blast log exists for the day
   (`isBlastingWork` from packages/shared). The hub renders the Blasting log tile whenever a

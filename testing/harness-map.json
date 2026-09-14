@@ -14,7 +14,8 @@
   ],
   "apps/server/src/powersync.ts": [
     30,
-    53
+    53,
+    71
   ],
   "apps/server/src/rateLimit.ts": [
     68
@@ -74,7 +75,8 @@
     53,
     60,
     61,
-    68
+    68,
+    71
   ],
   "apps/web/src/pages/DesignPlanPage.tsx": [
     62,
@@ -113,7 +115,8 @@
     64
   ],
   "apps/web/src/pages/SubmitDayPage.tsx": [
-    60
+    60,
+    71
   ],
   "apps/web/src/pages/admin/AdminApprovalsPage.tsx": [
     61
@@ -127,7 +130,8 @@
     30
   ],
   "packages/shared/src/permissions.ts": [
-    30
+    30,
+    71
   ],
   "apps/web/src/components/forms/CustomerSitePicker.tsx": [
     69
@@ -136,7 +140,8 @@
     69
   ],
   "apps/web/src/hooks/useBlastDay.ts": [
-    69
+    69,
+    71
   ],
   "apps/web/src/lib/jobContext.ts": [
     69
@@ -170,5 +175,29 @@
   ],
   "apps/web/src/lib/siteDiagram.ts": [
     70
+  ],
+  "apps/web/src/db/schema.ts": [
+    71
+  ],
+  "apps/web/src/hooks/useLauncher.ts": [
+    71
+  ],
+  "apps/web/src/lib/dayCard.ts": [
+    71
+  ],
+  "apps/web/src/lib/weather.ts": [
+    71
+  ],
+  "apps/web/src/components/day/DayCardForm.tsx": [
+    71
+  ],
+  "apps/web/src/components/day/DayCardConfirm.tsx": [
+    71
+  ],
+  "apps/server/src/records.ts": [
+    71
+  ],
+  "infra/powersync/sync_rules.yaml": [
+    71
   ]
 }
