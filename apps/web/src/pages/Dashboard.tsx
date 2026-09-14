@@ -20,6 +20,7 @@ import { BlasterHome } from '@/components/dashboard/BlasterHome';
 import { MonthDayList } from '@/components/dashboard/MonthDayList';
 import { ProfileNagCard } from '@/components/onboarding/ProfileNagCard';
 import { FirstWeekCard } from '@/components/guidance/FirstWeekCard';
+import { DecisionsCard } from '@/components/day/DecisionsCard';
 import { getSessionUser } from '@/lib/session';
 import { myHomeDashboard } from '@/lib/perms';
 import type { WorkType } from '@/db/schema';
@@ -32,6 +33,9 @@ export interface DaySummary {
   totalLbs: number;
   pf: number;
   snapshot: Blob | null;
+  /** S13: papers exist only when started */
+  report: boolean;
+  cards: number;
 }
 
 /** Assemble per-day stats + the site-map snapshot for the hero image */
@@ -50,6 +54,15 @@ export function useDaySummaries(): DaySummary[] | undefined {
        FROM records WHERE table_name = 'blastLogs'`,
     );
     const logByDay = new Map(logRows.map((r) => [r.dayId, r.id]));
+    const reportDays = new Set(
+      (await sql.getAll<{ dayId: string }>(`SELECT json_extract(payload,'$.blastDayId') AS dayId FROM records WHERE table_name = 'dailyReports'`)).map((r) => r.dayId),
+    );
+    const cardCounts = new Map<string, number>();
+    for (const r of await sql.getAll<{ dayId: string | null; n: number }>(
+      `SELECT json_extract(payload,'$.blastDayId') AS dayId, COUNT(*) AS n FROM records WHERE table_name = 'timeCards' GROUP BY dayId`,
+    )) {
+      if (r.dayId) cardCounts.set(r.dayId, r.n);
+    }
     const shotRows = await sql.getAll<{
       id: string; logId: string; numHoles: number | null; yards: number | null; hasSketch: number;
     }>(
@@ -99,6 +112,8 @@ export function useDaySummaries(): DaySummary[] | undefined {
         totalLbs,
         pf: yards > 0 ? powderFactor(totalLbs, yards) : 0,
         snapshot,
+        report: reportDays.has(day.id),
+        cards: cardCounts.get(day.id) ?? 0,
       });
     }
     return summaries;
@@ -163,6 +178,7 @@ export function Dashboard() {
     <div className="px-4 pt-4 max-w-3xl mx-auto space-y-3 empty:hidden">
       {(home === 'field' || home === 'driller') && <ProfileNagCard />}
       <FirstWeekCard />
+      <DecisionsCard />
     </div>
   );
   if (home === 'driller')

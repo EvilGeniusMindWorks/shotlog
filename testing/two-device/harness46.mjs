@@ -51,11 +51,11 @@ async (page) => {
     await signIn(P0, 'blaster@test.local', 'blaster-pass-123');
     const made = await P0.evaluate(async (stamp) => {
       const { db } = await import('/src/db/index.ts');
-      const { createBlastDay } = await import('/src/hooks/useBlastDay.ts');
+      const { createBlastDayWithPapers } = await import('/src/hooks/useBlastDay.ts');
       const jobs = (await db.jobs.filter((j) => !j.archivedAt && j.isActive).toArray()).sort((a, b) => a.name.localeCompare(b.name));
       const d = new Date(); d.setDate(d.getDate() - 1);
       const y = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      const id = await createBlastDay(jobs[2].id, y, undefined, { typeOfWork: 'drill_to_blast', name: `S7f bait ${stamp}` });
+      const id = await createBlastDayWithPapers(jobs[2].id, y, undefined, { typeOfWork: 'drill_to_blast', name: `S7f bait ${stamp}` });
       return { id, jobId: jobs[2].id };
     }, stamp);
     blasterDayId = made.id;

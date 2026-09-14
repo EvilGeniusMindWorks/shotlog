@@ -18,12 +18,12 @@ async (page, lib) => {
   await skipTours(PB);
   dayId = await PB.evaluate(async (stamp) => {
     const { db } = await import('/src/db/index.ts');
-    const { createBlastDay } = await import('/src/hooks/useBlastDay.ts');
+    const { createBlastDayWithPapers } = await import('/src/hooks/useBlastDay.ts');
     const { todayISO } = await import('/src/lib/utils.ts');
     const today = todayISO();
     const taken = new Set((await db.blastDays.filter((d) => d.date === today).toArray()).map((d) => d.jobId));
     const jobs = (await db.jobs.filter((j) => !j.archivedAt && j.isActive && !taken.has(j.id)).toArray()).sort((a, b) => a.name.localeCompare(b.name));
-    return createBlastDay(jobs[0].id, undefined, undefined, { typeOfWork: 'drill_to_blast', name: `S9b ${stamp}` });
+    return createBlastDayWithPapers(jobs[0].id, undefined, undefined, { typeOfWork: 'drill_to_blast', name: `S9b ${stamp}` });
   }, stamp);
   await sleep(2500);
 
@@ -97,6 +97,10 @@ async (page, lib) => {
     await confirm.waitFor({ timeout: 5000 });
     R.ok('the sheet carries the signature pad and the button reads "Sign and complete", disabled', (await PD.locator('[data-log-complete-signature]').count()) === 1 && /Sign and complete/.test(await confirm.innerText()) && (await confirm.isDisabled()));
     await PD.waitForFunction(() => (document.querySelector('[data-log-end-meter]')?.value ?? '') !== '', null, { timeout: 8000 }).catch(() => undefined);
+    if (!(await PD.locator('[data-log-end-meter]').count())) {
+      const rigOnLog = await PD.evaluate(async (id) => (await (await import('/src/db/index.ts')).db.drillLogs.get(id))?.drillRigEquipmentId ?? null, logId);
+      R.note(`no meter input — rig on log: ${rigOnLog} (wanted ${rigId}); sheet: ${(await confirm.innerText()).replace(/\s+/g, ' ').slice(0, 200)}`);
+    }
     const endVal = await PD.locator('[data-log-end-meter]').inputValue();
     R.ok(`the end-of-day meter starts at the ledger's reading (${endVal}) with the "from the ledger" line`, Number(endVal) >= meter && /from the ledger/.test(await PD.locator('[data-log-end-meter-source]').innerText()));
     // sign inside the sheet

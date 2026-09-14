@@ -64,7 +64,7 @@ async (page) => {
     // ── (1) REST blast-day approval writes an audit entry ────────────────
     const jobId = await A.evaluate((t) => window.shotlogFlows.createJob({ name: `${t} Job`, customer: 'H27' }), tag);
     const dayId = await A.evaluate(async (jobId) => {
-      const id = await window.shotlogFlows.createBlastDay(jobId);
+      const id = await window.shotlogFlows.createBlastDayWithPapers(jobId);
       await window.shotlogDb.blastDays.update(id, { status: 'submitted', updatedAt: new Date().toISOString() });
       return id;
     }, jobId);
@@ -152,7 +152,7 @@ async (page) => {
     })());
 
     // ── (3) duplicate blast log for a day → discarded + children too ──────
-    const dupDay = await A.evaluate(async (jobId) => window.shotlogFlows.createBlastDay(jobId), jobId);
+    const dupDay = await A.evaluate(async (jobId) => window.shotlogFlows.createBlastDayWithPapers(jobId), jobId);
     await A.waitForTimeout(4000);
     await D.evaluate(async ({ dupDay, t }) => {
       // driller device fabricates a SECOND blast log + a shot for the same day
@@ -195,7 +195,7 @@ async (page) => {
 
     // ── (5) shot renumber: fabricate a duplicate number, use the button ───
     const renumDay = await A.evaluate(async ({ jobId, t }) => {
-      const dayId = await window.shotlogFlows.createBlastDay(jobId);
+      const dayId = await window.shotlogFlows.createBlastDayWithPapers(jobId);
       const log = await window.shotlogDb.blastLogs.where('blastDayId').equals(dayId).first();
       const now = new Date().toISOString();
       await window.shotlogDb.shots.add({ id: `${t}-clash`, blastLogId: log.id, shotNumber: 1, time: '', drillParams: { waterDepth: 0, holeDiameter: 0, burden: 0, spacing: 0, stemming: 0, subDrill: 0 }, totals: { numHoles: 0, totalSqFt: 0, avgDrillDepth: 0, totalDrillFootage: 0, totalPayYards: 0, totalYardsShot: 0 }, designPlan: { siteSketchData: null, siteSketchImage: null, shotDiagramData: null, shotDiagramImage: null, columnDiagramImage: null, closestStructureLocation: '', closestStructureDistance: 0, closestBoreholeDistance: 0, maxHolesPerDelay: 0, maxPoundsPerDelay: 0, scaledDistance: 0, predictedPPV: 0, kFactor: 180 }, createdAt: now, updatedAt: now });

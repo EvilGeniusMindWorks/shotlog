@@ -70,6 +70,11 @@ export const TABLE_PERMISSIONS: Record<string, TableRule> = {
   // copies of today" → merge) — the server still refuses any delete of a
   // day that is not a draft with nothing filed from it.
   blastDays: { PUT: REPORT_FAMILY, PATCH: REPORT_FAMILY, DELETE: REPORT_FAMILY },
+  // S13 (the day and the card): presence is one row per person per day —
+  // nobody else writes it; a card change travels as an edit row the server
+  // applies or holds (dayCard.ts). Everyone who works a day writes both.
+  workDayConfirmations: uniform(REPORT_FAMILY),
+  dayCardEdits: uniform(REPORT_FAMILY),
   blastLogs: uniform(BLAST_FAMILY),
   shots: uniform(BLAST_FAMILY),
   seismoReadings: uniform(BLAST_FAMILY),
@@ -306,6 +311,8 @@ export const NEVER_USED_DELETE_TABLES: ReadonlySet<string> = new Set(
 export const PARENT_CHAIN: Record<string, { parentIdField: string; parentTable: string }> = {
   blastLogs: { parentIdField: 'blastDayId', parentTable: 'blastDays' },
   dailyReports: { parentIdField: 'blastDayId', parentTable: 'blastDays' },
+  workDayConfirmations: { parentIdField: 'blastDayId', parentTable: 'blastDays' },
+  dayCardEdits: { parentIdField: 'blastDayId', parentTable: 'blastDays' },
   drillLogs: { parentIdField: 'blastDayId', parentTable: 'blastDays' },
   drillLogHoles: { parentIdField: 'drillLogId', parentTable: 'drillLogs' },
   shots: { parentIdField: 'blastLogId', parentTable: 'blastLogs' },

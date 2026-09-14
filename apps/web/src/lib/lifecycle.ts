@@ -3,6 +3,7 @@
 // created-in-error verb — draft/never-used only. The SERVER enforces both
 // at the sync choke point; these helpers just do the writes and compute
 // the consequence facts the sheets show.
+import { setCardFacts } from '@/lib/dayCard';
 import { LIFECYCLE_CHILDREN } from '@shotlog/shared';
 import { db, deleteWithTombstone } from '@/db';
 import type { Archivable, BlastDay } from '@/db/schema';
@@ -109,7 +110,16 @@ export async function deleteDayCascade(day: BlastDay): Promise<void> {
   }
   for (const a of await db.attachments.filter((x) => x.parentId === day.id).toArray())
     await deleteWithTombstone('attachments', a.id);
+  await deleteDayCardRows(day.id);
   await deleteWithTombstone('blastDays', day.id);
+}
+
+/** S13: the day's presence rows and card-edit log go with it */
+async function deleteDayCardRows(dayId: string): Promise<void> {
+  for (const c of await db.workDayConfirmations.where('blastDayId').equals(dayId).toArray())
+    await deleteWithTombstone('workDayConfirmations', c.id);
+  for (const e of await db.dayCardEdits.where('blastDayId').equals(dayId).toArray())
+    await deleteWithTombstone('dayCardEdits', e.id);
 }
 
 /**
@@ -126,8 +136,7 @@ export async function mergeDays(keep: BlastDay, other: BlastDay): Promise<void> 
   if (otherLog) {
     if (!keepLog) {
       await db.blastLogs.update(otherLog.id, { blastDayId: keep.id, updatedAt: now });
-      if (!isBlastingWork(keep.typeOfWork))
-        await db.blastDays.update(keep.id, { typeOfWork: other.typeOfWork, updatedAt: now });
+      if (!isBlastingWork(keep.typeOfWork)) await setCardFacts(keep.id, { typeOfWork: other.typeOfWork });
     } else {
       const keepShots = await db.shots.where('blastLogId').equals(keepLog.id).toArray();
       let n = keepShots.reduce((m, s) => Math.max(m, s.shotNumber), 0);
@@ -162,7 +171,10 @@ export async function mergeDays(keep: BlastDay, other: BlastDay): Promise<void> 
     await db.attachments.update(a.id, { parentId: keep.id, updatedAt: now });
   for (const i of await db.incidents.filter((x) => x.blastDayId === other.id).toArray())
     await db.incidents.update(i.id, { blastDayId: keep.id, updatedAt: now });
-  if (!keep.name && other.name) await db.blastDays.update(keep.id, { name: other.name, updatedAt: now });
+  if (!keep.name && other.name) await setCardFacts(keep.id, { name: other.name });
+  // S13: the other copy's presence rows and edit log are its own history
+  // (people reconfirm the kept day once)
+  await deleteDayCardRows(other.id);
   await deleteWithTombstone('blastDays', other.id);
 }
 

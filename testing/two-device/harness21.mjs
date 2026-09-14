@@ -53,7 +53,7 @@ async (page) => {
         if (await window.shotlogDb.jobs.get(jobId)) break;
         await new Promise((r) => setTimeout(r, 500));
       }
-      const dayId = await window.shotlogFlows.createBlastDay(jobId);
+      const dayId = await window.shotlogFlows.createBlastDayWithPapers(jobId);
       const log = await window.shotlogDb.blastLogs.where('blastDayId').equals(dayId).first();
       const shot = await window.shotlogDb.shots.where('blastLogId').equals(log.id).first();
       return { dayId, logId: log.id, shotId: shot.id };

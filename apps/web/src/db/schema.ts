@@ -1,4 +1,13 @@
-import type { HomeDashboard, KickDirection } from '@shotlog/shared';
+import { isBlastingWork as sharedIsBlastingWork } from '@shotlog/shared';
+import type {
+  HomeDashboard,
+  KickDirection,
+  CardPath,
+  CardSets,
+  DaySetup,
+  DayCardEditStatus,
+  DayCardEditCurrent,
+} from '@shotlog/shared';
 
 export type { KickDirection };
 
@@ -284,8 +293,8 @@ export type WorkType =
   | 'hauling';
 
 /** Which work types carry a blasting log (and shots, explosives, seismo) */
-export function isBlastingWork(typeOfWork: WorkType): boolean {
-  return typeOfWork === 'blasting' || typeOfWork === 'drill_to_blast';
+export function isBlastingWork(typeOfWork: WorkType | undefined): boolean {
+  return sharedIsBlastingWork(typeOfWork);
 }
 
 /**
@@ -322,6 +331,63 @@ export interface BlastDay extends BaseRecord {
   authorUserId?: string;
   authorName?: string;
   authorBucket?: 'field' | 'driller' | 'mechanic' | 'office';
+  // ── S13: the shared card ─────────────────────────────────────────────
+  /** When the crew was on site (HH:mm) — a card fact */
+  onsiteTime?: string;
+  /** The first opener's stamp; absent on a day nobody has set up yet
+   *  (legacy days with documents count as set up) */
+  setup?: DaySetup;
+  /** Who set each card fact last and the version that write produced —
+   *  SERVER-STAMPED; a phone never writes these (see lib/dayCard.ts) */
+  cardSets?: CardSets;
+  /** The weather reading the card was filled from, kept beside the values */
+  nws?: NwsReading;
+}
+
+/** A National Weather Service observation recorded on the day */
+export interface NwsReading {
+  station: string;
+  name: string;
+  observedAt: string;
+  tempF: number | null;
+  text: string;
+  windDeg: number | null;
+  windMph: number | null;
+  precipIn24h: number | null;
+  /** When the phone fetched it */
+  fetchedAt: string;
+}
+
+/** S13: one row per person per day — "I was here and the card looked
+ *  right" (or I fixed it). Own row only; never conflicts. */
+export interface WorkDayConfirmation extends BaseRecord {
+  blastDayId: string;
+  userId: string;
+  userName: string;
+  confirmedAt: string;
+  didEdit: boolean;
+}
+
+/** S13: one card fact changed by one person, based on the version they
+ *  saw. The server applies it (first to land sticks) or holds it; a held
+ *  edit is the person's to resolve from "Needs your decision". */
+export interface DayCardEdit extends BaseRecord {
+  blastDayId: string;
+  path: CardPath;
+  value: unknown;
+  baseVersion: number;
+  by: string;
+  byName: string;
+  at: string;
+  /** "use mine" — overrides whatever is current */
+  force?: boolean;
+  status: DayCardEditStatus;
+  appliedAt?: string;
+  appliedV?: number;
+  heldAt?: string;
+  current?: DayCardEditCurrent;
+  resolution?: 'theirs' | 'mine';
+  resolvedAt?: string;
 }
 
 // ══════════════════════════════════════════════════════

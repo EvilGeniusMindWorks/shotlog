@@ -4,20 +4,17 @@
 // for the job — otherwise every tile tap would mint a duplicate day.
 import type { NavigateFunction } from 'react-router-dom';
 import { db } from '@/db';
-import { addBlastLogToDay, createBlastDay } from '@/hooks/useBlastDay';
+import { addBlastLogToDay, createBlastDay, createDailyReport } from '@/hooks/useBlastDay';
+import { findDayByDate } from '@/lib/dayCard';
 import { createDrillLog } from '@/hooks/useDrillLogs';
 import { isBlastingWork, type BlastDay, type WorkType } from '@/db/schema';
 import { todayISO } from '@/lib/utils';
 
 export type LauncherDoc = 'blast_day' | 'daily_report' | 'drill_log' | 'drill_plan';
 
-/** Today's work day for a job (latest if several legacy duplicates exist) */
+/** Today's work day for a job (S13: findDayByDate — one day per job per date) */
 export async function findTodaysDay(jobId: string): Promise<BlastDay | undefined> {
-  const days = await db.blastDays.where('jobId').equals(jobId).toArray();
-  const today = todayISO();
-  return days
-    .filter((d) => d.date === today)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+  return findDayByDate(jobId, todayISO());
 }
 
 async function findOrCreateTodaysDay(jobId: string, typeIfNew: WorkType): Promise<string> {
@@ -60,6 +57,8 @@ export async function openTodaysDoc(
     }
     case 'daily_report': {
       const dayId = await findOrCreateTodaysDay(jobId, 'drill_only');
+      // S13: the tile's tap IS the start — papers exist only when started
+      await createDailyReport(dayId);
       const day = await db.blastDays.get(dayId);
       navigate(
         day && isBlastingWork(day.typeOfWork)

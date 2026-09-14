@@ -40,7 +40,7 @@ async (page) => {
   await blaster.waitForTimeout(2500);
   const job = await waitDb(blaster, `db.jobs.filter(j => j.isActive).first()`);
   const dayId = await blaster.evaluate(async (jobId) =>
-    window.shotlogFlows.createBlastDay(jobId, undefined, undefined, { typeOfWork: 'drill_to_blast', name: 'H7 handoff day' }),
+    window.shotlogFlows.createBlastDayWithPapers(jobId, undefined, undefined, { typeOfWork: 'drill_to_blast', name: 'H7 handoff day' }),
     job.id,
   );
   await blaster.goto(`http://localhost:5199/blast-day/${dayId}`);

@@ -51,7 +51,7 @@ async (page) => {
   results.push({ scenario: 'admin-created job reaches blaster', pass: !!jobArrived });
 
   const dayId = await blaster.evaluate(async (jobId) => {
-    return await window.shotlogFlows.createBlastDay(jobId);
+    return await window.shotlogFlows.createBlastDayWithPapers(jobId);
   }, jobId);
   const shot = await waitDb(blaster, `db.shots.filter(s => true).first().then(async s => {
     const log = await db.blastLogs.where('blastDayId').equals('${dayId}').first();

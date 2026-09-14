@@ -19,12 +19,12 @@ async (page, lib) => {
     await skipTours(P1);
     const made = await P1.evaluate(async (stamp) => {
       const { db } = await import('/src/db/index.ts');
-      const { createBlastDay } = await import('/src/hooks/useBlastDay.ts');
+      const { createBlastDayWithPapers } = await import('/src/hooks/useBlastDay.ts');
       const { createDrillLog } = await import('/src/hooks/useDrillLogs.ts');
       const { serializeDiagram, emptyDiagram } = await import('/src/lib/shotDiagram.ts');
       const { nowISO } = await import('/src/lib/utils.ts');
       const jobs = (await db.jobs.filter((j) => !j.archivedAt && j.isActive).toArray()).sort((a, b) => a.name.localeCompare(b.name));
-      const id = await createBlastDay(jobs[0].id, undefined, undefined, { typeOfWork: 'drill_to_blast', name: `S8a-2 grid day ${stamp}` });
+      const id = await createBlastDayWithPapers(jobs[0].id, undefined, undefined, { typeOfWork: 'drill_to_blast', name: `S8a-2 grid day ${stamp}` });
       const log = await db.blastLogs.where('blastDayId').equals(id).first();
       const shot = await db.shots.where('blastLogId').equals(log.id).first();
       // 3 rows × 4 cols at 20 ft, position 5 unused → 11 holes in a 3 × 4 shape

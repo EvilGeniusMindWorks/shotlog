@@ -80,9 +80,9 @@ async (page) => {
     }
     dayId = await P1.evaluate(async () => {
       const { db } = await import('/src/db/index.ts');
-      const { createBlastDay } = await import('/src/hooks/useBlastDay.ts');
+      const { createBlastDayWithPapers } = await import('/src/hooks/useBlastDay.ts');
       const jobs = await db.jobs.filter((j) => !j.archivedAt && j.isActive).toArray();
-      return createBlastDay(jobs[0].id, undefined, undefined, { name: 'S7c tour day' });
+      return createBlastDayWithPapers(jobs[0].id, undefined, undefined, { name: 'S7c tour day' });
     });
     await P1.goto(`${WEB}/blast-day/${dayId}`);
     await overlay(P1).waitFor({ timeout: 8000 });

@@ -63,13 +63,13 @@ async (page, lib) => {
       // Write workload: start a day and delete it, 10× (local latency only)
       const write = await P.evaluate(async () => {
         const { db } = await import('/src/db/index.ts');
-        const { createBlastDay } = await import('/src/hooks/useBlastDay.ts');
+        const { createBlastDayWithPapers } = await import('/src/hooks/useBlastDay.ts');
         const { deleteDayCascade } = await import('/src/lib/lifecycle.ts');
         const jobs = await db.jobs.filter((j) => !j.archivedAt && j.isActive).toArray();
         const ids = [];
         const t = performance.now();
         for (let i = 0; i < 10; i++) {
-          const id = await createBlastDay(jobs[0].id, undefined, undefined, { name: `S9 bench ${i}` });
+          const id = await createBlastDayWithPapers(jobs[0].id, undefined, undefined, { name: `S9 bench ${i}` });
           ids.push(id);
           const day = await db.blastDays.get(id);
           if (day) await deleteDayCascade(day);

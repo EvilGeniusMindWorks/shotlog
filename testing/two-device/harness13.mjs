@@ -88,7 +88,7 @@ async (page) => {
       // discarded. Use an existing linked crew member if present, else the
       // admin device creates it later; here we look one up.
       const existing = await db.crewMembers.filter((c) => c.userId === dinisUserId).first();
-      const dayId = await window.shotlogFlows.createBlastDay(job.id, new Date().toISOString().slice(0, 10), undefined, { typeOfWork: 'drill_to_blast', name: `${t} hub day` });
+      const dayId = await window.shotlogFlows.createBlastDayWithPapers(job.id, new Date().toISOString().slice(0, 10), undefined, { typeOfWork: 'drill_to_blast', name: `${t} hub day` });
       const report = await db.dailyReports.where('blastDayId').equals(dayId).first();
       const log = await db.blastLogs.where('blastDayId').equals(dayId).first();
       const shot = await db.shots.where('blastLogId').equals(log.id).first();

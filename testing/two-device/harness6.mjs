@@ -39,7 +39,7 @@ async (page) => {
   await driller.waitForTimeout(2500);
   const job = await waitDb(driller, `db.jobs.filter(j => j.isActive).first()`);
   const dayId = await driller.evaluate(async ({ jobId }) => {
-    return await window.shotlogFlows.createBlastDay(jobId, undefined, undefined, {
+    return await window.shotlogFlows.createBlastDayWithPapers(jobId, undefined, undefined, {
       typeOfWork: 'drill_only',
       name: 'Pattern for lift 2',
     });

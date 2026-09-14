@@ -82,9 +82,9 @@ async (page) => {
     await P1.locator('[data-jobs-search]').fill('');
     const dayId = await P1.evaluate(async () => {
       const { db } = await import('/src/db/index.ts');
-      const { createBlastDay } = await import('/src/hooks/useBlastDay.ts');
+      const { createBlastDayWithPapers } = await import('/src/hooks/useBlastDay.ts');
       const jobs = await db.jobs.toArray();
-      return createBlastDay(jobs[0].id);
+      return createBlastDayWithPapers(jobs[0].id);
     });
     ok('the rehearsal blaster can start work', Boolean(dayId));
     await P1.waitForTimeout(3000);

@@ -8,6 +8,17 @@ status: draft
 
 Short notes on what changed, newest first. Ask in ? → **Send feedback** if something here is not what you see.
 
+## September 14, 2026
+
+- **One work day per job per date.** Two phones that start work at the same job on the same day now land on the same day, even with no signal — no more "two copies of today" to merge.
+- **The card comes first.** The first person to open a new day fills in type of work, on-site time, temperature, weather, wind, ground and a label. Rows come prefilled from the last day at that job, the clock and the National Weather Service, and each row says where its value came from. One tap on **Save and start the day** when it is right.
+- **Everyone after that sees a fact sheet** — who set the day up, each fact with its source, who is on site — and taps **Looks right, continue** or **Something's wrong — edit**.
+- **Nothing shared is overwritten silently.** If two people change the same fact while offline, the first to sync sticks and the other person gets a **Needs your decision** card on their home with both values and **Use theirs** / **Use mine**. If someone changes a fact after you confirmed, the day shows **Shared details were updated — tap to reconfirm**.
+- **Papers exist only when started.** A new day has no blasting log and no daily report until you start them (**Add Blasting Log**, **Start daily report**). Filing a blasting day with no log is blocked; a day with no daily report files with an amber note. A day with only time cards says **Time cards only** in lists.
+- **Drillers:** the card asks you once, the first time a job is known for you that day (a drill log or your hours on that job). A rig checklist with no job never waits.
+- **Honest messages when a change is not saved:** "Someone else started the blasting log first while you were offline — theirs was kept", "The work day this drill log belongs to was deleted while you were offline", instead of "your role can't make it".
+- Temperature bands on the card are now Low (<40°F), Moderate (40–70°F), High (>70°F).
+
 ## September 13, 2026
 
 - **A job always has a site.** On a new job the Site box is required: pick one, or tap **+ New site** and give it a name, state and address. **Create job** stays grey until then and says what is missing. An admin can move a job with **Move to another site…** on the job page.

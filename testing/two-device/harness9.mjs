@@ -62,7 +62,7 @@ async (page) => {
     const job = await db.jobs.filter((j) => j.isActive).first();
     if (!job) return { error: 'no active job in local dev db' };
     const f = window.shotlogFlows;
-    const dayId = await f.createBlastDay(job.id, new Date().toISOString().slice(0, 10), undefined, {
+    const dayId = await f.createBlastDayWithPapers(job.id, new Date().toISOString().slice(0, 10), undefined, {
       typeOfWork: 'drill_to_blast',
       name: `${t} plan day`,
     });

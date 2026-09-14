@@ -29,10 +29,10 @@ async (page, lib) => {
   await R.section('a blaster files a signed day (past the pre-flight\'s amber notes)', async () => {
     const made = await PB.evaluate(async (stamp) => {
       const { db } = await import('/src/db/index.ts');
-      const { createBlastDay } = await import('/src/hooks/useBlastDay.ts');
+      const { createBlastDayWithPapers } = await import('/src/hooks/useBlastDay.ts');
       const { nowISO } = await import('/src/lib/utils.ts');
       const jobs = (await db.jobs.filter((j) => !j.archivedAt && j.isActive).toArray()).sort((a, b) => a.name.localeCompare(b.name));
-      const id = await createBlastDay(jobs[0].id, undefined, undefined, { typeOfWork: 'drill_to_blast', name: `S9a batch2 ${stamp}` });
+      const id = await createBlastDayWithPapers(jobs[0].id, undefined, undefined, { typeOfWork: 'drill_to_blast', name: `S9a batch2 ${stamp}` });
       const log = await db.blastLogs.where('blastDayId').equals(id).first();
       const shot = await db.shots.where('blastLogId').equals(log.id).first();
       const c = document.createElement('canvas'); c.width = 200; c.height = 80; const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, 200, 80); g.strokeStyle = '#000'; g.lineWidth = 3; g.beginPath(); g.moveTo(20, 50); g.lineTo(180, 30); g.stroke();

@@ -151,7 +151,7 @@ async (page) => {
     const jobId = await admin.evaluate(
       (t) => window.shotlogFlows.createJob({ name: `${t} Job`, customer: 'H22' }), tag);
     const seed = await admin.evaluate(async (jobId) => {
-      const dayId = await window.shotlogFlows.createBlastDay(jobId);
+      const dayId = await window.shotlogFlows.createBlastDayWithPapers(jobId);
       const log = await window.shotlogDb.blastLogs.where('blastDayId').equals(dayId).first();
       const shot = await window.shotlogDb.shots.where('blastLogId').equals(log.id).first();
       return { dayId, shotId: shot.id };

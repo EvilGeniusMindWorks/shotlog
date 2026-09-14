@@ -11,7 +11,7 @@ import type { DrillLog, DrillLogHole, HoleCondition, KickDirection, Shot } from 
 export function getShotPlan(shot: Shot | undefined | null): PlanHole[] | null {
   if (!shot) return null;
   const diagram = parseDiagram(shot.designPlan.shotDiagramData);
-  const holes = materializeDrillPlan(diagram, shot.totals.avgDrillDepth || 0);
+  const holes = materializeDrillPlan(diagram, shot.totals?.avgDrillDepth || 0);
   return holes.length > 0 ? holes : null;
 }
 

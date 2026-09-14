@@ -112,6 +112,12 @@ export async function mkCtx(browser, opts = {}) {
     tourDone = true,
     firstWeekHidden = true,
     nagSnoozed = true,
+    // S13: the day's card asks the first opener to save it and everyone
+    // after to confirm it. Older harnesses were written before that — by
+    // default a device taps "Save and start the day" / "Looks right,
+    // continue" the moment they appear. Pass `autoGate: false` to drive
+    // the gate yourself (harness71).
+    autoGate = true,
     viewport = { width: 1280, height: 900 },
     extra = '',
     ...rest
@@ -128,6 +134,7 @@ export async function mkCtx(browser, opts = {}) {
     ${tourDone ? "localStorage.setItem('shotlog-tour-done', '1');" : ''}
     ${firstWeekHidden ? "localStorage.setItem('shotlog-first-week-hidden', '1');" : ''}
     ${nagSnoozed ? "localStorage.setItem('shotlog-profile-nag-until', String(Date.now() + 864e5));" : ''}
+    ${autoGate ? "setInterval(() => { const b = document.querySelector('[data-day-save]') || document.querySelector('[data-day-looks-right]'); if (b && !b.disabled) b.click(); }, 200);" : ''}
     ${extra}
   `);
   return ctx;
@@ -261,17 +268,30 @@ export async function apiLogin(page, user) {
 
 /** Delete harness days (cascade), drill logs (+holes), plans, checklists —
  *  on an ADMIN page so the server accepts every delete. */
-export async function cleanupAsAdmin(browser, { days = [], drillLogs = [], drillPlans = [], checklists = [] } = {}) {
+export async function cleanupAsAdmin(browser, { days = [], drillLogs = [], drillPlans = [], checklists = [], sweep = true } = {}) {
   const ctx = await mkCtx(browser);
   const P = await ctx.newPage();
   await signIn(P, 'mark');
-  const removed = await P.evaluate(async ({ days, drillLogs, drillPlans, checklists }) => {
+  const removed = await P.evaluate(async ({ days, drillLogs, drillPlans, checklists, sweep }) => {
     const { db, deleteWithTombstone } = await import('/src/db/index.ts');
     const { deleteDayCascade } = await import('/src/lib/lifecycle.ts');
+    const { todayISO } = await import('/src/lib/utils.ts');
     let n = 0;
     for (const id of days.filter(Boolean)) {
       const day = await db.blastDays.get(id);
       if (day) {
+        await deleteDayCascade(day);
+        n++;
+      }
+    }
+    // S13: there is ONE day per job per date now, so a day a failed run
+    // left behind is reused by the next harness at that job — sweep
+    // today's unfiled drafts (the dev database is the harnesses' sandbox)
+    if (sweep) {
+      const today = todayISO();
+      const filed = new Set((await db.submissions.toArray()).map((x) => x.blastDayId));
+      for (const day of await db.blastDays.filter((d) => d.date === today && d.status === 'draft').toArray()) {
+        if (filed.has(day.id)) continue;
         await deleteDayCascade(day);
         n++;
       }
@@ -283,7 +303,7 @@ export async function cleanupAsAdmin(browser, { days = [], drillLogs = [], drill
     for (const id of drillPlans.filter(Boolean)) if (await db.drillPlans.get(id)) await deleteWithTombstone('drillPlans', id);
     for (const id of checklists.filter(Boolean)) if (await db.drillChecklists.get(id)) await deleteWithTombstone('drillChecklists', id);
     return n;
-  }, { days, drillLogs, drillPlans, checklists });
+  }, { days, drillLogs, drillPlans, checklists, sweep });
   await waitForUpload(P);
   await ctx.close();
   return removed;

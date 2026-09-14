@@ -4,6 +4,7 @@ import { AppShell } from '@/components/layout/AppShell';
 import { AuthGate } from '@/components/layout/AuthGate';
 import { Dashboard, WorkDaysPage } from '@/pages/Dashboard';
 import { BlastDayPage } from '@/pages/BlastDayPage';
+import { DaySetupPage } from '@/pages/DaySetupPage';
 import { JobsPage } from '@/pages/JobsPage';
 import { JobDetailPage } from '@/pages/JobDetailPage';
 import { CustomerPage } from '@/pages/CustomerPage';
@@ -129,6 +130,7 @@ export function App() {
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/blast-day/:id" element={<BlastDayPage />} />
+          <Route path="/blast-day/:id/setup" element={<DaySetupPage />} />
           <Route path="/blast-day/:id/design/:shotId" element={<DesignPlanPage />} />
           <Route path="/blast-day/:id/seismo/:shotId" element={<SeismoPage />} />
           <Route path="/blast-day/:id/drill-log/:logId" element={<DrillLogPage />} />

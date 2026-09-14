@@ -3,6 +3,7 @@
 // Driller: checklist nudge + my open drill logs + my work days
 // Mechanic: repair queue + due dates
 // Admin/Office: job costing + compliance monitor + attention + week pulse
+import { dayGate, findDayByDate, setupPath } from '@/lib/dayCard';
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, ClipboardCheck, Wrench, X } from 'lucide-react';
@@ -795,6 +796,7 @@ function MyHoursSheet({
   defaultJobId?: string;
   onClose: () => void;
 }) {
+  const navigate = useNavigate();
   const me = getSessionUser();
   const jobs = useLiveQuery(() => db.jobs.filter((j) => j.isActive && !j.archivedAt).toArray()) ?? [];
   const [jobId, setJobId] = useState(defaultJobId ?? '');
@@ -817,11 +819,19 @@ function MyHoursSheet({
             className="w-full"
             disabled={!jobId || !me}
             onClick={() =>
-              void createStandaloneTimeCard(jobId, {
-                name: me!.name,
-                userId: me!.id,
-                crewMemberId: roster.find((m) => m.userId === me!.id)?.id,
-              })
+              void (async () => {
+                await createStandaloneTimeCard(jobId, {
+                  name: me!.name,
+                  userId: me!.id,
+                  crewMemberId: roster.find((m) => m.userId === me!.id)?.id,
+                });
+                // S13: a time card for a job whose day exists — the card asks once
+                const day = await findDayByDate(jobId, todayISO());
+                if (day) {
+                  const gate = await dayGate(day);
+                  if (gate === 'form' || gate === 'confirm') navigate(setupPath(day.id, '/'));
+                }
+              })()
             }
           >
             Add my card

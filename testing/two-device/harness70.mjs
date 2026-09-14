@@ -46,14 +46,14 @@ async (page, lib) => {
   await R.section('a shot at known coordinates: four structures placed by arithmetic', async () => {
     const made = await PB.evaluate(async ({ stamp, B }) => {
       const { db } = await import('/src/db/index.ts');
-      const { createBlastDay } = await import('/src/hooks/useBlastDay.ts');
+      const { createBlastDayWithPapers } = await import('/src/hooks/useBlastDay.ts');
       const { todayISO, nowISO } = await import('/src/lib/utils.ts');
       const { pointAt, serializeSiteDiagram, emptySiteDiagram, distanceFt } = await import('/src/lib/siteDiagram.ts');
       const today = todayISO();
       const taken = new Set((await db.blastDays.filter((d) => d.date === today).toArray()).map((d) => d.jobId));
       const jobs = (await db.jobs.filter((j) => !j.archivedAt && j.isActive && !taken.has(j.id) && Boolean(j.siteId) && !/^S1[12]/.test(j.name)).toArray()).sort((a, b) => a.name.localeCompare(b.name));
       const job = jobs[0];
-      const id = await createBlastDay(job.id, undefined, undefined, { typeOfWork: 'drill_to_blast', name: `ring ${stamp}` });
+      const id = await createBlastDayWithPapers(job.id, undefined, undefined, { typeOfWork: 'drill_to_blast', name: `ring ${stamp}` });
       const log = await db.blastLogs.where('blastDayId').equals(id).first();
       const shot = await db.shots.where('blastLogId').equals(log.id).first();
       const specs = [['Stevens residence', 180, 40], ['Barn', 230, 150], ['Shed', 310, 250], ['Route 20 bridge', 420, 320]];

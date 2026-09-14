@@ -20,7 +20,7 @@ With more than one active job, the first question is **Which job?** Turn on **Us
 4. **Type of work** — drill to blast, drill only, blast only, hauling. ShotLog suggests the last type used at that job.
 5. **Copy from previous day** — brings over the drill parameters, explosives and crew from the last day at this job, so you change only what changed.
 
-Tap **Start work**. The day opens on its spine.
+Tap **Start work**. There's one work day per job per date — if you're the first person there that day, it asks you to fill in **the card** (type of work, temperature, weather, ground and the rest) before you land on the spine; if someone already opened it, you see a fact sheet of what they set, to confirm or fix. A second phone starting work at the same job and date joins that same day rather than starting a new one.
 
 ![Start work at a job](start-work.png)
 

@@ -67,9 +67,9 @@ async (page) => {
     await signIn(P1, 'blaster@test.local', 'blaster-pass-123');
     const made = await P1.evaluate(async (stamp) => {
       const { db } = await import('/src/db/index.ts');
-      const { createBlastDay } = await import('/src/hooks/useBlastDay.ts');
+      const { createBlastDayWithPapers } = await import('/src/hooks/useBlastDay.ts');
       const jobs = (await db.jobs.filter((j) => !j.archivedAt && j.isActive).toArray()).sort((a, b) => a.name.localeCompare(b.name));
-      const dayId = await createBlastDay(jobs[0].id, undefined, undefined, { name: `S7d day ${stamp}` });
+      const dayId = await createBlastDayWithPapers(jobs[0].id, undefined, undefined, { name: `S7d day ${stamp}` });
       return { dayId, jobId: jobs[0].id, job2Id: jobs[1].id };
     }, stamp);
     dayId = made.dayId;
@@ -177,8 +177,8 @@ async (page) => {
     ok('the card shows the suggestion until edited', /Suggested from your own records/.test(await P2.locator('[data-card-suggested]').innerText()));
     // A drill-only day the driller starts is THEIRS
     drillOnlyId = await P2.evaluate(async (job2Id) => {
-      const { createBlastDay } = await import('/src/hooks/useBlastDay.ts');
-      return createBlastDay(job2Id, undefined, undefined, { typeOfWork: 'drill_only', name: 'S7d driller day' });
+      const { createBlastDayWithPapers } = await import('/src/hooks/useBlastDay.ts');
+      return createBlastDayWithPapers(job2Id, undefined, undefined, { typeOfWork: 'drill_only', name: 'S7d driller day' });
     }, job2Id);
     const d3 = await getDay(P2, drillOnlyId);
     ok('a drill-only day the driller starts is authored by the driller', d3.authorUserId === dinisId && d3.authorBucket === 'driller');
@@ -224,9 +224,9 @@ async (page) => {
     // Merge: a second copy (as if another device made it offline) with a card on it
     dupId = await P3.evaluate(async ({ jobId, stamp }) => {
       const { db } = await import('/src/db/index.ts');
-      const { createBlastDay } = await import('/src/hooks/useBlastDay.ts');
+      const { createBlastDayWithPapers } = await import('/src/hooks/useBlastDay.ts');
       const { createTimeCard } = await import('/src/hooks/useTimeCards.ts');
-      const id = await createBlastDay(jobId, undefined, undefined, { name: `S7d dup ${stamp}` });
+      const id = await createBlastDayWithPapers(jobId, undefined, undefined, { name: `S7d dup ${stamp}` });
       const day = await db.blastDays.get(id);
       const helper = await db.crewMembers.filter((m) => m.isActive && !m.userId).first();
       await createTimeCard(day, { name: helper?.name ?? 'Helper', crewMemberId: helper?.id });

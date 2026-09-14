@@ -29,7 +29,15 @@ Tap **Continue** and you land on the next thing: *Build the drill plan*, *Send t
 
 ## Day · Blast log · Daily report
 
-Across the top, three views of the same day: the **Day** (the spine), the **Blasting log** (the technical record) and the **Daily report** (crew, hours, equipment). They share everything — a crew member added on the daily report is on the blast log's sign-off list.
+Across the top, three views of the same day: the **Day** (the spine), the **Blasting log** (the technical record) and the **Daily report** (crew, hours, equipment). They share everything — a crew member added on the daily report is on the blast log's sign-off list. The Blasting log and Daily report tabs start empty; nothing exists on either until someone starts it (see below).
+
+## The card, and who's on site
+
+The first person to open a new day fills in **the card**: type of work, on-site time, temperature, weather, wind, ground and notes, plus an optional day label. Rows come prefilled from the last day at this job and from the clock; online, with a job location, temperature, weather and wind come from the National Weather Service, and each row shows its source — "NWS 6:28 am" or "from Sep 12." Ground is only ever suggested, never picked for you. Tap **Save and start the day** when it looks right.
+
+Everyone else sees a fact sheet instead — who set the day up, each fact's source, who's on site ("Joe (6:30), Mark (7:10)") — and taps **Looks right, continue** or **Something's wrong — edit**. If two people change the same fact while offline, the first to sync sticks; the other gets a **Needs your decision** card on their home with both values and **Use theirs** / **Use mine**. Changes to different facts merge quietly. If a shared fact changes after you confirmed it, a yellow line offers **Shared details were updated — tap to reconfirm**. The conditions bar's **Edit** goes through the same first-to-land rule. Temperature reads Low (under 40°F), Moderate (40–70°F) or High (over 70°F).
+
+A new day has no blasting log and no daily report until someone starts them. **Start daily report** on that tab creates it; **Add Blasting Log** creates the log on a day that isn't a blasting type. Filing is blocked with no blasting log; filing with no daily report goes through with an amber "No daily report" note, and a day where only time cards were filed shows that way in lists.
 
 ## Related
 

@@ -22,8 +22,15 @@ import {
   LOCKED_DAY_STATUSES,
   NEVER_USED_DELETE_TABLES,
   PARENT_CHAIN,
+  CARD_PATHS,
+  cardValuesEqual,
+  getPath,
+  isBlastingWork,
+  isCardPath,
+  withPath,
   type RoleDefsLookup,
 } from '@shotlog/shared';
+import { randomUUID } from 'node:crypto';
 import type { Prisma } from '@prisma/client';
 import { prisma } from './db.js';
 import { requireAuth, type AuthedRequest } from './auth.js';
@@ -60,6 +67,27 @@ const ONE_PER_PARENT: Record<string, string> = {
   dailyReports: 'blastDayId',
   explosiveUsages: 'blastLogId',
 };
+
+/** Plain words for the day family, for the notices a device shows (S13) */
+const TABLE_LABEL: Record<string, string> = {
+  blastDays: 'work day',
+  blastLogs: 'blasting log',
+  dailyReports: 'daily report',
+  explosiveUsages: 'explosives list',
+  shots: 'shot',
+  seismoReadings: 'seismo reading',
+  typicalColumns: 'typical column',
+  drillLogs: 'drill log',
+  drillLogHoles: 'drill log hole',
+  workForceEntries: 'crew row',
+  equipmentEntries: 'equipment row',
+  materialEntries: 'materials row',
+  subcontractorEntries: 'subcontractor row',
+  workDayConfirmations: 'confirmation',
+  dayCardEdits: 'card change',
+};
+
+type CardSetRow = { v: number; by: string; byName: string; at: string };
 
 export const powersyncRouter = Router();
 
@@ -163,6 +191,9 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
   const role = req.role ?? 'office';
   const now = new Date().toISOString();
   const discardedIds: string[] = [];
+  /** S13: honest words for discards that are NOT a role denial — a race
+   *  someone else won, a parent deleted meanwhile, a guard that refused */
+  const notices: { id: string; kind: 'race' | 'refused' | 'child'; text: string }[] = [];
 
   // Audit actor: name resolved once per request (JWT carries only the id)
   const actorId = req.userId as string;
@@ -214,9 +245,15 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
         return s;
       };
       const discardedInBatch = new Set<string>();
-      const discard = (op: { id: string; op: string }, tableName: string, reason: string) => {
+      const discard = (
+        op: { id: string; op: string },
+        tableName: string,
+        reason: string,
+        notice?: { kind: 'race' | 'refused' | 'child'; text: string },
+      ) => {
         discardedIds.push(op.id);
         discardedInBatch.add(op.id);
+        if (notice) notices.push({ id: op.id, ...notice });
         // Refused writes are part of the audit record too
         audit(op.id, tableName, 'DISCARD', [], reason);
         console.warn(
@@ -242,9 +279,30 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
         const incoming = parsePayloadSafe(op.data?.payload);
         // The record's effective payload after this op (PATCH replaces the
         // whole payload column when present; COALESCE keeps stored otherwise)
-        const effective = op.data?.payload !== undefined ? incoming : (stored?.payload ?? {});
+        let effective = op.data?.payload !== undefined ? incoming : (stored?.payload ?? {});
+        // What gets written: the incoming payload unless a guard below
+        // rewrites it (the day's card, the edit log)
+        let payloadOut: string | null = op.data?.payload ?? null;
 
         if (op.op === 'DELETE' && !stored) continue; // deleting nothing — no-op
+
+        // S13 bug fix: a PATCH onto a record the server no longer has (merged
+        // away or deleted by someone else while this device was offline —
+        // or never accepted) must not resurrect it. PATCH ops carry no
+        // table name, so the stored row was the identity; without it the
+        // op can only be refused — and the device told in plain words.
+        if (op.op === 'PATCH' && !stored) {
+          if (discardedInBatch.has(op.id)) {
+            discard(op, tableName, 'record discarded earlier in this batch', { kind: 'child', text: '' });
+            continue;
+          }
+          const label = TABLE_LABEL[tableName] ?? (tableName || 'record');
+          discard(op, tableName, 'record no longer exists', {
+            kind: 'refused',
+            text: `The ${label} you changed is no longer on the server — deleted by someone else while you were offline, or never accepted — so your change was not saved`,
+          });
+          continue;
+        }
 
         // 1. table × op × role (capability-resolved; custom roles supported)
         if (!canPerformOpAs(tableName, op.op, role, roleDefs)) {
@@ -358,20 +416,27 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
         {
           const link = PARENT_CHAIN[tableName];
           const parentId = link ? (effective[link.parentIdField] ?? stored?.payload[link.parentIdField]) : undefined;
-          if (typeof parentId === 'string' && parentId) {
+          if (link && typeof parentId === 'string' && parentId) {
             if (discardedInBatch.has(parentId)) {
-              discard(op, tableName, 'parent record was discarded');
+              discard(op, tableName, 'parent record was discarded', { kind: 'child', text: '' });
               continue;
             }
-            if (op.op === 'PUT' && !stored && link && ONE_PER_PARENT[tableName] === undefined && ONE_PER_PARENT[link.parentTable] !== undefined) {
+            // S13 bug fix: the old condition skipped children of blastDays,
+            // so a drill log whose day was deleted landed as an orphan. Every
+            // NEW child needs its parent to exist — and the device is told.
+            if (op.op === 'PUT' && !stored) {
               const parent = await batch.get(parentId);
               if (!parent) {
-                discard(op, tableName, 'parent record was discarded');
+                discard(op, tableName, 'parent record missing', {
+                  kind: 'refused',
+                  text: `The ${TABLE_LABEL[link.parentTable] ?? 'record'} this ${TABLE_LABEL[tableName] ?? 'record'} belongs to was deleted while you were offline — it was not saved`,
+                });
                 continue;
               }
             }
           }
         }
+
 
         // 1c. one-per-parent children: two offline devices can BOTH create
         // "the day's blast log" — first to sync wins, the copy is discarded
@@ -386,10 +451,75 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
                 AND ("payload"::jsonb ->> ${parentField}) = ${parentId}
               LIMIT 1`;
             if (dup.length > 0) {
-              discard(op, tableName, `parent already has a ${tableName} record`);
+              discard(op, tableName, `parent already has a ${tableName} record`, {
+                kind: 'race',
+                text: `Someone else started the ${TABLE_LABEL[tableName] ?? tableName} first while you were offline — theirs was kept; yours was not saved`,
+              });
               continue;
             }
           }
+        }
+
+        // 1d. S13 — the day and the card (docs/day-at-a-job-design.md):
+        //  · a PUT of a day that already exists is the SAME day from a second
+        //    phone (name-based ids): the stored day stands, quietly; the two
+        //    facts the dialog chose (type of work, label) become HELD edits
+        //    when they differ, so nobody's choice is dropped without asking
+        //  · a NEW day never carries version stamps of its own
+        //  · a PATCH of a day never touches the card: type of work, on-site
+        //    time, conditions, label and the version stamps come from the
+        //    stored row; the setup stamp and the NWS reading are first-wins
+        if (tableName === 'blastDays' && op.op === 'PUT' && stored) {
+          const sets = (stored.payload.cardSets ?? {}) as Record<string, CardSetRow>;
+          const setup = (stored.payload.setup ?? {}) as { by?: string; byName?: string; at?: string };
+          for (const path of ['typeOfWork', 'name'] as const) {
+            const v = effective[path];
+            if (v === undefined || v === null || v === '') continue;
+            if (cardValuesEqual(getPath(stored.payload, path), v)) continue;
+            const cur = sets[path];
+            const editId = randomUUID();
+            const held = {
+              id: editId,
+              blastDayId: op.id,
+              path,
+              value: v,
+              baseVersion: 0,
+              by: actorId,
+              byName: actorName,
+              at: now,
+              status: 'held',
+              heldAt: now,
+              current: {
+                value: getPath(stored.payload, path),
+                v: cur?.v ?? 0,
+                by: cur?.by ?? setup.by ?? '',
+                byName: cur?.byName ?? setup.byName ?? '',
+                at: cur?.at ?? setup.at ?? '',
+              },
+              createdAt: now,
+              updatedAt: now,
+              syncStatus: 'synced',
+            };
+            await upsertRecord(tx, cid, editId, 'dayCardEdits', JSON.stringify(held), now);
+            batch.applied(editId, 'dayCardEdits', held);
+            audit(editId, 'dayCardEdits', 'PUT', [{ field: path, note: 'held' }], 'second copy of the same day');
+          }
+          audit(op.id, tableName, 'MERGE', [], 'second copy of the same day — the stored day stands');
+          continue;
+        }
+        if (tableName === 'blastDays' && op.op === 'PUT' && !stored && effective.cardSets !== undefined) {
+          effective = { ...effective };
+          delete effective.cardSets;
+          payloadOut = JSON.stringify(effective);
+        }
+        if (tableName === 'blastDays' && op.op === 'PATCH' && stored && op.data?.payload !== undefined) {
+          let next: Record<string, unknown> = { ...effective };
+          for (const path of CARD_PATHS) next = withPath(next, path, getPath(stored.payload, path));
+          next.cardSets = stored.payload.cardSets;
+          if (stored.payload.setup !== undefined) next.setup = stored.payload.setup;
+          if (stored.payload.nws !== undefined) next.nws = stored.payload.nws;
+          effective = next;
+          payloadOut = JSON.stringify(effective);
         }
 
         // 2. blastDay status transitions
@@ -529,11 +659,110 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
           }
         }
 
+        // 3b. S13 — the card's edit log. A phone sends one edit per fact with
+        // the version it was based on; the server APPLIES it when nobody
+        // else set that fact since (first to land sticks — and a person's
+        // own later edit supersedes their earlier one), otherwise HOLDS it
+        // with the current value and its author for the person to decide.
+        // Edit rows are written by the server: a device may only close a
+        // held one ("use theirs" / "use mine").
+        if (tableName === 'dayCardEdits' && op.op === 'PUT') {
+          if (stored) {
+            audit(op.id, tableName, 'MERGE', [], 'edit row re-sent — kept as stored');
+            continue;
+          }
+          const dayId = effective.blastDayId as string | undefined;
+          const day = dayId ? await batch.get(dayId) : null;
+          const path = effective.path as string;
+          if (!dayId || !day || !isCardPath(path)) {
+            discard(op, tableName, 'not a card fact of a known day');
+            continue;
+          }
+          if (effective.by !== actorId && !canEditApprovedAs(role, roleDefs)) {
+            discard(op, tableName, 'edit must be yours');
+            continue;
+          }
+          const sets = (day.payload.cardSets ?? {}) as Record<string, CardSetRow>;
+          const cur = sets[path];
+          const curV = cur?.v ?? 0;
+          const base = Number(effective.baseVersion ?? 0);
+          const value = effective.value;
+          const currentValue = getPath(day.payload, path);
+          const same = cardValuesEqual(currentValue, value);
+          const applies = same || effective.force === true || base === curV || (cur !== undefined && cur.by === effective.by);
+          if (!applies) {
+            const setup = (day.payload.setup ?? {}) as { by?: string; byName?: string; at?: string };
+            effective = {
+              ...effective,
+              status: 'held',
+              heldAt: now,
+              current: {
+                value: currentValue,
+                v: curV,
+                by: cur?.by ?? setup.by ?? '',
+                byName: cur?.byName ?? setup.byName ?? '',
+                at: cur?.at ?? setup.at ?? '',
+              },
+              updatedAt: now,
+            };
+            payloadOut = JSON.stringify(effective);
+            audit(op.id, tableName, 'PUT', [{ field: path, note: 'held' }], `${path} was set by ${cur?.byName ?? setup.byName ?? '?'} since v${base}`);
+          } else {
+            if (!same) {
+              // The type of work stays a blasting type while a blast log exists
+              if (path === 'typeOfWork' && isBlastingWork(currentValue as string) && !isBlastingWork(value as string)) {
+                const logs = await tx.$queryRaw<{ id: string }[]>`
+                  SELECT "id" FROM "records"
+                  WHERE "company_id" = ${cid} AND "table_name" = 'blastLogs'
+                    AND ("payload"::jsonb ->> 'blastDayId') = ${dayId}
+                  LIMIT 1`;
+                if (logs.length > 0) {
+                  discard(op, tableName, 'day has a blasting log', {
+                    kind: 'refused',
+                    text: 'The type of work stays a blasting type while the day has a blasting log — the log would have to go first',
+                  });
+                  continue;
+                }
+              }
+              let next = withPath(day.payload, path, value);
+              next = {
+                ...next,
+                cardSets: { ...sets, [path]: { v: curV + 1, by: effective.by, byName: effective.byName ?? '', at: now } },
+                updatedAt: now,
+              };
+              await upsertRecord(tx, cid, dayId, 'blastDays', JSON.stringify(next), now);
+              batch.applied(dayId, 'blastDays', next);
+              audit(dayId, 'blastDays', 'PATCH', diffPayloads(day.payload, next), 'card edit');
+            }
+            effective = { ...effective, status: 'applied', appliedAt: now, appliedV: same ? curV : curV + 1, updatedAt: now };
+            payloadOut = JSON.stringify(effective);
+          }
+        }
+        if (tableName === 'dayCardEdits' && op.op === 'PATCH' && stored) {
+          const closing = stored.payload.status === 'held' && effective.status === 'resolved';
+          const own = stored.payload.by === actorId || canEditApprovedAs(role, roleDefs);
+          if (!closing || !own) {
+            discard(op, tableName, 'edit rows are written by the server');
+            continue;
+          }
+          effective = { ...stored.payload, status: 'resolved', resolution: effective.resolution, resolvedAt: now, updatedAt: now };
+          payloadOut = JSON.stringify(effective);
+        }
+
+        // 3c. S13 — presence: one row per person per day, own row only
+        if (tableName === 'workDayConfirmations' && op.op !== 'DELETE') {
+          const subject = (effective.userId ?? stored?.payload.userId) as string | undefined;
+          if (subject !== actorId && !canEditApprovedAs(role, roleDefs)) {
+            discard(op, tableName, 'not your confirmation');
+            continue;
+          }
+        }
+
         // 4. apply (+ audit: field-level diff of stored → effective)
         if (op.op === 'PUT' || op.op === 'PATCH') {
           const changes = diffPayloads(stored?.payload ?? null, effective);
           if (changes.length > 0) audit(op.id, tableName, op.op, changes);
-          await upsertRecord(tx, cid, op.id, op.data?.table_name ?? null, op.data?.payload ?? null, now);
+          await upsertRecord(tx, cid, op.id, op.data?.table_name ?? null, payloadOut, now);
           batch.applied(op.id, tableName, effective);
         } else {
           audit(op.id, tableName, 'DELETE', [{ field: '*', note: 'deleted' }]);
@@ -552,7 +781,7 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
     res.status(500).json({ error: 'upload failed' });
     return;
   }
-  res.json({ ok: true, discarded: discardedIds.length, discardedIds });
+  res.json({ ok: true, discarded: discardedIds.length, discardedIds, notices });
 });
 // NOTE: submissions immutability + LOCKED_DAY_STATUSES enforcement above
 // require @shotlog/shared >= the build that exports LOCKED_DAY_STATUSES.

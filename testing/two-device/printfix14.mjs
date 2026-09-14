@@ -38,7 +38,7 @@ async (page) => {
         state: 'MA',
         kFactor: 180,
       });
-      const dayId = await window.shotlogFlows.createBlastDay(jobId, '2026-07-24');
+      const dayId = await window.shotlogFlows.createBlastDayWithPapers(jobId, '2026-07-24');
       const now = new Date().toISOString();
 
       await db.blastDays.update(dayId, {

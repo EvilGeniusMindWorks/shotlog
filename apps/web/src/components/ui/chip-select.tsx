@@ -37,6 +37,7 @@ export function ChipSelect({
           <button
             key={opt.value}
             type="button"
+            aria-pressed={selected}
             className={cn(chipBase, selected ? chipOn : chipOff)}
             onClick={() => onChange(selected && allowEmpty ? '' : opt.value)}
           >

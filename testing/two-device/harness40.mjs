@@ -62,9 +62,9 @@ async (page) => {
     await P1.waitForTimeout(4000);
     dayId = await P1.evaluate(async () => {
       const { db } = await import('/src/db/index.ts');
-      const { createBlastDay } = await import('/src/hooks/useBlastDay.ts');
+      const { createBlastDayWithPapers } = await import('/src/hooks/useBlastDay.ts');
       const jobs = await db.jobs.filter((j) => !j.archivedAt && j.isActive).toArray();
-      return createBlastDay(jobs[0].id);
+      return createBlastDayWithPapers(jobs[0].id);
     });
     await P1.goto(`${WEB}/blast-day/${dayId}?view=daily-report`);
     await P1.waitForTimeout(2500);

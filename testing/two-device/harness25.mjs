@@ -195,7 +195,7 @@ async (page) => {
     // ── (6) import into a shot: totals + grid + verification ──────────────
     const shotCheck = await A.evaluate(async ({ jobId, planId }) => {
       const db = window.shotlogDb;
-      const dayId = await window.shotlogFlows.createBlastDay(jobId);
+      const dayId = await window.shotlogFlows.createBlastDayWithPapers(jobId);
       const blog = await db.blastLogs.where('blastDayId').equals(dayId).first();
       const shot = await db.shots.where('blastLogId').equals(blog.id).first();
       const { getPlanHoles } = await import('/src/hooks/useDrillPlans.ts');
@@ -269,7 +269,7 @@ async (page) => {
     const legacy = await A.evaluate(async ({ jobId }) => {
       const db = window.shotlogDb;
       const { createDrillLog } = await import('/src/hooks/useDrillLogs.ts');
-      const dayId = await window.shotlogFlows.createBlastDay(jobId);
+      const dayId = await window.shotlogFlows.createBlastDayWithPapers(jobId);
       const blog = await db.blastLogs.where('blastDayId').equals(dayId).first();
       const shot = await db.shots.where('blastLogId').equals(blog.id).first();
       const logId = await createDrillLog(shot, dayId, jobId);

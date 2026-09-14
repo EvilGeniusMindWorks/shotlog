@@ -194,3 +194,9 @@ report (solo submit) · My Records · jobs list
   items are done (Joe never files a day, so the filed-day exit does not apply
   to him); nearby jobs show in his "Which job?" sheet the same way as the
   blaster's; a crash on his phone reaches Matthew on its own.
+- **Design week + S13 (2026-09-14):** Joe's three tiles stay direct; the day's card meets him
+  once, the first time a job is known for him that day (the drill log for a plan, a time card
+  for the job), never on a checklist. If he is first on site, the card is his to set up: one
+  tap when the weather prefill is right. Rigs: one checklist per rig, as many as the day needs;
+  "Start a checklist for another rig" opens the same rig picker; a rig marked out of service
+  opens the shop's ticket, and the drill log's rig line reads "D50, then D45 from 11:10".

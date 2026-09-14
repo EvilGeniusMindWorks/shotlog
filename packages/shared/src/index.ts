@@ -96,3 +96,26 @@ export type {
   RoleDefinitionData,
   RoleDefsLookup,
 } from './capabilities.js';
+
+export {
+  CARD_PATHS,
+  CARD_PATH_LABEL,
+  isCardPath,
+  getPath,
+  withPath,
+  cardValuesEqual,
+  cardVersion,
+  deterministicId,
+  dayIdFor,
+  confirmationIdFor,
+  isBlastingWork,
+} from './dayCard.js';
+export type {
+  CardPath,
+  CardSet,
+  CardSets,
+  WorkType,
+  DaySetup,
+  DayCardEditStatus,
+  DayCardEditCurrent,
+} from './dayCard.js';

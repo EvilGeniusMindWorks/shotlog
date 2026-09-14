@@ -94,9 +94,9 @@ async (page) => {
     await P2.waitForTimeout(5000); // first sync
     const dayId = await P2.evaluate(async () => {
       const { db } = await import('/src/db/index.ts');
-      const { createBlastDay } = await import('/src/hooks/useBlastDay.ts');
+      const { createBlastDayWithPapers } = await import('/src/hooks/useBlastDay.ts');
       const jobs = await db.jobs.filter((j) => !j.archivedAt && j.isActive).toArray();
-      return createBlastDay(jobs[0].id);
+      return createBlastDayWithPapers(jobs[0].id);
     });
     // The Sign-off section opens by default while incomplete — do NOT click
     // its header (that collapses it and hides the stop)

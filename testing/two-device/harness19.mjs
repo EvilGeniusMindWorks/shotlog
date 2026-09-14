@@ -52,7 +52,7 @@ async (page) => {
     // ── Seed a day ────────────────────────────────────────────────────────
     const ids = await blaster.evaluate(async (t) => {
       const jobId = await window.shotlogFlows.createJob({ name: `${t} Job`, customer: 'H19' });
-      const dayId = await window.shotlogFlows.createBlastDay(jobId);
+      const dayId = await window.shotlogFlows.createBlastDayWithPapers(jobId);
       const log = await window.shotlogDb.blastLogs.where('blastDayId').equals(dayId).first();
       const shot = await window.shotlogDb.shots.where('blastLogId').equals(log.id).first();
       return { jobId, dayId, shotId: shot.id };

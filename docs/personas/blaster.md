@@ -237,3 +237,10 @@ page · customer/site/job create (new) · contacts · My Records · reference
 - On the site map Mark sees a blue dot where he stands, with its accuracy; "Pin the blast here" drops the blast pin under his feet. The dot is him, not the record.
 - A 250 ft ring (his number to change) sits around the blast pin, saved with each shot and printed on the log's map; the structures inside are listed by name, nearest first.
 - Structure pins get names when dropped; the closest one is offered for the plan's compliance distance whenever it changes — offered, never filled in — and using it redoes the scaled-distance maths at once.
+
+## Design week + Round S13 — a day at a job (2026-09-14, design df4d6790, prototypes 5035558b)
+
+- **Blasters are the supervisors** (Mark, Sep 14): on a day the blaster sees their own papers first, then every person on the day with the state of each of their papers, and can open any of them, accept a completed drill log, and remind someone whose card is missing. The separate supervisor role stays in the system; Baystate does not use it.
+- Whoever opens the job first sets up the day's card (on-site time, type of work, weather from the NWS with the ground suggested); everyone after confirms it with one tap or fixes it. Mark never types who was there: the people who confirmed are on the day, and the daily report's crew is still the time cards.
+- Two phones on one card: the first value to reach the server sticks; a later disagreement comes back to that person as a decision with both values and who set each. Nothing shared is overwritten silently. Documents are each one person's and never collide.
+- Papers exist only when someone taps Start on them. A day with only time cards is a real day. Filing a blasting day needs the blasting log with every shot signed; a daily report nobody started is an amber note.

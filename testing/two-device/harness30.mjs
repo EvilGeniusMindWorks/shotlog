@@ -23,6 +23,29 @@ async (page) => {
     await p.getByRole('button', { name: 'Sign in' }).click();
     await p.locator('input[type="email"]').waitFor({ state: 'detached', timeout: 15000 });
     await p.waitForTimeout(3500);
+    // an account signed in with a temporary password is asked to choose its own
+    if (await p.locator('[data-change-password]').count()) {
+      const pw = p.locator('[data-change-password] input[type="password"]');
+      // a temporary password is already known to the form: new + confirm only
+      const n = await pw.count();
+      if (n >= 3) await pw.nth(0).fill(pass);
+      await pw.nth(n - 2).fill(pass + '-own');
+      await pw.nth(n - 1).fill(pass + '-own');
+      await p.getByRole('button', { name: 'Save password' }).click();
+      await p.locator('[data-change-password]').waitFor({ state: 'detached', timeout: 15000 }).catch(() => undefined);
+      await p.waitForTimeout(2500);
+    }
+    // a brand-new account gets the welcome card and the screen tour first
+    if (await p.getByRole('button', { name: /Let.s go/ }).count()) {
+      await p.getByRole('button', { name: /Let.s go/ }).click();
+      await p.waitForTimeout(1500);
+    }
+    for (let i = 0; i < 2; i++) {
+      if (await p.locator('[data-tour-skip]').count()) {
+        await p.locator('[data-tour-skip]').click();
+        await p.waitForTimeout(300);
+      }
+    }
   };
   let A, B, C;
   try {

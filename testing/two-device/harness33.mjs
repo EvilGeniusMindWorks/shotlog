@@ -212,8 +212,8 @@ async (page) => {
 
     // ── (7) Solo drill-only file card ───────────────────────────────────
     const dayId = await D.evaluate(async (jobId) => {
-      const { createBlastDay } = await import('/src/hooks/useBlastDay.ts');
-      return createBlastDay(jobId, undefined, undefined, { typeOfWork: 'drill_only' });
+      const { createBlastDayWithPapers } = await import('/src/hooks/useBlastDay.ts');
+      return createBlastDayWithPapers(jobId, undefined, undefined, { typeOfWork: 'drill_only' });
     }, setup.jobId);
     await D.goto(`http://localhost:5199/blast-day/${dayId}`);
     await D.waitForTimeout(2000);

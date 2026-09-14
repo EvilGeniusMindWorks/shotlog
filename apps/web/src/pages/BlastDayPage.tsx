@@ -1,11 +1,13 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { claimDay, ownerLine, ownsReport, shouldClaim } from '@/lib/dayOwnership';
 import { mergeDays } from '@/lib/lifecycle';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, CalendarCheck, FileText, ClipboardList, ChevronDown, ChevronUp, FileBarChart, History, Lock, PhoneCall, Printer } from 'lucide-react';
 import { type Role } from '@shotlog/shared';
 import { can, canDayTransition, canEditApprovedDay, myHomeDashboard } from '@/lib/perms';
-import { addBlastLogToDay, useBlastDay } from '@/hooks/useBlastDay';
+import { addBlastLogToDay, createDailyReport, useBlastDay } from '@/hooks/useBlastDay';
+import { setCardFacts, setupPath, useDayCard, useDayGate } from '@/lib/dayCard';
+import { GROUND_OPTIONS, TEMP_OPTIONS, WEATHER_OPTIONS, WIND_OPTIONS, WORK_TYPE_OPTIONS } from '@/lib/cardOptions';
 import { db, useLiveQuery } from '@/db';
 import { deleteDayCascade } from '@/lib/lifecycle';
 import { LifecycleMenu } from '@/components/records/LifecycleMenu';
@@ -33,43 +35,6 @@ import { DayHistorySheet } from '@/components/forms/DayHistorySheet';
 import { ContactList } from '@/components/forms/JobContactsCard';
 import { createIncident } from '@/pages/admin/AdminIncidentsPage';
 
-const WEATHER_OPTIONS = [
-  { value: 'sunny', label: 'Sunny' },
-  { value: 'cloudy', label: 'Cloudy' },
-  { value: 'partly_cloudy', label: 'Partly Cloudy' },
-  { value: 'rain_light', label: 'Light Rain' },
-  { value: 'rain_heavy', label: 'Heavy Rain' },
-  { value: 'rain_out', label: 'Rain Out' },
-];
-
-const TEMP_OPTIONS = [
-  { value: 'low', label: 'Low (<50°F)' },
-  { value: 'mod', label: 'Moderate (50-80°F)' },
-  { value: 'high', label: 'High (>80°F)' },
-];
-
-const GROUND_OPTIONS = [
-  { value: 'normal', label: 'Normal' },
-  { value: 'wet', label: 'Wet' },
-  { value: 'muddy', label: 'Muddy' },
-  { value: 'rock', label: 'Rock' },
-  { value: 'frozen', label: 'Frozen' },
-];
-
-const WORK_TYPE_OPTIONS = [
-  { value: 'drill_only', label: 'Drill Only' },
-  { value: 'drill_to_blast', label: 'Drill to Blast' },
-  { value: 'drill_to_excavate', label: 'Drill to Excavate' },
-  { value: 'blasting', label: 'Blasting' },
-  { value: 'crushing', label: 'Crushing' },
-  { value: 'hauling', label: 'Hauling' },
-];
-
-const WIND_OPTIONS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'].map((d) => ({
-  value: d,
-  label: d,
-}));
-
 type Tab = 'blast-log' | 'daily-report';
 type DayView = 'hub' | 'blast-log' | 'daily-report' | 'drilling' | 'readiness';
 
@@ -91,7 +56,18 @@ export function BlastDayPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { blastDay, job, blastLog, dailyReport, shots, explosiveUsage } = useBlastDay(id);
+  const { blastDay: storedDay, job, blastLog, dailyReport, shots, explosiveUsage } = useBlastDay(id);
+  // S13: the day as this phone sees it — my pending card edits laid over
+  // the shared record; and the gate: a day nobody set up, or one I have
+  // not confirmed yet, asks first (then comes back here)
+  const blastDay = useDayCard(storedDay);
+  const gate = useDayGate(storedDay);
+  const location = useLocation();
+  useEffect(() => {
+    if ((gate === 'form' || gate === 'confirm') && storedDay)
+      navigate(setupPath(storedDay.id, location.pathname + location.search), { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gate, storedDay?.id]);
   // Round 2: the day is a PHASE SPINE (hub) — the default view on blasting
   // days. ?view= deep-links a phase; legacy ?tab=daily still lands on the
   // daily report.
@@ -130,9 +106,9 @@ export function BlastDayPage() {
   // it (no author yet; or it is a blasting day under a non-blaster and I
   // am the blaster). Supervision never claims by opening.
   useEffect(() => {
-    if (!blastDay || !dailyReport || blastDay.status !== 'draft') return;
+    if (!blastDay || blastDay.status !== 'draft') return;
     if (shouldClaim(blastDay, blastLog)) void claimDay(blastDay.id);
-  }, [blastDay?.id, blastDay?.authorUserId, blastDay?.authorBucket, blastLog?.id, dailyReport?.id, blastDay?.status]);
+  }, [blastDay?.id, blastDay?.authorUserId, blastDay?.authorBucket, blastLog?.id, blastDay?.status]);
   // Two copies of the same job + date (both devices offline) → offer a merge
   const duplicates =
     useLiveQuery(
@@ -145,7 +121,7 @@ export function BlastDayPage() {
       [blastDay?.id, blastDay?.jobId, blastDay?.date],
     ) ?? [];
 
-  if (!blastDay) {
+  if (!blastDay || gate === undefined || gate === 'form' || gate === 'confirm') {
     return (
       <div className="p-4 text-center text-gray-500">
         <p>Loading...</p>
@@ -161,14 +137,21 @@ export function BlastDayPage() {
   const owner = ownsReport(blastDay, blastLog);
   const reportReadOnly = locked || !owner;
 
+  // S13: the card (conditions, type of work, label, on-site time) is the
+  // crew's and server-owned — anyone on the day may fix it, and a change
+  // is an edit row (applied first-to-land, or held for a decision), never
+  // a rewrite of the day. Fire detail stays a plain field.
   const updateConditions = (field: string, value: string | boolean) => {
-    if (reportReadOnly) return;
-    const updated = { ...blastDay.conditions, [field]: value };
-    db.blastDays.update(blastDay.id, { conditions: updated, updatedAt: nowISO() });
+    if (locked) return;
+    void setCardFacts(blastDay.id, { [`conditions.${field}`]: value } as Parameters<typeof setCardFacts>[1]);
   };
 
   const updateBlastDay = (field: string, value: string | boolean) => {
-    if (reportReadOnly) return;
+    if (locked) return;
+    if (field === 'typeOfWork' || field === 'name' || field === 'onsiteTime') {
+      void setCardFacts(blastDay.id, { [field]: value } as Parameters<typeof setCardFacts>[1]);
+      return;
+    }
     db.blastDays.update(blastDay.id, { [field]: value, updatedAt: nowISO() });
   };
 
@@ -318,23 +301,41 @@ export function BlastDayPage() {
         </div>
       </div>
 
+      {/* S13: someone else changed a shared fact after I confirmed — say so, once */}
+      {gate === 'reconfirm' && (
+        <button
+          className="w-full bg-amber-100 border-b border-amber-300 px-4 py-2 text-left text-sm text-amber-900 font-semibold"
+          data-reconfirm-banner
+          onClick={() => navigate(setupPath(blastDay.id, location.pathname + location.search))}
+        >
+          Shared details were updated — tap to reconfirm
+        </button>
+      )}
+
       {/* Conditions bar (wireframe §4.2) */}
       <div className="bg-white border-b border-gray-200 px-4 py-2.5 sticky top-[64px] z-10">
         <div className="max-w-5xl mx-auto">
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap" data-conditions-bar>
             <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase mr-1">
               Conditions
             </span>
-            <span className="text-[10px] font-bold text-blue-500 border border-blue-200 bg-blue-50 rounded px-1.5 py-0.5 mr-2">
-              NWS
-            </span>
+            {blastDay.nws && (
+              <span
+                className="text-[10px] font-bold text-blue-500 border border-blue-200 bg-blue-50 rounded px-1.5 py-0.5 mr-2"
+                title={`${blastDay.nws.name}: ${blastDay.nws.text}${blastDay.nws.tempF !== null ? `, ${blastDay.nws.tempF}°F` : ''}`}
+                data-nws-chip
+              >
+                NWS
+              </span>
+            )}
             <CondChip>{TEMP_OPTIONS.find((o) => o.value === blastDay.conditions.temperatureRange)?.label.split(' ')[0]}</CondChip>
             <CondChip>{WEATHER_OPTIONS.find((o) => o.value === blastDay.conditions.weather)?.label}</CondChip>
             {blastDay.conditions.windDirection && <CondChip>{blastDay.conditions.windDirection}</CondChip>}
             <CondChip>{GROUND_OPTIONS.find((o) => o.value === blastDay.conditions.groundConditions)?.label}</CondChip>
             <CondChip>{WORK_TYPE_OPTIONS.find((o) => o.value === blastDay.typeOfWork)?.label}</CondChip>
+            {blastDay.onsiteTime && <CondChip>On site {blastDay.onsiteTime}</CondChip>}
             {blastDay.fireDetail && <CondChip accent>⚑ Fire Detail</CondChip>}
-            {!reportReadOnly && (
+            {!locked && (
               <button
                 className="ml-auto text-sm text-blue-600 font-semibold min-h-[36px] px-2 flex items-center gap-1"
                 data-conditions-edit
@@ -392,6 +393,16 @@ export function BlastDayPage() {
                 value={blastDay.typeOfWork}
                 onChange={(v) => updateBlastDay('typeOfWork', v)}
                 options={WORK_TYPE_OPTIONS}
+              />
+            </div>
+            <div>
+              <Label className="text-xs">On-site time</Label>
+              <Input
+                type="time"
+                className="mt-1 w-40"
+                defaultValue={blastDay.onsiteTime ?? ''}
+                data-onsite-time
+                onBlur={(e) => updateBlastDay('onsiteTime', e.target.value)}
               />
             </div>
             <div>
@@ -610,7 +621,7 @@ export function BlastDayPage() {
             job={job}
           />
         )}
-        {tab === 'daily-report' && dailyReport && blastDay && (
+        {tab === 'daily-report' && blastDay && (
           <div className="mb-4 space-y-4">
             <p className="text-xs text-gray-500 flex items-center gap-2" data-report-owner={owner ? 'me' : 'other'}>
               <span className="font-semibold">{ownerLine(blastDay)}</span>
@@ -623,6 +634,17 @@ export function BlastDayPage() {
             {!blastLog && owner && <DrillOnlyFileCard day={blastDay} />}
             <TimeCardsCard blastDay={blastDay} />
             <AttachmentsCard parentId={blastDay.id} parentType="blast_day" title="Day attachments" />
+          </div>
+        )}
+        {/* S13: papers exist only when started — the daily report too */}
+        {tab === 'daily-report' && !dailyReport && !locked && (
+          <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2 mb-4" data-start-daily-report>
+            <span className="text-sm text-gray-500 flex-1">No daily report yet — crew, hours, materials and equipment go on it.</span>
+            {can('dailyReports', 'PUT') && (
+              <Button size="sm" variant="secondary" onClick={() => void createDailyReport(blastDay.id)}>
+                <ClipboardList className="h-4 w-4 mr-1" /> Start daily report
+              </Button>
+            )}
           </div>
         )}
         {tab === 'daily-report' && dailyReport && (

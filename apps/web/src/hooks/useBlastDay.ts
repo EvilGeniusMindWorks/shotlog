@@ -15,6 +15,7 @@ import { generateId, nowISO, todayISO } from '@/lib/utils';
 import { getSessionUser } from '@/lib/session';
 import { authorStamp, myBucket } from '@/lib/dayOwnership';
 import { createSite, ensureCustomerAndSite, getJobContext, getJobView, getJobViews, nextJobNumber } from '@/lib/jobContext';
+import { confirmDay, findDayByDate, newDayId, setCardFacts, setupStamp } from '@/lib/dayCard';
 
 export function useBlastDays() {
   const blastDays = useLiveQuery(() =>
@@ -74,6 +75,13 @@ export interface CopyFromPrevious {
 export interface CreateWorkDayOptions {
   typeOfWork?: WorkType;
   name?: string;
+  /** S13: when the crew was on site (HH:mm) — a card fact */
+  onsiteTime?: string;
+  /** S13: also create the blasting log (blasting types) and the daily
+   *  report at once — the pre-S13 shape. Papers otherwise exist only when
+   *  someone STARTS them (the tile, "Start daily report"). Copy-from-
+   *  previous implies it (the person asked for the blast content). */
+  papers?: boolean;
 }
 
 export async function createBlastDay(
@@ -83,7 +91,14 @@ export async function createBlastDay(
   opts?: CreateWorkDayOptions,
 ): Promise<string> {
   const now = nowISO();
-  const blastDayId = generateId();
+  const dayDate = date ?? todayISO();
+  // S13: ONE day per job per date. A day this device already has (a legacy
+  // random-id day included) is THE day; a new one gets the name-based id
+  // every phone in the company computes for this job + date, so two phones
+  // without signal write the same row instead of two.
+  const existing = await findDayByDate(jobId, dayDate);
+  if (existing) return existing.id;
+  const blastDayId = await newDayId(jobId, dayDate);
   const blastLogId = generateId();
   const dailyReportId = generateId();
   const explosiveUsageId = generateId();
@@ -94,7 +109,13 @@ export async function createBlastDay(
     copy && (copy.blastInfo || copy.drillParams || copy.designPlan || copy.explosives)
       ? (opts?.typeOfWork && isBlastingWork(opts.typeOfWork) ? opts.typeOfWork : 'drill_to_blast')
       : (opts?.typeOfWork ?? 'drill_to_blast');
-  const withBlastLog = isBlastingWork(typeOfWork);
+  // S13: papers only when started — unless asked for (harnesses, copy)
+  const copying = Boolean(
+    copy && (copy.blastInfo || copy.drillParams || copy.designPlan || copy.explosives || copy.crewEquipment),
+  );
+  const eager = Boolean(opts?.papers) || copying;
+  const withBlastLog = eager && isBlastingWork(typeOfWork);
+  const withReport = eager;
 
   const job = await db.jobs.get(jobId);
   const jobCtx = await getJobContext(jobId);
@@ -117,9 +138,13 @@ export async function createBlastDay(
 
   const blastDay: BlastDay = {
     id: blastDayId,
-    date: date ?? todayISO(),
+    date: dayDate,
     jobId,
     ...(opts?.name?.trim() ? { name: opts.name.trim() } : {}),
+    ...(opts?.onsiteTime ? { onsiteTime: opts.onsiteTime } : {}),
+    // A day that starts with papers counts as set up by its creator (the
+    // gate asks the first opener of an EMPTY day)
+    ...(eager ? { setup: setupStamp() } : {}),
     status: 'draft',
     conditions: {
       temperatureRange: 'mod',
@@ -278,7 +303,7 @@ export async function createBlastDay(
         await db.shots.bulkAdd(shots);
         await db.explosiveUsages.add(explosiveUsage);
       }
-      await db.dailyReports.add(dailyReport);
+      if (withReport) await db.dailyReports.add(dailyReport);
       if (crewRows.length) await db.workForceEntries.bulkAdd(crewRows);
       if (equipRows.length) await db.equipmentEntries.bulkAdd(equipRows);
     },
@@ -287,6 +312,39 @@ export async function createBlastDay(
   if (withBlastLog) await autofillBlasterSignoff(blastLogId, jobCtx?.state);
 
   return blastDayId;
+}
+
+/** The pre-S13 shape: the day WITH its blasting log (blasting types) and
+ *  daily report — for harnesses and callers that need the papers at once.
+ *  Reuses an existing day and adds whatever is missing. */
+export async function createBlastDayWithPapers(
+  jobId: string,
+  date?: string,
+  copy?: CopyFromPrevious,
+  opts?: CreateWorkDayOptions,
+): Promise<string> {
+  const id = await createBlastDay(jobId, date, copy, { ...opts, papers: true });
+  const day = await db.blastDays.get(id);
+  // An existing day at the job that day is reused (S13) — give it the
+  // papers the caller asked for, a blasting log included when the caller
+  // wants a blasting day
+  if (day && (isBlastingWork(day.typeOfWork) || isBlastingWork(opts?.typeOfWork))) await addBlastLogToDay(id);
+  await createDailyReport(id);
+  // whoever starts a day with its papers is on site and has seen the card
+  await confirmDay(id, true);
+  return id;
+}
+
+/** S13: "Start daily report" — the day's one daily report, created when
+ *  someone starts it (two phones starting it offline: first to sync wins,
+ *  the other is told) */
+export async function createDailyReport(blastDayId: string): Promise<string> {
+  const existing = await db.dailyReports.where('blastDayId').equals(blastDayId).first();
+  if (existing) return existing.id;
+  const now = nowISO();
+  const id = generateId();
+  await db.dailyReports.add({ id, blastDayId, notes: '', createdAt: now, updatedAt: now, syncStatus: 'local' });
+  return id;
 }
 
 /** Auto-fill blaster + license from the signed-in user's account (or the
@@ -336,9 +394,10 @@ export async function addBlastLogToDay(blastDayId: string): Promise<string> {
     // S7d: a blasting day's report belongs to the blaster — the field
     // bucket adding the log takes the day over from whoever started it
     const takeOver = myBucket() === 'field' && day.authorBucket !== 'field' ? authorStamp() : {};
-    if (!isBlastingWork(day.typeOfWork)) {
-      await db.blastDays.update(blastDayId, { typeOfWork: 'drill_to_blast', ...takeOver, updatedAt: now });
-    } else if (Object.keys(takeOver).length > 0) {
+    // S13: the type of work is a card fact — it travels as an edit, never
+    // as a rewrite of the day
+    if (!isBlastingWork(day.typeOfWork)) await setCardFacts(blastDayId, { typeOfWork: 'drill_to_blast' });
+    if (Object.keys(takeOver).length > 0) {
       await db.blastDays.update(blastDayId, { ...takeOver, updatedAt: now });
     }
     await db.blastLogs.add({

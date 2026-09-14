@@ -40,14 +40,14 @@ async (page, lib) => {
     await skipTours(P1);
     made = await P1.evaluate(async (stamp) => {
       const { db } = await import('/src/db/index.ts');
-      const { createBlastDay } = await import('/src/hooks/useBlastDay.ts');
+      const { createBlastDayWithPapers } = await import('/src/hooks/useBlastDay.ts');
       const { createDrillPlan, getPlanHoles } = await import('/src/hooks/useDrillPlans.ts');
       const jobs = (await db.jobs.filter((j) => !j.archivedAt && j.isActive).toArray()).sort((a, b) => a.name.localeCompare(b.name));
       const me = JSON.parse(localStorage.getItem('shotlog-user-info'));
       const d = new Date(); d.setDate(d.getDate() - 4);
       const stale = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      const dayId = await createBlastDay(jobs[0].id, undefined, undefined, { name: `S8 Mark day ${stamp}` });
-      const staleId = await createBlastDay(jobs[1].id, stale, undefined, { name: `S8 Mark stale ${stamp}` });
+      const dayId = await createBlastDayWithPapers(jobs[0].id, undefined, undefined, { name: `S8 Mark day ${stamp}` });
+      const staleId = await createBlastDayWithPapers(jobs[1].id, stale, undefined, { name: `S8 Mark stale ${stamp}` });
       const planId = await createDrillPlan(jobs[0].id, `S8 pattern ${stamp}`);
       // a pattern only has holes to drill once it has a depth (1 × 2 × 20 ft)
       await db.drillPlans.update(planId, { rows: 1, cols: 2, defaultDepth: 20 });
@@ -118,9 +118,9 @@ async (page, lib) => {
   await R.section("Ray's own day shows; sign-out forgets his PIN", async () => {
     const rayMade = await P1.evaluate(async (stamp) => {
       const { db } = await import('/src/db/index.ts');
-      const { createBlastDay } = await import('/src/hooks/useBlastDay.ts');
+      const { createBlastDayWithPapers } = await import('/src/hooks/useBlastDay.ts');
       const jobs = (await db.jobs.filter((j) => !j.archivedAt && j.isActive).toArray()).sort((a, b) => a.name.localeCompare(b.name));
-      return { id: await createBlastDay(jobs[2].id, undefined, undefined, { name: `S8 Ray day ${stamp}` }), job2: jobs[2].name };
+      return { id: await createBlastDayWithPapers(jobs[2].id, undefined, undefined, { name: `S8 Ray day ${stamp}` }), job2: jobs[2].name };
     }, stamp);
     rayDayId = rayMade.id;
     job2 = rayMade.job2;

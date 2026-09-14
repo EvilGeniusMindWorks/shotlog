@@ -105,3 +105,13 @@ Incidents · People (read) · company/customer/site pages · export surfaces
   trailers · Machines · Blast gear), type chips inside a tab, search, and
   stacking filter chips incl. **Repair open** and **Out of service** so the
   office can drop the list to the items that matter; "N of M" in the header.
+
+## Design week + S13/S14 — a day at a job (2026-09-14)
+
+- Evette's morning view is a **list**, not a strip: every job with any activity today, its work
+  code (DB/DO/DE/C/H), who confirmed being on site, a dot per paper (grey not started, amber in
+  progress, green filed, teal approved), attention rows first, filters and search; forty jobs is
+  forty rows. Ships in S14.
+- A day where nothing was started is not "never submitted"; it shows as "Time cards only" when
+  cards exist. The office keeps approving days and cards separately. What the weather service said
+  is recorded on the day beside what the crew confirmed.

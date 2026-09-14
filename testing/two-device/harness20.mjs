@@ -42,7 +42,7 @@ async (page) => {
     // Seed day + a 5s in-browser video on shot 1
     const ids = await a.evaluate(async (t) => {
       const jobId = await window.shotlogFlows.createJob({ name: `${t} Job`, customer: 'H20' });
-      const dayId = await window.shotlogFlows.createBlastDay(jobId);
+      const dayId = await window.shotlogFlows.createBlastDayWithPapers(jobId);
       const log = await window.shotlogDb.blastLogs.where('blastDayId').equals(dayId).first();
       const shot = await window.shotlogDb.shots.where('blastLogId').equals(log.id).first();
       const c = document.createElement('canvas');

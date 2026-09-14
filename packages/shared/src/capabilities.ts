@@ -43,6 +43,9 @@ const REPORT_TABLES_RW: Record<string, readonly WriteOp[]> = {
   attachments: ['PUT', 'PATCH', 'DELETE'],
   drillLogs: ['PUT', 'PATCH'],
   drillLogHoles: ['PUT', 'PATCH', 'DELETE'],
+  // S13: presence rows and the card's edit log belong to whoever works the day
+  workDayConfirmations: ['PUT', 'PATCH', 'DELETE'],
+  dayCardEdits: ['PUT', 'PATCH', 'DELETE'],
 };
 
 export const CAPABILITIES: readonly CapabilityDef[] = [

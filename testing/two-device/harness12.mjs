@@ -49,7 +49,7 @@ async (page) => {
       const db = window.shotlogDb;
       const job = await db.jobs.filter((j) => j.isActive).first();
       const rig = await db.equipment.filter((e) => e.isActive && (e.category === 'rock_drill' || e.category === 'equip_drill')).first();
-      const dayId = await window.shotlogFlows.createBlastDay(job.id, new Date().toISOString().slice(0, 10), undefined, { typeOfWork: 'drill_to_blast', name: `${t} ops day` });
+      const dayId = await window.shotlogFlows.createBlastDayWithPapers(job.id, new Date().toISOString().slice(0, 10), undefined, { typeOfWork: 'drill_to_blast', name: `${t} ops day` });
       const log = await db.blastLogs.where('blastDayId').equals(dayId).first();
       const shot = await db.shots.where('blastLogId').equals(log.id).first();
       const report = await db.dailyReports.where('blastDayId').equals(dayId).first();

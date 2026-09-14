@@ -16,12 +16,12 @@ async (page, lib) => {
   await R.section('a day with a seismo reading and a structure distance', async () => {
     const made = await PB.evaluate(async (stamp) => {
       const { db } = await import('/src/db/index.ts');
-      const { createBlastDay } = await import('/src/hooks/useBlastDay.ts');
+      const { createBlastDayWithPapers } = await import('/src/hooks/useBlastDay.ts');
       const { generateId, nowISO, todayISO } = await import('/src/lib/utils.ts');
       const today = todayISO();
       const taken = new Set((await db.blastDays.filter((d) => d.date === today).toArray()).map((d) => d.jobId));
       const jobs = (await db.jobs.filter((j) => !j.archivedAt && j.isActive && !taken.has(j.id)).toArray()).sort((a, b) => a.name.localeCompare(b.name));
-      const id = await createBlastDay(jobs[0].id, undefined, undefined, { typeOfWork: 'drill_to_blast', name: `D2 advisory ${stamp}` });
+      const id = await createBlastDayWithPapers(jobs[0].id, undefined, undefined, { typeOfWork: 'drill_to_blast', name: `D2 advisory ${stamp}` });
       const log = await db.blastLogs.where('blastDayId').equals(id).first();
       const shot = await db.shots.where('blastLogId').equals(log.id).first();
       await db.shots.update(shot.id, { designPlan: { ...shot.designPlan, closestStructureDistance: 450, maxPoundsPerDelay: 25 }, updatedAt: nowISO() });

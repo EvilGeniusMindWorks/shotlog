@@ -95,9 +95,26 @@ class ShotLogConnector implements PowerSyncBackendConnector {
     }
     // S9a: the server discards writes a role may not make and sync puts the
     // old value back — say so, instead of a green chip over a reverted field
-    const body = (await res.clone().json().catch(() => null)) as { discarded?: number } | null;
-    if (body?.discarded) {
-      const n = body.discarded;
+    const body = (await res.clone().json().catch(() => null)) as {
+      discarded?: number;
+      notices?: { id: string; kind: 'race' | 'refused' | 'child'; text: string }[];
+    } | null;
+    // S13: a race someone else won, a parent deleted meanwhile, a guard that
+    // refused — the server says what happened in plain words; only the
+    // rest is a role denial
+    const all = body?.notices ?? [];
+    // children of a record that lost a race fall with it — one message
+    const notices = all.filter((n) => n.kind !== 'child');
+    for (const n of notices) logSyncEvent(n.text);
+    if (notices.length > 0) {
+      showToast(
+        notices.length === 1 ? notices[0].text : `${notices[0].text} (and ${notices.length - 1} more — see Diagnostics)`,
+        { ms: 12000 },
+      );
+    }
+    const roleDenied = (body?.discarded ?? 0) - all.length;
+    if (roleDenied > 0) {
+      const n = roleDenied;
       logSyncEvent(`${n} change${n === 1 ? '' : 's'} not saved — your role can't make ${n === 1 ? 'it' : 'them'}`);
       showToast(`Not saved — ${n === 1 ? 'a change' : `${n} changes`} your role can't make ${n === 1 ? 'was' : 'were'} undone`, { ms: 8000 });
     }

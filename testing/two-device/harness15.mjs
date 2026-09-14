@@ -32,7 +32,7 @@ async (page) => {
     const ids = await dev.evaluate(async (t) => {
       const db = window.shotlogDb;
       const jobId = await window.shotlogFlows.createJob({ name: `${t} Job`, customer: 'H15 Customer' });
-      const dayId = await window.shotlogFlows.createBlastDay(jobId);
+      const dayId = await window.shotlogFlows.createBlastDayWithPapers(jobId);
       const log = await db.blastLogs.where('blastDayId').equals(dayId).first();
       const shot = await db.shots.where('blastLogId').equals(log.id).first();
       const dr = await db.dailyReports.where('blastDayId').equals(dayId).first();

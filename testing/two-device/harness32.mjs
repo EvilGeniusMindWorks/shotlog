@@ -38,9 +38,9 @@ async (page) => {
     // ── Setup: B starts work at a job (full day incl. log/shot/report) ──
     const setup = await B.evaluate(async () => {
       const { db } = await import('/src/db/index.ts');
-      const { createBlastDay } = await import('/src/hooks/useBlastDay.ts');
+      const { createBlastDayWithPapers } = await import('/src/hooks/useBlastDay.ts');
       const jobs = await db.jobs.filter((j) => !j.archivedAt && j.isActive).toArray();
-      const dayId = await createBlastDay(jobs[0].id);
+      const dayId = await createBlastDayWithPapers(jobs[0].id);
       const log = await db.blastLogs.where('blastDayId').equals(dayId).first();
       const shot = await db.shots.where('blastLogId').equals(log.id).first();
       return { dayId, logId: log.id, shotId: shot.id, jobId: jobs[0].id };

@@ -16,6 +16,15 @@ function monthLabel(ym: string): string {
   return new Date(y, m - 1, 1).toLocaleString(undefined, { month: 'long', year: 'numeric' });
 }
 
+/** "3 shots" · "drill only" · S13: "Time cards only · drill only" when
+ *  nothing was started on the day but people filed hours against it */
+function dayLine(s: DaySummary): string {
+  const type = s.day.typeOfWork?.replace(/_/g, ' ') ?? '';
+  if (s.shots > 0) return `${s.shots} shot${s.shots === 1 ? '' : 's'}`;
+  if (!s.report && s.cards > 0) return `Time cards only · ${type}`;
+  return type;
+}
+
 function DayRow({ s, navigate }: { s: DaySummary; navigate: (to: string) => void }) {
   const sentBack = s.day.status === 'draft' && Boolean(s.day.sendBackNote);
   return (
@@ -28,7 +37,7 @@ function DayRow({ s, navigate }: { s: DaySummary; navigate: (to: string) => void
           {formatDate(s.day.date)} · {s.job?.name ?? 'Unknown job'}
         </p>
         <p className="text-xs text-gray-400">
-          {s.shots > 0 ? `${s.shots} shot${s.shots === 1 ? '' : 's'}` : s.day.typeOfWork?.replace(/_/g, ' ')}
+          {dayLine(s)}
           {s.totalLbs > 0 && ` · ${fmtLbs(s.totalLbs)} lbs`}
         </p>
       </div>

@@ -3,7 +3,7 @@
 // single-tap toggles. Blaster accepts a completed log to take the pattern
 // for loading (which locks it against driller edits — server-enforced).
 import { useEffect, useState, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Check, Droplets, Printer, Trash2 } from 'lucide-react';
 import { type Role } from '@shotlog/shared';
 import { canDrillLogTransition, canEditAcceptedLog, myHomeDashboard } from '@/lib/perms';
@@ -15,6 +15,7 @@ import { PatternGrid } from '@/components/design/PatternGrid';
 import { AttachmentsCard } from '@/components/forms/AttachmentsCard';
 import { useSubmissions } from '@/lib/archive';
 import { findCrewId } from '@/lib/personHistory';
+import { setupPath, useDayGate } from '@/lib/dayCard';
 import { getSessionUser } from '@/lib/session';
 import { nowISO, formatDate } from '@/lib/utils';
 import type { HoleCondition, HoleConditionCode } from '@/db/schema';
@@ -70,6 +71,21 @@ export function DrillLogPage() {
     [log?.drillPlanId],
   );
   const job = useLiveQuery(() => (log ? db.jobs.get(log.jobId) : undefined), [log?.jobId]);
+  // S13: the day's card asks once — the first time a job is known for the
+  // driller that day (a checklist with no job never waits)
+  const logDay = useLiveQuery(
+    () => (log?.blastDayId ? db.blastDays.get(log.blastDayId) : undefined),
+    [log?.blastDayId],
+  );
+  const gate = useDayGate(logDay);
+  const location = useLocation();
+  useEffect(() => {
+    if ((gate === 'form' || gate === 'confirm') && logDay)
+      navigate(setupPath(logDay.id, location.pathname + location.search), { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gate, logDay?.id]);
+  // Until the day's card has answered, show nothing a tap could be lost on
+  const gateUndecided = Boolean(log?.blastDayId) && logDay !== undefined && gate !== 'none' && gate !== 'reconfirm';
   const rigs =
     useLiveQuery(() =>
       db.equipment
@@ -170,7 +186,7 @@ export function DrillLogPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [holeNumber]);
 
-  if (!log) return <div className="p-4 text-center text-gray-500">Loading…</div>;
+  if (!log || gateUndecided) return <div className="p-4 text-center text-gray-500">Loading…</div>;
 
   // Where "back", "print", and "accept" go depends on the log's world
   // Back: the blaster returns to the plan or the day hub they came from; the

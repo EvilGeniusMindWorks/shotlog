@@ -70,13 +70,13 @@ async (page, lib) => {
   await R.section('a new shot: the bar opens on the job\'s address (searched quietly), coordinates fly the map', async () => {
     const made = await PB.evaluate(async (stamp) => {
       const { db } = await import('/src/db/index.ts');
-      const { createBlastDay } = await import('/src/hooks/useBlastDay.ts');
+      const { createBlastDayWithPapers } = await import('/src/hooks/useBlastDay.ts');
       const { todayISO } = await import('/src/lib/utils.ts');
       const today = todayISO();
       const taken = new Set((await db.blastDays.filter((d) => d.date === today).toArray()).map((d) => d.jobId));
       const jobs = (await db.jobs.filter((j) => !j.archivedAt && j.isActive && !taken.has(j.id) && Boolean(j.siteId)).toArray()).sort((a, b) => a.name.localeCompare(b.name));
       const job = jobs[0];
-      const id = await createBlastDay(job.id, undefined, undefined, { typeOfWork: 'drill_to_blast', name: `map ${stamp}` });
+      const id = await createBlastDayWithPapers(job.id, undefined, undefined, { typeOfWork: 'drill_to_blast', name: `map ${stamp}` });
       const log = await db.blastLogs.where('blastDayId').equals(id).first();
       const shot = await db.shots.where('blastLogId').equals(log.id).first();
       const { nowISO } = await import('/src/lib/utils.ts');
@@ -124,11 +124,11 @@ async (page, lib) => {
     R.ok(`the job's work spot is saved (${geo ? `${geo.lat.toFixed(4)}, ${geo.lng.toFixed(4)}` : 'none'})`, geo && Math.abs(geo.lat - 42.1301) < 0.01 && geo.source === 'map');
     const made = await PB.evaluate(async ({ dayId }) => {
       const { db } = await import('/src/db/index.ts');
-      const { createBlastDay } = await import('/src/hooks/useBlastDay.ts');
+      const { createBlastDayWithPapers } = await import('/src/hooks/useBlastDay.ts');
       const day = await db.blastDays.get(dayId);
       const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
       const d = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
-      const id = await createBlastDay(day.jobId, d, undefined, { typeOfWork: 'drill_to_blast', name: 'map next day' });
+      const id = await createBlastDayWithPapers(day.jobId, d, undefined, { typeOfWork: 'drill_to_blast', name: 'map next day' });
       const log = await db.blastLogs.where('blastDayId').equals(id).first();
       const shot = await db.shots.where('blastLogId').equals(log.id).first();
       return { id, shotId: shot.id };

@@ -184,8 +184,13 @@ function useQueue(): QueueData | undefined {
       (i) => i.status !== 'closed',
     ).length;
 
+    // S13: a day with nothing started (no blasting log, daily report or
+    // drill log — time cards file on their own) is not "never submitted"
+    const started = new Set<string>(logByDay.keys());
+    for (const r of await projectTable<{ blastDayId: string }>('dailyReports', { blastDayId: 'blastDayId' })) started.add(r.blastDayId);
+    for (const r of await projectTable<{ blastDayId: string }>('drillLogs', { blastDayId: 'blastDayId' })) if (r.blastDayId) started.add(r.blastDayId);
     const neverSubmitted = days
-      .filter((d) => d.status === 'draft' && !d.sendBackNote && daysUntil(d.date) <= -3)
+      .filter((d) => d.status === 'draft' && !d.sendBackNote && daysUntil(d.date) <= -3 && started.has(d.id))
       .sort((a, b) => b.date.localeCompare(a.date))
       .map((d) => ({
         dayId: d.id, date: d.date, jobName: jobs.get(d.jobId) ?? '—',

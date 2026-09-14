@@ -15,12 +15,12 @@ async (page, lib) => {
   await skipTours(PB);
   dayId = await PB.evaluate(async (stamp) => {
     const { db } = await import('/src/db/index.ts');
-    const { createBlastDay } = await import('/src/hooks/useBlastDay.ts');
+    const { createBlastDayWithPapers } = await import('/src/hooks/useBlastDay.ts');
     const { todayISO } = await import('/src/lib/utils.ts');
     const today = todayISO();
     const taken = new Set((await db.blastDays.filter((d) => d.date === today).toArray()).map((d) => d.jobId));
     const jobs = (await db.jobs.filter((j) => !j.archivedAt && j.isActive && !taken.has(j.id)).toArray()).sort((a, b) => a.name.localeCompare(b.name));
-    return createBlastDay(jobs[0].id, undefined, undefined, { typeOfWork: 'drill_to_blast', name: `S9b fu ${stamp}` });
+    return createBlastDayWithPapers(jobs[0].id, undefined, undefined, { typeOfWork: 'drill_to_blast', name: `S9b fu ${stamp}` });
   }, stamp);
   await sleep(2500);
 

@@ -19,6 +19,8 @@ import type {
   Site,
   BlasterProfile,
   BlastDay,
+  WorkDayConfirmation,
+  DayCardEdit,
   BlastLog,
   Shot,
   SeismoReading,
@@ -71,6 +73,8 @@ export interface ShotLogDataAccess {
   sites: FacadeTable<Site>;
   blasterProfiles: FacadeTable<BlasterProfile>;
   blastDays: FacadeTable<BlastDay>;
+  workDayConfirmations: FacadeTable<WorkDayConfirmation>;
+  dayCardEdits: FacadeTable<DayCardEdit>;
   blastLogs: FacadeTable<BlastLog>;
   shots: FacadeTable<Shot>;
   seismoReadings: FacadeTable<SeismoReading>;

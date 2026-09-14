@@ -116,7 +116,7 @@ async (page) => {
 
     // ── (3) day creation: license auto-picks the SITE state; K seeds shot ─
     const day = await A.evaluate(async (jobId) => {
-      const dayId = await window.shotlogFlows.createBlastDay(jobId);
+      const dayId = await window.shotlogFlows.createBlastDayWithPapers(jobId);
       const log = await window.shotlogDb.blastLogs.where('blastDayId').equals(dayId).first();
       const shot = await window.shotlogDb.shots.where('blastLogId').equals(log.id).first();
       return { dayId, licenseState: log.licenseState, kFactor: shot.designPlan.kFactor };

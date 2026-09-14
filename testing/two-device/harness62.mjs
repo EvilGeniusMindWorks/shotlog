@@ -61,13 +61,13 @@ async (page, lib) => {
   await R.section('the plan grid has names, and the keyboard can leave a hole out', async () => {
     const made = await PB.evaluate(async (stamp) => {
       const { db } = await import('/src/db/index.ts');
-      const { createBlastDay } = await import('/src/hooks/useBlastDay.ts');
+      const { createBlastDayWithPapers } = await import('/src/hooks/useBlastDay.ts');
       // a job with no day today — a stray day from another harness would make this one a "second copy" and hide the drilling view behind the merge strip
       const { todayISO } = await import('/src/lib/utils.ts');
       const today = todayISO();
       const taken = new Set((await db.blastDays.filter((d) => d.date === today).toArray()).map((d) => d.jobId));
       const jobs = (await db.jobs.filter((j) => !j.archivedAt && j.isActive && !taken.has(j.id)).toArray()).sort((a, b) => a.name.localeCompare(b.name));
-      const id = await createBlastDay(jobs[0].id, undefined, undefined, { typeOfWork: 'drill_to_blast', name: `S9a batch3 ${stamp}` });
+      const id = await createBlastDayWithPapers(jobs[0].id, undefined, undefined, { typeOfWork: 'drill_to_blast', name: `S9a batch3 ${stamp}` });
       const log = await db.blastLogs.where('blastDayId').equals(id).first();
       const shot = await db.shots.where('blastLogId').equals(log.id).first();
       return { id, shotId: shot.id };

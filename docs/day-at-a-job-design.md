@@ -130,6 +130,33 @@ claim verified in code by Fable at extra high. Artifacts: scratchpad `day-theme-
 - **Multi-blaster:** a second blaster opens Mark's blasting log from the tile and adds shots
   signed by them (model a). Driller hub never shows the blast side (Matthew to confirm).
 
+## As built (S13, Sep 14 2026) — where the build departed from the model above
+
+- **PUT of an existing day** (the same name-based id from a second phone): kept quietly, not
+  turned into held edits for every differing fact — the conditions in a PUT are the defaults,
+  never a person's word. Only the dialog's two choices (type of work, label) become held edits
+  when they differ. Anything a person actually set on the card form travels as an edit row.
+- **Edits, not jsonb_set on the day PATCH:** a card change is a `dayCardEdits` row per fact
+  (path, value, baseVersion, force). The server applies it when nobody else set that fact since
+  (a person's own later edit supersedes their earlier one), else holds it with the current value
+  and author. A day PATCH never touches the card: the card paths, `cardSets`, `setup` and
+  `nws` are restored from the stored row (setup and NWS first-wins). Held rows are the person's
+  to close ("use theirs") or re-send with force ("use mine").
+- **The reconfirm line reads `cardSets` stamps, not the row clock** — my own writes move the
+  row's `updated_at`, so the clock would nag me about my own change.
+- **Legacy** = created before the S13 cutover (2026-09-14T04:00Z) with documents → nobody asked.
+  A NEW day someone started papers on without the card (a driller's first log) still asks its
+  next opener.
+- **PATCH onto a missing record is refused for every table**, not only `ONE_PER_PARENT`: a
+  PATCH op carries no table name, so once the stored row is gone the op can only be refused —
+  before S13 it fell through as "role denied".
+- **Honest messages:** the upload answer carries `notices {id, kind: race | refused | child,
+  text}`; the client toasts race/refused texts and counts only the rest as role denials.
+- **Where the gate is entered:** the day page, the drill-log page (a driller's first log on a
+  day), and the driller's Hours sheet (a card for a job whose day exists). Filed days never ask.
+- **Temperature bands** on the card are now Low < 40°F / Moderate 40–70 / High > 70 everywhere
+  (the day page's chip labels said 50/80).
+
 ## The hub (S14)
 
 `/blast-day/:id` = conditions bar (tappable, as today) + tiles; the three tabs and the

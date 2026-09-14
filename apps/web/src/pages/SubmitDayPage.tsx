@@ -40,6 +40,11 @@ export async function preflightDay(dayId: string): Promise<PreflightItem[]> {
   const log = await db.blastLogs.where('blastDayId').equals(dayId).first();
   const shots = log ? (await db.shots.where('blastLogId').equals(log.id).toArray()).sort((a, b) => a.shotNumber - b.shotNumber) : [];
 
+  // S13: papers exist only when started — a blasting day files with its log
+  if (blasting && !log) {
+    items.push({ key: 'nolog', level: 'red', text: 'No blasting log started on this blasting day', to: `/blast-day/${dayId}`, toLabel: 'Start it' });
+  }
+
   // RED — signatures
   for (const s of shots) {
     if (!s.signatureImage) {
@@ -80,6 +85,7 @@ export async function preflightDay(dayId: string): Promise<PreflightItem[]> {
 
   // AMBER — crew
   const report = await db.dailyReports.where('blastDayId').equals(dayId).first();
+  if (!report) items.push({ key: 'noreport', level: 'amber', text: 'No daily report', to: `/blast-day/${dayId}?view=daily-report`, toLabel: 'Start it' });
   if (report) {
     const rows = await db.workForceEntries.where('dailyReportId').equals(report.id).toArray();
     const worked = rows.filter((r) => r.timeIn || r.timeOut || (r.straightTime ?? 0) > 0);
@@ -174,7 +180,8 @@ export function SubmitDayPage() {
           return;
         }
         const report = await db.dailyReports.where('blastDayId').equals(day.id).first();
-        await fileSubmission({
+        // S13: no daily report started → nothing to file for it (the amber note says so)
+        if (report) await fileSubmission({
           type: 'daily_report',
           sourceId: report?.id ?? day.id,
           blastDayId: day.id,

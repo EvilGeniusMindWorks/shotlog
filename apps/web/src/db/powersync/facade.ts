@@ -36,6 +36,8 @@ import type {
   Site,
   BlasterProfile,
   BlastDay,
+  WorkDayConfirmation,
+  DayCardEdit,
   BlastLog,
   Shot,
   SeismoReading,
@@ -60,6 +62,8 @@ const RECORD_TABLES = [
   'sites',
   'blasterProfiles',
   'blastDays',
+  'workDayConfirmations',
+  'dayCardEdits',
   'blastLogs',
   'shots',
   'seismoReadings',
@@ -304,6 +308,8 @@ export class PowerSyncFacade implements ShotLogDataAccess {
   sites!: FacadeTable<Site>;
   blasterProfiles!: FacadeTable<BlasterProfile>;
   blastDays!: FacadeTable<BlastDay>;
+  workDayConfirmations!: FacadeTable<WorkDayConfirmation>;
+  dayCardEdits!: FacadeTable<DayCardEdit>;
   blastLogs!: FacadeTable<BlastLog>;
   shots!: FacadeTable<Shot>;
   seismoReadings!: FacadeTable<SeismoReading>;
