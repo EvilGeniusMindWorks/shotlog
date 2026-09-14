@@ -26,7 +26,9 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { ChipSelect } from '@/components/ui/chip-select';
+import { ChooserSheet, FactRow } from '@/components/ui/fact-row';
+import { cardValueLabel } from '@/lib/cardOptions';
+import { CARD_PATH_LABEL, type CardPath } from '@shotlog/shared';
 import { BlastLogForm } from '@/components/forms/BlastLogForm';
 import { DailyReportForm } from '@/components/forms/DailyReportForm';
 import { DrillPlanCard } from '@/components/forms/DrillPlanCard';
@@ -92,6 +94,8 @@ export function BlastDayPage() {
   const tab: Tab = view === 'daily-report' ? 'daily-report' : 'blast-log';
   const phaseModel = useDayPhases(blastDay, blastLog, shots);
   const [showConditions, setShowConditions] = useState(false);
+  // S14 follow-up (Matthew): rows that open a chooser — no chips on the card
+  const [chooser, setChooser] = useState<CardPath | null>(null);
   const [showContacts, setShowContacts] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [statusBusy, setStatusBusy] = useState(false);
@@ -352,52 +356,11 @@ export function BlastDayPage() {
 
         {showConditions && (
           <div className="space-y-3 mt-3 pb-2">
-            <div>
-              <Label className="text-xs">Temperature</Label>
-              <ChipSelect
-                className="mt-1"
-                value={blastDay.conditions.temperatureRange}
-                onChange={(v) => updateConditions('temperatureRange', v)}
-                options={TEMP_OPTIONS}
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Weather</Label>
-              <ChipSelect
-                className="mt-1"
-                value={blastDay.conditions.weather}
-                onChange={(v) => updateConditions('weather', v)}
-                options={WEATHER_OPTIONS}
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Wind Direction</Label>
-              <ChipSelect
-                className="mt-1"
-                value={blastDay.conditions.windDirection}
-                onChange={(v) => updateConditions('windDirection', v)}
-                options={WIND_OPTIONS}
-                allowEmpty
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Ground</Label>
-              <ChipSelect
-                className="mt-1"
-                value={blastDay.conditions.groundConditions}
-                onChange={(v) => updateConditions('groundConditions', v)}
-                options={GROUND_OPTIONS}
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Type of Work</Label>
-              <ChipSelect
-                className="mt-1"
-                value={blastDay.typeOfWork}
-                onChange={(v) => updateBlastDay('typeOfWork', v)}
-                options={WORK_TYPE_OPTIONS}
-              />
-            </div>
+            <FactRow path="conditions.temperatureRange" label="Temperature" value={cardValueLabel('conditions.temperatureRange', blastDay.conditions.temperatureRange)} onClick={() => setChooser('conditions.temperatureRange')} />
+            <FactRow path="conditions.weather" label="Weather" value={cardValueLabel('conditions.weather', blastDay.conditions.weather)} onClick={() => setChooser('conditions.weather')} />
+            <FactRow path="conditions.windDirection" label="Wind Direction" value={cardValueLabel('conditions.windDirection', blastDay.conditions.windDirection)} onClick={() => setChooser('conditions.windDirection')} />
+            <FactRow path="conditions.groundConditions" label="Ground" value={cardValueLabel('conditions.groundConditions', blastDay.conditions.groundConditions)} onClick={() => setChooser('conditions.groundConditions')} />
+            <FactRow path="typeOfWork" label="Type of Work" value={cardValueLabel('typeOfWork', blastDay.typeOfWork)} onClick={() => setChooser('typeOfWork')} />
             <div>
               <Label className="text-xs">On-site time</Label>
               <Input
@@ -453,6 +416,23 @@ export function BlastDayPage() {
                 ⚠ Report incident
               </Button>
             </div>
+            {chooser && (
+              <ChooserSheet
+                path={chooser}
+                title={CARD_PATH_LABEL[chooser]}
+                options={
+                  chooser === 'typeOfWork' ? WORK_TYPE_OPTIONS
+                  : chooser === 'conditions.temperatureRange' ? TEMP_OPTIONS
+                  : chooser === 'conditions.weather' ? WEATHER_OPTIONS
+                  : chooser === 'conditions.windDirection' ? WIND_OPTIONS
+                  : GROUND_OPTIONS
+                }
+                value={chooser === 'typeOfWork' ? blastDay.typeOfWork : String((blastDay.conditions as unknown as Record<string, string>)[chooser.replace('conditions.', '')] ?? '')}
+                allowEmpty={chooser === 'conditions.windDirection'}
+                onPick={(v) => (chooser === 'typeOfWork' ? updateBlastDay('typeOfWork', v) : updateConditions(chooser.replace('conditions.', ''), v))}
+                onClose={() => setChooser(null)}
+              />
+            )}
           </div>
         )}
         </div>

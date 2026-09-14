@@ -20,7 +20,7 @@ import {
   WORK_TYPE_LABEL,
   type CopySectionKey,
 } from '@/lib/prefs';
-import { ChipSelect } from '@/components/ui/chip-select';
+import { ChooserSheet, FactRow } from '@/components/ui/fact-row';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -82,6 +82,7 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork, onOpen
     getDefaultWorkType() ?? defaultTypeOfWork ?? 'drill_to_blast',
   );
   const [typeTouched, setTypeTouched] = useState(false);
+  const [typeChooser, setTypeChooser] = useState(false);
   const [copySourceId, setCopySourceId] = useState(''); // '' = start blank
   const [copySections, setCopySections] = useState<Record<CopySectionKey, boolean>>(getCopySections);
 
@@ -391,15 +392,26 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork, onOpen
           </div>
 
           <div>
-            <Label>Type of work</Label>
-            <ChipSelect
-              value={typeOfWork}
-              onChange={(v) => {
-                setTypeTouched(true);
-                setTypeOfWork(v as WorkType);
-              }}
-              options={WORK_TYPES.map((t) => ({ value: t, label: WORK_TYPE_LABEL[t] }))}
+            <FactRow
+              path="typeOfWork"
+              label="Type of work"
+              value={WORK_TYPE_LABEL[typeOfWork]}
+              source={typeTouched ? 'you' : 'suggested from the last day here'}
+              onClick={() => setTypeChooser(true)}
             />
+            {typeChooser && (
+              <ChooserSheet
+                path="typeOfWork"
+                title="Type of work"
+                options={WORK_TYPES.map((t) => ({ value: t, label: WORK_TYPE_LABEL[t] }))}
+                value={typeOfWork}
+                onPick={(v) => {
+                  setTypeTouched(true);
+                  setTypeOfWork(v as WorkType);
+                }}
+                onClose={() => setTypeChooser(false)}
+              />
+            )}
             {!isBlastingWork(typeOfWork) && (
               <p className="text-xs text-gray-400 mt-1">
                 No blasting log for this type — just the daily report. You can add a blasting log later if the day turns into a shot.

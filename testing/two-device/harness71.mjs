@@ -32,6 +32,14 @@ async (page, lib) => {
         ['/src/db/index.ts', '/src/hooks/useBlastDay.ts', '/src/lib/dayCard.ts', '/src/lib/utils.ts', '/src/lib/session.ts', '/src/lib/lifecycle.ts', '/src/hooks/useTimeCards.ts', '/src/lib/siteGeo.ts'].map((m) => import(/* @vite-ignore */ m)),
       );
     });
+  /** A card fact: tap its row, then the option in the chooser (no chips) */
+  const pick = async (P, path, name) => {
+    await P.locator(`[data-fact-row="${path}"]`).first().click();
+    await P.locator(`[data-chooser="${path}"]`).waitFor({ timeout: 8000 });
+    await P.locator(`[data-chooser="${path}"]`).getByRole('button', { name, exact: true }).click();
+    await P.locator(`[data-chooser="${path}"]`).waitFor({ state: 'detached', timeout: 8000 });
+  };
+  const factValue = (P, path) => P.locator(`[data-fact-row="${path}"] [data-fact-value]`).first().innerText();
   /** Navigate inside the app (no page load) — the only way while offline */
   const spaGo = (P, path) =>
     P.evaluate((p) => {
@@ -147,7 +155,7 @@ async (page, lib) => {
     await PA.locator('[data-day-card-form]').waitFor({ timeout: 15000 });
     R.ok('A (offline) is asked to set the day up — the card form', (await PA.locator('[data-day-setup]').getAttribute('data-day-setup')) === 'form');
     R.ok('offline: the weather line says so instead of asking the NWS', /Offline/.test(await PA.locator('[data-nws-state]').innerText()));
-    await PA.getByRole('button', { name: 'Cloudy', exact: true }).click();
+    await pick(PA, 'weather', 'Cloudy');
     await PA.locator('[data-day-save]').click();
     await PA.locator('[data-conditions-edit]').waitFor({ timeout: 15000 });
     const barA = await waitFor(() => PA.locator('[data-conditions-bar]').innerText().then((t) => (/Cloudy/.test(t) ? t : null)), 10000);
@@ -162,7 +170,7 @@ async (page, lib) => {
     await spaGo(PB, `/blast-day/${dayId}`);
     await PB.locator('[data-day-card-form]').waitFor({ timeout: 15000 });
     R.ok('B (offline) is asked too — nobody\'s setup has reached them', true);
-    await PB.getByRole('button', { name: 'Light Rain', exact: true }).click();
+    await pick(PB, 'weather', 'Light Rain');
     await PB.locator('[data-day-save]').click();
     await PB.locator('[data-conditions-edit]').waitFor({ timeout: 15000 });
 
@@ -234,9 +242,9 @@ async (page, lib) => {
     R.ok(`the nearest station answered, not the first in the list ("${nwsLine.slice(0, 60)}")`, /Westfield/.test(nwsLine) && /Mostly Cloudy/.test(nwsLine) && /54°F/.test(nwsLine));
     const form = await PA.locator('[data-day-card-form]').innerText();
     R.ok('temperature, weather and wind rows say "NWS"', (form.match(/NWS \d/g) || []).length >= 3);
-    const pressed = await PA.locator('[data-day-card-form] button[aria-pressed="true"], [data-day-card-form] [data-selected="true"]').allInnerTexts().catch(() => []);
-    R.note(`selected chips: ${pressed.join(' | ').slice(0, 160)}`);
-    R.ok('12°C reads Moderate, "Mostly Cloudy" reads Cloudy, 270° reads W', pressed.some((t) => /Moderate/.test(t)) && pressed.some((t) => /^Cloudy$/.test(t.trim())) && pressed.some((t) => t.trim() === 'W'));
+    const rowVals = [await factValue(PA, 'temperatureRange'), await factValue(PA, 'weather'), await factValue(PA, 'windDirection')];
+    R.note(`card rows: ${rowVals.join(' | ')}`);
+    R.ok('12°C reads Moderate, "Mostly Cloudy" reads Cloudy, 270° reads W — as rows, not chips', /Moderate/.test(rowVals[0]) && rowVals[1].trim() === 'Cloudy' && rowVals[2].trim() === 'W' && (await PA.locator('[data-day-card-form] [data-fact-row]').count()) >= 5);
     R.ok('ground is only SUGGESTED: "NWS suggests Wet — tap to use it"', /suggests Wet/.test(await PA.locator('[data-ground-hint]').innerText().catch(() => '')));
     await PA.locator('[data-ground-hint]').click();
     R.ok('the on-site time came from the clock', /^\d{2}:\d{2}$/.test(await PA.locator('[data-onsite-time]').inputValue()) && /clock/.test(form));
@@ -272,7 +280,7 @@ async (page, lib) => {
 
     // B fixes the wind on the bar → A gets the yellow line, reconfirms, sees the changed row
     await PB.locator('[data-conditions-edit]').click();
-    await PB.getByRole('button', { name: 'N', exact: true }).click();
+    await pick(PB, 'conditions.windDirection', 'N');
     await waitForUpload(PB, 30000);
     await PA.goto(`${WEB}/blast-day/${day2}`);
     await PA.locator('[data-reconfirm-banner]').waitFor({ timeout: 25000 });
@@ -348,7 +356,7 @@ async (page, lib) => {
     await PA.goto(`${WEB}/blast-day/${day2}`);
     await PA.locator('[data-conditions-edit]').waitFor({ timeout: 15000 });
     await PA.locator('[data-conditions-edit]').click();
-    await PA.getByRole('button', { name: 'Muddy', exact: true }).click();
+    await pick(PA, 'conditions.groundConditions', 'Muddy');
     await waitForUpload(PA, 30000);
     await waitFor(() => dayOf(PB, day2).then((d) => (d?.conditions.groundConditions === 'muddy' ? d : null)));
     await PB.goto(`${WEB}/blast-day/${day2}`);
@@ -356,8 +364,8 @@ async (page, lib) => {
     await warm(PB);
     await cB.setOffline(true);
     await PB.locator('[data-conditions-edit]').click();
-    await PB.getByRole('button', { name: 'SE', exact: true }).click();
-    await PA.getByRole('button', { name: /High \(/ }).click();
+    await pick(PB, 'conditions.windDirection', 'SE');
+    await pick(PA, 'conditions.temperatureRange', 'High (>70°F)');
     await waitForUpload(PA, 30000);
     await cB.setOffline(false);
     await waitForUpload(PB, 40000);
@@ -376,7 +384,7 @@ async (page, lib) => {
     await PB.goto(`${WEB}/blast-day/${day2}`);
     await PB.locator('[data-conditions-edit]').waitFor({ timeout: 15000 });
     await PB.locator('[data-conditions-edit]').click();
-    await PB.getByRole('button', { name: 'Drill Only', exact: true }).click();
+    await pick(PB, 'typeOfWork', 'Drill Only');
     const said = await PB.getByText(/stays a blasting type/).first().waitFor({ timeout: 30000 }).then(() => true).catch(() => false);
     R.ok('the server refuses and B is told: "The type of work stays a blasting type…"', said);
     const kept = await waitFor(() => dayOf(PB, day2).then((d) => (d?.typeOfWork === 'drill_to_blast' ? d : null)));

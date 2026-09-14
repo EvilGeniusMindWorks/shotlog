@@ -41,7 +41,7 @@ import {
   WORK_TYPE_OPTIONS,
 } from '@/lib/cardOptions';
 import { Button } from '@/components/ui/button';
-import { ChipSelect } from '@/components/ui/chip-select';
+import { ChooserSheet, FactRow } from '@/components/ui/fact-row';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -239,6 +239,14 @@ const PATH_OF: Record<FormKey, CardPath> = {
   name: 'name',
 };
 
+const CHOOSER_OPTIONS: Partial<Record<FormKey, { value: string; label: string }[]>> = {
+  typeOfWork: WORK_TYPE_OPTIONS,
+  temperatureRange: TEMP_OPTIONS,
+  weather: WEATHER_OPTIONS,
+  windDirection: WIND_OPTIONS,
+  groundConditions: GROUND_OPTIONS,
+};
+
 function fromDay(d: BlastDay): FormValues {
   return {
     typeOfWork: d.typeOfWork,
@@ -278,6 +286,7 @@ function DayCardForm({
   const [nwsState, setNwsState] = useState<'idle' | 'loading' | 'done' | 'none'>('idle');
   const [groundHint, setGroundHint] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [chooser, setChooser] = useState<FormKey | null>(null);
   const site = useLiveQuery(() => (job?.siteId ? db.sites.get(job.siteId) : undefined), [job?.siteId]);
 
   const set = (k: FormKey, v: string, src?: string) => {
@@ -399,12 +408,7 @@ function DayCardForm({
   return (
     <div className="space-y-4" data-day-card-form>
       <div className="rounded-xl border border-gray-200 bg-white p-3 space-y-4">
-        <div>
-          <Label className="text-xs">
-            Type of work <Src k="typeOfWork" />
-          </Label>
-          <ChipSelect className="mt-1" value={values.typeOfWork} onChange={(v) => set('typeOfWork', v)} options={WORK_TYPE_OPTIONS} />
-        </div>
+        <FactRow path="typeOfWork" label="Type of work" value={cardValueLabel(PATH_OF.typeOfWork, values.typeOfWork)} source={source.typeOfWork} onClick={() => setChooser('typeOfWork')} />
         <div>
           <Label className="text-xs">
             On-site time <Src k="onsiteTime" />
@@ -421,29 +425,11 @@ function DayCardForm({
             {nwsState === 'idle' && (!online ? 'Offline — last day’s values' : !point ? 'No location on the job for the weather' : '')}
           </p>
         </div>
+        <FactRow path="temperatureRange" label="Temperature" value={cardValueLabel(PATH_OF.temperatureRange, values.temperatureRange)} source={source.temperatureRange} onClick={() => setChooser('temperatureRange')} />
+        <FactRow path="weather" label="Weather" value={cardValueLabel(PATH_OF.weather, values.weather)} source={source.weather} onClick={() => setChooser('weather')} />
+        <FactRow path="windDirection" label="Wind" value={cardValueLabel(PATH_OF.windDirection, values.windDirection)} source={source.windDirection} onClick={() => setChooser('windDirection')} />
         <div>
-          <Label className="text-xs">
-            Temperature <Src k="temperatureRange" />
-          </Label>
-          <ChipSelect className="mt-1" value={values.temperatureRange} onChange={(v) => set('temperatureRange', v)} options={TEMP_OPTIONS} />
-        </div>
-        <div>
-          <Label className="text-xs">
-            Weather <Src k="weather" />
-          </Label>
-          <ChipSelect className="mt-1" value={values.weather} onChange={(v) => set('weather', v)} options={WEATHER_OPTIONS} />
-        </div>
-        <div>
-          <Label className="text-xs">
-            Wind <Src k="windDirection" />
-          </Label>
-          <ChipSelect className="mt-1" value={values.windDirection} onChange={(v) => set('windDirection', v)} options={WIND_OPTIONS} allowEmpty />
-        </div>
-        <div>
-          <Label className="text-xs">
-            Ground <Src k="groundConditions" />
-          </Label>
-          <ChipSelect className="mt-1" value={values.groundConditions} onChange={(v) => set('groundConditions', v)} options={GROUND_OPTIONS} />
+          <FactRow path="groundConditions" label="Ground" value={cardValueLabel(PATH_OF.groundConditions, values.groundConditions)} source={source.groundConditions} onClick={() => setChooser('groundConditions')} />
           {groundHint && (
             <button
               type="button"
@@ -470,6 +456,18 @@ function DayCardForm({
           <Input className="mt-1" value={values.name} placeholder="e.g. North face lift 2" data-day-label onChange={(e) => set('name', e.target.value)} />
         </div>
       </div>
+      {chooser && (
+        <ChooserSheet
+          path={chooser}
+          title={CARD_PATH_LABEL[PATH_OF[chooser]]}
+          legend={source[chooser] && source[chooser] !== 'you' ? `Currently ${cardValueLabel(PATH_OF[chooser], values[chooser])} · ${source[chooser]}` : undefined}
+          options={CHOOSER_OPTIONS[chooser] ?? []}
+          value={values[chooser]}
+          allowEmpty={chooser === 'windDirection'}
+          onPick={(v) => set(chooser, v)}
+          onClose={() => setChooser(null)}
+        />
+      )}
       <div className="flex flex-col sm:flex-row gap-2">
         <Button
           className="flex-1 min-h-[48px] bg-safety-orange hover:bg-safety-orange/90 text-white text-base"
