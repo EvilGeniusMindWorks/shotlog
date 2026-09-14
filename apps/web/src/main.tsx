@@ -60,6 +60,13 @@ const updateSW = registerSW({
   onRegisteredSW(_url, registration) {
     if (registration) {
       window.setInterval(() => void registration.update(), 60 * 60 * 1000);
+      // S15 (Matthew): a phone that comes back to the app checks right away,
+      // and the home screen asks too — a new build is not a day-old surprise
+      const check = () => void registration.update().catch(() => undefined);
+      (window as unknown as Record<string, unknown>).__shotlogCheckSwUpdate = check;
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') check();
+      });
     }
   },
 });

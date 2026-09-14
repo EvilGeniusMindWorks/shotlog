@@ -10,7 +10,9 @@ The catalog is what the blaster picks from when entering explosives: manufacture
 
 ## Manufacturers and products
 
-One tab per manufacturer. Each product has a name, a **unit** (case, booster, cap, foot…) and a **weight in pounds per unit** — the multiplier that turns a count into pounds on the blasting log. Fifteen products show per tab; **Show all** for the rest.
+One tab per manufacturer. Each product has a name, a **unit** (case, booster, cap, foot…) and a **weight in pounds per unit** — the multiplier that turns a count into pounds on the blasting log. Fifteen products show per tab; **Show all** for the rest. Each row's category shows as a plain subline — "Category · 1.00 lbs/unit."
+
+**Category**, on the product form, is a row: tap it to pick from a list instead of a strip of chips.
 
 ![The catalog](catalog.png)
 

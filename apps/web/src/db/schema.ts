@@ -313,6 +313,9 @@ export interface BlastDay extends BaseRecord {
    *  day for fixes, shown inline on the needs-attention strip; cleared on
    *  the next submit (server clears it on any forward transition too) */
   sendBackNote?: string;
+  /** S15: a day that was started and abandoned — closed from the tiles with
+   *  a reason, so it leaves the office's lists without a filing */
+  closed?: { by: string; byName: string; at: string; reason: string };
   /** S9a: who sent it back, and when (server-stamped) */
   sendBackBy?: string;
   sendBackAt?: string;
@@ -454,6 +457,8 @@ export interface DrillParams {
   stemming: number; // ft
   subDrill: number; // ft
   blastMats?: boolean; // Spec §4.6.1 — optional: pre-existing records lack it
+  /** S15 (Matthew): how many mats were used */
+  blastMatCount?: number;
 }
 
 export interface ShotTotals {

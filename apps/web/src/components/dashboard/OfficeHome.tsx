@@ -75,10 +75,10 @@ function useQueue(): QueueData | undefined {
     );
     const days = await projectTable<{
       date: string; jobId: string; status: string; typeOfWork: string | null;
-      sendBackNote: string | null; updatedAt: string; filedNotes: string | null;
+      sendBackNote: string | null; updatedAt: string; filedNotes: string | null; closed: string | null;
     }>('blastDays', {
       date: 'date', jobId: 'jobId', status: 'status', typeOfWork: 'typeOfWork',
-      sendBackNote: 'sendBackNote', updatedAt: 'updatedAt', filedNotes: 'filedNotes',
+      sendBackNote: 'sendBackNote', updatedAt: 'updatedAt', filedNotes: 'filedNotes', closed: 'closed',
     });
     const logs = await projectTable<{ blastDayId: string; blasterName: string | null }>('blastLogs', {
       blastDayId: 'blastDayId', blasterName: 'blasterName',
@@ -191,7 +191,7 @@ function useQueue(): QueueData | undefined {
     for (const r of await projectTable<{ blastDayId: string }>('dailyReports', { blastDayId: 'blastDayId' })) started.add(r.blastDayId);
     for (const r of await projectTable<{ blastDayId: string }>('drillLogs', { blastDayId: 'blastDayId' })) if (r.blastDayId) started.add(r.blastDayId);
     const neverSubmitted = days
-      .filter((d) => d.status === 'draft' && !d.sendBackNote && daysUntil(d.date) <= -3 && started.has(d.id))
+      .filter((d) => d.status === 'draft' && !d.sendBackNote && !d.closed && daysUntil(d.date) <= -3 && started.has(d.id))
       .sort((a, b) => b.date.localeCompare(a.date))
       .map((d) => ({
         dayId: d.id, date: d.date, jobName: jobs.get(d.jobId) ?? '—',

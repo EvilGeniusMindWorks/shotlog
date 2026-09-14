@@ -52,10 +52,10 @@ export function ShotForm({ shot, allShots, explosiveUsage, kFactor: _kFactor, bl
     return next;
   };
 
-  const updateDrillParam = (field: keyof DrillParams, value: string | boolean) => {
+  const updateDrillParam = (field: keyof DrillParams, value: string | boolean | number | undefined) => {
     const dp = {
       ...shot.drillParams,
-      [field]: typeof value === 'boolean' ? value : parseFloat(value) || 0,
+      [field]: typeof value === 'string' ? parseFloat(value) || 0 : value,
     };
     updateShot({ drillParams: dp, totals: recalc(dp, shot.totals) });
   };
@@ -106,15 +106,30 @@ export function ShotForm({ shot, allShots, explosiveUsage, kFactor: _kFactor, bl
           </div>
           <div>
             <Label className="text-[10px] uppercase tracking-wide text-gray-500">Blast Mats</Label>
-            <ChipSelect
-              className="mt-1"
-              value={dp.blastMats === true ? 'yes' : dp.blastMats === false ? 'no' : ''}
-              onChange={(v) => updateDrillParam('blastMats', v === 'yes')}
-              options={[
-                { value: 'yes', label: 'Yes' },
-                { value: 'no', label: 'No' },
-              ]}
-            />
+            {/* S15: Yes/No stays; Yes asks how many, on its own line so a phone's half column never wraps the chips */}
+            <div className="flex flex-col items-start gap-2 mt-1">
+              <ChipSelect
+                value={dp.blastMats === true ? 'yes' : dp.blastMats === false ? 'no' : ''}
+                onChange={(v) => updateDrillParam('blastMats', v === 'yes')}
+                options={[
+                  { value: 'yes', label: 'Yes' },
+                  { value: 'no', label: 'No' },
+                ]}
+              />
+              {dp.blastMats === true && (
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  className="w-28"
+                  placeholder="How many"
+                  aria-label="How many mats"
+                  data-blast-mat-count
+                  value={dp.blastMatCount ?? ''}
+                  onChange={(e) => updateDrillParam('blastMatCount', e.target.value === '' ? undefined : Math.max(0, parseInt(e.target.value, 10) || 0))}
+                />
+              )}
+            </div>
           </div>
           {(
             [

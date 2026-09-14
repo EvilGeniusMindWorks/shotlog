@@ -77,3 +77,7 @@ Company) · customers/sites/jobs setup · everything else read
 
 - Equipment: grouped tabs (Drilling · Trucks & trailers · Machines · Blast gear) with counts, type chips, search across groups, filter chips (status · repair · due ≤30 d), "+ New" presets the type, Import stays. The repair queue is no longer on this page — it is the shop's list (shop home). Legacy buckets show a "legacy — set the type" mark until re-typed.
 - Jobs: lands on Customers; About cards first on customer and site pages; lists windowed; the flat jobs list and the lens switch are gone (search + recent chips).
+
+## S15 — rough edges, audited one by one (Sep 14 2026)
+
+- The catalog's **Category**, Add person's **Role**, and the equipment page's seven filter chips each become one row that opens a chooser instead of a chip strip — the equipment page in particular goes from seven chips to one **Filter** row (pick one filter, or All equipment). A product's category on its row is now a plain subline, "Category · 1.00 lbs/unit."

@@ -5,6 +5,7 @@
 // across groups, stacking filter chips. The repair queue is NOT here — it
 // is the shop's list (shop home). Writable by admin/supervisor/mechanic
 // (the matrix enforces server-side); the mechanic's Fleet item opens this.
+import { ChooserSheet, FactRow } from '@/components/ui/fact-row';
 import { useMemo, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { AlertTriangle, ClipboardCheck, Pencil, Plus, Upload } from 'lucide-react';
@@ -141,6 +142,7 @@ export function AdminEquipmentPage() {
   const [type, setType] = useState<EquipmentCategory | null>(null);
   const [q, setQ] = useState('');
   const [filters, setFilters] = useState<Record<FilterKey, boolean>>(NO_FILTERS);
+  const [filterChooser, setFilterChooser] = useState(false);
   const [adding, setAdding] = useState(false);
   const [importing, setImporting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -275,23 +277,27 @@ export function AdminEquipmentPage() {
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-1.5" data-equip-filters>
-        <span className="text-[11px] text-gray-400 mr-1">Filter</span>
-        {FILTERS.map((f) => (
-          <button
-            key={f.key}
-            type="button"
-            data-equip-filter={f.key}
-            aria-pressed={filters[f.key]}
-            onClick={() => setFilters({ ...filters, [f.key]: !filters[f.key] })}
-            className={cn(
-              'inline-flex items-center min-h-[30px] px-2.5 rounded-full border text-xs font-medium',
-              filters[f.key] ? 'bg-navy text-white border-navy' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50',
-            )}
-          >
-            {f.label}
-          </button>
-        ))}
+      {/* S15 (Matthew): one Filter row that opens a chooser — no rows of chips */}
+      <div className="flex items-center gap-2" data-equip-filters>
+        <div className="flex-1 min-w-0">
+          <FactRow
+            path="equipFilter"
+            label="Filter"
+            value={FILTERS.find((f) => filters[f.key])?.label ?? 'All equipment'}
+            onClick={() => setFilterChooser(true)}
+          />
+        </div>
+        {filterChooser && (
+          <ChooserSheet
+            path="equipFilter"
+            title="Show only"
+            options={FILTERS.map((f) => ({ value: f.key, label: f.label }))}
+            value={FILTERS.find((f) => filters[f.key])?.key ?? ''}
+            allowEmpty
+            onPick={(k) => setFilters({ ...NO_FILTERS, ...(k ? { [k]: true } : {}) } as typeof NO_FILTERS)}
+            onClose={() => setFilterChooser(false)}
+          />
+        )}
         {filtered && (
           <button
             type="button"

@@ -13,6 +13,9 @@ import { addBlastLogToDay, createDailyReport } from '@/hooks/useBlastDay';
 import { createDrillLog, getShotPlan } from '@/hooks/useDrillLogs';
 import { myCard, useDayTimeCards } from '@/hooks/useTimeCards';
 import {
+  CLOSE_REASONS,
+  closeDay,
+  reopenDay,
   blastLogTile,
   dailyReportTile,
   dayChecklistsFor,
@@ -25,11 +28,13 @@ import {
   useCrew,
   type TileState,
 } from '@/lib/dayHub';
+import { hhmm } from '@/lib/dayCard';
 import { can, myHomeDashboard } from '@/lib/perms';
 import { getSessionUser } from '@/lib/session';
 import { ConsequenceSheet } from '@/components/records/LifecycleMenu';
 import { TimeCardsCard } from '@/components/forms/TimeCardsCard';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { CrewList } from './CrewList';
 import { RigList } from './RigList';
 
@@ -106,8 +111,13 @@ export function DayHub({ day, job, blastLog, shots, dailyReport, locked, owner, 
   const home = myHomeDashboard();
   const isOffice = home === 'office';
   const isDriller = home === 'driller';
-  const readOnly = locked || isOffice;
+  const closed = Boolean(day.closed);
+  const readOnly = locked || isOffice || closed;
   const [cardSheet, setCardSheet] = useState(false);
+  const [closeSheet, setCloseSheet] = useState(false);
+  const [closeReason, setCloseReason] = useState('');
+  const [closeOther, setCloseOther] = useState('');
+  const canClose = !locked && !isOffice && can('blastDays', 'PATCH');
 
   const filedAt = useLiveQuery(() => dayFiledAt(day.id), [day.id, day.status]);
   const cards = useDayTimeCards(day);
@@ -204,6 +214,21 @@ export function DayHub({ day, job, blastLog, shots, dailyReport, locked, owner, 
 
   return (
     <div className="space-y-2" data-day-hub data-day-hub-role={isOffice ? 'office' : isDriller ? 'driller' : 'field'}>
+      {closed && day.closed && (
+        <div className="rounded-xl border border-gray-300 bg-gray-50 px-3 py-2.5 flex items-center gap-3" data-day-closed>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-sm">Closed · {day.closed.reason}</p>
+            <p className="text-xs text-gray-600">
+              {day.closed.byName || 'Someone'} closed this day{day.closed.at ? ` at ${hhmm(day.closed.at)}` : ''}. Nothing was filed.
+            </p>
+          </div>
+          {canClose && (
+            <Button size="sm" variant="secondary" data-day-reopen onClick={() => void reopenDay(day)}>
+              Reopen
+            </Button>
+          )}
+        </div>
+      )}
       {isDriller && <RigList day={day} rows={rigRows} readOnly={readOnly} />}
       {tiles.map((t, i) => (
         <Tile key={`${t.id}-${i}`} id={t.id} icon={t.icon} name={t.name} state={t.state} upNext={i === upNextIndex} onAction={t.onAction} />
@@ -221,10 +246,58 @@ export function DayHub({ day, job, blastLog, shots, dailyReport, locked, owner, 
           )}
           {file.kind === 'blocked' && <p className="text-sm text-amber-800 border border-amber-300 bg-amber-50 rounded-lg px-3 py-2">{file.label}</p>}
           {file.kind === 'filed' && <p className="text-sm text-green-800 border border-green-200 bg-green-50 rounded-lg px-3 py-2">{file.label}</p>}
-          {file.kind === 'none' && <p className="text-xs text-gray-400">File this day appears once a paper exists to file.</p>}
+          {file.kind === 'none' && (
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-gray-400">File this day appears once a paper exists to file.</p>
+              {canClose && (
+                <button type="button" className="text-sm font-semibold text-gray-600 underline underline-offset-2 shrink-0 min-h-[44px]" data-day-close onClick={() => setCloseSheet(true)}>
+                  Close this day
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
       {isOffice && <p className="text-xs text-gray-400 pt-2">Read-only — the crew's papers as they see them.</p>}
+      {closeSheet && (
+        <ConsequenceSheet onClose={() => setCloseSheet(false)}>
+          <div data-day-close-sheet>
+            <h3 className="font-bold text-lg">Close this day</h3>
+            <p className="text-xs text-gray-500 mb-2">Nothing gets filed. The day leaves the office's lists with your reason, and Reopen brings it back.</p>
+            <div className="space-y-2">
+              {CLOSE_REASONS.map((r) => {
+                const on = closeReason === r.value;
+                return (
+                  <button
+                    key={r.value}
+                    type="button"
+                    className={`w-full text-left rounded-lg border px-3 py-3 min-h-[52px] text-base ${on ? 'border-safety-orange bg-orange-50 font-semibold' : 'border-gray-200 bg-white font-medium'}`}
+                    data-close-reason={r.value}
+                    aria-pressed={on}
+                    onClick={() => setCloseReason(r.value)}
+                  >
+                    {r.label}
+                  </button>
+                );
+              })}
+              <Input value={closeOther} placeholder="Other reason…" data-close-other onChange={(e) => { setCloseOther(e.target.value); setCloseReason(''); }} />
+            </div>
+            <Button
+              className="w-full mt-3 min-h-[48px]"
+              disabled={!closeReason && !closeOther.trim()}
+              data-day-close-confirm
+              onClick={() => {
+                void closeDay(day, closeReason || closeOther).then(() => setCloseSheet(false));
+              }}
+            >
+              Close the day
+            </Button>
+            <Button variant="outline" className="w-full mt-2" onClick={() => setCloseSheet(false)}>
+              Cancel
+            </Button>
+          </div>
+        </ConsequenceSheet>
+      )}
       {cardSheet && (
         <ConsequenceSheet onClose={() => setCardSheet(false)}>
           <div data-time-card-sheet>

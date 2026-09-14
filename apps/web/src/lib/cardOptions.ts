@@ -57,3 +57,9 @@ export function cardValueLabel(path: CardPath, value: unknown): string {
   if (path === 'typeOfWork') return WORK_TYPE_LABEL[value as keyof typeof WORK_TYPE_LABEL] ?? String(value);
   return String(value);
 }
+
+/** The label of a value in any option list, or the raw value */
+export function cardValueLabelFor(opts: { value: string; label: string }[], value: string | undefined | null): string {
+  if (value === undefined || value === null || value === '') return '—';
+  return opts.find((o) => o.value === value)?.label ?? String(value);
+}

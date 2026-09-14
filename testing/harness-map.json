@@ -202,5 +202,8 @@
   ],
   "apps/web/src/pages/BlastDayPage.tsx apps/web/src/components/day/DayHub.tsx apps/web/src/components/day/CrewList.tsx apps/web/src/components/day/RigList.tsx apps/web/src/components/dashboard/OfficeHome.tsx apps/web/src/components/dashboard/RoleCards.tsx apps/web/src/pages/DrillChecklistPage.tsx apps/web/src/pages/DrillLogPage.tsx apps/web/src/hooks/useMaintenance.ts apps/web/src/lib/hourLedger.ts apps/web/src/pages/SitePage.tsx apps/web/src/components/forms/CustomerSitePicker.tsx apps/web/src/components/forms/NewJobForm.tsx": [
     72
+  ],
+  "apps/web/src/components/forms/BlastLogForm.tsx apps/web/src/components/forms/ShotForm.tsx apps/web/src/pages/admin/AdminCatalogPage.tsx apps/web/src/components/admin/AddPersonPanel.tsx apps/web/src/pages/admin/AdminEquipmentPage.tsx apps/web/src/components/forms/NewBlastDayDialog.tsx apps/web/src/components/dashboard/MonthDayList.tsx apps/web/src/main.tsx apps/web/src/components/layout/SyncChip.tsx apps/web/src/pages/BlastDayPage.tsx apps/web/src/components/day/DayHub.tsx apps/web/src/lib/dayHub.ts": [
+    73
   ]
 }

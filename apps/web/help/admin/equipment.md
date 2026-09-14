@@ -10,7 +10,7 @@ The registry of everything the company owns, the same list the shop calls Fleet.
 
 ## The page
 
-Grouped tabs (Drilling · Trucks & trailers · Machines · Blast gear) with counts, type chips inside a tab, search across every group, and filter chips (Active · In shop · Retired · Repair open · Out of service · Due ≤30 d).
+Grouped tabs (Drilling · Trucks & trailers · Machines · Blast gear) with counts, type chips inside a tab, search across every group, and a **Filter** row — tap it to pick one filter (Active · In shop · Retired · Repair open · Out of service · Due ≤30 d) or **All equipment**, instead of a row of filter chips.
 
 ## Adding
 

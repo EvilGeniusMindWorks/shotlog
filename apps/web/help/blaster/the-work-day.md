@@ -10,11 +10,19 @@ A work day opens on its tiles — one for each paper your role touches. Each til
 
 ## Your tiles
 
-Blasting log, Daily report and My time card each get a tile. A tile's state is that paper's own life — Not started, Started by Mark 7:10, 2 of 3 shots signed, Ready to file, Filed, Sent back (with the office's note), Approved — and its button is either **Start** (tapping it is the whole step — there's no sheet after) or **Open** / **View**. The first tile still waiting on you carries "Up next". The card — type of work, conditions, who's on site — sits above the tiles and is tappable on its own.
+Blasting log, Daily report and My time card each get a tile. A tile's state is that paper's own life — Not started, Started by Mark 7:10, 2 of 3 shots signed, Ready to file, Filed, Sent back (with the office's note), Approved — and its button is either **Start** (tapping it is the whole step — there's no sheet after) or **Open** / **View**. The first tile still waiting on you carries "Up next". The card sits above the tiles as one plain line — "Drill to Blast · Moderate · Cloudy · S · Normal", then who's on site and when the weather was read, said once ("On site 1:56 am · Barry, Dinis · NWS 1:30 am") — and is tappable to edit.
 
 ## File this day
 
-**File this day** is a row at the bottom of the tiles, and it only appears when there's something to file. A blasting day needs every shot signed first — the row reads "2 of 3 shots signed" until it does. A day with no daily report files anyway, with an amber "No daily report" note. A day with only time cards files nothing here — cards file and get approved on their own. The pre-flight before filing hasn't changed.
+**File this day** is a row at the bottom of the tiles, and it only appears when there's something to file. A blasting day needs every shot signed first — the row reads "2 of 3 shots signed" until it does. A day with no daily report files anyway, with an amber "No daily report" note. A day with only time cards files nothing here — cards file and get approved on their own. The pre-flight before filing hasn't changed. **Submit to Office** now lives only here — it's off the header, on a phone and everywhere else.
+
+## Closing a day with nothing to file
+
+Some days don't go anywhere — rained out, rescheduled, started by mistake, or nothing happened. When there's nothing to file, **Close this day** appears at the bottom of the tiles instead. Tap it, give a reason (or pick one of the usual ones), and the day goes read-only with a grey **Closed · reason** banner and a **Reopen** button. Closed days drop off the office's queues.
+
+## On a phone
+
+The report, contacts, history and print icons that sit in the header on a wide screen tuck into one **More (⋯)** button on a phone, so the header stays uncluttered. Tap it for **Visual blast report**, **Jobsite contacts**, **Change history** and **Print**. Supervision actions — Approve, Send back, Unlock, Reopen — always stay in the header, on any screen.
 
 ## The crew on your day
 

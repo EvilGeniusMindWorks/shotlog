@@ -252,3 +252,12 @@ page · customer/site/job create (new) · contacts · My Records · reference
 - **The crew list** sits under Mark's tiles: one row per person on the day — anyone who confirmed the card, filed a rig checklist, or has a drill log or time card there — with the state of each of their papers. Tap a row to read any of them, **Accept** a drill log signed complete, or **Remind** a missing time card (one line lands on their home and clears when they file). Two blasters on a day both see the list and each signs their own shots.
 - **Big crews** (eight or more) add a summary line ("Cards 7 of 11 filed · 1 drill log open · 1 waiting on you"), a **Needs something / All** filter defaulting to Needs something, and a search box; rows that need something float up. The daily report's crew section reads the same list.
 - What stays: the forms themselves, the filing pre-flight, and approvals — only how Mark gets to them changed.
+
+## S15 — rough edges, audited one by one (Sep 14 2026)
+
+- **Identify hazards and Precautions taken** open as a checklist now — big tickable rows plus a typed "Other…" line — instead of a chip strip; what gets filed and printed hasn't changed.
+- **Blast mats** keeps its Yes/No; saying Yes now asks how many, and the printed log reads "Blast mats: Yes · 12."
+- On a phone, the day's report/contacts/history/print icons tuck into one **More (⋯)** button so the header stays clean; **Submit to Office** is gone from up there — **File this day** at the bottom of the tiles is the only way in, same as it already was.
+- The conditions line reads the time once — "On site 1:56 am · Barry, Dinis · NWS 1:30 am" — instead of repeating it.
+- A day that never got anywhere (rained out, started by mistake, nothing to show for it) can be **closed** from the bottom of the tiles with a reason, instead of sitting open with nothing to file; **Reopen** brings it back.
+- The app checks for a new build the moment Mark's phone comes back to it, and updates itself quietly on the home screen — no more finding himself on a stale build and thinking nothing changed.

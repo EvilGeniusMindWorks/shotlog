@@ -183,6 +183,7 @@ export function PrintBlastLogPage() {
                 <ShotRow label="Burden:" shots={shots} get={(s) => dash(s.drillParams.burden, "'")} />
                 <ShotRow label="Spacing:" shots={shots} get={(s) => dash(s.drillParams.spacing, "'")} />
                 <ShotRow label="Stemming:" shots={shots} get={(s) => dash(s.drillParams.stemming, "'")} />
+                <ShotRow label="Blast mats:" shots={shots} get={(s) => (s.drillParams.blastMats === true ? `Yes${s.drillParams.blastMatCount ? ` · ${s.drillParams.blastMatCount}` : ''}` : s.drillParams.blastMats === false ? 'No' : '—')} />
                 <ShotRow label="Sub Drill:" shots={shots} get={(s) => dash(s.drillParams.subDrill, "'")} />
                 <tr>
                   <td></td>

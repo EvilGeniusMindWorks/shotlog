@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ChipSelect } from '@/components/ui/chip-select';
+import { ChooserSheet, FactRow } from '@/components/ui/fact-row';
 
 const CATEGORY_OPTIONS = [
   { value: 'bulk', label: 'Bulk' },
@@ -237,12 +237,9 @@ export function AdminCatalogPage() {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate">{p.productName}</p>
                     <p className="text-xs text-gray-400">
-                      {fmtMultiplier(p.weightMultiplier)} lbs/{p.unitType}
+                      {CATEGORY_OPTIONS.find((c) => c.value === p.category)?.label ?? p.category} · {fmtMultiplier(p.weightMultiplier)} lbs/{p.unitType}
                     </p>
                   </div>
-                  <Badge variant="secondary">
-                    {CATEGORY_OPTIONS.find((c) => c.value === p.category)?.label ?? p.category}
-                  </Badge>
                   {!p.isActive && <Badge variant="local">deactivated</Badge>}
                   <Button variant="ghost" size="icon" title="Edit" disabled={!online}
                     onClick={() => setEditingId(editingId === p.id ? null : p.id)}>
@@ -314,6 +311,7 @@ function ProductFormCard({
   onSave: (form: ProductForm) => Promise<void>;
 }) {
   const [form, setForm] = useState<ProductForm>(initial);
+  const [categoryChooser, setCategoryChooser] = useState(false);
   const [busy, setBusy] = useState(false);
   const valid = form.productName.trim() && form.unitType.trim() && parseFloat(form.weightMultiplier) > 0;
 
@@ -337,8 +335,10 @@ function ProductFormCard({
           </div>
         </div>
         <div className="sm:col-span-2">
-          <Label>Category</Label>
-          <ChipSelect value={form.category} onChange={(category) => setForm({ ...form, category })} options={CATEGORY_OPTIONS} />
+          <FactRow path="category" label="Category" value={CATEGORY_OPTIONS.find((c) => c.value === form.category)?.label ?? '—'} onClick={() => setCategoryChooser(true)} />
+          {categoryChooser && (
+            <ChooserSheet path="category" title="Category" options={CATEGORY_OPTIONS} value={form.category} onPick={(category) => setForm({ ...form, category })} onClose={() => setCategoryChooser(false)} />
+          )}
         </div>
       </div>
       <Button disabled={!valid || busy || !online}

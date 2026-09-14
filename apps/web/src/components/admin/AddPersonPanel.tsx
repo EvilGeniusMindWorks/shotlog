@@ -13,7 +13,7 @@ import type { CrewMember } from '@/db/schema';
 import { authedFetch } from '@/lib/session';
 import { generateId, nowISO } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { ChipSelect } from '@/components/ui/chip-select';
+import { ChooserSheet, FactRow } from '@/components/ui/fact-row';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -50,6 +50,7 @@ export function AddPersonPanel({
   const [first, setFirst] = useState('');
   const [last, setLast] = useState('');
   const [role, setRole] = useState('');
+  const [roleChooser, setRoleChooser] = useState(false);
   const [email, setEmail] = useState('');
   const [accessChoice, setAccessChoice] = useState<Access | null>(null); // null = follow the email
   const [tempPassword, setTempPassword] = useState('');
@@ -218,7 +219,10 @@ export function AddPersonPanel({
         <Label className="text-xs">
           Role{access !== 'none' ? '' : <span className="text-gray-400 font-normal"> — optional for roster-only</span>}
         </Label>
-        <ChipSelect value={role} onChange={setRole} options={roleOptions} allowEmpty />
+        <FactRow path="role" label="Role" value={roleOptions.find((r) => r.value === role)?.label ?? (access === 'none' ? 'None' : '—')} onClick={() => setRoleChooser(true)} />
+        {roleChooser && (
+          <ChooserSheet path="role" title="Role" options={roleOptions} value={role} allowEmpty={access === 'none'} onPick={setRole} onClose={() => setRoleChooser(false)} />
+        )}
       </div>
       <div>
         <Label className="text-xs">

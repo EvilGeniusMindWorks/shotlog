@@ -122,3 +122,8 @@ Incidents · People (read) · company/customer/site pages · export surfaces
 - A **Needs you / All today** filter and a search box (job, customer or person) sit with the list.
 - Tapping a row opens that day's tiles read-only — Evette can look at any paper without Start or Open doing anything to it; approving still happens from her queues.
 - The same four dots appear on each day's row in Records. Her queues — approvals, sent back, time cards, expiring, never submitted — do not change.
+
+## S15 — rough edges, audited one by one (Sep 14 2026)
+
+- A day the blaster closed (rained out, started by mistake, nothing to file) drops out of Evette's Today's jobs and never reaches "never submitted" — it shows "Closed · reason" on the work-day lists instead of sitting there looking abandoned.
+- The four dots and status pill on every day row now sit in fixed columns so the lists line up.

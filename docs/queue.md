@@ -51,6 +51,18 @@ is built, move its line to docs/decisions.md with the round that shipped it.
 - Cost sheet and a floor price; "ShotLog" trademark clearance; the signed
   service agreement; sunlight-and-gloves session on the real tablet.
 
+## For Matthew to test
+
+Things only he can judge, on Beta, when he has a moment. Each says what to do and what
+to look for; his findings become the next round's items.
+
+- **The eleven-person crew list (S14, Sep 14 2026).** Start a day at a job, open the Daily
+  report tile, add cards for ten roster people from the Work force section (+ Enter), go back
+  to the tiles. Judge: can Mark tell in five seconds who is missing what, and get to that
+  person in two taps? Does "Needs something / All" and the search feel right? Findings → S15
+  part 5.
+- S15 on your phone: the ⋯ More button on a day, Close this day on an empty day, and whether the app updated itself on the home screen without the orange chip.
+
 ## Backlog — raised during Mark and Joe's testing (freeze from Sep 9 2026 evening)
 
 Running list. Nothing here is scheduled; Matthew decides when the freeze lifts and what

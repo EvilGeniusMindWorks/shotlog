@@ -10,6 +10,14 @@ Short notes on what changed, newest first. Ask in ? → **Send feedback** if som
 
 ## September 15, 2026
 
+- **ShotLog updates itself.** On the home screen, a ready update installs the moment you come back to the app, with a quick "Updating ShotLog…" toast — nothing open to lose. Anywhere else, the orange Update chip still waits for you to tap it.
+- **Rows instead of chip strips.** Operation on the blasting log, Category in the catalog, Role when adding a person, and the equipment page's filters now open as one row you tap and pick from, instead of a row of chips to hunt through.
+- **Hazards and precautions are checklists.** Tap the row, tick what applies, add your own with **Other…**, then **Done**.
+- **Blast mats** asks **How many** once you say Yes; the printed log reads "Blast mats: Yes · 12."
+- **Recent and nearby jobs** become a full list once there are four or more, instead of a row of chips.
+- **Close this day.** A day that never got anywhere — rained out, rescheduled, started by mistake — can be closed from the bottom of the tiles instead of sitting open; it shows a grey banner and a **Reopen** button, and it drops off the office's lists.
+- **The conditions line reads the time once** — "On site 1:56 am · Barry, Dinis · NWS 1:30 am" — instead of twice.
+- **On a phone, the day's icons tuck into one ⋯ button** (report, contacts, history, print), so the header stays uncluttered; Submit to Office lives only at **File this day**, at the bottom of the tiles.
 - **A work day opens on its tiles.** One tile per paper for your role, each with that paper's real state and one button. **Start** creates the paper; **Open** opens it. "Up next" marks the first thing that needs you. The tabs and the phase spine with **Continue** are inside the Blasting log now; **Back to the day** returns you to the tiles.
 - **File this day** is the row at the bottom of the tiles, there only when a paper exists to file. A blasting day needs every shot signed first.
 - **Blasters see the crew.** Under your tiles, one row per person on the day with the state of their checklist, drill log and time card. Tap a row to read their papers, **Accept** a drill log they signed complete, or **Remind** them about a missing card. From eight people the list gains a summary, a **Needs something / All** filter and search.

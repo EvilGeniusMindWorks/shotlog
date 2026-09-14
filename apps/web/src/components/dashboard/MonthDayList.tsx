@@ -22,6 +22,7 @@ function monthLabel(ym: string): string {
  *  nothing was started on the day but people filed hours against it */
 function dayLine(s: DaySummary): string {
   const type = s.day.typeOfWork?.replace(/_/g, ' ') ?? '';
+  if (s.day.closed) return `Closed · ${s.day.closed.reason || 'nothing to file'}`;
   if (s.shots > 0) return `${s.shots} shot${s.shots === 1 ? '' : 's'}`;
   if (!s.report && s.cards > 0) return `Time cards only · ${type}`;
   return type;
@@ -55,10 +56,13 @@ function DayRow({ s, navigate }: { s: DaySummary; navigate: (to: string) => void
           {s.totalLbs > 0 && ` · ${fmtLbs(s.totalLbs)} lbs`}
         </p>
       </div>
-      <Dots d={summaryDots(s)} />
-      <Badge variant={sentBack ? 'violation' : (s.day.status as 'draft' | 'submitted' | 'approved')}>
-        {sentBack ? 'sent back' : s.day.status}
-      </Badge>
+      {/* S15 (Matthew): the dots and the status pill sit in fixed columns so every row lines up */}
+      <span className="inline-flex items-center gap-3 shrink-0">
+        <Dots d={summaryDots(s)} />
+        <Badge className="w-[92px] justify-center" variant={s.day.closed ? 'secondary' : sentBack ? 'violation' : (s.day.status as 'draft' | 'submitted' | 'approved')}>
+          {s.day.closed ? 'closed' : sentBack ? 'sent back' : s.day.status}
+        </Badge>
+      </span>
     </button>
   );
 }

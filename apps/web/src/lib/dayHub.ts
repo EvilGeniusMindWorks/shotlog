@@ -106,12 +106,13 @@ export function drillLogTile(log: DrillLog | undefined, holes: number, planned: 
 // ── The File row ───────────────────────────────────────────────────────────
 
 export interface FileState {
-  kind: 'none' | 'blocked' | 'ready' | 'filed';
+  kind: 'none' | 'blocked' | 'ready' | 'filed' | 'closed';
   label: string;
   note?: string;
 }
 
 export function fileState(day: BlastDay, log: BlastLog | undefined, shots: Shot[], report: DailyReport | undefined, drillLogs: number): FileState {
+  if (day.closed) return { kind: 'closed', label: `Closed · ${day.closed.reason || 'nothing to file'}`, note: `${day.closed.byName} · ${hhmm(day.closed.at)}` };
   if (day.status === 'submitted') return { kind: 'filed', label: 'Filed with the office' };
   if (day.status === 'approved') return { kind: 'filed', label: 'Approved' };
   const blasting = isBlastingWork(day.typeOfWork) || Boolean(log);
@@ -373,3 +374,28 @@ export function plannedHoles(shots: Shot[]): number {
 }
 
 export type { WorkDayConfirmation };
+
+// ── Closed, nothing to file (S15) ─────────────────────────────────────────
+// A day that was started and abandoned — rained out, rescheduled, opened by
+// mistake — is closed with a reason instead of sitting in the office's
+// never-submitted queue for ever. Only a day with nothing to file can close;
+// Reopen brings it back exactly as it was.
+
+export const CLOSE_REASONS = [
+  { value: 'Rained out', label: 'Rained out' },
+  { value: 'Rescheduled', label: 'Rescheduled' },
+  { value: 'Started by mistake', label: 'Started by mistake' },
+  { value: 'No work today', label: 'No work today' },
+];
+
+export async function closeDay(day: BlastDay, reason: string): Promise<void> {
+  const me = getSessionUser();
+  await db.blastDays.update(day.id, {
+    closed: { by: me?.id ?? '', byName: me?.name ?? '', at: nowISO(), reason: reason.trim() || 'nothing to file' },
+    updatedAt: nowISO(),
+  });
+}
+
+export async function reopenDay(day: BlastDay): Promise<void> {
+  await db.blastDays.update(day.id, { closed: undefined, updatedAt: nowISO() });
+}

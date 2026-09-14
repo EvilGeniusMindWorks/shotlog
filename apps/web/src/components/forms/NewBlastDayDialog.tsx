@@ -353,15 +353,20 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork, onOpen
             {!job && recent.length > 0 && (
               <div className="mt-2">
                 <p className="text-[11px] text-gray-400 mb-1">Recent</p>
-                <div className="flex flex-wrap gap-2" data-recent-jobs>
+                <div className={recent.length >= 4 ? 'space-y-1.5' : 'flex flex-wrap gap-2'} data-recent-jobs>
                   {recent.map((j) => (
                     <button
                       key={j.id}
-                      className="inline-flex items-center min-h-[36px] px-3 rounded-full border border-gray-300 bg-white text-gray-700 text-sm font-medium active:bg-gray-100"
+                      className={
+                        recent.length >= 4
+                          ? 'w-full flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-left text-sm font-medium min-h-[44px]'
+                          : 'inline-flex items-center min-h-[36px] px-3 rounded-full border border-gray-300 bg-white text-gray-700 text-sm font-medium active:bg-gray-100'
+                      }
                       data-recent-job={j.jobNumber ?? j.id}
                       onClick={() => pickJob(j.id)}
                     >
                       {jobLabel(j)}
+                      {recent.length >= 4 && <span className="text-gray-400">›</span>}
                     </button>
                   ))}
                 </div>
@@ -550,10 +555,10 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork, onOpen
                         {nearby.length === 0 ? (
                           <p className="text-xs text-gray-400" data-pick-nearby-none>No job within {2} miles of here.</p>
                         ) : (
-                          <div className="flex flex-wrap gap-2">
+                          <div className={nearby.length >= 4 ? 'space-y-1.5' : 'flex flex-wrap gap-2'}>
                             {nearby.map((j) => (
-                              <button key={j.id} className="inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-full border border-green-300 bg-green-50 text-sm font-medium" data-pick-nearby={j.id} onClick={() => { pickJob(j.id); setShowPicker(false); }}>
-                                {j.jobNumber ? `${j.jobNumber} · ` : ''}{j.name}
+                              <button key={j.id} className={nearby.length >= 4 ? 'w-full flex items-center justify-between gap-2 rounded-lg border border-green-300 bg-green-50 px-3 py-2.5 text-left text-sm font-medium min-h-[44px]' : 'inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-full border border-green-300 bg-green-50 text-sm font-medium'} data-pick-nearby={j.id} onClick={() => { pickJob(j.id); setShowPicker(false); }}>
+                                <span>{j.jobNumber ? `${j.jobNumber} · ` : ''}{j.name}</span>
                                 <span className="text-[11px] font-semibold text-green-700" data-pick-nearby-miles>{j.miles != null ? fmtMiles(j.miles) : ''}</span>
                               </button>
                             ))}
@@ -565,10 +570,10 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork, onOpen
                   {recent.length > 0 && (
                     <div className="pb-1">
                       <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Recent</p>
-                      <div className="flex flex-wrap gap-2">
+                      <div className={recent.length >= 4 ? 'space-y-1.5' : 'flex flex-wrap gap-2'}>
                         {recent.map((j) => (
-                          <button key={j.id} className="inline-flex items-center min-h-[36px] px-3 rounded-full border border-gray-300 bg-white text-sm font-medium" data-pick-recent={j.jobNumber ?? j.id} onClick={() => { pickJob(j.id); setShowPicker(false); }}>
-                            {jobLabel(j)}
+                          <button key={j.id} className={recent.length >= 4 ? 'w-full flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-left text-sm font-medium min-h-[44px]' : 'inline-flex items-center min-h-[36px] px-3 rounded-full border border-gray-300 bg-white text-sm font-medium'} data-pick-recent={j.jobNumber ?? j.id} onClick={() => { pickJob(j.id); setShowPicker(false); }}>
+                            {jobLabel(j)}{recent.length >= 4 && <span className="text-gray-400">›</span>}
                           </button>
                         ))}
                       </div>

@@ -5,8 +5,11 @@
 // for gloves, one tap more than a chip and worth it.
 import type { ReactNode } from 'react';
 import { ChevronRight } from 'lucide-react';
+import { useState } from 'react';
 import { ConsequenceSheet } from '@/components/records/LifecycleMenu';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { splitChipValues } from '@/components/ui/chip-select';
 
 export interface FactOption {
   value: string;
@@ -120,6 +123,78 @@ export function ChooserSheet({
         </div>
         <Button variant="outline" className="w-full mt-3" onClick={onClose}>
           Cancel
+        </Button>
+      </div>
+    </ConsequenceSheet>
+  );
+}
+
+/** Pick several (S15): big tickable rows, "Other" as a line you type. The
+ *  value stays the comma-separated string the forms and prints already use. */
+export function ChecklistSheet({
+  path,
+  title,
+  options,
+  value,
+  onChange,
+  onClose,
+}: {
+  path: string;
+  title: string;
+  options: FactOption[];
+  value: string;
+  onChange: (value: string) => void;
+  onClose: () => void;
+}) {
+  const selected = splitChipValues(value);
+  const custom = selected.filter((v) => !options.some((o) => o.label === v));
+  const [other, setOther] = useState('');
+  const toggle = (label: string) => {
+    const next = selected.includes(label) ? selected.filter((v) => v !== label) : [...selected, label];
+    onChange(next.join(', '));
+  };
+  const addOther = () => {
+    const text = other.replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
+    if (text && !selected.includes(text)) onChange([...selected, text].join(', '));
+    setOther('');
+  };
+  return (
+    <ConsequenceSheet onClose={onClose}>
+      <div data-checklist={path}>
+        <h3 className="font-bold text-lg">{title}</h3>
+        <p className="text-xs text-gray-500 mb-2">Tick what applies.</p>
+        <div className="space-y-2">
+          {[...options, ...custom.map((c) => ({ value: c, label: c }))].map((o) => {
+            const on = selected.includes(o.label);
+            return (
+              <button
+                key={o.value}
+                type="button"
+                className={`w-full flex items-center gap-3 text-left rounded-lg border px-3 py-3 min-h-[52px] text-base ${on ? 'border-safety-orange bg-orange-50 font-semibold' : 'border-gray-200 bg-white font-medium'}`}
+                data-option={o.label}
+                aria-pressed={on}
+                onClick={() => toggle(o.label)}
+              >
+                <span className={`h-6 w-6 rounded-md border-2 shrink-0 flex items-center justify-center ${on ? 'border-safety-orange bg-safety-orange text-white' : 'border-gray-300'}`}>{on ? '✓' : ''}</span>
+                {o.label}
+              </button>
+            );
+          })}
+          <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 min-h-[52px]">
+            <span className="h-6 w-6 rounded-md border-2 border-gray-300 shrink-0" />
+            <Input
+              value={other}
+              placeholder="Other…"
+              className="border-0 shadow-none px-0 focus-visible:ring-0"
+              data-option-other
+              onChange={(e) => setOther(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') addOther(); }}
+              onBlur={addOther}
+            />
+          </div>
+        </div>
+        <Button className="w-full mt-3" data-checklist-done onClick={onClose}>
+          Done
         </Button>
       </div>
     </ConsequenceSheet>

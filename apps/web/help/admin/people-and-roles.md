@@ -23,6 +23,10 @@ A role is a bundle of capabilities: what a person may see and do. The built-in r
 
 **Admin › Roles** shows each role's capabilities as switches. Make a new role from an existing one and change what it may do — "Trainee: work days but no submitting", say. People on a custom role see the home you choose for it.
 
+## Adding a person
+
+On the Add person panel, **Role** is a row — tap it to pick from a list instead of a strip of chips.
+
 ![Roles](roles.png)
 
 ## Related

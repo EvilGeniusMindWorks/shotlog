@@ -2,15 +2,15 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { claimDay, ownerLine, ownsReport, shouldClaim } from '@/lib/dayOwnership';
 import { mergeDays } from '@/lib/lifecycle';
 import { useLocation, useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, CalendarCheck, FileText, ClipboardList, ChevronDown, ChevronUp, FileBarChart, History, Lock, PhoneCall, Printer } from 'lucide-react';
+import { ArrowLeft, CalendarCheck, FileText, ClipboardList, ChevronDown, ChevronUp, FileBarChart, History, Lock, MoreHorizontal, MoreVertical, PhoneCall, Printer } from 'lucide-react';
 import { type Role } from '@shotlog/shared';
 import { can, canDayTransition, canEditApprovedDay, myHomeDashboard } from '@/lib/perms';
 import { addBlastLogToDay, createDailyReport, useBlastDay } from '@/hooks/useBlastDay';
-import { hhmm, onSiteLine, setCardFacts, setupPath, useDayCard, useDayConfirmations, useDayGate } from '@/lib/dayCard';
+import { hhmm, onSiteWhen, setCardFacts, setupPath, useDayCard, useDayConfirmations, useDayGate } from '@/lib/dayCard';
 import { GROUND_OPTIONS, TEMP_OPTIONS, WEATHER_OPTIONS, WIND_OPTIONS, WORK_TYPE_OPTIONS } from '@/lib/cardOptions';
 import { db, useLiveQuery } from '@/db';
 import { deleteDayCascade } from '@/lib/lifecycle';
-import { LifecycleMenu } from '@/components/records/LifecycleMenu';
+import { ConsequenceSheet, LifecycleMenu } from '@/components/records/LifecycleMenu';
 import { TimeCardsCard } from '@/components/forms/TimeCardsCard';
 import { useDayPhases } from '@/hooks/useDayPhases';
 import { PhaseSpine } from '@/components/day/PhaseSpine';
@@ -86,6 +86,7 @@ export function BlastDayPage() {
   const [chooser, setChooser] = useState<CardPath | null>(null);
   const [showContacts, setShowContacts] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showMore, setShowMore] = useState(false);
   const [statusBusy, setStatusBusy] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
   const online = useOnlineStatus();
@@ -174,15 +175,9 @@ export function BlastDayPage() {
   };
 
   const statusActions: ReactNode[] = [];
-  if (status === 'draft' && canDayTransition('draft', 'submitted')) {
-    statusActions.push(
-      // Files the point-in-time PDFs with the office, then marks submitted
-      <Button key="submit" size="sm" variant="secondary"
-        onClick={() => navigate(`/blast-day/${blastDay.id}/submit`)}>
-        Submit to Office
-      </Button>,
-    );
-  }
+  // S15 (Matthew): Submit to Office left the header — File this day sits at
+  // the bottom of the hub, where the tiles show what is ready. Supervision
+  // (Approve, Send back, Unlock, Reopen) stays up here.
   if (status === 'submitted') {
     if (canDayTransition('submitted', 'approved')) {
       statusActions.push(
@@ -245,7 +240,7 @@ export function BlastDayPage() {
           {statusActions}
           {blastLog && (
             <button
-              className="h-10 w-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20"
+              className="h-10 w-10 rounded-lg bg-white/10 hidden sm:flex items-center justify-center hover:bg-white/20"
               title="Visual Blast Report"
               onClick={() => navigate(`/blast-day/${blastDay.id}/report`)}
             >
@@ -253,7 +248,7 @@ export function BlastDayPage() {
             </button>
           )}
           <button
-            className="h-10 w-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20"
+            className="h-10 w-10 rounded-lg bg-white/10 hidden sm:flex items-center justify-center hover:bg-white/20"
             title="Jobsite contacts"
             onClick={() => setShowContacts(!showContacts)}
           >
@@ -261,7 +256,7 @@ export function BlastDayPage() {
           </button>
           {['admin', 'office', 'supervisor'].includes(role) && (
             <button
-              className="h-10 w-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20"
+              className="h-10 w-10 rounded-lg bg-white/10 hidden sm:flex items-center justify-center hover:bg-white/20"
               title="Change history"
               onClick={() => setShowHistory(true)}
             >
@@ -269,7 +264,7 @@ export function BlastDayPage() {
             </button>
           )}
           <button
-            className="h-10 w-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20"
+            className="h-10 w-10 rounded-lg bg-white/10 hidden sm:flex items-center justify-center hover:bg-white/20"
             title={tab === 'blast-log' ? 'Print Blasting Log' : 'Print Daily Report'}
             onClick={() =>
               navigate(
@@ -281,6 +276,14 @@ export function BlastDayPage() {
           >
             <Printer className="h-5 w-5" />
           </button>
+          <button
+            className="h-10 w-10 rounded-lg bg-white/10 flex sm:hidden items-center justify-center hover:bg-white/20"
+            title="More"
+            data-day-more
+            onClick={() => setShowMore(true)}
+          >
+            <MoreHorizontal className="h-5 w-5" />
+          </button>
           <LifecycleMenu
             table="blastDays"
             record={blastDay}
@@ -291,7 +294,7 @@ export function BlastDayPage() {
             deleteFn={() => deleteDayCascade(blastDay)}
             deleteDescription="This day never happened: its log, report, entries, and draft time cards go with it. The server keeps a permanent audit record."
             onDeleted={() => navigate('/')}
-            buttonClassName="h-10 w-10 rounded-lg bg-white/10 flex items-center justify-center text-white hover:bg-white/20"
+            buttonClassName="h-10 w-10 rounded-lg bg-white/10 hidden sm:flex items-center justify-center text-white hover:bg-white/20"
           />
         </div>
       </div>
@@ -333,9 +336,10 @@ export function BlastDayPage() {
                   .join(' · ')}
               </span>
               <span className="block text-xs text-gray-500 truncate">
+                {/* S15 (Matthew): the time once — "On site 1:56 am · Barry, Dinis · NWS 1:30 am" */}
                 {[
-                  blastDay.onsiteTime ? `On site ${blastDay.onsiteTime}` : null,
-                  onSiteLine(confirmations).replace(/^On site: /, ''),
+                  onSiteWhen(blastDay.onsiteTime, confirmations),
+                  confirmations.map((c) => c.userName.split(' ')[0]).join(', ') || null,
                   blastDay.nws ? `NWS ${hhmm(blastDay.nws.observedAt || blastDay.nws.fetchedAt)}` : null,
                 ]
                   .filter(Boolean)
@@ -515,6 +519,45 @@ export function BlastDayPage() {
       </div>
       )}
 
+      {showMore && (
+        <ConsequenceSheet onClose={() => setShowMore(false)}>
+          <div data-day-more-sheet className="space-y-2">
+            <h3 className="font-bold text-lg">{blastDay.name || job?.name || 'This day'}</h3>
+            {blastLog && (
+              <Button variant="outline" className="w-full justify-start min-h-[48px]" data-more-report onClick={() => { setShowMore(false); navigate(`/blast-day/${blastDay.id}/report`); }}>
+                <FileBarChart className="h-4 w-4 mr-2" /> Visual blast report
+              </Button>
+            )}
+            <Button variant="outline" className="w-full justify-start min-h-[48px]" data-more-contacts onClick={() => { setShowMore(false); setShowContacts(true); }}>
+              <PhoneCall className="h-4 w-4 mr-2" /> Jobsite contacts
+            </Button>
+            {['admin', 'office', 'supervisor'].includes(role) && (
+              <Button variant="outline" className="w-full justify-start min-h-[48px]" data-more-history onClick={() => { setShowMore(false); setShowHistory(true); }}>
+                <History className="h-4 w-4 mr-2" /> Change history
+              </Button>
+            )}
+            <Button variant="outline" className="w-full justify-start min-h-[48px]" data-more-print onClick={() => { setShowMore(false); navigate(tab === 'blast-log' ? `/blast-day/${blastDay.id}/print` : `/blast-day/${blastDay.id}/print-daily`); }}>
+              <Printer className="h-4 w-4 mr-2" /> {tab === 'blast-log' ? 'Print the blasting log' : 'Print the daily report'}
+            </Button>
+            <LifecycleMenu
+              table="blastDays"
+              record={blastDay}
+              label={blastDay.name || `${formatDate(blastDay.date)} at ${job?.name ?? 'this job'}`}
+              kind="work day"
+              allowArchive={false}
+              canDeleteOverride={status === 'draft' && filedCount === 0}
+              deleteFn={() => deleteDayCascade(blastDay)}
+              deleteDescription="This day never happened: its log, report, entries, and draft time cards go with it. The server keeps a permanent audit record."
+              onDeleted={() => navigate('/')}
+              buttonClassName="w-full inline-flex items-center justify-start rounded-md border border-gray-200 bg-white px-4 min-h-[48px] text-sm font-medium"
+              triggerLabel={<span className="inline-flex items-center"><MoreVertical className="h-4 w-4 mr-2" /> This day's record…</span>}
+            />
+            <Button variant="ghost" className="w-full" onClick={() => setShowMore(false)}>
+              Cancel
+            </Button>
+          </div>
+        </ConsequenceSheet>
+      )}
       {showContacts && (
         <div className="max-w-5xl mx-auto px-4 pt-3">
           <ContactList contacts={job?.contacts ?? []} notes={job?.contactNotes} />

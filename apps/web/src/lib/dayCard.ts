@@ -280,6 +280,21 @@ export function onSiteLine(rows: WorkDayConfirmation[]): string {
   return `On site: ${rows.map((r) => `${r.userName} (${hhmm(r.confirmedAt)})`).join(', ')}`;
 }
 
+/** "On site 1:56 am" — the day's on-site time, else the first confirmation's */
+export function onSiteWhen(onsiteTime: string | undefined, rows: WorkDayConfirmation[]): string | null {
+  if (onsiteTime) return `On site ${clockLabel(onsiteTime)}`;
+  const first = [...rows].sort((a, b) => a.confirmedAt.localeCompare(b.confirmedAt))[0];
+  return first ? `On site ${hhmm(first.confirmedAt)}` : null;
+}
+
+/** "07:05" (a time input) → "7:05 am"; anything else passes through */
+export function clockLabel(value: string): string {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(value.trim());
+  if (!m) return value;
+  const h = Number(m[1]);
+  return `${((h + 11) % 12) + 1}:${m[2]} ${h < 12 ? 'am' : 'pm'}`;
+}
+
 export function hhmm(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';

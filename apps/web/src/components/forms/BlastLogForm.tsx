@@ -13,7 +13,8 @@ import { ClipboardList, PenLine } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ChipSelect, ChipMultiSelect } from '@/components/ui/chip-select';
+import { ChecklistSheet, ChooserSheet, FactRow } from '@/components/ui/fact-row';
+import { cardValueLabelFor } from '@/lib/cardOptions';
 import { SignatureField } from '@/components/ui/signature-field';
 import { getSessionUser } from '@/lib/session';
 import { dataUrlToBlob } from '@/lib/utils';
@@ -105,6 +106,7 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
 
   // Debounced write-through: edits show instantly, IndexedDB writes are batched
   const { draft, setField } = useDraftRecord(db.blastLogs, blastLog);
+  const [sheet, setSheet] = useState<'operation' | 'hazards' | 'precautions' | null>(null);
 
   const handleAddShot = async () => {
     const id = await addShot(blastLog.id, jobCtx?.kFactor ?? 180);
@@ -175,15 +177,7 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
         defaultOpen={!blastInfoComplete}
       >
         <div className="space-y-3">
-          <div>
-            <Label className="text-xs">Operation</Label>
-            <ChipSelect
-              className="mt-1"
-              value={draft.operation}
-              onChange={(v) => setField('operation', v as BlastLog['operation'])}
-              options={OPERATION_OPTIONS}
-            />
-          </div>
+          <FactRow path="operation" label="Operation" value={cardValueLabelFor(OPERATION_OPTIONS, draft.operation)} onClick={() => setSheet('operation')} />
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Type of Rock</Label>
@@ -202,24 +196,18 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
               />
             </div>
           </div>
-          <div>
-            <Label className="text-xs">Identify Hazards</Label>
-            <ChipMultiSelect
-              className="mt-1"
-              value={draft.hazards}
-              onChange={(v) => setField('hazards', v)}
-              options={HAZARD_OPTIONS}
-            />
-          </div>
-          <div>
-            <Label className="text-xs">Precautions Taken</Label>
-            <ChipMultiSelect
-              className="mt-1"
-              value={draft.precautions}
-              onChange={(v) => setField('precautions', v)}
-              options={PRECAUTION_OPTIONS}
-            />
-          </div>
+          {/* S15 (Matthew): pick-several as a checklist sheet — the form reads what is chosen */}
+          <FactRow path="hazards" label="Identify hazards" value={draft.hazards || 'None noted'} onClick={() => setSheet('hazards')} />
+          <FactRow path="precautions" label="Precautions taken" value={draft.precautions || 'None noted'} onClick={() => setSheet('precautions')} />
+          {sheet === 'operation' && (
+            <ChooserSheet path="operation" title="Operation" options={OPERATION_OPTIONS} value={draft.operation} onPick={(v) => setField('operation', v as BlastLog['operation'])} onClose={() => setSheet(null)} />
+          )}
+          {sheet === 'hazards' && (
+            <ChecklistSheet path="hazards" title="Identify hazards" options={HAZARD_OPTIONS} value={draft.hazards} onChange={(v) => setField('hazards', v)} onClose={() => setSheet(null)} />
+          )}
+          {sheet === 'precautions' && (
+            <ChecklistSheet path="precautions" title="Precautions taken" options={PRECAUTION_OPTIONS} value={draft.precautions} onChange={(v) => setField('precautions', v)} onClose={() => setSheet(null)} />
+          )}
         </div>
       </SectionCard>
 

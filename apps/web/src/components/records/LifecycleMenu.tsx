@@ -2,6 +2,7 @@
 // menu → a consequence sheet that says exactly what happens in plain
 // words. Archive confirms with a normal button; Delete is red and repeats
 // the record's name. After archiving: a 10s Undo toast.
+import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { Archive, ArchiveRestore, MoreVertical, Trash2 } from 'lucide-react';
 import { useLiveQuery } from '@/db';
@@ -38,6 +39,8 @@ interface Props {
   deleteDescription?: string;
   /** Trigger styling override (e.g. on dark headers) */
   buttonClassName?: string;
+  /** S15: render the trigger as words (a row in a sheet) instead of the ⋮ icon */
+  triggerLabel?: ReactNode;
 }
 
 export function LifecycleMenu({
@@ -51,6 +54,7 @@ export function LifecycleMenu({
   onDeleted,
   deleteDescription,
   buttonClassName,
+  triggerLabel,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [sheet, setSheet] = useState<'archive' | 'delete' | null>(null);
@@ -106,7 +110,7 @@ export function LifecycleMenu({
         }
         onClick={() => setOpen((v) => !v)}
       >
-        <MoreVertical className="h-5 w-5" />
+        {triggerLabel ?? <MoreVertical className="h-5 w-5" />}
       </button>
       {open && (
         <div className="absolute right-0 top-10 z-40 w-52 bg-white border border-gray-200 rounded-xl shadow-lg py-1 text-sm">

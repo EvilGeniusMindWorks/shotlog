@@ -44,7 +44,8 @@ export function CoverageDots({ c }: { c: Coverage }) {
 export function useTodaysJobs(): Row[] | undefined {
   return useLiveQuery(async () => {
     const today = todayISO();
-    const days = await db.blastDays.filter((d) => d.date === today).toArray();
+    // S15: a closed day (rained out, rescheduled…) is not a job to watch
+    const days = await db.blastDays.filter((d) => d.date === today && !d.closed).toArray();
     const jobs = new Map((await db.jobs.toArray()).map((j) => [j.id, j]));
     const customers = new Map((await db.customers.toArray()).map((c) => [c.id, c]));
     const out: Row[] = [];

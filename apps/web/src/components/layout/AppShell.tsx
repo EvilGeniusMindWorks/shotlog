@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { showToast } from '@/components/ui/undo-toast';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   CalendarDays,
@@ -226,6 +227,25 @@ export function AppShell() {
   useEffect(() => {
     addBreadcrumb('nav', `${shellLocation.pathname}${shellLocation.search}`);
   }, [shellLocation.pathname, shellLocation.search]);
+  // S15 (Matthew): the app keeps itself current. Coming back to the home
+  // screen checks for a new build; one that is ready applies there, with a
+  // toast, since nothing is open to lose. Anywhere else the Update chip waits.
+  const onHome = shellLocation.pathname === '/';
+  useEffect(() => {
+    if (!onHome) return;
+    const w = window as unknown as Record<string, unknown>;
+    if (typeof w.__shotlogCheckSwUpdate === 'function') (w.__shotlogCheckSwUpdate as () => void)();
+    const apply = () => {
+      const fn = w.__shotlogApplySwUpdate;
+      if (typeof fn !== 'function' || w.__shotlogSwUpdateApplying) return;
+      w.__shotlogSwUpdateApplying = true;
+      showToast('Updating ShotLog to the latest version…', { ms: 1500 });
+      window.setTimeout(() => (fn as () => void)(), 1500);
+    };
+    if (w.__shotlogSwUpdateReady) apply();
+    window.addEventListener('shotlog-sw-update-ready', apply);
+    return () => window.removeEventListener('shotlog-sw-update-ready', apply);
+  }, [onHome]);
   const [screenTour, setScreenTour] = useState<ScreenTourKey | null>(null);
   useEffect(() => {
     const open = (e: Event) => setScreenTour((e as CustomEvent<ScreenTourKey>).detail);
