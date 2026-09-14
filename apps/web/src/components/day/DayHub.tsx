@@ -64,9 +64,9 @@ function Tile({
       data-tile-state={state.title}
       data-up-next={upNext ? '1' : undefined}
     >
-      {upNext && <span className="absolute top-1 right-3 text-[9px] font-bold tracking-widest uppercase text-safety-orange">Up next</span>}
       <span className="w-7 text-gray-500 shrink-0">{icon}</span>
       <button type="button" className="flex-1 min-w-0 text-left" disabled={!clickable} onClick={onAction}>
+        {upNext && <span className="block text-[9px] font-bold tracking-widest uppercase text-safety-orange">Up next</span>}
         <span className="block font-bold text-sm">{name}</span>
         <span className="block text-xs text-gray-600">
           {state.title}

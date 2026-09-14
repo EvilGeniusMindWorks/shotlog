@@ -252,7 +252,7 @@ async (page, lib) => {
     await PA.locator('[data-conditions-edit]').waitFor({ timeout: 15000 });
     const d2 = await waitFor(() => dayOf(PA, day2).then((d) => (d?.conditions.groundConditions === 'wet' && d?.nws ? d : null)));
     R.ok('saved: ground Wet, weather Cloudy, the NWS reading kept beside the values', d2?.conditions.groundConditions === 'wet' && d2?.conditions.weather === 'cloudy' && d2?.nws?.station === 'KNEAR');
-    R.ok('the NWS chip on the day bar is real now', (await PA.locator('[data-nws-chip]').count()) === 1);
+    R.ok('the day\'s line names the NWS reading it came from', /NWS \d/.test(await PA.locator('[data-conditions-bar]').innerText()));
     await waitForUpload(PA, 30000);
 
     // B opens the same day: the fact sheet

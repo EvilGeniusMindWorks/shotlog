@@ -6,7 +6,7 @@ import { ArrowLeft, CalendarCheck, FileText, ClipboardList, ChevronDown, Chevron
 import { type Role } from '@shotlog/shared';
 import { can, canDayTransition, canEditApprovedDay, myHomeDashboard } from '@/lib/perms';
 import { addBlastLogToDay, createDailyReport, useBlastDay } from '@/hooks/useBlastDay';
-import { setCardFacts, setupPath, useDayCard, useDayGate } from '@/lib/dayCard';
+import { hhmm, onSiteLine, setCardFacts, setupPath, useDayCard, useDayConfirmations, useDayGate } from '@/lib/dayCard';
 import { GROUND_OPTIONS, TEMP_OPTIONS, WEATHER_OPTIONS, WIND_OPTIONS, WORK_TYPE_OPTIONS } from '@/lib/cardOptions';
 import { db, useLiveQuery } from '@/db';
 import { deleteDayCascade } from '@/lib/lifecycle';
@@ -41,19 +41,6 @@ import { createIncident } from '@/pages/admin/AdminIncidentsPage';
 type Tab = 'blast-log' | 'daily-report';
 type DayView = 'tiles' | 'hub' | 'blast-log' | 'daily-report' | 'drilling' | 'readiness';
 
-function CondChip({ children, accent }: { children: ReactNode; accent?: boolean }) {
-  return (
-    <span
-      className={
-        accent
-          ? 'inline-flex items-center rounded-md bg-safety-orange text-white px-2.5 py-1 text-xs font-bold'
-          : 'inline-flex items-center rounded-md bg-navy text-white px-2.5 py-1 text-xs font-semibold'
-      }
-    >
-      {children}
-    </span>
-  );
-}
 
 export function BlastDayPage() {
   const { id } = useParams<{ id: string }>();
@@ -65,6 +52,7 @@ export function BlastDayPage() {
   // not confirmed yet, asks first (then comes back here)
   const blastDay = useDayCard(storedDay);
   const gate = useDayGate(storedDay);
+  const confirmations = useDayConfirmations(id);
   const location = useLocation();
   useEffect(() => {
     if ((gate === 'form' || gate === 'confirm') && storedDay)
@@ -322,35 +310,43 @@ export function BlastDayPage() {
       {/* Conditions bar (wireframe §4.2) */}
       <div className="bg-white border-b border-gray-200 px-4 py-2.5 sticky top-[64px] z-10">
         <div className="max-w-5xl mx-auto">
-          <div className="flex items-center gap-1.5 flex-wrap" data-conditions-bar>
-            <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase mr-1">
-              Conditions
-            </span>
-            {blastDay.nws && (
-              <span
-                className="text-[10px] font-bold text-blue-500 border border-blue-200 bg-blue-50 rounded px-1.5 py-0.5 mr-2"
-                title={`${blastDay.nws.name}: ${blastDay.nws.text}${blastDay.nws.tempF !== null ? `, ${blastDay.nws.tempF}°F` : ''}`}
-                data-nws-chip
-              >
-                NWS
+          {/* S14 follow-up (Matthew): the card is one line of words, not chips */}
+          <div className="flex items-center gap-3" data-conditions-bar>
+            <button
+              type="button"
+              className="flex-1 min-w-0 text-left"
+              data-conditions-edit
+              disabled={locked}
+              onClick={() => setShowConditions(!showConditions)}
+            >
+              <span className="block text-[10px] font-bold tracking-widest text-gray-400 uppercase">Today</span>
+              <span className="block text-sm font-semibold text-gray-900 truncate">
+                {[
+                  WORK_TYPE_OPTIONS.find((o) => o.value === blastDay.typeOfWork)?.label,
+                  TEMP_OPTIONS.find((o) => o.value === blastDay.conditions.temperatureRange)?.label.split(' ')[0],
+                  WEATHER_OPTIONS.find((o) => o.value === blastDay.conditions.weather)?.label,
+                  blastDay.conditions.windDirection || null,
+                  GROUND_OPTIONS.find((o) => o.value === blastDay.conditions.groundConditions)?.label,
+                  blastDay.fireDetail ? 'Fire detail' : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
               </span>
-            )}
-            <CondChip>{TEMP_OPTIONS.find((o) => o.value === blastDay.conditions.temperatureRange)?.label.split(' ')[0]}</CondChip>
-            <CondChip>{WEATHER_OPTIONS.find((o) => o.value === blastDay.conditions.weather)?.label}</CondChip>
-            {blastDay.conditions.windDirection && <CondChip>{blastDay.conditions.windDirection}</CondChip>}
-            <CondChip>{GROUND_OPTIONS.find((o) => o.value === blastDay.conditions.groundConditions)?.label}</CondChip>
-            <CondChip>{WORK_TYPE_OPTIONS.find((o) => o.value === blastDay.typeOfWork)?.label}</CondChip>
-            {blastDay.onsiteTime && <CondChip>On site {blastDay.onsiteTime}</CondChip>}
-            {blastDay.fireDetail && <CondChip accent>⚑ Fire Detail</CondChip>}
+              <span className="block text-xs text-gray-500 truncate">
+                {[
+                  blastDay.onsiteTime ? `On site ${blastDay.onsiteTime}` : null,
+                  onSiteLine(confirmations).replace(/^On site: /, ''),
+                  blastDay.nws ? `NWS ${hhmm(blastDay.nws.observedAt || blastDay.nws.fetchedAt)}` : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ') || 'Nobody has confirmed the card yet'}
+              </span>
+            </button>
             {!locked && (
-              <button
-                className="ml-auto text-sm text-blue-600 font-semibold min-h-[36px] px-2 flex items-center gap-1"
-                data-conditions-edit
-                onClick={() => setShowConditions(!showConditions)}
-              >
+              <span className="text-sm text-blue-600 font-semibold flex items-center gap-1 shrink-0">
                 Edit
                 {showConditions ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </button>
+              </span>
             )}
           </div>
 
