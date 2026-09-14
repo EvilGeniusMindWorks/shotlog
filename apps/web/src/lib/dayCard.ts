@@ -25,6 +25,7 @@ import {
   withPath,
   type CardPath,
 } from '@shotlog/shared';
+import { can } from '@/lib/perms';
 import { getSessionUser } from '@/lib/session';
 import { generateId, nowISO } from '@/lib/utils';
 
@@ -236,6 +237,8 @@ export async function dayGate(day: BlastDay): Promise<GateState> {
   if (day.status !== 'draft') return 'none';
   const me = getSessionUser();
   if (!me) return 'none';
+  // Readers (the office) are never asked — they cannot write a confirmation
+  if (!can('workDayConfirmations', 'PUT')) return 'none';
   const mine = await myConfirmation(day.id);
   if (!day.setup) {
     if (mine) return 'none';

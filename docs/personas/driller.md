@@ -200,3 +200,10 @@ report (solo submit) · My Records · jobs list
   tap when the weather prefill is right. Rigs: one checklist per rig, as many as the day needs;
   "Start a checklist for another rig" opens the same rig picker; a rig marked out of service
   opens the shop's ticket, and the drill log's rig line reads "D50, then D45 from 11:10".
+
+## S14 — the hub (Sep 14 2026)
+
+- **Four tiles replace the trio.** Joe's day opens on Rig checklists, Drill log, My time card, and Daily report — editable when he started a drill-only day, read-only and marked as the blaster's on a blasting day. Each carries its own state and one button, Start or Open/View, with "Up next" on the first unfinished one.
+- **Rigs — the checklist is the rig's odometer.** Each checklist carries the hours the rig starts the day with and the hours it stops with; nothing about Joe's own time lives there. Two rigs means two checklists and two pairs of readings, nothing shared between them. The Rig checklists tile lists today's rigs as plain rows: "D50 · 1,198.2 → running" until stopped, then "D50 · 1,198.2 → 1,204.6 · 6.4 h". Tapping a rig opens **Open the checklist**, **Stop for the day** (asks the meter reading), or **Out of service** (asks the reading now and opens a shop ticket); **Start a checklist for another rig** is the last row and opens the rig picker with nothing pre-selected.
+- **No meter on the drill log anymore.** Marking a log complete only names the rig; hours live on that rig's checklist, and the shop's hour ledger and the daily report's equipment hours read start and stop from there.
+- **The reminder line.** A blaster missing Joe's time card can nudge him; the line reads "<Blaster> asked for your time card · <job> · today" on his home and clears the moment he files.

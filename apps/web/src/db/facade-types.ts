@@ -21,6 +21,7 @@ import type {
   BlastDay,
   WorkDayConfirmation,
   DayCardEdit,
+  DayReminder,
   BlastLog,
   Shot,
   SeismoReading,
@@ -75,6 +76,7 @@ export interface ShotLogDataAccess {
   blastDays: FacadeTable<BlastDay>;
   workDayConfirmations: FacadeTable<WorkDayConfirmation>;
   dayCardEdits: FacadeTable<DayCardEdit>;
+  dayReminders: FacadeTable<DayReminder>;
   blastLogs: FacadeTable<BlastLog>;
   shots: FacadeTable<Shot>;
   seismoReadings: FacadeTable<SeismoReading>;

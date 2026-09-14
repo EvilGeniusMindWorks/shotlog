@@ -24,6 +24,8 @@ Small job, no office setup yet? You can do it:
 2. On the customer's page, **+ New site** — address, state, Site K.
 3. On the site's page, **+ New job** — the customer and site are already filled in.
 
+When the customer has a billing address, **+ New site** — wherever it appears, including the site step when starting a job, or on the site's own page — offers **Use the customer's address** above the address fields. One tap copies street, city, state and zip in; you can still change any of them, and the site keeps its own copy, so a later change to the customer's billing address never moves the site. Making a customer and a site together starts the site's address as the customer's own, and says so. The row isn't there when the customer has no billing address on file.
+
 A job always needs a site. If you start a job from the **+** dialog instead, the Site box is required: pick one of the customer's sites or tap **+ New site** and give it a name, state and address. Create stays grey until then. The address becomes the site's point on the map on its own.
 
 ## Where the work is

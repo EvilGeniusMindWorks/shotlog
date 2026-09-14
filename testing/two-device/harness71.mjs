@@ -154,7 +154,7 @@ async (page, lib) => {
     R.ok('A lands on the day; the bar reads Cloudy', /Cloudy/.test(barA ?? ''));
     const dA = await dayOf(PA, dayId);
     R.ok('A\'s setup stamp is on the day (locally)', dA?.setup?.by === meA.id);
-    await PA.getByRole('button', { name: /Add Blasting Log/ }).click();
+    await PA.locator('[data-tile="blast-log"] [data-tile-action="Start"]').click();
     await waitFor(() => countOf(PA, 'blastLogs', 'blastDayId', dayId).then((n) => n === 1));
     R.ok('A starts the blasting log while still offline', (await countOf(PA, 'blastLogs', 'blastDayId', dayId)) === 1);
 
@@ -298,8 +298,8 @@ async (page, lib) => {
   await R.section('Papers exist only when started; File this day and the office queues understand an empty day', async () => {
     R.ok('a new day has no blasting log and no daily report', (await countOf(PA, 'blastLogs', 'blastDayId', day2)) === 0 && (await countOf(PA, 'dailyReports', 'blastDayId', day2)) === 0);
     await PA.goto(`${WEB}/blast-day/${day2}`);
-    await PA.locator('[data-start-daily-report]').waitFor({ timeout: 15000 });
-    R.ok('the daily report tab offers "Start daily report"', /Start daily report/.test(await PA.locator('[data-start-daily-report]').innerText()));
+    await PA.locator('[data-tile="daily-report"]').waitFor({ timeout: 15000 });
+    R.ok('the Daily report tile offers Start', (await PA.locator('[data-tile="daily-report"] [data-tile-action="Start"]').count()) === 1 && /Not started/.test(await PA.locator('[data-tile="daily-report"]').getAttribute('data-tile-state')));
     await PA.goto(`${WEB}/blast-day/${day2}/submit`);
     await PA.locator('[data-submit-sheet]').waitFor({ timeout: 20000 });
     await PA.getByText(/No blasting log started/).first().waitFor({ timeout: 25000 }).catch(() => undefined);
@@ -307,11 +307,11 @@ async (page, lib) => {
     R.ok('filing a blasting day with no blasting log is blocked (red)', /No blasting log started/.test(sheet));
     R.ok('a missing daily report is an amber note', /No daily report/.test(sheet));
     await PA.goto(`${WEB}/blast-day/${day2}`);
-    await PA.locator('[data-start-daily-report]').waitFor({ timeout: 15000 });
-    await PA.locator('[data-start-daily-report] button').click();
+    await PA.locator('[data-tile="daily-report"] [data-tile-action="Start"]').waitFor({ timeout: 15000 });
+    await PA.locator('[data-tile="daily-report"] [data-tile-action="Start"]').click();
     await waitFor(() => countOf(PA, 'dailyReports', 'blastDayId', day2).then((n) => (n === 1 ? 1 : 0)));
-    R.ok('"Start daily report" creates exactly one', (await countOf(PA, 'dailyReports', 'blastDayId', day2)) === 1);
-    R.ok('the report form replaces the strip', (await waitFor(() => PA.locator('[data-start-daily-report]').count().then((n) => (n === 0 ? 1 : 0)))) === 1);
+    R.ok('Start on the Daily report tile creates exactly one', (await countOf(PA, 'dailyReports', 'blastDayId', day2)) === 1);
+    R.ok('the tile now says Started and offers Open', (await waitFor(() => PA.locator('[data-tile="daily-report"] [data-tile-action="Open"]').count().then((n) => (n === 1 ? 1 : 0)))) === 1);
 
     // A day with nothing but time cards (the crew got sent home): not "never submitted", labelled honestly
     day3 = await makeSetupDay(PA, jobs[1].id, daysAgo(6), { typeOfWork: 'drill_only', name: `sent home ${stamp}` });
@@ -368,8 +368,8 @@ async (page, lib) => {
 
     // (3) type-of-work downgrade with a blasting log → refused, and said so
     await PA.goto(`${WEB}/blast-day/${day2}`);
-    await PA.getByRole('button', { name: /Add Blasting Log/ }).waitFor({ timeout: 15000 });
-    await PA.getByRole('button', { name: /Add Blasting Log/ }).click();
+    await PA.locator('[data-tile="blast-log"] [data-tile-action="Start"]').waitFor({ timeout: 15000 });
+    await PA.locator('[data-tile="blast-log"] [data-tile-action="Start"]').click();
     await waitFor(() => countOf(PA, 'blastLogs', 'blastDayId', day2).then((n) => (n === 1 ? 1 : 0)));
     await waitForUpload(PA, 30000);
     await waitFor(() => countOf(PB, 'blastLogs', 'blastDayId', day2).then((n) => (n === 1 ? 1 : 0)));

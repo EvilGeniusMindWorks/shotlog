@@ -70,9 +70,12 @@ async (page, lib) => {
       await sleep(800);
       const after = await PD.evaluate(async ({ logId, rigId }) => {
         const { db } = await import('/src/db/index.ts');
-        return { end: (await db.drillLogs.get(logId)).endingHours, meter: (await db.equipment.get(rigId)).hourMeter };
+        // S14: the reading belongs to the rig's checklist (its odometer), not the log
+        const { todayISO } = await import('/src/lib/utils.ts');
+        const chk = (await db.drillChecklists.filter((c) => c.equipmentId === rigId && c.date === todayISO()).toArray()).sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+        return { end: chk?.stopHours ?? null, meter: (await db.equipment.get(rigId)).hourMeter };
       }, { logId, rigId });
-      R.ok(`saving writes the log's endingHours (${after.end}) and moves the rig meter (${after.meter})`, after.end === r.start + 5 && after.meter === r.start + 5);
+      R.ok(`saving writes the checklist's stop reading (${after.end}) and moves the rig meter (${after.meter})`, after.end === r.start + 5 && after.meter === r.start + 5);
       R.ok('the row now shows the number, not the door', (await PD.locator(`[data-rig-meter-enter]`).count()) === 0 && new RegExp(`→ ${r.start + 5} h`).test(await PD.locator(`[data-derived-rig="${r.asset}"]`).innerText()));
     });
 
@@ -100,9 +103,9 @@ async (page, lib) => {
         return el ? Boolean(el.closest('[data-log-complete-confirm]')) : false;
       }, [box.x + box.width / 2, box.y + box.height / 2]);
       R.ok(`the Complete button is inside the viewport (bottom ${Math.round(box.y + box.height)} ≤ 844) and a tap at its centre hits it, not the nav`, box.y + box.height <= 844 && hit);
-      await PD.waitForFunction(() => { const el = document.querySelector('[data-log-end-meter]'); return el && (el.getAttribute('placeholder') ?? '') !== ''; }, { timeout: 5000 }).catch(() => undefined);
-      const ph = await PD.locator('[data-log-end-meter]').getAttribute('placeholder');
-      R.ok(`the end-of-day meter field is on the sheet, prefilled from the ledger (${ph})`, ph != null && Number(ph) >= r.start);
+      // S14: the meter lives on the rig's checklist — the sheet only says so
+      const note = await PD.locator('[data-log-meter-note]').innerText().catch(() => '');
+      R.ok('no meter field on the complete sheet — it points to the rig list', (await PD.locator('[data-log-end-meter]').count()) === 0 && /checklist/.test(note));
       await confirm.click();
       await sleep(800);
       const st = await PD.evaluate(async (logId) => { const { db } = await import('/src/db/index.ts'); return (await db.drillLogs.get(logId)).status; }, logId);

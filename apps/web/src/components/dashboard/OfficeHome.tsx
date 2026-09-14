@@ -5,6 +5,7 @@
 // paperwork · open incidents — plus "never submitted" drafts older than
 // three days. Provisional until the Evette walkthrough resumes; the
 // sections are the ones her charter already names.
+import { TodaysJobs } from './TodaysJobs';
 import { useMemo, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, CheckCircle2, Clock, FileWarning, ShieldAlert, Undo2 } from 'lucide-react';
@@ -268,6 +269,8 @@ export function OfficeHome() {
         <h2 className="text-xl font-bold text-gray-900">Office{first ? ` · ${first}` : ''}</h2>
         <p className="text-xs text-gray-500">{formatDate(todayISO())} · what needs your hands today, in order</p>
       </div>
+
+      <TodaysJobs />
 
       <div className="flex gap-2 flex-wrap">
         <Counter n={q?.approvals.length ?? 0} label="Awaiting approval" tone="amber" target="queue-approvals" />

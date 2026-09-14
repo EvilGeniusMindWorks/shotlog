@@ -44,6 +44,18 @@ export async function buildHourLedger(equip: Equipment): Promise<HourLedger> {
       hours: c.startingHours,
       who: c.drillerName || 'checklist',
     });
+    // S14: the same checklist's stop reading — the rig's odometer at the end
+    if (c.stopHours != null) {
+      entries.push({
+        key: `chk-stop-${c.id}`,
+        date: c.date,
+        at: c.stoppedAt ?? c.updatedAt,
+        source: 'checklist',
+        hours: c.stopHours,
+        who: c.drillerName || 'checklist',
+        note: c.stoppedOutOfService ? 'out of service' : 'stopped for the day',
+      });
+    }
   }
 
   // S7d: the driller's end-of-day meter at drill-log sign-complete

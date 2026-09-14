@@ -32,11 +32,12 @@ import { DailyReportForm } from '@/components/forms/DailyReportForm';
 import { DrillPlanCard } from '@/components/forms/DrillPlanCard';
 import { AttachmentsCard } from '@/components/forms/AttachmentsCard';
 import { DayHistorySheet } from '@/components/forms/DayHistorySheet';
+import { DayHub } from '@/components/day/DayHub';
 import { ContactList } from '@/components/forms/JobContactsCard';
 import { createIncident } from '@/pages/admin/AdminIncidentsPage';
 
 type Tab = 'blast-log' | 'daily-report';
-type DayView = 'hub' | 'blast-log' | 'daily-report' | 'drilling' | 'readiness';
+type DayView = 'tiles' | 'hub' | 'blast-log' | 'daily-report' | 'drilling' | 'readiness';
 
 function CondChip({ children, accent }: { children: ReactNode; accent?: boolean }) {
   return (
@@ -73,7 +74,7 @@ export function BlastDayPage() {
   // daily report.
   const [viewState, setViewState] = useState<DayView | null>(() => {
     const v = searchParams.get('view');
-    if (v === 'hub' || v === 'blast-log' || v === 'daily-report' || v === 'drilling' || v === 'readiness')
+    if (v === 'tiles' || v === 'hub' || v === 'blast-log' || v === 'daily-report' || v === 'drilling' || v === 'readiness')
       return v;
     return searchParams.get('tab') === 'daily' ? 'daily-report' : null;
   });
@@ -82,9 +83,11 @@ export function BlastDayPage() {
   // the daily report too — the hub and its spine are the blaster's
   // (Drilling → Readiness → Shots); the driller's part of a blasting day is
   // their card, log and checklist, and the Day tab is one tap away.
-  const view: DayView = blastLog
-    ? (viewState ?? (myHomeDashboard() === 'driller' ? 'daily-report' : 'hub'))
-    : 'daily-report';
+  // S14: the day opens on its TILES for every role; the tabs and the phase
+  // spine live inside the Blasting log (view 'hub' and friends). A deep link
+  // into the blast side of a day with no log falls back to the tiles.
+  const needsLog = (v: DayView | null) => v === 'hub' || v === 'blast-log' || v === 'drilling' || v === 'readiness';
+  const view: DayView = !viewState ? 'tiles' : needsLog(viewState) && !blastLog ? 'tiles' : viewState;
   const setView = (v: string) => setViewState(v as DayView);
   const tab: Tab = view === 'daily-report' ? 'daily-report' : 'blast-log';
   const phaseModel = useDayPhases(blastDay, blastLog, shots);
@@ -490,9 +493,20 @@ export function BlastDayPage() {
         </div>
       )}
 
-      {/* Segmented tab control (wireframe §4.3) — blast log tab only when one exists */}
+      {/* S14: the day's tiles — every role lands here */}
+      {view === 'tiles' && (
+        <div className="px-4 pt-3 max-w-5xl mx-auto">
+          <DayHub day={blastDay} job={job} blastLog={blastLog} shots={shots} dailyReport={dailyReport} locked={locked} owner={owner} setView={setView} />
+        </div>
+      )}
+
+      {/* Inside a paper: back to the tiles, then the tabs (blast log only when one exists) */}
+      {view !== 'tiles' && (
       <div className="px-4 pt-3">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-5xl mx-auto space-y-2">
+          <button className="text-sm font-semibold text-navy" data-back-to-day onClick={() => setView('tiles')}>
+            ‹ Back to the day
+          </button>
           {blastLog ? (
             <div className="flex bg-gray-100 rounded-lg p-1" data-tour="day-tabs">
               {(
@@ -520,24 +534,10 @@ export function BlastDayPage() {
                 );
               })}
             </div>
-          ) : (
-            <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2">
-              <span className="text-sm text-gray-500 flex-1">
-                {WORK_TYPE_OPTIONS.find((o) => o.value === blastDay.typeOfWork)?.label} day —
-                daily report only.
-              </span>
-              {!locked && can('blastLogs', 'PUT') && (
-                <Button size="sm" variant="secondary"
-                  onClick={() => {
-                    void addBlastLogToDay(blastDay.id).then(() => setView('blast-log'));
-                  }}>
-                  <FileText className="h-4 w-4 mr-1" /> Add Blasting Log
-                </Button>
-              )}
-            </div>
-          )}
+          ) : null}
         </div>
       </div>
+      )}
 
       {showContacts && (
         <div className="max-w-5xl mx-auto px-4 pt-3">

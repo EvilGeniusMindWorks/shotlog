@@ -115,3 +115,10 @@ Incidents · People (read) · company/customer/site pages · export surfaces
 - A day where nothing was started is not "never submitted"; it shows as "Time cards only" when
   cards exist. The office keeps approving days and cards separately. What the weather service said
   is recorded on the day beside what the crew confirmed.
+
+## S14 — the hub (Sep 14 2026)
+
+- **Today's jobs** sits above Evette's queues: one row per job with a day today — the work code (DB, DO, DE, C, H), who is on site, and four dots (blasting log, daily report, drilling, time cards) in grey/amber/green/teal/red for not started/in progress/filed or accepted/approved/sent back. Rows that need her float up — a day sent back, a drill log signed complete and waiting on the blaster, nothing started by mid-morning.
+- A **Needs you / All today** filter and a search box (job, customer or person) sit with the list.
+- Tapping a row opens that day's tiles read-only — Evette can look at any paper without Start or Open doing anything to it; approving still happens from her queues.
+- The same four dots appear on each day's row in Records. Her queues — approvals, sent back, time cards, expiring, never submitted — do not change.

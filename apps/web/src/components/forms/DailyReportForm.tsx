@@ -12,7 +12,7 @@ import { Select } from '@/components/ui/select';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { canEditApprovedDay, can } from '@/lib/perms';
 import { getSessionUser } from '@/lib/session';
-import { propagateHourMeter } from '@/hooks/useMaintenance';
+import { propagateHourMeter, stopChecklist } from '@/hooks/useMaintenance';
 
 /** S4 (I3): an empty section is ONE row, not a card of nothing — tap to add
  *  the first line. On a locked day an empty section is simply absent. */
@@ -216,7 +216,7 @@ function EquipmentSection({
         )
         .toArray();
       const rigIds = [...new Set(logs.map((l) => l.drillRigEquipmentId).filter((x): x is string => Boolean(x)))];
-      const out: { rigId: string; asset: string; start: number | null; end: number | null; who?: string; logId?: string; logOwnerId?: string }[] = [];
+      const out: { rigId: string; asset: string; start: number | null; end: number | null; who?: string; logId?: string; logOwnerId?: string; chkId?: string }[] = [];
       for (const rigId of rigIds) {
         const rig = await db.equipment.get(rigId);
         if (!rig) continue;
@@ -234,7 +234,9 @@ function EquipmentSection({
           rigId,
           asset: rig.assetNumber,
           start: chk?.startingHours ?? null,
-          end: ends[0] ?? null,
+          // S14: the checklist's own stop reading first; a legacy log reading as fallback
+          end: chk?.stopHours ?? ends[0] ?? null,
+          chkId: chk?.id,
           who: rigLogs[0]?.drillerName,
           logId: rigLogs[0]?.id,
           logOwnerId: rigLogs[0]?.drillerUserId,
@@ -250,11 +252,16 @@ function EquipmentSection({
     const me = getSessionUser();
     return Boolean(me && (me.id === ownerId || can('drillLogs', 'PATCH')));
   };
-  const saveMeter = async (d: { rigId: string; logId?: string }) => {
+  const saveMeter = async (d: { rigId: string; logId?: string; chkId?: string }) => {
     const v = parseFloat(meterValue);
-    if (!d.logId || !Number.isFinite(v)) return;
-    await db.drillLogs.update(d.logId, { endingHours: v, updatedAt: nowISO() });
-    await propagateHourMeter(d.rigId, v);
+    if (!Number.isFinite(v)) return;
+    // S14: the reading belongs to the rig's checklist (its odometer)
+    const chk = d.chkId ? await db.drillChecklists.get(d.chkId) : undefined;
+    if (chk) await stopChecklist(chk, v);
+    else if (d.logId) {
+      await db.drillLogs.update(d.logId, { endingHours: v, updatedAt: nowISO() });
+      await propagateHourMeter(d.rigId, v);
+    } else return;
     setMeterEdit(null);
   };
 

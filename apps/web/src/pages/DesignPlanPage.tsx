@@ -316,7 +316,7 @@ function DesignPlanInner({
         <div className="max-w-6xl mx-auto flex items-center gap-3">
           <button
             className="h-10 w-10 rounded-lg flex items-center justify-center text-navy-200 hover:text-white hover:bg-white/10"
-            onClick={() => navigate(`/blast-day/${blastDayId}`)}
+            onClick={() => navigate(`/blast-day/${blastDayId}?view=hub`)}
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
@@ -528,7 +528,7 @@ function DesignPlanInner({
                 <Send className="h-4 w-4 mr-1" /> {alreadyAssigned.size > 0 ? 'Send to more' : 'Send to drillers'}
               </Button>
             )}
-            <Button variant="outline" data-plan-done onClick={() => { flush(); navigate(`/blast-day/${blastDayId}`); }}>
+            <Button variant="outline" data-plan-done onClick={() => { flush(); navigate(`/blast-day/${blastDayId}?view=hub`); }}>
               Done for now
             </Button>
           </div>
@@ -541,7 +541,7 @@ function DesignPlanInner({
           jobId={job?.id ?? ''}
           alreadyAssigned={alreadyAssigned}
           onClose={() => setShowSend(false)}
-          onSent={() => { flush(); navigate(`/blast-day/${blastDayId}`); }}
+          onSent={() => { flush(); navigate(`/blast-day/${blastDayId}?view=hub`); }}
         />
       )}
     </div>

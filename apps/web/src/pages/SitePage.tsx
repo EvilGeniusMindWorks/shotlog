@@ -5,6 +5,7 @@
 // here inherits (address, state, Site K, rock), jurisdiction & permits with
 // expiry countdowns, access & safety notes, the offline contact sheet, and
 // the jobs run at this site.
+import { UseCustomerAddress } from '@/components/forms/UseCustomerAddress';
 import { ReadOnlyWrap } from '@/components/ui/read-only-wrap';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -253,11 +254,27 @@ const gridCls = (readOnly: boolean) =>
 
 function GroundCard({ site, readOnly }: { site: Site; readOnly: boolean }) {
   const { draft, setField } = useDraftRecord(db.sites, site);
+  const customer = useLiveQuery(() => (site.customerId ? db.customers.get(site.customerId) : undefined), [site.customerId]);
   return (
     <div className={gridCls(readOnly)}>
       <div className="sm:col-span-2">
         <Label className="text-xs">Site name</Label>
         <Input value={draft.name} onChange={(e) => setField('name', e.target.value)} />
+      </div>
+      {/* S14: one tap copies the customer's billing address; the site keeps its own copy */}
+      <div className="sm:col-span-2">
+        <UseCustomerAddress
+          customer={customer}
+          value={{ address: draft.address, city: draft.city, state: draft.state, zip: draft.zip }}
+          disabled={readOnly}
+          onUse={(a) => {
+            setField('address', a.address);
+            setField('city', a.city);
+            setField('state', a.state);
+            setField('zip', a.zip ?? '');
+            void ensureSiteGeo(site.id, { force: true }).catch(() => undefined);
+          }}
+        />
       </div>
       <div>
         <Label className="text-xs">Street</Label>

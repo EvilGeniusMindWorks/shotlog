@@ -85,6 +85,7 @@ const TABLE_LABEL: Record<string, string> = {
   subcontractorEntries: 'subcontractor row',
   workDayConfirmations: 'confirmation',
   dayCardEdits: 'card change',
+  dayReminders: 'reminder',
 };
 
 type CardSetRow = { v: number; by: string; byName: string; at: string };

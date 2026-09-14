@@ -46,6 +46,7 @@ const REPORT_TABLES_RW: Record<string, readonly WriteOp[]> = {
   // S13: presence rows and the card's edit log belong to whoever works the day
   workDayConfirmations: ['PUT', 'PATCH', 'DELETE'],
   dayCardEdits: ['PUT', 'PATCH', 'DELETE'],
+  dayReminders: ['PUT', 'PATCH', 'DELETE'],
 };
 
 export const CAPABILITIES: readonly CapabilityDef[] = [

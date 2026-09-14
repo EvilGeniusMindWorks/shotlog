@@ -199,5 +199,8 @@
   ],
   "infra/powersync/sync_rules.yaml": [
     71
+  ],
+  "apps/web/src/pages/BlastDayPage.tsx apps/web/src/components/day/DayHub.tsx apps/web/src/components/day/CrewList.tsx apps/web/src/components/day/RigList.tsx apps/web/src/components/dashboard/OfficeHome.tsx apps/web/src/components/dashboard/RoleCards.tsx apps/web/src/pages/DrillChecklistPage.tsx apps/web/src/pages/DrillLogPage.tsx apps/web/src/hooks/useMaintenance.ts apps/web/src/lib/hourLedger.ts apps/web/src/pages/SitePage.tsx apps/web/src/components/forms/CustomerSitePicker.tsx apps/web/src/components/forms/NewJobForm.tsx": [
+    72
   ]
 }

@@ -120,6 +120,8 @@ async function deleteDayCardRows(dayId: string): Promise<void> {
     await deleteWithTombstone('workDayConfirmations', c.id);
   for (const e of await db.dayCardEdits.where('blastDayId').equals(dayId).toArray())
     await deleteWithTombstone('dayCardEdits', e.id);
+  for (const r of await db.dayReminders.where('blastDayId').equals(dayId).toArray())
+    await deleteWithTombstone('dayReminders', r.id);
 }
 
 /**

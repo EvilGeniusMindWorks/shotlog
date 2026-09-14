@@ -16,6 +16,12 @@ Your home is the whole day from the rig: three tiles, and above them anything fr
 
 ![The driller's home](driller-home.png)
 
+## The day's tiles
+
+Open a day — from Days, a job, or the blaster's tiles — and you land on its own set. **Rig checklists** lists every rig working that day as a row, with the hours it started and the hours it stopped ("D50 · 1,198.2 → running" until someone stops it); tap a rig for **Open the checklist**, **Stop for the day**, or **Out of service**, and **Start a checklist for another rig** is the last row. **Drill log** and **My time card** open as before. **Daily report** is yours to fill in on a drill-only day you started; on a blasting day it's read-only and marked as the blaster's.
+
+If a blaster is waiting on your time card, a line lands on your home — "Mark asked for your time card · Whately Quarry · today" — and clears itself the moment you file.
+
 ## Yesterday needs you
 
 A log you did not sign, a checklist not filed: they sit above the tiles until they are done, newest first. The strip shows five; the rest are on the Drilling tab.

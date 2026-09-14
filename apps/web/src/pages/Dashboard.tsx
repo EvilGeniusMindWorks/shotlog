@@ -21,6 +21,7 @@ import { MonthDayList } from '@/components/dashboard/MonthDayList';
 import { ProfileNagCard } from '@/components/onboarding/ProfileNagCard';
 import { FirstWeekCard } from '@/components/guidance/FirstWeekCard';
 import { DecisionsCard } from '@/components/day/DecisionsCard';
+import { ReminderCard } from '@/components/day/ReminderCard';
 import { getSessionUser } from '@/lib/session';
 import { myHomeDashboard } from '@/lib/perms';
 import type { WorkType } from '@/db/schema';
@@ -36,6 +37,10 @@ export interface DaySummary {
   /** S13: papers exist only when started */
   report: boolean;
   cards: number;
+  /** S14: the four coverage dots (blasting log · daily report · drilling · time cards) */
+  hasLog: boolean;
+  drilling: 'none' | 'started' | 'accepted';
+  cardsState: 'none' | 'draft' | 'filed' | 'approved';
 }
 
 /** Assemble per-day stats + the site-map snapshot for the hero image */
@@ -58,11 +63,24 @@ export function useDaySummaries(): DaySummary[] | undefined {
       (await sql.getAll<{ dayId: string }>(`SELECT json_extract(payload,'$.blastDayId') AS dayId FROM records WHERE table_name = 'dailyReports'`)).map((r) => r.dayId),
     );
     const cardCounts = new Map<string, number>();
-    for (const r of await sql.getAll<{ dayId: string | null; n: number }>(
-      `SELECT json_extract(payload,'$.blastDayId') AS dayId, COUNT(*) AS n FROM records WHERE table_name = 'timeCards' GROUP BY dayId`,
+    const cardStates = new Map<string, string[]>();
+    for (const r of await sql.getAll<{ dayId: string | null; jobId: string; date: string; status: string }>(
+      `SELECT json_extract(payload,'$.blastDayId') AS dayId, json_extract(payload,'$.jobId') AS jobId, json_extract(payload,'$.date') AS date, json_extract(payload,'$.status') AS status FROM records WHERE table_name = 'timeCards'`,
     )) {
-      if (r.dayId) cardCounts.set(r.dayId, r.n);
+      const key = r.dayId ?? `${r.jobId}|${r.date}`;
+      cardCounts.set(key, (cardCounts.get(key) ?? 0) + 1);
+      cardStates.set(key, [...(cardStates.get(key) ?? []), r.status]);
     }
+    // S14 dots: drilling = drill logs on the day (or its job + date) and rig checklists at the job that day
+    const drillStates = new Map<string, string[]>();
+    for (const r of await sql.getAll<{ dayId: string | null; jobId: string; date: string | null; status: string }>(
+      `SELECT json_extract(payload,'$.blastDayId') AS dayId, json_extract(payload,'$.jobId') AS jobId, COALESCE(json_extract(payload,'$.date'), substr(json_extract(payload,'$.createdAt'),1,10)) AS date, json_extract(payload,'$.status') AS status FROM records WHERE table_name = 'drillLogs'`,
+    )) {
+      for (const key of [r.dayId, `${r.jobId}|${r.date}`]) if (key) drillStates.set(key, [...(drillStates.get(key) ?? []), r.status]);
+    }
+    const checklistKeys = new Set(
+      (await sql.getAll<{ jobId: string | null; date: string }>(`SELECT json_extract(payload,'$.jobId') AS jobId, json_extract(payload,'$.date') AS date FROM records WHERE table_name = 'drillChecklists'`)).map((r) => `${r.jobId}|${r.date}`),
+    );
     const shotRows = await sql.getAll<{
       id: string; logId: string; numHoles: number | null; yards: number | null; hasSketch: number;
     }>(
@@ -113,7 +131,19 @@ export function useDaySummaries(): DaySummary[] | undefined {
         pf: yards > 0 ? powderFactor(totalLbs, yards) : 0,
         snapshot,
         report: reportDays.has(day.id),
-        cards: cardCounts.get(day.id) ?? 0,
+        cards: (cardCounts.get(day.id) ?? 0) + (cardCounts.get(`${day.jobId}|${day.date}`) ?? 0),
+        hasLog: logByDay.has(day.id),
+        drilling: (() => {
+          const st = [...(drillStates.get(day.id) ?? []), ...(drillStates.get(`${day.jobId}|${day.date}`) ?? [])];
+          if (st.length === 0) return checklistKeys.has(`${day.jobId}|${day.date}`) ? 'started' : 'none';
+          return st.every((x) => x === 'accepted') ? 'accepted' : 'started';
+        })(),
+        cardsState: (() => {
+          const st = [...(cardStates.get(day.id) ?? []), ...(cardStates.get(`${day.jobId}|${day.date}`) ?? [])];
+          if (st.length === 0) return 'none';
+          if (st.every((x) => x === 'approved')) return 'approved';
+          return st.every((x) => x !== 'draft') ? 'filed' : 'draft';
+        })(),
       });
     }
     return summaries;
@@ -179,6 +209,7 @@ export function Dashboard() {
       {(home === 'field' || home === 'driller') && <ProfileNagCard />}
       <FirstWeekCard />
       <DecisionsCard />
+      <ReminderCard />
     </div>
   );
   if (home === 'driller')

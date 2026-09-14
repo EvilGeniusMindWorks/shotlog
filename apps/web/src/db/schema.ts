@@ -368,6 +368,21 @@ export interface WorkDayConfirmation extends BaseRecord {
   didEdit: boolean;
 }
 
+/** S14: "Remind" — a blaster asks a person for a paper on a day. One line
+ *  on that person's home until the paper exists or they dismiss it. */
+export interface DayReminder extends BaseRecord {
+  blastDayId: string;
+  jobId: string;
+  date: string;
+  toUserId: string;
+  toName: string;
+  fromUserId: string;
+  fromName: string;
+  what: 'timecard';
+  at: string;
+  clearedAt?: string;
+}
+
 /** S13: one card fact changed by one person, based on the version they
  *  saw. The server applies it (first to land sticks) or holds it; a held
  *  edit is the person's to resolve from "Needs your decision". */
@@ -945,6 +960,11 @@ export interface DrillChecklist extends BaseRecord {
   jobId?: string;
   date: string; // ISO date
   startingHours: number | null;
+  /** S14: the rig's own meter when it stopped for the day (or went down) —
+   *  each checklist carries its two readings; nothing is shared between rigs */
+  stopHours?: number | null;
+  stoppedAt?: string;
+  stoppedOutOfService?: boolean;
   daily: Record<string, CheckState>;
   weeklyDone: boolean;
   weekly: Record<string, CheckState>;

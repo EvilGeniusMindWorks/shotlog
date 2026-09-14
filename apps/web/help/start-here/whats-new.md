@@ -8,6 +8,16 @@ status: draft
 
 Short notes on what changed, newest first. Ask in ? → **Send feedback** if something here is not what you see.
 
+## September 15, 2026
+
+- **A work day opens on its tiles.** One tile per paper for your role, each with that paper's real state and one button. **Start** creates the paper; **Open** opens it. "Up next" marks the first thing that needs you. The tabs and the phase spine with **Continue** are inside the Blasting log now; **Back to the day** returns you to the tiles.
+- **File this day** is the row at the bottom of the tiles, there only when a paper exists to file. A blasting day needs every shot signed first.
+- **Blasters see the crew.** Under your tiles, one row per person on the day with the state of their checklist, drill log and time card. Tap a row to read their papers, **Accept** a drill log they signed complete, or **Remind** them about a missing card. From eight people the list gains a summary, a **Needs something / All** filter and search.
+- **Drillers: the day's tiles are yours.** Rig checklists, drill log, my time card, and the blaster's daily report to read. A reminder from the blaster shows on your home until you file the card.
+- **Rig checklists carry both readings now.** Each rig's own meter at the start of the day and when it stops. Tap a rig's row for **Stop for the day** or **Out of service**. The drill log no longer asks for a meter reading.
+- **Office: Today's jobs.** Every job with a work day today, the work code, who is on site and four dots for the papers, with the rows that need you first, a **Needs you / All today** filter and search. Tap a row to see the day's tiles. The same dots sit on each day in the work-day lists.
+- **Sites: Use the customer's address.** One tap copies the customer's billing address onto a new or existing site.
+
 ## September 14, 2026
 
 - **One work day per job per date.** Two phones that start work at the same job on the same day now land on the same day, even with no signal — no more "two copies of today" to merge.

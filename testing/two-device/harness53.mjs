@@ -30,7 +30,7 @@ async (page, lib) => {
     }, stamp);
     dayId = made.id;
     shotId = made.shotId;
-    await P1.goto(`${WEB}/blast-day/${dayId}`);
+    await P1.goto(`${WEB}/blast-day/${dayId}?view=hub`);
     await P1.locator('[data-day-continue]').waitFor({ timeout: 10000 });
     R.ok('Continue: Build the drill plan', /Build the drill plan/.test(await P1.locator('[data-day-continue]').innerText()));
     await P1.locator('[data-day-continue]').click();
@@ -76,7 +76,7 @@ async (page, lib) => {
     const sendBtn = P1.locator('[data-send-drillers] button', { hasText: /Send to/ });
     R.ok(`picked ${pickedName || 'nobody'} · Send enabled`, Boolean(pickedName) && (await sendBtn.isEnabled()));
     await sendBtn.click();
-    await P1.waitForURL(new RegExp('/blast-day/' + dayId + '$'), { timeout: 8000 });
+    await P1.waitForURL(new RegExp('/blast-day/' + dayId + '(\\?view=hub)?$'), { timeout: 8000 });
     await waitText(P1, '[data-day-continue]', /Drilling —/, 8000);
     const first = pickedName.split(' ')[0];
     const label = (await P1.locator('[data-day-continue]').innerText()).trim();
@@ -101,7 +101,7 @@ async (page, lib) => {
   });
 
   await R.section('Mark: Continue says review & build timing; the timing opens on the drilled pattern', async () => {
-    await P1.goto(`${WEB}/blast-day/${dayId}`);
+    await P1.goto(`${WEB}/blast-day/${dayId}?view=hub`);
     await waitText(P1, '[data-day-continue]', /Review drilling & build timing/, 15000);
     R.ok('Continue: Review drilling & build timing', /Review drilling & build timing/.test(await P1.locator('[data-day-continue]').innerText()));
     // the readiness hand-off lands here (one line in BlastDayPage); go straight to it

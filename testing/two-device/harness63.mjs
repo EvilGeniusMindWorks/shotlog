@@ -96,13 +96,8 @@ async (page, lib) => {
     const confirm = PD.locator('[data-log-complete-confirm]');
     await confirm.waitFor({ timeout: 5000 });
     R.ok('the sheet carries the signature pad and the button reads "Sign and complete", disabled', (await PD.locator('[data-log-complete-signature]').count()) === 1 && /Sign and complete/.test(await confirm.innerText()) && (await confirm.isDisabled()));
-    await PD.waitForFunction(() => (document.querySelector('[data-log-end-meter]')?.value ?? '') !== '', null, { timeout: 8000 }).catch(() => undefined);
-    if (!(await PD.locator('[data-log-end-meter]').count())) {
-      const rigOnLog = await PD.evaluate(async (id) => (await (await import('/src/db/index.ts')).db.drillLogs.get(id))?.drillRigEquipmentId ?? null, logId);
-      R.note(`no meter input — rig on log: ${rigOnLog} (wanted ${rigId}); sheet: ${(await confirm.innerText()).replace(/\s+/g, ' ').slice(0, 200)}`);
-    }
-    const endVal = await PD.locator('[data-log-end-meter]').inputValue();
-    R.ok(`the end-of-day meter starts at the ledger's reading (${endVal}) with the "from the ledger" line`, Number(endVal) >= meter && /from the ledger/.test(await PD.locator('[data-log-end-meter-source]').innerText()));
+    // S14: the rig's meter is asked on its checklist (Stop for the day) — never on the log
+    R.ok('no meter field on the complete sheet — the rig list holds the reading', (await PD.locator('[data-log-end-meter]').count()) === 0 && /checklist/.test(await PD.locator('[data-log-meter-note]').innerText().catch(() => '')));
     // sign inside the sheet
     await PD.locator('[data-log-complete-signature]').getByRole('button', { name: /Tap to sign/ }).click();
     const canvas = PD.locator('canvas').first();
@@ -118,7 +113,7 @@ async (page, lib) => {
     await confirm.click();
     await sleep(1000);
     const after = await PD.evaluate(async (logId) => { const { db } = await import('/src/db/index.ts'); const l = await db.drillLogs.get(logId); return { status: l.status, signed: Boolean(l.signatureImage), end: l.endingHours }; }, logId);
-    R.ok(`the log is complete, signed, with the untouched meter (${after.end})`, after.status === 'complete' && after.signed && after.end === Number(endVal));
+    R.ok('the log is complete and signed; no meter reading was written on it (S14: the checklist holds it)', after.status === 'complete' && after.signed && after.end == null);
   });
   await cD.close();
 

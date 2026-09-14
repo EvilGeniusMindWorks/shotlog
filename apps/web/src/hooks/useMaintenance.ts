@@ -80,6 +80,43 @@ export async function fileChecklist(checklist: DrillChecklist): Promise<{ ticket
   return { ticketId };
 }
 
+/** S14: the rig's stop reading for the day — its own meter, on its own
+ *  checklist. Out of service records the reading at that moment and opens
+ *  the shop ticket exactly as filing with the box ticked does. */
+export async function stopChecklist(
+  checklist: DrillChecklist,
+  stopHours: number,
+  opts: { outOfService?: boolean; note?: string } = {},
+): Promise<{ ticketId?: string }> {
+  const now = nowISO();
+  await db.drillChecklists.update(checklist.id, {
+    stopHours,
+    stoppedAt: now,
+    ...(opts.outOfService ? { stoppedOutOfService: true } : {}),
+    updatedAt: now,
+  });
+  await propagateHourMeter(checklist.equipmentId, stopHours);
+  if (!opts.outOfService) return {};
+  const ticketId = generateId();
+  const ticket: RepairTicket = {
+    id: ticketId,
+    equipmentId: checklist.equipmentId,
+    sourceType: 'drill_checklist',
+    sourceId: checklist.id,
+    description: opts.note?.trim() || `Out of service at ${stopHours} h — marked from the day's rig list`,
+    outOfService: true,
+    status: 'open',
+    openedByName: checklist.drillerName,
+    openedByUserId: checklist.drillerUserId,
+    createdAt: now,
+    updatedAt: now,
+    syncStatus: 'local',
+  };
+  await db.repairTickets.add(ticket);
+  await db.equipment.update(checklist.equipmentId, { status: 'in_shop', updatedAt: now });
+  return { ticketId };
+}
+
 /** Shop resolves a ticket; restores the asset when it was pulled for it. */
 export async function resolveTicket(ticket: RepairTicket, resolutionNote: string): Promise<void> {
   const session = getSessionUser();

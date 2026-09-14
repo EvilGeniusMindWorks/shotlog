@@ -2,6 +2,8 @@
 // open, older months collapsed to a count, search across everything.
 // Shared by the blaster home's history band and the /days page — no list
 // renders unbounded history (decision 2026-08-17).
+import { Dots } from '@/components/dashboard/TodaysJobs';
+import type { Dot } from '@/lib/dayHub';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
@@ -25,6 +27,18 @@ function dayLine(s: DaySummary): string {
   return type;
 }
 
+/** S14: the office's four dots, from the summary alone (no per-row queries) */
+export function summaryDots(s: DaySummary): { log: Dot; report: Dot; drilling: Dot; cards: Dot } {
+  const paper = (exists: boolean): Dot =>
+    !exists ? 'grey' : s.day.status === 'approved' ? 'teal' : s.day.status === 'submitted' ? 'green' : s.day.sendBackNote ? 'red' : 'amber';
+  return {
+    log: paper(s.hasLog),
+    report: paper(s.report),
+    drilling: s.drilling === 'none' ? 'grey' : s.drilling === 'accepted' ? 'green' : 'amber',
+    cards: s.cardsState === 'none' ? 'grey' : s.cardsState === 'approved' ? 'teal' : s.cardsState === 'filed' ? 'green' : 'amber',
+  };
+}
+
 function DayRow({ s, navigate }: { s: DaySummary; navigate: (to: string) => void }) {
   const sentBack = s.day.status === 'draft' && Boolean(s.day.sendBackNote);
   return (
@@ -41,6 +55,7 @@ function DayRow({ s, navigate }: { s: DaySummary; navigate: (to: string) => void
           {s.totalLbs > 0 && ` · ${fmtLbs(s.totalLbs)} lbs`}
         </p>
       </div>
+      <Dots d={summaryDots(s)} />
       <Badge variant={sentBack ? 'violation' : (s.day.status as 'draft' | 'submitted' | 'approved')}>
         {sentBack ? 'sent back' : s.day.status}
       </Badge>

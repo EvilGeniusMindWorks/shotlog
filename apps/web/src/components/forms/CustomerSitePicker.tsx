@@ -3,6 +3,7 @@
 // the typed values into real records. One component, every job form.
 // S7b (Matthew): top-down order is the point — customer first; a customer
 // with ONE site fills it in; otherwise only that customer's sites show.
+import { UseCustomerAddress } from '@/components/forms/UseCustomerAddress';
 import { useEffect, useState } from 'react';
 import { useLiveQuery, db } from '@/db';
 import { Input } from '@/components/ui/input';
@@ -174,6 +175,13 @@ export function CustomerSitePicker({
               onChange={(e) => onChange({ ...value, siteName: e.target.value })}
             />
           </div>
+          {!newCustomer && (
+            <UseCustomerAddress
+              customer={customers.find((c) => c.id === value.customerId)}
+              value={{ address: value.address, city: value.city, state: value.state }}
+              onUse={(a) => onChange({ ...value, address: a.address, city: a.city, state: a.state })}
+            />
+          )}
           <div>
             <Label>Address *</Label>
             <Input data-pick-site-address value={value.address} onChange={(e) => onChange({ ...value, address: e.target.value })} />

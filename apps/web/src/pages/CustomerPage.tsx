@@ -2,6 +2,7 @@
 // cards (Company & billing · Contacts · Compliance & terms) come FIRST,
 // then the customer's SITES (windowed, "+ New site" here), then the full
 // sections to edit. Wide screens: the same page, cards across the top.
+import { UseCustomerAddress } from '@/components/forms/UseCustomerAddress';
 import { ReadOnlyWrap } from '@/components/ui/read-only-wrap';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -240,6 +241,13 @@ function SitesList({
             placeholder="defaults to address"
             onChange={(e) => setSite({ ...site, name: e.target.value })}
             data-new-site-name
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <UseCustomerAddress
+            customer={customer}
+            value={{ address: site.addr.street1, city: site.addr.city, state: site.addr.state, zip: site.addr.zip }}
+            onUse={(a) => setSite({ ...site, addr: { ...site.addr, street1: a.address, city: a.city, state: a.state, zip: a.zip ?? '' } })}
           />
         </div>
         <AddressFields value={site.addr} onChange={(addr) => setSite({ ...site, addr })} />
