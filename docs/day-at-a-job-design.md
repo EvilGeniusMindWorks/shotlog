@@ -12,6 +12,41 @@ workflow (seven scenarios + a critic; ran on Sonnet). Review, corrections and ev
 claim verified in code by Fable at extra high. Artifacts: scratchpad `day-theme-brief.md`,
 `day-theme-merged.json`, `day-theme-critic.json`.
 
+## Decisions (Matthew, Sep 14 2026, plan page df4d6790 v1+v2 and prototype page 5035558b)
+
+- Confirm screen = **A, the fact sheet** (label/value rows with the source of each; no pills anywhere).
+- Card input = **A, rows that open a chooser** (one row per fact with its value and source; tapping opens
+  a full-height chooser of big buttons; the same pattern as the rig picker).
+- **Weather from the NWS**: when the card opens with signal, fetch the nearest station's latest
+  observation for the site's map point; fill temperature (cool < 40°F, moderate 40–70, warm > 70),
+  weather (text → enum), wind (degrees → compass); **ground is suggested** from precipitation and
+  freezing and labelled "suggested"; record the reading (station, time, temp, text, wind, precip)
+  alongside the person's confirmed values; no signal → last-day prefill, never blocks.
+- Card conflicts = **option 2: first to land sticks, later disagreements are asked**. Every card save
+  carries the version it was based on; a stale save is held server-side, the device gets it back as a
+  "needs your decision" item, and the person picks with both values and their authors side by side.
+  Layered on field-level sending (only changed facts travel; different facts merge quietly).
+- One shared **on-site time** on the card; personal in/out stay on time cards. **Joe never sees the
+  blast side** on his hub. **Evette's view ships in S14**, as a sorted, filterable, searchable LIST
+  (not a strip), attention rows first, any number of jobs. **Any field role may change the card** from
+  the conditions bar; the yellow "updated" line tells the others.
+- **Blasters are the supervisors** (Mark): the blaster's hub shows their own papers, then a crew list
+  (one row per person with the state of each of their papers; tap → that person's papers; Accept a
+  completed drill log; Remind for a missing card). The separate supervisor role stays in the system.
+- **Big crews**: the crew list gains a summary line, a "Needs something / All" filter and search from
+  ~8 people; the daily report's crew section reads the same list. Matthew: "accepting for now; will
+  test for intuitiveness, simplicity and functionality."
+- **Rigs**: the Rig checklists tile IS the list of today's rigs, each with its own state; "Start a
+  checklist for another rig" is a row at the bottom of that list and opens the existing rig picker
+  (quick picks with reasons, nothing preselected); out of service on a checklist opens a ticket; the
+  drill log's rig line reads "D50, then D45 from 11:10".
+- **Per-tile states** are each paper's real lifecycle (blasting log: not started → started → n of m
+  shots signed → ready → filed → sent back → approved; daily report; drill log: not started → holes →
+  signed complete → accepted; checklist: none → in progress → filed → repair needed → out of service;
+  time card: not filed → draft → filed → approved). Tiles never invent a state.
+- Nothing is coded about gas leaks or any reason: a day is a container and every paper exists only
+  because someone started it.
+
 ## The model
 
 - **Root record:** `BlastDay` stays the root (UI: "Work day"). No rename.
