@@ -4,6 +4,7 @@ import { ArrowLeft, FileDown, Printer } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { useBlastDay } from '@/hooks/useBlastDay';
 import { fmtLbs } from '@/lib/format';
+import { equipmentRows, workForceRows } from '@/lib/dailyReportView';
 import type { EquipmentEntry, ProductCategory, WorkForceEntry } from '@/db/schema';
 import './print-blast-log.css';
 
@@ -38,21 +39,12 @@ export function PrintDailyReportPage() {
   const company = useLiveQuery(() => db.companySettings.get('companySettings-singleton'));
   const companyName = company?.companyName || 'Baystate Blasting, Inc.';
 
+  // Sep 15 2026: the paper reads the same sources as the screen — time cards
+  // as the work force, the rigs' own readings as the drills' hours
   const workForce =
-    useLiveQuery(
-      async () =>
-        dailyReport
-          ? (await db.workForceEntries.where('dailyReportId').equals(dailyReport.id).toArray()).sort(
-              (a, b) => a.rowNumber - b.rowNumber,
-            )
-          : [],
-      [dailyReport?.id],
-    ) ?? [];
+    useLiveQuery(async () => (dailyReport && blastDay ? workForceRows(blastDay, dailyReport.id) : []), [dailyReport?.id, blastDay?.id, blastDay?.date, blastDay?.jobId]) ?? [];
   const equipment =
-    useLiveQuery(async () => {
-      if (!dailyReport) return [] as EquipmentEntry[];
-      return db.equipmentEntries.where('dailyReportId').equals(dailyReport.id).toArray();
-    }, [dailyReport?.id]) ?? [];
+    useLiveQuery(async () => (dailyReport && blastDay ? equipmentRows(blastDay, dailyReport.id) : ([] as EquipmentEntry[])), [dailyReport?.id, blastDay?.id, blastDay?.date, blastDay?.jobId]) ?? [];
   const materials =
     useLiveQuery(async () => {
       if (!dailyReport) return [];

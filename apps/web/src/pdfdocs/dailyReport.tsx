@@ -3,6 +3,7 @@
 import { pdf } from '@react-pdf/renderer';
 import { db } from '@/db';
 import { getJobView } from '@/lib/jobContext';
+import { equipmentRows, workForceRows } from '@/lib/dailyReportView';
 import type {
   BlastDay,
   DailyReport,
@@ -461,10 +462,9 @@ export async function buildDailyReportPdf(blastDayId: string): Promise<Blob> {
   const explosiveUsage = blastLog
     ? await db.explosiveUsages.where('blastLogId').equals(blastLog.id).first()
     : undefined;
-  const workForce = (await db.workForceEntries.where('dailyReportId').equals(dailyReport.id).toArray()).sort(
-    (a, b) => a.rowNumber - b.rowNumber,
-  );
-  const equipment = await db.equipmentEntries.where('dailyReportId').equals(dailyReport.id).toArray();
+  // Sep 15 2026: the same sources as the screen — time cards, the rigs' own readings
+  const workForce = await workForceRows(blastDay, dailyReport.id);
+  const equipment = await equipmentRows(blastDay, dailyReport.id);
   const materials = await db.materialEntries.where('dailyReportId').equals(dailyReport.id).toArray();
   const subcontractors = await db.subcontractorEntries.where('dailyReportId').equals(dailyReport.id).toArray();
   return pdf(

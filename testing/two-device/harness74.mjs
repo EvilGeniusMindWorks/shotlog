@@ -254,6 +254,33 @@ async (page, lib) => {
     R.ok(`"Worked today, no card yet" says where the driller's card went: "${(line ?? '').slice(0, 120)}"`, /filed a card on (\w{3}, )?Jan 2, 2026 at this job — the wrong day\?/.test(line ?? ''));
   });
 
+  await R.section("The daily report's print shows the time cards as the work force and the rigs' own readings as drill hours", async () => {
+    // Barry files his card on the day; the §5 checklist (rig + start hours) is on this job today
+    const setup = await PB.evaluate(async ({ dayId, checklistId }) => {
+      const { db } = await import('/src/db/index.ts');
+      const { createTimeCard, fileTimeCard } = await import('/src/hooks/useTimeCards.ts');
+      const { createDailyReport } = await import('/src/hooks/useBlastDay.ts');
+      const { getSessionUser } = await import('/src/lib/session.ts');
+      const { nowISO } = await import('/src/lib/utils.ts');
+      const me = getSessionUser();
+      const day = await db.blastDays.get(dayId);
+      if (!(await db.dailyReports.where('blastDayId').equals(dayId).first())) await createDailyReport(dayId);
+      const cid = await createTimeCard(day, { name: me.name, userId: me.id });
+      await db.timeCards.update(cid, { timeIn: '06:15', timeOut: '15:45', straightTime: 8, overtime: 1.5, updatedAt: nowISO() });
+      await fileTimeCard(await db.timeCards.get(cid));
+      const chk = checklistId ? await db.drillChecklists.get(checklistId) : undefined;
+      const rig = chk ? await db.equipment.get(chk.equipmentId) : undefined;
+      return { asset: rig?.assetNumber, start: chk?.startingHours, me: me.name };
+    }, { dayId, checklistId });
+    await PB.goto(`${WEB}/blast-day/${dayId}/print-daily`);
+    await PB.locator('.print-blast-log, main').first().waitFor({ timeout: 15000 });
+    const text = await waitFor(() => PB.locator('body').innerText().then((s) => (new RegExp(setup.me).test(s) && /15:45/.test(s) ? s.replace(/\s+/g, ' ') : null)), 20000);
+    R.ok(`the work force row is Barry's time card ("${setup.me} · 06:15–15:45 · ST 8 · OT 1.5")`, Boolean(text) && /06:15/.test(text ?? '') && /15:45/.test(text ?? ''));
+    R.ok(`the drill ${setup.asset} appears with its checklist start reading (${setup.start})`, Boolean(setup.asset) && new RegExp(`${setup.asset}`).test(text ?? '') && new RegExp(String(setup.start)).test(text ?? ''));
+    const pdfBytes = await PB.evaluate(async (dayId) => { const { buildDailyReportPdf } = await import('/src/pdfdocs/index.ts'); const b = await buildDailyReportPdf(dayId); return b.size; }, dayId);
+    R.ok(`the PDF builds from the same sources (${pdfBytes} bytes)`, pdfBytes > 5000);
+  });
+
   await R.section('the error spy saw nothing during this run', async () => {
     const errs = browserErrors();
     R.ok(`no browser errors (${errs.length})${errs[0] ? ` — first: ${errs[0].text.slice(0, 120)}` : ''}`, errs.length === 0);

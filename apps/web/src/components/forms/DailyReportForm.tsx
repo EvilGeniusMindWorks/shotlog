@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { useLiveQuery, db, deleteWithTombstone } from '@/db';
+import { derivedRigHours } from '@/lib/dailyReportView';
 import { generateId, nowISO } from '@/lib/utils';
 import type { BlastDay, BlastLog, DailyReport, Shot, WorkForceEntry, EquipmentEntry, MaterialEntry, SubcontractorEntry } from '@/db/schema';
 import { equipmentEntryBucket } from '@/db/schema';
@@ -206,44 +207,7 @@ function EquipmentSection({
   // starting hours in the morning, the driller's end-of-day meter at
   // sign-complete — derived here, read-only. Trucks and seismographs stay
   // manual rows (nothing else records them).
-  const derived =
-    useLiveQuery(async () => {
-      const logs = await db.drillLogs
-        .filter(
-          (l) =>
-            l.blastDayId === blastDay.id ||
-            (l.jobId === blastDay.jobId && (l.date ?? l.createdAt.slice(0, 10)) === blastDay.date),
-        )
-        .toArray();
-      const rigIds = [...new Set(logs.map((l) => l.drillRigEquipmentId).filter((x): x is string => Boolean(x)))];
-      const out: { rigId: string; asset: string; start: number | null; end: number | null; who?: string; logId?: string; logOwnerId?: string; chkId?: string }[] = [];
-      for (const rigId of rigIds) {
-        const rig = await db.equipment.get(rigId);
-        if (!rig) continue;
-        // latest checklist that day wins (a refiled one supersedes)
-        const chk = (await db.drillChecklists.filter((c) => c.equipmentId === rigId && c.date === blastDay.date).toArray()).sort(
-          (a, b) => b.createdAt.localeCompare(a.createdAt),
-        )[0];
-        const ends = logs
-          .filter((l) => l.drillRigEquipmentId === rigId && l.endingHours != null)
-          .map((l) => l.endingHours as number)
-          .sort((a, b) => b - a);
-        // S9a: the newest log on this rig is where a missed end-of-day meter lands
-        const rigLogs = logs.filter((l) => l.drillRigEquipmentId === rigId).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-        out.push({
-          rigId,
-          asset: rig.assetNumber,
-          start: chk?.startingHours ?? null,
-          // S14: the checklist's own stop reading first; a legacy log reading as fallback
-          end: chk?.stopHours ?? ends[0] ?? null,
-          chkId: chk?.id,
-          who: rigLogs[0]?.drillerName,
-          logId: rigLogs[0]?.id,
-          logOwnerId: rigLogs[0]?.drillerUserId,
-        });
-      }
-      return out;
-    }, [blastDay.id, blastDay.jobId, blastDay.date]) ?? [];
+  const derived = useLiveQuery(() => derivedRigHours(blastDay), [blastDay.id, blastDay.jobId, blastDay.date]) ?? [];
 
   // S9a: end-of-day meter door on the rig row (see derived rigs above)
   const [meterEdit, setMeterEdit] = useState<string | null>(null);
