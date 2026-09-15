@@ -18,6 +18,7 @@ import { isBlastingWork } from '@/db/schema';
 import { collectDayAttachments, fileSubmission } from '@/lib/archive';
 import { nowISO } from '@/lib/utils';
 import { fmtLbs } from '@/lib/format';
+import { workForceRows } from '@/lib/dailyReportView';
 import { Button } from '@/components/ui/button';
 
 type Phase = 'init' | 'preflight' | 'blast_log' | 'daily_report';
@@ -87,10 +88,12 @@ export async function preflightDay(dayId: string): Promise<PreflightItem[]> {
   const report = await db.dailyReports.where('blastDayId').equals(dayId).first();
   if (!report) items.push({ key: 'noreport', level: 'amber', text: 'No daily report', to: `/blast-day/${dayId}?view=daily-report`, toLabel: 'Start it' });
   if (report) {
-    const rows = await db.workForceEntries.where('dailyReportId').equals(report.id).toArray();
+    // Sep 15 2026 (Matthew: "No crew" on every day): the crew IS the day's
+    // time cards since S7d — the same rows the print and the PDF read
+    const rows = await workForceRows(day, report.id);
     const worked = rows.filter((r) => r.timeIn || r.timeOut || (r.straightTime ?? 0) > 0);
-    if (worked.length === 0) items.push({ key: 'crew', level: 'amber', text: 'No crew on the daily report', to: `/blast-day/${dayId}?view=daily-report`, toLabel: 'Daily report' });
-    else items.push({ key: 'crew-ok', level: 'ok', text: `Crew on the daily report · ${worked.length}` });
+    if (worked.length === 0) items.push({ key: 'crew', level: 'amber', text: 'No crew on the daily report — nobody has a time card on this day yet', to: `/blast-day/${dayId}?view=daily-report`, toLabel: 'Daily report' });
+    else items.push({ key: 'crew-ok', level: 'ok', text: `Crew on the daily report · ${worked.length} time card${worked.length === 1 ? '' : 's'}` });
   }
 
   // GREEN — drilling accepted (informational)

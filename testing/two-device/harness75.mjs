@@ -209,9 +209,15 @@ async (page, lib) => {
     await PB.goto(`${WEB}/blast-day/${dayId}`);
     await PB.locator('[data-file-row]').waitFor({ timeout: 20000 });
     const ready = await waitFor(() => PB.locator('[data-file-row]').getAttribute('data-file-row').then((k) => (k === 'ready' ? k : null)));
-    const sub = ready ? await PB.locator('[data-file-sub]').innerText() : '';
+    const sub = ready ? (await waitFor(() => PB.locator('[data-file-sub]').innerText().then((t) => (t.includes(jobs[0].name) ? t : null)), 10000)) ?? (await PB.locator('[data-file-sub]').innerText()) : '';
     R.ok(`under File this day, the quiet line names the job and the date ("${sub}")`, ready === 'ready' && sub.includes(jobs[0].name) && /\d{4}/.test(sub));
     R.ok('the button itself still reads File this day', /File this day/.test(await PB.locator('[data-file-day]').innerText()));
+    // the filing screen's crew line reads the day's time cards (Dinis filed one in §2), not the old typed rows
+    await PB.goto(`${WEB}/blast-day/${dayId}/submit`);
+    await PB.locator('[data-preflight]').waitFor({ timeout: 15000 });
+    await sleep(500);
+    const crew = (await PB.locator('[data-preflight-level="ok"]').allInnerTexts()).find((t) => /Crew on the daily report/.test(t)) ?? '';
+    R.ok(`the filing screen counts the time cards as crew ("${crew.trim().slice(0, 50)}")`, /Crew on the daily report · 1 time card/.test(crew) && (await PB.getByText(/No crew on the daily report/).count()) === 0);
   });
 
   await R.section('the error spy saw nothing during this run', async () => {
