@@ -8,7 +8,8 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight, Users } from 'lucide-react';
 import type { BlastDay } from '@/db/schema';
-import { acceptDrillLog, remindForCard, type CrewModel, type CrewPerson } from '@/lib/dayHub';
+import { remindForCard, type CrewModel, type CrewPerson } from '@/lib/dayHub';
+import { drillLogRoute } from '@/hooks/useDrillPlans';
 import { hhmm } from '@/lib/dayCard';
 import { canDrillLogTransition } from '@/lib/perms';
 import { ConsequenceSheet } from '@/components/records/LifecycleMenu';
@@ -156,7 +157,9 @@ export function CrewList({
                   className={`w-full flex items-center gap-2 rounded-lg border px-3 py-2.5 mb-2 text-left min-h-[48px] ${acceptable ? 'border-amber-300 bg-amber-50' : 'border-gray-200 bg-white'}`}
                   data-person-log={l.id}
                   onClick={() => {
-                    if (acceptable) void acceptDrillLog(l);
+                    // Accepting FILES the log (the office copy) — the same
+                    // route the review screen uses; S14's shortcut skipped it
+                    if (acceptable) navigate(`${drillLogRoute(l)}/submit`);
                     else navigate(`/blast-day/${day.id}/drill-log/${l.id}`);
                   }}
                 >

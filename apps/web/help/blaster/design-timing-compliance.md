@@ -12,6 +12,10 @@ The design is the wiring diagram: which holes fire when. The compliance badges t
 
 Open the shot's **Design** (or **Continue › Confirm design & build timing** after drilling). The holes are on the grid as drilled. Tap holes in firing order, or use the delay tools to assign delays by row. The pounds per delay follow from the explosives and the delays.
 
+A position the plan marked **⌀ No hole** is drawn hollow and cannot be wired, the same as a hole the drillers left out. To take one hole out of the timing, tap it, then **Clear hole N** (the Clear button names it while a hole is selected): every wire into or out of it goes and the rest stays. **Undo** brings it back. With nothing selected the button is **Clear all**.
+
+**Pattern check (30 CFR 816.67).** Charges that fire within 8 ms of each other count as one delay. The line under the diagram says whether every hole is at least 8 ms from the next; if not, it turns red, names the holes, and rings them on the grid. Fix the increment or the wiring until it is green, or accept the pounds per delay it implies.
+
 ## Finding the shot on the map
 
 The site map opens where it last was for this shot; for a new shot, on the site's saved spot, else on the job's address, else on western Massachusetts — a line under the map says which. To move it:

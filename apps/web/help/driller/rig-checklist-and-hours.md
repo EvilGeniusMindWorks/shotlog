@@ -35,6 +35,8 @@ Every item starts ticked. Tap only what is **N/A** or **not done**. The 50-hour 
 
 Sign, then **File checklist**. The office copy is filed for you; the ticket, if any, is in the shop's queue.
 
+If the office copy fails (the screen says so and offers **Try again**), the checklist itself is still saved. Open the rig's checklist page later and tap **File the office copy** to send it.
+
 ## Related
 
 [Your three tiles](/help/driller/your-three-tiles) · [A repair ticket](/help/shop/a-repair-ticket)

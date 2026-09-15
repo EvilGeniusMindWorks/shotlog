@@ -155,6 +155,7 @@ export function FileDrillChecklistPage() {
   );
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tick, setTick] = useState(0);
   const ran = useRef(false);
 
   useEffect(() => {
@@ -175,11 +176,11 @@ export function FileDrillChecklistPage() {
         });
         setDone(true);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'filing failed');
+        setError(err instanceof Error ? `${err.name}: ${err.message}` : String(err));
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checklist?.id]);
+  }, [checklist?.id, tick]);
 
   return (
     <div className="print-blast-log">
@@ -192,6 +193,7 @@ export function FileDrillChecklistPage() {
               <p className="text-sm text-gray-600">
                 The checklist itself is saved — only the office copy failed: {error}
               </p>
+              <Button data-chk-file-retry onClick={() => { ran.current = false; setError(null); setTick((t) => t + 1); }}>Try again</Button>
               <Button variant="outline" onClick={() => navigate('/')}>Done</Button>
             </>
           ) : done ? (

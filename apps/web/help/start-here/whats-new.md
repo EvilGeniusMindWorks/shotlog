@@ -10,6 +10,12 @@ Short notes on what changed, newest first. Ask in ? → **Send feedback** if som
 
 ## September 15, 2026
 
+- **Shot diagram: a position marked ⌀ No hole on the plan cannot be wired** — it is drawn hollow in Timing, and a tap there does nothing.
+- **Clear one hole.** Tap a timed hole, then **Clear hole N** where Clear used to be: every wire into or out of it goes, the rest of the pattern stays. With nothing selected the button is **Clear all**.
+- **Pattern check for 30 CFR 816.67.** Under the diagram a line says whether every hole is at least 8 ms from the next. Holes that fire within 8 ms of another are ringed in red and named, so you can fix the pattern while you build it.
+- **Accept files the office copy.** Accepting a drill log from the crew list now files it exactly like the review screen does.
+- **A rig checklist whose office copy failed** offers **Try again**, and its checklist page offers **File the office copy** later.
+
 - **ShotLog updates itself.** On the home screen, a ready update installs the moment you come back to the app, with a quick "Updating ShotLog…" toast — nothing open to lose. Anywhere else, the orange Update chip still waits for you to tap it.
 - **Rows instead of chip strips.** Operation on the blasting log, Category in the catalog, Role when adding a person, and the equipment page's filters now open as one row you tap and pick from, instead of a row of chips to hunt through.
 - **Hazards and precautions are checklists.** Tap the row, tick what applies, add your own with **Other…**, then **Done**.

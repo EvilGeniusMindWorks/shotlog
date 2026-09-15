@@ -68,6 +68,33 @@ export function delayWindowSizes(times: Map<number, number>): number[] {
   return groups;
 }
 
+/**
+ * The same grouping, but returning the hole indices in each window — the
+ * diagram's pattern check highlights every hole that shares its window
+ * with another (30 CFR 816.67: charges within 8 ms count as one delay).
+ */
+export function delayWindowGroups(times: Map<number, number>): number[][] {
+  const sorted = [...times.entries()].sort((a, b) => a[1] - b[1] || a[0] - b[0]);
+  const groups: number[][] = [];
+  let groupStart = Number.NEGATIVE_INFINITY;
+  for (const [hole, t] of sorted) {
+    if (t - groupStart >= DELAY_WINDOW_MS) {
+      groups.push([hole]);
+      groupStart = t;
+    } else {
+      groups[groups.length - 1].push(hole);
+    }
+  }
+  return groups;
+}
+
+/** Holes that fire within 8 ms of another hole — the ones the blaster must fix or accept */
+export function crowdedHoles(times: Map<number, number>): Set<number> {
+  const out = new Set<number>();
+  for (const g of delayWindowGroups(times)) if (g.length > 1) for (const h of g) out.add(h);
+  return out;
+}
+
 /** Max simultaneous holes under the 8ms rule (0 when no timing yet) */
 export function maxHolesPerWindow(plan: TimingPlan): number {
   return Math.max(0, ...delayWindowSizes(computeFiringTimes(plan)));

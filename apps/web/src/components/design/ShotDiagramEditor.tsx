@@ -5,7 +5,7 @@ import {
   DELAY_COLORS,
   DELAY_SERIES,
   areAdjacent,
-  computeFiringTimes,
+  computeFiringTimes, crowdedHoles,
   delayWindowSizes,
   hasWire,
   materializeDrillPlan,
@@ -22,7 +22,8 @@ type UndoAction =
   | { type: 'setStart'; prev: ShotDiagram['start']; prevDelays: Record<number, number> }
   | { type: 'wire'; wire: Wire }
   | { type: 'unwire'; wire: Wire }
-  | { type: 'clearAll'; prev: ShotDiagram };
+  | { type: 'clearAll'; prev: ShotDiagram }
+  | { type: 'clearHole'; prev: ShotDiagram };
 
 const HOLE_SPACING = 44; // px between hole centers — glove-sized tap targets
 const HOLE_RADIUS = 15;
@@ -79,6 +80,9 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
   const times = computeFiringTimes(diagram);
   const windows = delayWindowSizes(times);
   const maxWindow = Math.max(0, ...windows);
+  // Pattern check (Matthew, Sep 15 2026): holes that fire within 8 ms of
+  // another count as one delay under 30 CFR 816.67 — ring them in red
+  const crowded = crowdedHoles(times);
   const lastFire = Math.max(0, ...times.values());
   const legacyPainted = !start && Object.keys(delays).length > 0;
 
@@ -90,6 +94,8 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
   const planDefault = plan.defaultDepth ?? designDepth ?? 0;
   const planMode = mode === 'plan';
   const effDepth = (idx: number) => plan.overrides[idx]?.depth ?? planDefault;
+  /** A grid position the plan leaves out ("⌀ No hole") — nothing to wire */
+  const leftOut = (idx: number) => plan.overrides[idx]?.depth === 0;
   const effAngle = (idx: number) => plan.overrides[idx]?.angle ?? 0;
   const setPlan = (next: DrillPlan) => onChange({ ...diagram, plan: next });
 
@@ -143,8 +149,9 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
       paintHole(idx);
       return;
     }
-    // S8: a position the drillers did not put a hole in cannot be wired
-    if (drilled?.undrilled.has(idx)) return;
+    // S8: a position the drillers did not put a hole in cannot be wired;
+    // neither can one the plan left out (Matthew, Sep 15 2026)
+    if (drilled?.undrilled.has(idx) || leftOut(idx)) return;
     // No start yet: first tap sets the initiation hole with the chosen lead.
     // Legacy painted delays are cleared — the timing tree replaces them.
     if (!start) {
@@ -216,9 +223,26 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
         onChange({ ...diagram, wires: [...wires, action.wire] });
         break;
       case 'clearAll':
+      case 'clearHole':
         onChange(action.prev);
         break;
     }
+  };
+
+  /** Clear one hole's timing: every wire into or out of it. Clearing the
+   *  first hole clears the whole tree — everything hangs off it. */
+  const clearHole = (idx: number) => {
+    if (start?.hole === idx) {
+      clearAll();
+      return;
+    }
+    const nextWires = wires.filter((w) => w.from !== idx && w.to !== idx);
+    if (nextWires.length === wires.length) {
+      setWireSource(null);
+      return;
+    }
+    commit({ ...diagram, wires: nextWires }, { type: 'clearHole', prev: diagram });
+    setWireSource(null);
   };
 
   const clearAll = () => {
@@ -444,7 +468,7 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
             <span className="font-medium">
               {wireSource === null
                 ? `Tap a timed hole, then its neighbors — each wire adds ${interHoleMs}ms`
-                : 'Tap the next hole in the sequence'}
+                : 'Tap the next hole in the sequence — or Clear hole below to take this one out'}
             </span>
           )}
           <span className="flex items-center gap-1 ml-auto text-gray-600">
@@ -619,6 +643,13 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
             const label = t ?? legacyMs;
             const undrilled = drilled?.undrilled.has(idx) ?? false;
             const conds = drilled?.conditions.get(idx);
+            if (leftOut(idx) && !undrilled) {
+              return (
+                <g key={idx} data-left-out={idx + 1} aria-label={`Hole ${idx + 1} — left out of the plan`}>
+                  <circle cx={cx(idx)} cy={cy(idx)} r={HOLE_RADIUS - 5} fill="transparent" stroke="#d8dde3" strokeWidth={1.5} strokeDasharray="3,3" />
+                </g>
+              );
+            }
             if (undrilled) {
               return (
                 <g key={idx} data-undrilled={idx}>
@@ -649,6 +680,9 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
                   strokeWidth={isSource ? 4 : isValidTarget ? 3 : 1.5}
                   strokeDasharray={isValidTarget && !isSource ? '4,3' : undefined}
                 />
+                {crowded.has(idx) && (
+                  <circle cx={cx(idx)} cy={cy(idx)} r={HOLE_RADIUS + 4} fill="none" stroke="#c53030" strokeWidth={3} pointerEvents="none" data-window-clash={idx + 1} />
+                )}
                 {label !== undefined && (
                   <text
                     x={cx(idx)}
@@ -676,10 +710,21 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
 
       {/* Timing summary */}
       {!planMode && times.size > 0 && (
-        <p className="text-xs text-gray-500 px-1">
-          {times.size} hole{times.size === 1 ? '' : 's'} timed · first {start!.leadMs}ms · last{' '}
-          {lastFire}ms · max <b>{maxWindow}</b> hole{maxWindow === 1 ? '' : 's'} in any 8ms window
-        </p>
+        <div className="px-1 space-y-1">
+          <p className="text-xs text-gray-500">
+            {times.size} hole{times.size === 1 ? '' : 's'} timed · first {start!.leadMs}ms · last{' '}
+            {lastFire}ms · max <b>{maxWindow}</b> hole{maxWindow === 1 ? '' : 's'} in any 8ms window
+          </p>
+          <p
+            className={cn('text-xs rounded-lg border px-3 py-2', crowded.size > 0 ? 'text-red-800 bg-red-50 border-red-200' : 'text-green-800 bg-green-50 border-green-200')}
+            data-pattern-check={crowded.size > 0 ? 'clash' : 'clear'}
+            data-pattern-clashes={crowded.size}
+          >
+            {crowded.size > 0
+              ? `Pattern check: ${crowded.size} holes fire within 8 ms of another — they count as one delay under 30 CFR 816.67. Ringed in red: ${[...crowded].sort((a, b) => a - b).map((h) => h + 1).join(', ')}.`
+              : 'Pattern check: every hole is at least 8 ms from the next — each is its own delay (30 CFR 816.67).'}
+          </p>
+        </div>
       )}
 
       {/* Action row (timing tools) */}
@@ -688,14 +733,21 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
         <Button variant="outline" size="sm" onClick={undo}>
           <Undo2 className="h-4 w-4 mr-1" /> Undo
         </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={clearAll}
-          disabled={!start && wires.length === 0 && Object.keys(delays).length === 0}
-        >
-          <Trash2 className="h-4 w-4 mr-1" /> Clear
-        </Button>
+        {wireSource !== null && start && start.hole !== wireSource ? (
+          <Button variant="outline" size="sm" onClick={() => clearHole(wireSource)} data-clear-hole={wireSource + 1} title="Remove every wire into or out of this hole">
+            <Trash2 className="h-4 w-4 mr-1" /> Clear hole {wireSource + 1}
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={clearAll}
+            data-clear-all
+            disabled={!start && wires.length === 0 && Object.keys(delays).length === 0}
+          >
+            <Trash2 className="h-4 w-4 mr-1" /> Clear all
+          </Button>
+        )}
         {onClone && cloneTargets && cloneTargets.length > 0 ? (
           <Button variant="outline" size="sm" onClick={() => onClone(cloneTargets[0].id)} title={`Clone to ${cloneTargets[0].label}`}>
             <Copy className="h-4 w-4 mr-1" /> Clone

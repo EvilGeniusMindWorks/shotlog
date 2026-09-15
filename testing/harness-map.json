@@ -31,7 +31,8 @@
     62
   ],
   "apps/web/src/components/design/ShotDiagramEditor.tsx": [
-    62
+    62,
+    74
   ],
   "apps/web/src/components/design/SiteDiagramEditor.tsx": [
     67,
@@ -87,7 +88,8 @@
   ],
   "apps/web/src/pages/DrillChecklistPage.tsx": [
     63,
-    65
+    65,
+    74
   ],
   "apps/web/src/pages/DrillLogPage.tsx": [
     60,
@@ -205,5 +207,14 @@
   ],
   "apps/web/src/components/forms/BlastLogForm.tsx apps/web/src/components/forms/ShotForm.tsx apps/web/src/pages/admin/AdminCatalogPage.tsx apps/web/src/components/admin/AddPersonPanel.tsx apps/web/src/pages/admin/AdminEquipmentPage.tsx apps/web/src/components/forms/NewBlastDayDialog.tsx apps/web/src/components/dashboard/MonthDayList.tsx apps/web/src/main.tsx apps/web/src/components/layout/SyncChip.tsx apps/web/src/pages/BlastDayPage.tsx apps/web/src/components/day/DayHub.tsx apps/web/src/lib/dayHub.ts": [
     73
+  ],
+  "apps/web/src/components/day/CrewList.tsx": [
+    74
+  ],
+  "apps/web/src/pages/PrintDrillChecklistPage.tsx": [
+    74
+  ],
+  "packages/shared/src/timing.ts": [
+    74
   ]
 }

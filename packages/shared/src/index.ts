@@ -37,6 +37,8 @@ export {
   computeFiringTimes,
   delayWindowSizes,
   maxHolesPerWindow,
+  delayWindowGroups,
+  crowdedHoles,
 } from './timing.js';
 export type { TimingPlan, TimingWire } from './timing.js';
 

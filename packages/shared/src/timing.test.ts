@@ -4,6 +4,8 @@ import {
   computeFiringTimes,
   delayWindowSizes,
   maxHolesPerWindow,
+  delayWindowGroups,
+  crowdedHoles,
   type TimingPlan,
 } from './timing.js';
 
@@ -105,5 +107,26 @@ describe('delayWindowSizes (8ms rule)', () => {
       wires: [{ from: 0, to: 1 }],
     };
     expect(delayWindowSizes(computeFiringTimes(plan))).toEqual([2]);
+  });
+});
+
+describe('delayWindowGroups / crowdedHoles (30 CFR 816.67, Matthew Sep 15 2026)', () => {
+  it('groups holes that fire within 8 ms and names the crowded ones', () => {
+    const times = new Map<number, number>([
+      [0, 17],
+      [1, 32],
+      [2, 47],
+      [3, 50], // 3 ms after hole 2 → same delay
+      [4, 62],
+      [5, 55], // exactly 8 ms after hole 2's window opened → a new window, which hole 4 (62) then shares
+    ]);
+    const groups = delayWindowGroups(times);
+    expect(groups).toEqual([[0], [1], [2, 3], [5, 4]]);
+    expect([...crowdedHoles(times)].sort()).toEqual([2, 3, 4, 5]);
+  });
+  it('is empty when every hole is at least 8 ms from the next', () => {
+    const times = new Map<number, number>([[0, 17], [1, 25], [2, 33]]);
+    expect(crowdedHoles(times).size).toBe(0);
+    expect(delayWindowGroups(times)).toEqual([[0], [1], [2]]);
   });
 });

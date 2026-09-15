@@ -29,19 +29,23 @@ async (page, lib) => {
     await PM.goto(`${WEB}/admin/equipment`);
     await PM.locator('[data-equip-filters]').waitFor({ timeout: 10000 });
     const rows = async () => PM.locator('[data-equip-row]').evaluateAll((els) => els.map((e) => e.getAttribute('data-equip-row')));
-    await PM.locator('[data-equip-filter="in_shop"]').click();
-    await sleep(400);
+    // S15 (Sep 14 2026): the seven chips became one Filter row that opens a chooser — one filter at a time
+    const pick = async (key) => {
+      await PM.locator('[data-fact-row="equipFilter"]').click();
+      await PM.locator('[data-chooser="equipFilter"]').waitFor({ timeout: 8000 });
+      await PM.locator(`[data-chooser="equipFilter"] [data-option="${key}"]`).click();
+      await sleep(400);
+    };
+    await pick('in_shop');
     const inShop = await rows();
-    await PM.locator('[data-equip-filter="oos"]').click();
-    await sleep(400);
-    const both = await rows();
-    R.ok(`In shop shows ${inShop.length} (incl. ${arranged.shopAsset}); adding Out of service GROWS the list to ${both.length} (incl. ${arranged.oosAsset})`, inShop.includes(arranged.shopAsset) && both.length >= inShop.length && both.includes(arranged.shopAsset) && both.includes(arranged.oosAsset));
-    await PM.locator('[data-equip-filter="in_shop"]').click();
-    await PM.locator('[data-equip-filter="oos"]').click();
-    await PM.locator('[data-equip-filter="unavailable"]').click();
-    await sleep(400);
+    await pick('oos');
+    const oos = await rows();
+    R.ok(`In shop shows ${inShop.length} (incl. ${arranged.shopAsset}); Out of service shows ${oos.length} (incl. ${arranged.oosAsset})`, inShop.includes(arranged.shopAsset) && oos.includes(arranged.oosAsset));
+    await pick('unavailable');
     const unavailable = await rows();
-    R.ok(`Unavailable alone shows the same union (${unavailable.length})`, unavailable.length === both.length && unavailable.includes(arranged.shopAsset) && unavailable.includes(arranged.oosAsset));
+    R.ok(`Unavailable is the union in one pick (${unavailable.length})`, unavailable.length >= Math.max(inShop.length, oos.length) && unavailable.includes(arranged.shopAsset) && unavailable.includes(arranged.oosAsset));
+    await pick('');
+    R.ok('None brings back All equipment', (await PM.locator('[data-fact-row="equipFilter"] [data-fact-value]').innerText()) === 'All equipment');
     // restore
     await PM.evaluate(async ({ shopId, ticketId }) => {
       const { db } = await import('/src/db/index.ts');

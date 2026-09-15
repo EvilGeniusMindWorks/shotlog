@@ -26,7 +26,7 @@ The report, contacts, history and print icons that sit in the header on a wide s
 
 ## The crew on your day
 
-Under your tiles sits one row per person on the day — anyone who confirmed the card, filed a rig checklist, or has a drill log or time card there — each with the state of their own papers. Tap a row to read what they filed, **Accept** a drill log they signed complete, or **Remind** them when their time card is missing; the reminder puts one line on their home and clears itself the moment they file. With eight or more people the list adds a summary line, a **Needs something / All** filter (Needs something by default), and a search box, and anyone who needs something floats to the top.
+Under your tiles sits one row per person on the day — anyone who confirmed the card, filed a rig checklist, or has a drill log or time card there — each with the state of their own papers. Tap a row to read what they filed, **Accept** a drill log they signed complete (accepting files its office copy at the same time), or **Remind** them when their time card is missing; the reminder puts one line on their home and clears itself the moment they file. With eight or more people the list adds a summary line, a **Needs something / All** filter (Needs something by default), and a search box, and anyone who needs something floats to the top.
 
 ## The phases
 

@@ -13,7 +13,7 @@ import { deriveDrillAngle, deriveHoleLength, type KickDirection, type TimingWire
 
 // Timing math (computeFiringTimes, delayWindowSizes, 8ms rule) lives in
 // @shotlog/shared — ShotDiagram satisfies its TimingPlan shape structurally.
-export { computeFiringTimes, delayWindowSizes, maxHolesPerWindow, DELAY_WINDOW_MS } from '@shotlog/shared';
+export { computeFiringTimes, delayWindowSizes, delayWindowGroups, crowdedHoles, maxHolesPerWindow, DELAY_WINDOW_MS } from '@shotlog/shared';
 
 export type Wire = TimingWire;
 

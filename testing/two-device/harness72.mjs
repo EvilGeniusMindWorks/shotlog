@@ -144,8 +144,15 @@ async (page, lib) => {
     await PA.locator('[data-person-sheet]').waitFor({ timeout: 8000 });
     R.ok('the person sheet offers Accept on the complete log', (await PA.locator('[data-person-log-action="accept"]').count()) === 1);
     await PA.locator(`[data-person-log="${logId}"]`).click();
-    const accepted = await waitFor(() => PA.evaluate(async (id) => (await (await import('/src/db/index.ts')).db.drillLogs.get(id))?.status === 'accepted', logId).then((x) => (x ? 1 : 0)));
+    // Sep 15 2026: Accept files the office copy on the way (the review screen's route), then returns to the log
+    const accepted = await waitFor(() => PA.evaluate(async (id) => (await (await import('/src/db/index.ts')).db.drillLogs.get(id))?.status === 'accepted', logId).then((x) => (x ? 1 : 0)), 40000);
     R.ok('Accept accepts the drill log', accepted === 1);
+    const copy = await waitFor(() => PA.evaluate(async (id) => (await (await import('/src/db/index.ts')).db.submissions.filter((s) => s.type === 'drill_log' && s.sourceId === id).count()), logId).then((n) => (n === 1 ? 1 : 0)), 20000);
+    R.ok('…and files its office copy', copy === 1);
+    await openDay(PA);
+    await PA.locator('[data-crew-list]').waitFor({ timeout: 15000 });
+    await PA.locator(`[data-crew-row="${meB.name}"]`).click();
+    await PA.locator('[data-person-sheet]').waitFor({ timeout: 8000 });
     R.ok('…and the sheet now says View', (await waitFor(() => PA.locator('[data-person-log-action="view"]').count().then((n) => (n === 1 ? 1 : 0)))) === 1);
     await PA.locator('[data-person-remind]').click();
     const reminded = await waitFor(() => PA.evaluate(async (id) => (await (await import('/src/db/index.ts')).db.dayReminders.where('blastDayId').equals(id).count()), dayId).then((n) => (n === 1 ? 1 : 0)));

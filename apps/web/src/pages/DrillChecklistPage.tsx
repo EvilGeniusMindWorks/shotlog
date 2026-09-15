@@ -294,6 +294,12 @@ export function DrillChecklistPage() {
   }, [todaysJobId, jobTouched]);
   const jobId = draft.jobId;
 
+  // The office copy of today's checklist, if it was ever filed (Matthew,
+  // Sep 15 2026: a filing that failed mid-way left the checklist without one)
+  const existingCopy = useLiveQuery(
+    async () => (existing ? (await db.submissions.filter((s) => s.type === 'drill_checklist' && s.sourceId === existing.id).toArray()) : []),
+    [existing?.id],
+  );
   const readOnly = Boolean(existing) || Boolean(saved);
   const set = (patch: Partial<typeof draft>) => setDraft({ ...draft, ...patch });
 
@@ -348,6 +354,15 @@ export function DrillChecklistPage() {
               <button className="underline" onClick={() => navigate(`/drill-checklist-print/${existing.id}`)}>
                 Open it
               </button>{' '}
+              {existingCopy !== undefined && existingCopy.length === 0 && (
+                <>
+                  ·{' '}
+                  <button className="underline font-semibold" data-chk-file-office onClick={() => navigate(`/drill-checklist-file/${existing.id}`)}>
+                    File the office copy
+                  </button>{' '}
+                  (it never reached the office){' '}
+                </>
+              )}
               · or pick another rig above to file one for it.
             </p>
           </div>
