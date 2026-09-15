@@ -9,7 +9,8 @@ async (page, lib) => {
   const R = lib.report();
   const stamp = lib.stamp();
   browserErrors({ clear: true });
-  let dayId, shotId, logId, checklistId;
+  let dayId, dayId2, shotId, logId, checklistId, made;
+  const extraLogs = [];
   const PNG = 'new Blob([new Uint8Array([137,80,78,71,13,10,26,10])], { type: "image/png" })';
 
   const waitFor = async (fn, timeout = 20000, every = 300) => {
@@ -44,7 +45,7 @@ async (page, lib) => {
   };
 
   await R.section('The timing grid refuses a hole the plan left out', async () => {
-    const made = await PB.evaluate(async (stamp) => {
+    made = await PB.evaluate(async (stamp) => {
       const { db } = await import('/src/db/index.ts');
       const { createBlastDayWithPapers } = await import('/src/hooks/useBlastDay.ts');
       const { serializeDiagram, emptyDiagram } = await import('/src/lib/shotDiagram.ts');
@@ -178,13 +179,49 @@ async (page, lib) => {
     R.ok('the offer is gone once the copy exists', (await PD.locator('[data-chk-file-office]').count()) === 0);
   });
 
+  await R.section('The drill log refuses a hole number already logged, and a double tap adds one hole', async () => {
+    // the shot from §4 already has its (accepted) log — a second day on another job, Barry logs the holes himself
+    const made2 = await PB.evaluate(async ({ stamp, skipJob }) => {
+      const { db } = await import('/src/db/index.ts');
+      const { createBlastDayWithPapers } = await import('/src/hooks/useBlastDay.ts');
+      const { createDrillLog } = await import('/src/hooks/useDrillLogs.ts');
+      const busy = new Set((await db.blastDays.toArray()).filter((d) => d.status === 'draft').map((d) => d.jobId));
+      const jobs = (await db.jobs.filter((j) => !j.archivedAt && j.isActive && !busy.has(j.id) && j.id !== skipJob && !/^S1[124]/.test(j.name)).toArray()).sort((a, b) => a.name.localeCompare(b.name));
+      const id = await createBlastDayWithPapers(jobs[0].id, undefined, undefined, { typeOfWork: 'drill_to_blast', name: `holes ${stamp}` });
+      const log = await db.blastLogs.where('blastDayId').equals(id).first();
+      const shot = await db.shots.where('blastLogId').equals(log.id).first();
+      const logId = await createDrillLog(shot, id, jobs[0].id);
+      return { id, logId };
+    }, { stamp, skipJob: made.jobId });
+    dayId2 = made2.id;
+    const openLog = made2.logId;
+    extraLogs.push(openLog);
+    await PB.goto(`${WEB}/blast-day/${dayId2}/drill-log/${openLog}`);
+    await PB.locator('[data-add-hole]').waitFor({ timeout: 30000 }).catch(async () => R.note(`drill log page at ${PB.url()}: ${(await PB.locator('body').innerText()).replace(/\s+/g, ' ').slice(0, 700)}`));
+    const numberInput = PB.locator('[data-hole-number]');
+    await sleep(500);
+    const holesOf = () => PB.evaluate(async (id) => (await (await import('/src/db/index.ts')).db.drillLogHoles.where('drillLogId').equals(id).toArray()).map((h) => h.holeNumber).sort(), openLog);
+    await PB.locator('[data-hole-depth]').fill('20');
+    await sleep(200);
+    const before = await PB.locator('[data-add-hole]').innerText();
+    await PB.locator('[data-add-hole]').click({ clickCount: 2, delay: 40 }).catch(() => undefined);
+    await sleep(1200);
+    const after = await holesOf();
+    R.ok(`a double tap on "${before.trim()}" logs one hole (${after.join(', ')})`, after.length === 1);
+    const n = after[0];
+    await numberInput.fill(n);
+    await sleep(300);
+    R.ok('typing a number already on the log disables Add and says why', await PB.locator('[data-add-hole]').isDisabled() && (await PB.locator('[data-add-hole-note]').count()) === 1 && new RegExp(`Hole ${n} is already`).test(await PB.locator('[data-add-hole-note]').innerText()));
+    R.ok('the list still has one hole', (await holesOf()).length === 1);
+  });
+
   await R.section('the error spy saw nothing during this run', async () => {
     const errs = browserErrors();
     R.ok(`no browser errors (${errs.length})${errs[0] ? ` — first: ${errs[0].text.slice(0, 120)}` : ''}`, errs.length === 0);
   });
 
   await R.section('cleanup', async () => {
-    const removed = await lib.cleanupAsAdmin(browser, { days: [dayId].filter(Boolean), drillLogs: [logId].filter(Boolean), checklists: [checklistId].filter(Boolean) }).catch(() => -1);
+    const removed = await lib.cleanupAsAdmin(browser, { days: [dayId, dayId2].filter(Boolean), drillLogs: [logId, ...extraLogs].filter(Boolean), checklists: [checklistId].filter(Boolean) }).catch(() => -1);
     R.ok(`cleanup removed ${removed} day(s)`, removed >= 0);
   });
   await cB.close();

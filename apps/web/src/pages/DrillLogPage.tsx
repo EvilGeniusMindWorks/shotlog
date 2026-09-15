@@ -127,6 +127,11 @@ export function DrillLogPage() {
 
   // Quick-entry state
   const [holeNumber, setHoleNumber] = useState('');
+  // Sep 15 2026 (Matthew's Beta log: hole 37 twice, one second apart): a
+  // second tap while the first is still saving, or a number already logged,
+  // adds nothing — the list says so instead
+  const [adding, setAdding] = useState(false);
+  const [addNote, setAddNote] = useState<string | null>(null);
   // Round 3 batch-first: grid selection → "Log N as planned" in one tap
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [depth, setDepth] = useState('');
@@ -203,9 +208,17 @@ export function DrillLogPage() {
   const update = (changes: Record<string, unknown>) =>
     db.drillLogs.update(log.id, { ...changes, updatedAt: nowISO() });
 
+  const alreadyLogged = holes.some((h) => h.holeNumber.trim() === holeNumber.trim());
   const submitHole = async () => {
     const d = parseFloat(depth) || targetDepth;
-    if (!holeNumber.trim() || d <= 0) return;
+    if (!holeNumber.trim() || d <= 0 || adding) return;
+    if (alreadyLogged) {
+      setAddNote(`Hole ${holeNumber.trim()} is already on this log — find it in the list to change or remove it.`);
+      return;
+    }
+    setAddNote(null);
+    setAdding(true);
+    try {
     const a = angle.trim() === '' ? (planHole?.angle ?? 0) : parseFloat(angle) || 0;
     // Condition toggles mark the whole hole; an at-depth detail narrows the
     // band to that point and a note rides along ("water at 8 ft")
@@ -245,6 +258,9 @@ export function DrillLogPage() {
     setConditions([]);
     setCondDetail({});
     setComment('');
+    } finally {
+      setAdding(false);
+    }
   };
 
   // ── Batch actions (Round 3): the normal case is "holes 12–18, all as
@@ -699,14 +715,14 @@ export function DrillLogPage() {
             <div className="flex gap-2">
               <div className="w-24">
                 <Label className="text-xs">Hole #</Label>
-                <Input value={holeNumber} onChange={(e) => setHoleNumber(e.target.value)} />
+                <Input value={holeNumber} onChange={(e) => setHoleNumber(e.target.value)} data-hole-number />
               </div>
               <div className="flex-1">
                 <Label className="text-xs">
                   Depth drilled (ft) — {planHole ? `plan ${planTarget}` : `design ${designDepth || '—'}`}
                 </Label>
                 <Input type="number" inputMode="decimal" placeholder={String(targetDepth || '')}
-                  value={depth} onChange={(e) => setDepth(e.target.value)} />
+                  value={depth} data-hole-depth onChange={(e) => setDepth(e.target.value)} />
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -777,12 +793,21 @@ export function DrillLogPage() {
                 angle / subdrill / comment
               </button>
             )}
-            <Button className="w-full" size="lg" onClick={() => void submitHole()}
-              disabled={!holeNumber.trim()}>
-              {planHole && depth === ''
-                ? `Add hole ${holeNumber} — ${targetDepth} ft to plan`
-                : `Add hole ${holeNumber}`}
+            <Button className="w-full" size="lg" onClick={() => void submitHole()} data-add-hole
+              disabled={!holeNumber.trim() || adding || alreadyLogged}>
+              {adding
+                ? 'Adding…'
+                : alreadyLogged
+                  ? `Hole ${holeNumber.trim()} is already logged`
+                  : planHole && depth === ''
+                    ? `Add hole ${holeNumber} — ${targetDepth} ft to plan`
+                    : `Add hole ${holeNumber}`}
             </Button>
+            {(addNote || alreadyLogged) && (
+              <p className="text-xs text-amber-800" data-add-hole-note>
+                {addNote ?? `Hole ${holeNumber.trim()} is already on this log — find it in the list to change or remove it.`}
+              </p>
+            )}
           </div>
         )}
 
