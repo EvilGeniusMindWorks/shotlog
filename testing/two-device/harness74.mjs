@@ -177,6 +177,17 @@ async (page, lib) => {
     await PD.locator('[data-chk-existing]').waitFor({ timeout: 15000 });
     await sleep(800);
     R.ok('the offer is gone once the copy exists', (await PD.locator('[data-chk-file-office]').count()) === 0);
+    // the uploader's storage-pointer flip must pass the server for the filer (Sep 15: it was "role denied" for drillers)
+    const subId = await PD.evaluate(async (id) => {
+      const { db } = await import('/src/db/index.ts');
+      const { nowISO } = await import('/src/lib/utils.ts');
+      const s = (await db.submissions.filter((x) => x.type === 'drill_checklist' && x.sourceId === id).toArray())[0];
+      await db.submissions.update(s.id, { storageStatus: 'stored', pdfKey: `c/test/a/sub-pdf-${s.id}/harness74.pdf`, assetKeys: {}, updatedAt: nowISO() });
+      return s.id;
+    }, checklistId);
+    await waitForUpload(PD, 30000);
+    const seen = await waitFor(() => PB.evaluate(async (id) => (await (await import('/src/db/index.ts')).db.submissions.get(id))?.storageStatus ?? null, subId).then((v) => (v === 'stored' ? v : null)), 30000);
+    R.ok("the driller's 'stored' pointer reaches the server and the blaster's device (not role denied)", seen === 'stored');
   });
 
   await R.section('The drill log refuses a hole number already logged, and a double tap adds one hole', async () => {

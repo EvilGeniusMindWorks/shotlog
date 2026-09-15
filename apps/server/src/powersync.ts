@@ -69,6 +69,9 @@ const ONE_PER_PARENT: Record<string, string> = {
 };
 
 /** Plain words for the day family, for the notices a device shows (S13) */
+/** The one post-file change a filed copy allows: where its binaries live */
+const STORAGE_POINTER_FIELDS = new Set(['storageStatus', 'pdfKey', 'assetKeys', 'pdf', 'updatedAt', 'syncStatus']);
+
 const TABLE_LABEL: Record<string, string> = {
   blastDays: 'work day',
   blastLogs: 'blasting log',
@@ -305,8 +308,20 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
           continue;
         }
 
-        // 1. table × op × role (capability-resolved; custom roles supported)
-        if (!canPerformOpAs(tableName, op.op, role, roleDefs)) {
+        // 1. table × op × role (capability-resolved; custom roles supported).
+        // Sep 15 2026 (Beta: three rig checklists "on the filing device" for
+        // ever): the uploader's storage-pointer flip on a filed copy is a
+        // PATCH, and submissions PATCH is admin-only — so every driller's
+        // and blaster's office copy stayed "device" on the server while the
+        // PDF sat in R2. A PATCH that touches only the storage pointer is
+        // allowed to whoever may file (PUT); the write-once rule below still
+        // refuses any change to the document itself.
+        const storagePointerOnly =
+          tableName === 'submissions' &&
+          op.op === 'PATCH' &&
+          Boolean(stored) &&
+          diffPayloads(stored!.payload, effective).every((c) => STORAGE_POINTER_FIELDS.has(c.field));
+        if (!canPerformOpAs(tableName, op.op, role, roleDefs) && !(storagePointerOnly && canPerformOpAs(tableName, 'PUT', role, roleDefs))) {
           discard(op, tableName, 'role denied');
           continue;
         }
@@ -395,13 +410,6 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
         // submissions (vN+1). The ONE permitted post-file change is the
         // storage-pointer flip when the uploader lands binaries in R2.
         if (tableName === 'submissions' && stored && op.op !== 'DELETE') {
-          const STORAGE_POINTER_FIELDS = new Set([
-            'storageStatus',
-            'pdfKey',
-            'assetKeys',
-            'updatedAt',
-            'syncStatus',
-          ]);
           const changes = diffPayloads(stored.payload, effective);
           const contentTouched = changes.some((c) => !STORAGE_POINTER_FIELDS.has(c.field));
           if (contentTouched) {

@@ -15,6 +15,7 @@ Short notes on what changed, newest first. Ask in ? → **Send feedback** if som
 - **Pattern check for 30 CFR 816.67.** Under the diagram a line says whether every hole is at least 8 ms from the next. Holes that fire within 8 ms of another are ringed in red and named, so you can fix the pattern while you build it.
 - **Accept files the office copy.** Accepting a drill log from the crew list now files it exactly like the review screen does.
 - **A rig checklist whose office copy failed** offers **Try again**, and its checklist page offers **File the office copy** later.
+- **Office copies filed by drillers and blasters now reach the office.** The copy uploaded fine, but the note saying where it lives was refused as an edit to a filed document, so Records kept saying "on the filing device". That note now goes through for whoever filed it.
 - **The printed daily report shows what the screen shows.** The work force rows are the day's time cards (name, in, out, ST, OT) and each drill's hours are the readings from its own checklist. Before this the paper only knew the old typed rows, so a day filed through time cards printed with an empty crew.
 - **Filing an office copy no longer fails on a phone that refuses the local copy.** The copy rides along with the record until it reaches storage; the failure screen, if you ever see it again, names the step that failed instead of "null".
 - **"Worked today, no card yet" says where the card went** when someone filed on the job's other day: "Driller Test (filed a card on Sep 15 at this job — the wrong day?)".
