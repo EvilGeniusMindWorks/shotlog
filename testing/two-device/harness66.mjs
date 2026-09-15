@@ -82,7 +82,7 @@ async (page, lib) => {
       await db.drillLogs.add({ id, jobId: day.jobId, blastDayId: dayId, shotId: shot.id, status: 'open', holeDiameter: shot.drillParams.holeDiameter, burden: shot.drillParams.burden, spacing: shot.drillParams.spacing, faceHeight: 0, gps: '', locationNote: '', drillerUserId: me.id, drillerName: me.name, signatureImage: null, createdAt: now, updatedAt: now, syncStatus: 'local' });
       return id;
     }, { shotId, dayId });
-    await PB.goto(`${WEB}/blast-day/${dayId}`);
+    await PB.goto(`${WEB}/blast-day/${dayId}?view=hub`); // S14: the spine lives inside the blasting-log view
     await PB.locator('main').waitFor({ timeout: 15000 });
     await sleep(1500);
     await PB.locator('[data-phase="drilling"]').waitFor({ timeout: 10000 });

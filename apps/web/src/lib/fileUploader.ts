@@ -44,10 +44,11 @@ async function presignAndPut(
  *  change the server's write-once rule permits. */
 async function uploadSubmissionBinaries(localIds: Set<string>): Promise<void> {
   const pending = (await db.submissions.filter((s) => s.storageStatus === 'device').toArray())
-    .filter((s) => localIds.has(subPdfKey(s.id)));
+    .filter((s) => localIds.has(subPdfKey(s.id)) || (s.pdf instanceof Blob && s.pdf.size > 0));
   for (const s of pending) {
     try {
-      const pdf = await getLocalMedia(subPdfKey(s.id));
+      // the device copy, else the PDF that rode inline when the device refused the copy
+      const pdf = (await getLocalMedia(subPdfKey(s.id)).catch(() => undefined)) ?? (s.pdf instanceof Blob && s.pdf.size > 0 ? s.pdf : undefined);
       if (!pdf) continue;
       const pdfKey = await presignAndPut(subPdfKey(s.id), `${s.type}-${s.date}-v${s.version}.pdf`, 'application/pdf', pdf);
       if (pdfKey === 'unconfigured') return;
@@ -73,6 +74,7 @@ async function uploadSubmissionBinaries(localIds: Set<string>): Promise<void> {
         storageStatus: 'stored',
         pdfKey,
         assetKeys,
+        pdf: null,
         updatedAt: nowISO(),
       });
       logSyncEvent(`filing uploaded: ${s.title} v${s.version}`);

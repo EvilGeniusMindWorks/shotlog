@@ -3,6 +3,7 @@
 // person is allowed, attributed, and gently discouraged. Approvers see
 // approve/pull-back on each card.
 import { useState, useRef, useEffect } from 'react';
+import { formatDate } from '@/lib/utils';
 import { Clock, PenLine, Plus, Trash2 } from 'lucide-react';
 import { db, deleteWithTombstone, useLiveQuery } from '@/db';
 import type { BlastDay, TimeCard } from '@/db/schema';
@@ -52,6 +53,18 @@ export function TimeCardsCard({ blastDay }: { blastDay: BlastDay }) {
   const noCardYet = worked.filter(
     (w) => !cards.some((c) => c.userId === w.key || c.personName === w.name),
   );
+  // Sep 15 2026 (Beta: the driller filed on the job's other day): say where
+  // their card went instead of leaving the author to guess
+  const elsewhere = useLiveQuery(async () => {
+    if (noCardYet.length === 0) return new Map<string, string>();
+    const others = await db.timeCards.filter((c) => c.jobId === blastDay.jobId && c.date !== blastDay.date && c.blastDayId !== blastDay.id).toArray();
+    const out = new Map<string, string>();
+    for (const w of noCardYet) {
+      const hit = others.find((c) => c.userId === w.key || c.personName === w.name);
+      if (hit) out.set(w.key, hit.date);
+    }
+    return out;
+  }, [blastDay.jobId, blastDay.date, blastDay.id, noCardYet.map((w) => w.key).join(',')]) ?? new Map<string, string>();
 
   if (!hasCap('file_time_cards')) return null;
 
@@ -96,7 +109,7 @@ export function TimeCardsCard({ blastDay }: { blastDay: BlastDay }) {
         ))}
         {noCardYet.length > 0 && (
           <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2" data-no-card-yet>
-            Worked today, no card yet: {noCardYet.map((w) => w.name).join(', ')} — each files their own from their home.
+            Worked today, no card yet: {noCardYet.map((w) => (elsewhere.has(w.key) ? `${w.name} (filed a card on ${formatDate(elsewhere.get(w.key)!)} at this job — the wrong day?)` : w.name)).join(', ')} — each files their own from their home.
           </p>
         )}
 

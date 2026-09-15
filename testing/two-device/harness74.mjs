@@ -9,7 +9,7 @@ async (page, lib) => {
   const R = lib.report();
   const stamp = lib.stamp();
   browserErrors({ clear: true });
-  let dayId, dayId2, shotId, logId, checklistId, made;
+  let dayId, dayId2, otherDayId, shotId, logId, checklistId, made;
   const extraLogs = [];
   const PNG = 'new Blob([new Uint8Array([137,80,78,71,13,10,26,10])], { type: "image/png" })';
 
@@ -215,13 +215,52 @@ async (page, lib) => {
     R.ok('the list still has one hole', (await holesOf()).length === 1);
   });
 
+  await R.section("The device media store keeps bytes, reads old Blob rows, and says what failed; a card on the job's other day is named", async () => {
+    const media = await PB.evaluate(async () => {
+      const { putLocalMedia, getLocalMedia, deleteLocalMedia } = await import('/src/lib/localMedia.ts');
+      const pdf = new Blob(['%PDF-1.4 harness74'], { type: 'application/pdf' });
+      await putLocalMedia('h74-test', pdf);
+      const back = await getLocalMedia('h74-test');
+      const text = back ? await back.text() : '';
+      // a legacy row: a Blob stored directly (how every device wrote before Sep 15)
+      const dbh = await new Promise((res, rej) => { const r = indexedDB.open('shotlog-local-media', 1); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+      await new Promise((res, rej) => { const tx = dbh.transaction('media', 'readwrite'); tx.objectStore('media').put(new Blob(['legacy'], { type: 'text/plain' }), 'h74-legacy'); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
+      dbh.close();
+      const legacy = await getLocalMedia('h74-legacy');
+      const legacyText = legacy ? await legacy.text() : '';
+      await deleteLocalMedia('h74-test');
+      await deleteLocalMedia('h74-legacy');
+      return { type: back?.type, text, legacyText, stored: (await new Promise((res) => { const r = indexedDB.open('shotlog-local-media', 1); r.onsuccess = () => { const d = r.result; const q = d.transaction('media', 'readonly').objectStore('media').get('h74-test'); q.onsuccess = () => { res(q.result === undefined ? 'gone' : typeof q.result); d.close(); }; }; })) };
+    });
+    R.ok(`a PDF round-trips through the device store as bytes with its type (${media.type}, "${media.text}")`, media.type === 'application/pdf' && media.text === '%PDF-1.4 harness74' && media.stored === 'gone');
+    R.ok('a row written the old way (a Blob) still reads back', media.legacyText === 'legacy');
+
+    // the daily report names a card filed on the job's other day (a real second day on the job, Jan 2)
+    otherDayId = await PB.evaluate(async ({ jobId, stamp }) => (await import('/src/hooks/useBlastDay.ts')).createBlastDay(jobId, '2026-01-02', undefined, { typeOfWork: 'drill_only', name: `other day ${stamp}` }), { jobId: made.jobId, stamp });
+    await waitForUpload(PB, 20000).catch(() => undefined);
+    await waitFor(() => PD.evaluate(async (id) => Boolean(await (await import('/src/db/index.ts')).db.blastDays.get(id)), otherDayId).then((x) => (x ? 1 : 0)));
+    await PD.evaluate(async ({ otherDayId }) => {
+      const { db } = await import('/src/db/index.ts');
+      const { createTimeCard, fileTimeCard } = await import('/src/hooks/useTimeCards.ts');
+      const { getSessionUser } = await import('/src/lib/session.ts');
+      const me = getSessionUser();
+      const other = await db.blastDays.get(otherDayId);
+      const cid = await createTimeCard(other, { name: me.name, userId: me.id });
+      await fileTimeCard(await db.timeCards.get(cid));
+    }, { otherDayId });
+    await waitForUpload(PD, 20000).catch(() => undefined);
+    await PB.goto(`${WEB}/blast-day/${dayId}?view=daily-report`);
+    const line = await waitFor(() => PB.locator('[data-no-card-yet]').innerText().then((t) => (/wrong day/.test(t) ? t : null)), 30000);
+    R.ok(`"Worked today, no card yet" says where the driller's card went: "${(line ?? '').slice(0, 120)}"`, /filed a card on (\w{3}, )?Jan 2, 2026 at this job — the wrong day\?/.test(line ?? ''));
+  });
+
   await R.section('the error spy saw nothing during this run', async () => {
     const errs = browserErrors();
     R.ok(`no browser errors (${errs.length})${errs[0] ? ` — first: ${errs[0].text.slice(0, 120)}` : ''}`, errs.length === 0);
   });
 
   await R.section('cleanup', async () => {
-    const removed = await lib.cleanupAsAdmin(browser, { days: [dayId, dayId2].filter(Boolean), drillLogs: [logId, ...extraLogs].filter(Boolean), checklists: [checklistId].filter(Boolean) }).catch(() => -1);
+    const removed = await lib.cleanupAsAdmin(browser, { days: [dayId, dayId2, otherDayId].filter(Boolean), drillLogs: [logId, ...extraLogs].filter(Boolean), checklists: [checklistId].filter(Boolean) }).catch(() => -1);
     R.ok(`cleanup removed ${removed} day(s)`, removed >= 0);
   });
   await cB.close();

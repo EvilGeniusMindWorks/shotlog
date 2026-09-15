@@ -15,6 +15,8 @@ Short notes on what changed, newest first. Ask in ? → **Send feedback** if som
 - **Pattern check for 30 CFR 816.67.** Under the diagram a line says whether every hole is at least 8 ms from the next. Holes that fire within 8 ms of another are ringed in red and named, so you can fix the pattern while you build it.
 - **Accept files the office copy.** Accepting a drill log from the crew list now files it exactly like the review screen does.
 - **A rig checklist whose office copy failed** offers **Try again**, and its checklist page offers **File the office copy** later.
+- **Filing an office copy no longer fails on a phone that refuses the local copy.** The copy rides along with the record until it reaches storage; the failure screen, if you ever see it again, names the step that failed instead of "null".
+- **"Worked today, no card yet" says where the card went** when someone filed on the job's other day: "Driller Test (filed a card on Sep 15 at this job — the wrong day?)".
 - **The drill log will not log the same hole twice.** A second tap while the first is still saving does nothing, and a number already on the log turns the button into "Hole 37 is already logged" until you change it. Remove a wrong hole with the trash icon on its row while the log is open.
 
 - **ShotLog updates itself.** On the home screen, a ready update installs the moment you come back to the app, with a quick "Updating ShotLog…" toast — nothing open to lose. Anywhere else, the orange Update chip still waits for you to tap it.

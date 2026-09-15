@@ -289,7 +289,17 @@ export async function fileSubmission(opts: {
   // Binaries go to the device media store; the record carries metadata +
   // checksums only. The background uploader lands binaries in R2 and flips
   // the storage pointer — the ONE post-file change the server permits.
-  await putLocalMedia(subPdfKey(id), pdf);
+  // Sep 15 2026: Matthew's phone refused the local copy ("null" from the
+  // media store). The filing must not fail for that — the PDF rides inline
+  // in the record instead and the uploader (or the server's boot sweep)
+  // moves it to storage
+  let inlinePdf: Blob | null = null;
+  try {
+    await putLocalMedia(subPdfKey(id), pdf);
+  } catch (err) {
+    console.warn('[archive] local copy refused, filing with the PDF inline', err);
+    inlinePdf = pdf;
+  }
   const assetRefs: SubmissionAsset[] = [];
   for (const a of assets) {
     const data = a.data as Blob;
@@ -317,7 +327,7 @@ export async function fileSubmission(opts: {
     date: opts.date,
     submittedBy: session?.name ?? '',
     submittedByUserId: session?.id ?? '',
-    pdf: null,
+    pdf: inlinePdf,
     pdfSha256: await sha256Hex(pdf),
     pdfSize: pdf.size,
     assets: assetRefs,
