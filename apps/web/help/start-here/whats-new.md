@@ -10,6 +10,8 @@ Short notes on what changed, newest first. Ask in ? → **Send feedback** if som
 
 ## September 16, 2026
 
+- **"No crew on the daily report" counts your time cards.** The filing screen used to look only at the old typed crew rows, so every day said No crew; now it counts the day's time cards, and says "nobody has a time card on this day yet" when that is what it means.
+
 Rolling out over the coming days.
 
 - **One signature signs the whole log.** Sign the **Blaster Signature** box at the bottom of the blasting log once and it covers every shot — shots no longer get their own sign-off.
