@@ -45,19 +45,19 @@ export async function preflightDay(dayId: string): Promise<PreflightItem[]> {
     items.push({ key: 'nolog', level: 'red', text: 'No blasting log started on this blasting day', to: `/blast-day/${dayId}`, toLabel: 'Start it' });
   }
 
-  // RED — signatures
-  for (const s of shots) {
-    if (!s.signatureImage) {
-      items.push({
-        key: `sig-${s.id}`,
-        level: 'red',
-        text: `Shot ${s.shotNumber} has no blaster signature`,
-        to: `/blast-day/${dayId}?view=blast-log`,
-        toLabel: 'Sign it',
-      });
-    }
+  // RED — the signature. S16 (Matthew): one log, one blaster, one signature —
+  // the log's Blaster Signature box covers its shots; shots are not signed
+  // on their own (the S9a per-shot check demanded what the screen could not give)
+  if (log && !log.signatureImage) {
+    items.push({
+      key: 'sig-log',
+      level: 'red',
+      text: 'The blasting log is not signed',
+      to: `/blast-day/${dayId}?view=blast-log`,
+      toLabel: 'Sign it',
+    });
   }
-  if (shots.length > 0 && shots.every((s) => s.signatureImage)) items.push({ key: 'sig-ok', level: 'ok', text: `${shots.length === 1 ? 'Shot signed' : `All ${shots.length} shots signed`}` });
+  if (log?.signatureImage) items.push({ key: 'sig-ok', level: 'ok', text: `Blasting log signed${log.blasterName ? ` by ${log.blasterName}` : ''}${shots.length > 0 ? ` · ${shots.length} shot${shots.length === 1 ? '' : 's'}` : ''}` });
 
   // AMBER — seismo distance
   if (blasting && shots.length > 0) {

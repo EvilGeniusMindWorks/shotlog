@@ -12,7 +12,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Search, Wrench } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
-import { emptyChecklist, fileChecklist, useTodayChecklist } from '@/hooks/useMaintenance';
+import { emptyChecklist, fileChecklist, useEarlierChecklistToday, useTodayChecklist } from '@/hooks/useMaintenance';
 import { useJobs } from '@/hooks/useBlastDay';
 import { getSessionUser } from '@/lib/session';
 import { formatDate, todayISO } from '@/lib/utils';
@@ -269,8 +269,17 @@ export function DrillChecklistPage() {
     setDraft((d) => (d.equipmentId === rig.id && d.startingHours == null ? { ...d, startingHours: rig.hourMeter ?? null } : d));
     setSuggestedHours(rig.hourMeter ?? null);
   }, [rig?.id, rig?.hourMeter]);
-  const existing = useTodayChecklist(rigId);
   const [draft, setDraft] = useState(() => emptyChecklist(rigId ?? '', jobParam));
+  // S16: one checklist per rig per job-day; the morning's answers carry over
+  const existing = useTodayChecklist(rigId, draft.jobId || undefined);
+  const earlier = useEarlierChecklistToday(rigId, draft.jobId || undefined);
+  const [carriedFrom, setCarriedFrom] = useState<string | null>(null);
+  const earlierJob = useLiveQuery(() => (earlier?.jobId ? db.jobs.get(earlier.jobId) : undefined), [earlier?.jobId]);
+  useEffect(() => {
+    if (!earlier || existing || carriedFrom === earlier.id) return;
+    setDraft((d) => ({ ...d, daily: { ...earlier.daily }, weekly: { ...earlier.weekly }, weeklyDone: earlier.weeklyDone }));
+    setCarriedFrom(earlier.id);
+  }, [earlier?.id, existing?.id]);
   const [saved, setSaved] = useState<{ ticketId?: string } | null>(null);
   // Switching rig starts a fresh draft for that rig (the job choice carries over)
   useEffect(() => {
@@ -301,6 +310,7 @@ export function DrillChecklistPage() {
     [existing?.id],
   );
   const readOnly = Boolean(existing) || Boolean(saved);
+  const carriedLine = carriedFrom && earlier ? `Answers carried from this morning's checklist${earlierJob?.name ? ` at ${earlierJob.name}` : ''} — change what changed.` : null;
   const set = (patch: Partial<typeof draft>) => setDraft({ ...draft, ...patch });
 
   const submit = async () => {
@@ -347,7 +357,7 @@ export function DrillChecklistPage() {
         {rigId && existing && (
           <div className="text-sm text-green-800 border border-green-200 bg-green-50 rounded-lg px-3 py-2 space-y-1" data-chk-existing>
             <p>
-              <b>{rig?.assetNumber}</b> already has today's checklist — filed by {existing.drillerName}
+              <b>{rig?.assetNumber}</b> already has today's checklist at this job — filed by {existing.drillerName}
               {existing.repairsNote && ` — repairs noted: “${existing.repairsNote}”`}.
             </p>
             <p className="text-xs">
@@ -388,6 +398,7 @@ export function DrillChecklistPage() {
                     data-chk-hours
                   />
                 </div>
+                {carriedLine && <p className="text-xs text-blue-800 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 w-full" data-chk-carried>{carriedLine}</p>}
                 <p className="text-xs text-gray-400 self-end pb-2" data-chk-hours-source>
                   {suggestedHours != null && draft.startingHours === suggestedHours
                     ? `from ${rig.assetNumber}'s meter — change it if the gauge reads differently. A number going backwards is ignored.`

@@ -195,7 +195,7 @@ async (page, lib) => {
     await PB.goto(`${WEB}/`);
     await PB.locator('main').waitFor({ timeout: 15000 });
     await sleep(500);
-    await PB.locator('button:has-text("Start work at")').first().click();
+    await PB.locator('button:has-text("Start a day at")').first().click();
     await PB.locator('[data-day-job]').waitFor({ timeout: 8000 });
     await PB.locator('[data-day-job]').click();
     await PB.locator('[data-pick-nearby-block]').waitFor({ timeout: 8000 });

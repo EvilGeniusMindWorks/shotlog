@@ -27,6 +27,7 @@ import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { formatDate, todayISO } from '@/lib/utils';
+import { nearbyDates } from '@/lib/dayMove';
 import { ArrowLeft, X } from 'lucide-react';
 import { fmtMiles, getFix, gpsPreferred, isFix, setGpsPreferred, GPS_FAILURE_TEXT, type GpsFix, type GpsFailure } from '@/lib/gps';
 import { orderByDistance, pickJobsFor, type PickJob } from '@/lib/nearbyJobs';
@@ -78,6 +79,8 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork, onOpen
   const [jobId, setJobId] = useState('');
   const [showNewJob, setShowNewJob] = useState(false);
   const [date, setDate] = useState(todayISO());
+  const [dateSheet, setDateSheet] = useState(false);
+  const [datePick, setDatePick] = useState(false);
   const [typeOfWork, setTypeOfWork] = useState<WorkType>(
     getDefaultWorkType() ?? defaultTypeOfWork ?? 'drill_to_blast',
   );
@@ -276,7 +279,7 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork, onOpen
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-[60] p-0 sm:p-4">
       <Card className="w-full sm:max-w-lg max-h-[92vh] flex flex-col overflow-hidden rounded-t-xl sm:rounded-xl relative" data-new-day-dialog>
         <CardHeader className="flex flex-row items-center justify-between shrink-0">
-          <CardTitle>Start work at a job</CardTitle>
+          <CardTitle>Start a day at a job</CardTitle>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>
@@ -377,9 +380,33 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork, onOpen
             )}
           </div>
 
-          <div>
-            <Label>Date</Label>
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} data-day-date />
+          <div data-day-date>
+            {/* S16: the date is a row you can change — Today by default */}
+            <FactRow
+              path="date"
+              label="Date"
+              value={`${date === todayISO() ? 'Today · ' : ''}${formatDate(date)}`}
+              onClick={() => setDateSheet(true)}
+            />
+            {dateSheet && (
+              <ChooserSheet
+                path="date"
+                title="Which date?"
+                options={[
+                  ...nearbyDates().map((d) => ({ value: d.date, label: formatDate(d.date), hint: d.label })),
+                  { value: '__pick', label: 'Pick a date…' },
+                ]}
+                value={date}
+                onPick={(v) => {
+                  if (v === '__pick') setDatePick(true);
+                  else setDate(v);
+                }}
+                onClose={() => setDateSheet(false)}
+              />
+            )}
+            {datePick && (
+              <Input type="date" className="mt-2" value={date} onChange={(e) => setDate(e.target.value)} data-day-date-input />
+            )}
             {sameDateExists && existingSameDate && (
               <div className="text-xs text-safety-orange bg-orange-50 border border-orange-200 rounded-lg px-3 py-2 mt-2 space-y-2" data-day-exists>
                 <p>

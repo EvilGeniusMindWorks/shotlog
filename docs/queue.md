@@ -62,6 +62,7 @@ to look for; his findings become the next round's items.
   person in two taps? Does "Needs something / All" and the search feel right? Findings → S15
   part 5.
 - S15 on your phone: the ⋯ More button on a day, Close this day on an empty day, and whether the app updated itself on the home screen without the orange chip.
+- S16: change a draft day's date from the header on your phone and check the driller's papers followed; file a day with only the log signed; start a second checklist for the same rig at a second job.
 
 ## Backlog — raised during Mark and Joe's testing (freeze from Sep 9 2026 evening)
 

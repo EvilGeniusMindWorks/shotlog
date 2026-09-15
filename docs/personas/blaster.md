@@ -222,6 +222,8 @@ page · customer/site/job create (new) · contacts · My Records · reference
   grid's Rows/Cols buttons and holes have no accessible names. **S9a batch 1:**
   filing pre-flight (red blocks on an unsigned shot; amber files with notes).
   Batch 3: off-plan badge, seismo Edit + distance line, grid names.
+  (Per-shot signing itself is reversed in Round S16, below — one signature on
+  the log covers every shot.)
 - **Site map location (2026-09-09):** Matthew's three complaints — only the job's address, "not found" on a valid rural address, no way to use GPS or coordinates — become a location bar with four doors and a site that remembers its spot (decisions.md, plan artifact cec017d7).
 
 ## Round S11 — the first week's small fixes (2026-09-13, plan artifact 5961f1d5)
@@ -261,3 +263,25 @@ page · customer/site/job create (new) · contacts · My Records · reference
 - The conditions line reads the time once — "On site 1:56 am · Barry, Dinis · NWS 1:30 am" — instead of repeating it.
 - A day that never got anywhere (rained out, started by mistake, nothing to show for it) can be **closed** from the bottom of the tiles with a reason, instead of sitting open with nothing to file; **Reopen** brings it back.
 - The app checks for a new build the moment Mark's phone comes back to it, and updates itself quietly on the home screen — no more finding himself on a stale build and thinking nothing changed.
+
+## Round S16 — one log, one blaster; a job on a date (2026-09-15, plan artifact 59ebb05f)
+
+- **One log, one blaster, one signature (his rule):** the per-shot Responsible
+  Blaster row is gone — the blasting log's Blaster Signature box is the only
+  signature, and it covers every shot on the log. Reverses Round 1's
+  multi-blaster model (a) (see Settled, above). A second blaster on the day
+  is crew: he files his own time card, not a second sign-off.
+- **A work day is one job on one date** — true since S13's one-BlastDay-
+  per-job-per-date rule, and now the app says so out loud: **File this day**
+  carries a quiet "Job · date" line under it, and the start-work dialog reads
+  "Start a day at a job".
+- **Change the date — tap the date in the header.** A sheet lists what moves
+  with the day: the card, the blasting log and its shots, the plan, the
+  daily report, drill logs, time cards (filed ones too — their owners see a
+  line on their home), confirmations and reminders. It's blocked once the
+  day has an office copy on it, or once the target date already has a day
+  for this job with papers on it — open that day instead. Only the day's
+  starter or a supervisor may move it. The header date turns amber
+  "· not today" whenever the day isn't today and nothing on it is filed yet;
+  the start-work dialog gets the same Today / Yesterday / Tomorrow / pick-a-
+  date row.

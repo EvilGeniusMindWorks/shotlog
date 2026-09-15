@@ -10,7 +10,7 @@ Filing turns the day into the record the office keeps: a signed PDF of the blast
 
 ## Before you file
 
-1. Every shot has its **responsible blaster's signature**. Open the blasting log, scroll to the shot's sign-off and sign on the screen. Your name and license come from your profile.
+1. The blasting log is **signed**. Open the blasting log and scroll to the **Blaster Signature** box at the bottom, then sign on the screen — one signature covers every shot on the log. Your name and license come from your profile.
 2. The daily report has the crew and their hours. Anyone who worked and is missing will not be on the paperwork.
 3. Look at the compliance badges on each shot. An amber or red badge is not a stop — but it is worth a note in the shot before you file, because the office will ask.
 
@@ -20,7 +20,7 @@ Filing turns the day into the record the office keeps: a signed PDF of the blast
 
 Tap **Continue** on the day, or open the day and tap **Submit to Office**. Before anything is built, the app checks the day and lists what it found:
 
-- **Red** stops you: a shot without its responsible blaster's signature. Tap the line to go and sign it.
+- **Red** stops you: "The blasting log is not signed." Tap the line to go to the Blaster Signature box and sign it — shots are not signed separately.
 - **Amber** does not stop you: no structure distance while there are seismo readings, no crew on the daily report, a shot with no explosives. You can file anyway — the office sees "filed with 2 notes" beside the day.
 - **Green** ticks are the things that are fine: drill log accepted, explosives entered, time cards filed.
 

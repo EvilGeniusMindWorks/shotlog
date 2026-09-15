@@ -29,6 +29,7 @@ import {
   type TileState,
 } from '@/lib/dayHub';
 import { hhmm } from '@/lib/dayCard';
+import { formatDate } from '@/lib/utils';
 import { can, myHomeDashboard } from '@/lib/perms';
 import { getSessionUser } from '@/lib/session';
 import { ConsequenceSheet } from '@/components/records/LifecycleMenu';
@@ -229,6 +230,11 @@ export function DayHub({ day, job, blastLog, shots, dailyReport, locked, owner, 
           )}
         </div>
       )}
+      {day.movedFrom && (
+        <p className="text-xs text-gray-600 border border-gray-200 bg-white rounded-lg px-3 py-2" data-day-moved>
+          Moved from {formatDate(day.movedFrom.date)} by {day.movedFrom.byName || 'someone'} · {hhmm(day.movedFrom.at)}
+        </p>
+      )}
       {isDriller && <RigList day={day} rows={rigRows} readOnly={readOnly} />}
       {tiles.map((t, i) => (
         <Tile key={`${t.id}-${i}`} id={t.id} icon={t.icon} name={t.name} state={t.state} upNext={i === upNextIndex} onAction={t.onAction} />
@@ -241,7 +247,11 @@ export function DayHub({ day, job, blastLog, shots, dailyReport, locked, owner, 
               <Button className="w-full min-h-[48px] bg-safety-orange hover:bg-safety-orange/90 text-white text-base" data-file-day onClick={() => navigate(`/blast-day/${day.id}/submit`)}>
                 {file.label}
               </Button>
-              {file.note && <p className="text-xs text-gray-500 mt-1 text-center">{file.note}</p>}
+              {/* S16 (Matthew's pick i): the job and the date, quietly, under the button */}
+              <p className="text-xs text-gray-500 mt-1 text-center" data-file-sub>
+                {job?.name ?? 'This job'} · {formatDate(day.date)}
+                {file.note ? ` · ${file.note}` : ''}
+              </p>
             </>
           )}
           {file.kind === 'blocked' && <p className="text-sm text-amber-800 border border-amber-300 bg-amber-50 rounded-lg px-3 py-2">{file.label}</p>}

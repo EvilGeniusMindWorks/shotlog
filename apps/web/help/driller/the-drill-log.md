@@ -29,6 +29,10 @@ Pick the rig at the top of the log. It ties the day's hours to the machine, and 
 
 Under the grid, your logged holes newest first — the latest eight, with **Show all** for the rest. Tap one to change it.
 
+## If the day moves
+
+If the blaster changes the day's date, your drill log and the plan sent to you move with it — there's nothing to re-send.
+
 ## Related
 
 [Sign it complete](/help/driller/sign-it-complete) · [The rig checklist and hours](/help/driller/rig-checklist-and-hours)

@@ -47,6 +47,8 @@ const REPORT_TABLES_RW: Record<string, readonly WriteOp[]> = {
   workDayConfirmations: ['PUT', 'PATCH', 'DELETE'],
   dayCardEdits: ['PUT', 'PATCH', 'DELETE'],
   dayReminders: ['PUT', 'PATCH', 'DELETE'],
+  // S16: "Change the date" rows — written by whoever moves a day
+  dayMoves: ['PUT', 'PATCH', 'DELETE'],
 };
 
 export const CAPABILITIES: readonly CapabilityDef[] = [

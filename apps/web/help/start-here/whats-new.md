@@ -8,6 +8,18 @@ status: draft
 
 Short notes on what changed, newest first. Ask in ? → **Send feedback** if something here is not what you see.
 
+## September 16, 2026
+
+Rolling out over the coming days.
+
+- **One signature signs the whole log.** Sign the **Blaster Signature** box at the bottom of the blasting log once and it covers every shot — shots no longer get their own sign-off.
+- **File this day names the job and date.** A quiet line under it reads "Job · date," so you always know which day you're filing.
+- **Change the date from the header.** Tap the date to open a sheet — Yesterday, Today, Tomorrow, or pick a date — and see what moves with the day before you commit.
+- **A day left on the wrong date turns amber.** The header date shows "· not today" whenever the day isn't today and nothing on it is filed yet.
+- **Start a day at a job** now has a Date row of its own — Today by default, or choose Yesterday, Tomorrow, or pick a date.
+- **A rig checklist per job-day.** Move a rig to a second job the same day and it gets its own second checklist there, prefilled with its last reading and the morning's answers.
+- **Filed time cards move with a moved day**, and whoever filed one sees a line on their home saying so.
+
 ## September 15, 2026
 
 - **Shot diagram: a position marked ⌀ No hole on the plan cannot be wired** — it is drawn hollow in Timing, and a tap there does nothing.

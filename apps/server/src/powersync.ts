@@ -72,6 +72,18 @@ const ONE_PER_PARENT: Record<string, string> = {
 /** The one post-file change a filed copy allows: where its binaries live */
 const STORAGE_POINTER_FIELDS = new Set(['storageStatus', 'pdfKey', 'assetKeys', 'pdf', 'updatedAt', 'syncStatus']);
 
+/** S16 "Change the date": the papers that carry the day's date, and the
+ *  only fields a move may touch on them */
+const MOVE_DATE_TABLES = new Set(['drillLogs', 'drillLogHoles', 'timeCards', 'drillChecklists', 'dayReminders']);
+const MOVE_DATE_FIELDS = new Set(['date', 'blastDayId', 'updatedAt', 'syncStatus']);
+interface MoveInfo {
+  blastDayId: string;
+  jobId: string;
+  fromDate: string;
+  toDate: string;
+  moveChecklists: boolean;
+}
+
 const TABLE_LABEL: Record<string, string> = {
   blastDays: 'work day',
   blastLogs: 'blasting log',
@@ -89,6 +101,7 @@ const TABLE_LABEL: Record<string, string> = {
   workDayConfirmations: 'confirmation',
   dayCardEdits: 'card change',
   dayReminders: 'reminder',
+  dayMoves: 'date change',
 };
 
 type CardSetRow = { v: number; by: string; byName: string; at: string };
@@ -265,6 +278,53 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
         );
       };
 
+      // S16: the "Change the date" rows in this batch, by day and by job+date.
+      // A date-only change on one of the day's papers is allowed when a move
+      // row says so — in this batch or already stored — whoever wrote it.
+      const movesByDay = new Map<string, MoveInfo>();
+      const movesByJobDate = new Map<string, MoveInfo>();
+      for (const o of parsed.data.ops) {
+        if (o.op === 'PUT' && o.data?.table_name === 'dayMoves' && o.data.payload) {
+          const m = parsePayloadSafe(o.data.payload) as Record<string, unknown>;
+          const info: MoveInfo = {
+            blastDayId: String(m.blastDayId ?? ''),
+            jobId: String(m.jobId ?? ''),
+            fromDate: String(m.fromDate ?? ''),
+            toDate: String(m.toDate ?? ''),
+            moveChecklists: Boolean(m.moveChecklists),
+          };
+          if (info.blastDayId) movesByDay.set(info.blastDayId, info);
+          if (info.jobId && info.fromDate) movesByJobDate.set(`${info.jobId}|${info.fromDate}`, info);
+        }
+      }
+      const storedMove = async (dayId: string | undefined, jobId: string | undefined, fromDate: string | undefined, toDate: string): Promise<MoveInfo | null> => {
+        const rows = await tx.$queryRaw<{ payload: string }[]>`
+          SELECT "payload" FROM "records"
+          WHERE "company_id" = ${cid} AND "table_name" = 'dayMoves'
+            AND ("payload"::jsonb ->> 'toDate') = ${toDate}
+            AND (("payload"::jsonb ->> 'blastDayId') = ${dayId ?? ''}
+                 OR (("payload"::jsonb ->> 'jobId') = ${jobId ?? ''} AND ("payload"::jsonb ->> 'fromDate') = ${fromDate ?? ''}))
+          ORDER BY "updated_at" DESC LIMIT 1`;
+        if (rows.length === 0) return null;
+        const m = parsePayloadSafe(rows[0].payload) as Record<string, unknown>;
+        return { blastDayId: String(m.blastDayId ?? ''), jobId: String(m.jobId ?? ''), fromDate: String(m.fromDate ?? ''), toDate: String(m.toDate ?? ''), moveChecklists: Boolean(m.moveChecklists) };
+      };
+      const moveAuthorises = async (table: string, before: Record<string, unknown>, newDate: string): Promise<boolean> => {
+        let dayId = before.blastDayId as string | undefined;
+        let jobId = before.jobId as string | undefined;
+        const fromDate = before.date as string | undefined;
+        if (table === 'drillLogHoles') {
+          const log = before.drillLogId ? await batch.get(before.drillLogId as string) : null;
+          dayId = log?.payload.blastDayId as string | undefined;
+          jobId = log?.payload.jobId as string | undefined;
+        }
+        const inBatch = (dayId && movesByDay.get(dayId)) || (jobId && fromDate && movesByJobDate.get(`${jobId}|${fromDate}`)) || null;
+        const move = inBatch && inBatch.toDate === newDate ? inBatch : await storedMove(dayId, jobId, fromDate, newDate);
+        if (!move) return false;
+        if (table === 'drillChecklists' && !move.moveChecklists) return false;
+        return true;
+      };
+
       for (const op of parsed.data.ops) {
         // PATCH may omit table_name; DELETE carries no data at all — the
         // stored row is the identity source for those.
@@ -306,6 +366,22 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
             text: `The ${label} you changed is no longer on the server — deleted by someone else while you were offline, or never accepted — so your change was not saved`,
           });
           continue;
+        }
+
+        // 0b. S16: a date-only change on a paper of a moved day passes for the
+        // mover — the move row is the authority, not the paper's owner
+        if (op.op === 'PATCH' && stored && MOVE_DATE_TABLES.has(tableName)) {
+          const changes = diffPayloads(stored.payload, effective);
+          const dateOnly = changes.every((c) => MOVE_DATE_FIELDS.has(c.field));
+          const newDate = effective.date as string | undefined;
+          if (dateOnly && newDate && (await moveAuthorises(tableName, stored.payload, newDate))) {
+            if (changes.length > 0) {
+              audit(op.id, tableName, 'PATCH', changes, 'date change');
+              await upsertRecord(tx, cid, op.id, op.data?.table_name ?? null, payloadOut, now);
+              batch.applied(op.id, tableName, effective);
+            }
+            continue;
+          }
         }
 
         // 1. table × op × role (capability-resolved; custom roles supported).
@@ -529,6 +605,21 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
           if (stored.payload.nws !== undefined) next.nws = stored.payload.nws;
           effective = next;
           payloadOut = JSON.stringify(effective);
+          // S16: the date changes only while the day is a draft with no office copy
+          if (effective.date !== stored.payload.date) {
+            const filed = await tx.$queryRaw<{ id: string }[]>`
+              SELECT "id" FROM "records"
+              WHERE "company_id" = ${cid} AND "table_name" = 'submissions'
+                AND ("payload"::jsonb ->> 'blastDayId') = ${op.id}
+              LIMIT 1`;
+            if (stored.payload.status !== 'draft' || filed.length > 0) {
+              discard(op, tableName, 'date change on a filed day', {
+                kind: 'refused',
+                text: 'This day is filed with the office — withdraw the filing before changing its date',
+              });
+              continue;
+            }
+          }
         }
 
         // 2. blastDay status transitions
@@ -625,21 +716,8 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
           continue;
         }
 
-        // 2b5. per-shot sign-off (multi-blaster model (a)): only the shot's
-        // responsible blaster signs it — supervisors excepted
-        if (tableName === 'shots' && op.op !== 'DELETE' && !canEditApprovedAs(role, roleDefs)) {
-          const signChanged = diffPayloads(stored?.payload ?? null, effective).some(
-            (c) => c.field === 'signatureImage' || c.field === 'signedAt',
-          );
-          if (signChanged) {
-            const resp = (effective.responsibleBlasterUserId ??
-              stored?.payload.responsibleBlasterUserId) as string | undefined;
-            if (resp && resp !== actorId) {
-              discard(op, tableName, 'shot sign-off belongs to its responsible blaster');
-              continue;
-            }
-          }
-        }
+        // (2b5, the per-shot sign-off guard of the multi-blaster model, was
+        // retired in S16: one log, one blaster, one signature — the log's.)
 
         // 2c. hole rows freeze for drillers once their log is accepted
         if (tableName === 'drillLogHoles' && !canEditAcceptedDrillLogAs(role, roleDefs)) {
@@ -765,6 +843,105 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
             discard(op, tableName, 'not your confirmation');
             continue;
           }
+        }
+
+        // 3b. S16: a "Change the date" row — apply it to the day and every
+        // paper on it, this device's and everyone else's, then mark it applied
+        if (tableName === 'dayMoves' && op.op === 'PUT' && !stored) {
+          const dayId = String(effective.blastDayId ?? '');
+          const toDate = String(effective.toDate ?? '');
+          const fromDate = String(effective.fromDate ?? '');
+          const jobId = String(effective.jobId ?? '');
+          const day = dayId ? await batch.get(dayId) : null;
+          if (!day || !toDate || !fromDate) {
+            discard(op, tableName, 'day no longer exists', { kind: 'refused', text: 'The day you moved is no longer on the server — the move was not applied' });
+            continue;
+          }
+          const filed = await tx.$queryRaw<{ id: string }[]>`
+            SELECT "id" FROM "records"
+            WHERE "company_id" = ${cid} AND "table_name" = 'submissions'
+              AND ("payload"::jsonb ->> 'blastDayId') = ${dayId}
+            LIMIT 1`;
+          if (day.payload.status !== 'draft' || filed.length > 0) {
+            discard(op, tableName, 'date change on a filed day', {
+              kind: 'refused',
+              text: 'This day is filed with the office — withdraw the filing before changing its date',
+            });
+            continue;
+          }
+          // another day for this job on the target date: absorbed when empty, refused when it has papers
+          const others = await tx.$queryRaw<{ id: string }[]>`
+            SELECT "id" FROM "records"
+            WHERE "company_id" = ${cid} AND "table_name" = 'blastDays'
+              AND ("payload"::jsonb ->> 'jobId') = ${jobId} AND ("payload"::jsonb ->> 'date') = ${toDate} AND "id" <> ${dayId}`;
+          let refused = false;
+          for (const other of others) {
+            const papers = await tx.$queryRaw<{ n: bigint }[]>`
+              SELECT COUNT(*)::bigint AS n FROM "records"
+              WHERE "company_id" = ${cid} AND "table_name" IN ('blastLogs', 'dailyReports', 'drillLogs', 'timeCards')
+                AND ("payload"::jsonb ->> 'blastDayId') = ${other.id}`;
+            if (Number(papers[0]?.n ?? 0) > 0) {
+              refused = true;
+              break;
+            }
+            audit(other.id, 'blastDays', 'DELETE', [{ field: '*', note: 'empty day absorbed by a date change' }]);
+            await deleteRecord(tx, cid, other.id);
+            batch.deleted(other.id);
+          }
+          if (refused) {
+            discard(op, tableName, 'target date has a day with papers', { kind: 'refused', text: `This job already has a day on ${toDate} with papers — open that day instead` });
+            continue;
+          }
+          if (day.payload.date !== toDate) {
+            const nextDay = { ...day.payload, date: toDate, movedFrom: { date: fromDate, by: effective.by ?? '', byName: effective.byName ?? '', at: now }, updatedAt: now };
+            audit(dayId, 'blastDays', 'PATCH', diffPayloads(day.payload, nextDay), 'date change');
+            await upsertRecord(tx, cid, dayId, 'blastDays', JSON.stringify(nextDay), now);
+            batch.applied(dayId, 'blastDays', nextDay);
+          }
+          const movedLogIds: string[] = [];
+          for (const table of ['drillLogs', 'timeCards', 'dayReminders']) {
+            const rows = await tx.$queryRaw<{ id: string; payload: string }[]>`
+              SELECT "id", "payload" FROM "records"
+              WHERE "company_id" = ${cid} AND "table_name" = ${table}
+                AND (("payload"::jsonb ->> 'blastDayId') = ${dayId}
+                     OR (("payload"::jsonb ->> 'jobId') = ${jobId} AND ("payload"::jsonb ->> 'date') = ${fromDate}))`;
+            for (const r of rows) {
+              const before = parsePayloadSafe(r.payload) as Record<string, unknown>;
+              if (table === 'drillLogs') movedLogIds.push(r.id);
+              if (before.date === toDate && before.blastDayId === dayId) continue;
+              const next = { ...before, date: toDate, blastDayId: dayId, updatedAt: now };
+              audit(r.id, table, 'PATCH', diffPayloads(before, next), 'date change');
+              await upsertRecord(tx, cid, r.id, table, JSON.stringify(next), now);
+              batch.applied(r.id, table, next);
+            }
+          }
+          for (const logId of movedLogIds) {
+            const holes = await tx.$queryRaw<{ id: string; payload: string }[]>`
+              SELECT "id", "payload" FROM "records"
+              WHERE "company_id" = ${cid} AND "table_name" = 'drillLogHoles'
+                AND ("payload"::jsonb ->> 'drillLogId') = ${logId} AND ("payload"::jsonb ->> 'date') = ${fromDate}`;
+            for (const h of holes) {
+              const before = parsePayloadSafe(h.payload) as Record<string, unknown>;
+              const next = { ...before, date: toDate, updatedAt: now };
+              await upsertRecord(tx, cid, h.id, 'drillLogHoles', JSON.stringify(next), now);
+              batch.applied(h.id, 'drillLogHoles', next);
+            }
+          }
+          if (effective.moveChecklists) {
+            const chks = await tx.$queryRaw<{ id: string; payload: string }[]>`
+              SELECT "id", "payload" FROM "records"
+              WHERE "company_id" = ${cid} AND "table_name" = 'drillChecklists'
+                AND ("payload"::jsonb ->> 'jobId') = ${jobId} AND ("payload"::jsonb ->> 'date') = ${fromDate}`;
+            for (const c of chks) {
+              const before = parsePayloadSafe(c.payload) as Record<string, unknown>;
+              const next = { ...before, date: toDate, updatedAt: now };
+              audit(c.id, 'drillChecklists', 'PATCH', diffPayloads(before, next), 'date change');
+              await upsertRecord(tx, cid, c.id, 'drillChecklists', JSON.stringify(next), now);
+              batch.applied(c.id, 'drillChecklists', next);
+            }
+          }
+          effective = { ...effective, status: 'applied', appliedAt: now, updatedAt: now };
+          payloadOut = JSON.stringify(effective);
         }
 
         // 4. apply (+ audit: field-level diff of stored → effective)

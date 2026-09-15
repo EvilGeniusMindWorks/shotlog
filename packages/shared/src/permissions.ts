@@ -78,6 +78,7 @@ export const TABLE_PERMISSIONS: Record<string, TableRule> = {
   // S14: "Remind" — one row from a blaster to a person about a paper on a
   // day; the person clears it (PATCH) when they have dealt with it
   dayReminders: uniform(REPORT_FAMILY),
+  dayMoves: uniform(REPORT_FAMILY),
   blastLogs: uniform(BLAST_FAMILY),
   shots: uniform(BLAST_FAMILY),
   seismoReadings: uniform(BLAST_FAMILY),
@@ -317,6 +318,7 @@ export const PARENT_CHAIN: Record<string, { parentIdField: string; parentTable: 
   workDayConfirmations: { parentIdField: 'blastDayId', parentTable: 'blastDays' },
   dayCardEdits: { parentIdField: 'blastDayId', parentTable: 'blastDays' },
   dayReminders: { parentIdField: 'blastDayId', parentTable: 'blastDays' },
+  dayMoves: { parentIdField: 'blastDayId', parentTable: 'blastDays' },
   drillLogs: { parentIdField: 'blastDayId', parentTable: 'blastDays' },
   drillLogHoles: { parentIdField: 'drillLogId', parentTable: 'drillLogs' },
   shots: { parentIdField: 'blastLogId', parentTable: 'blastLogs' },

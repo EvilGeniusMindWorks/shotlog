@@ -17,7 +17,8 @@ Each shot has:
 - **Blast mats** — Yes or No; say Yes and a **How many** box appears. The printed and PDF logs read "Blast mats: Yes · 12."
 - **Explosives** — what went in, top-down. See [Explosives, top-down](/help/blaster/explosives).
 - **Design and timing** — the wiring diagram and delays. See [Design, timing and compliance](/help/blaster/design-timing-compliance).
-- **Sign-off** — the responsible blaster's signature.
+
+Shots are not signed on their own — one signature at the bottom of the log covers all of them. See **One signature for the log**, below.
 
 ![The blasting log](blast-log.png)
 
@@ -32,6 +33,10 @@ Tap **+ Add shot**. The new shot starts from the previous one's parameters, so a
 ## Hazards and precautions
 
 **Identify hazards** and **Precautions taken** open as a checklist: tick everything that applies, add anything else on the **Other…** line, then **Done**. What prints stays the same plain sentence it always was.
+
+## One signature for the log
+
+There is one **Blaster Signature** box, at the bottom of the log, not one per shot. Signing it signs every shot on the log at once. A second blaster working the day is crew — they file their own time card, not a second signature on the log.
 
 ## Related
 

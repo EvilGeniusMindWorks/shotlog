@@ -40,7 +40,7 @@ export const TOUR_SCRIPTS: Record<TourBucket, TourStep[]> = {
     {
       route: '/',
       selector: '[data-tour="fab"]',
-      title: 'Start work at a job',
+      title: 'Start a day at a job',
       body: 'One tap opens a work day. Copy forward from the last day at that job — drill params, explosives, crew — then Continue walks you Drilling → Readiness → Shots → Seismo → File.',
     },
     {
@@ -224,9 +224,9 @@ export const SCREEN_TOURS: Record<ScreenTourKey, TourStep[]> = {
     },
     {
       route: '?view=blast-log',
-      selector: '[data-tour="shot-signoff"]',
-      title: 'Sign-off, then file',
-      body: 'The responsible blaster signs the shot. Then Submit to Office files the PDFs and locks the day; sent back, it returns to your Dashboard with the note.',
+      selector: '[data-tour="log-signature"]',
+      title: 'Sign, then file',
+      body: 'One signature at the bottom of the log covers its shots. Then File this day files the PDFs and locks the day; sent back, it returns to your Dashboard with the note.',
     },
   ],
   'drill-log': [

@@ -6,7 +6,7 @@ updated: September 2026
 status: draft
 ---
 
-The **+** button opens one short dialog. It asks the questions in the order that gets you to the job fastest.
+The **+** button opens one short dialog, **Start a day at a job**. It asks the questions in the order that gets you to the job fastest.
 
 ## Nearby jobs
 
@@ -18,7 +18,7 @@ Recent jobs and Nearby jobs show as chips when there are only a few. Once either
 
 1. **Name** (optional) — what you would call this day. Leave it blank and ShotLog names it by job and date.
 2. **Job** — the job you are at. Recent jobs sit on top (chips for a few, a list once there are four or more); one tap and you are done. Otherwise tap the Job row and pick **Customer › Site › Job**. The search box finds a job by name or number.
-3. **Date** — today, unless you are catching up.
+3. **Date** — a row with **Today** already picked; tap it for **Yesterday**, **Tomorrow**, or pick a date, for catching up or planning ahead.
 4. **Type of work** — drill to blast, drill only, blast only, hauling. ShotLog suggests the last type used at that job.
 5. **Copy from previous day** — brings over the drill parameters, explosives and crew from the last day at this job, so you change only what changed.
 

@@ -8,6 +8,10 @@ status: draft
 
 A work day opens on its tiles — one for each paper your role touches. Each tile shows that paper's real state and one button to move it along; tap a tile to open that paper.
 
+## A day is one job on one date
+
+A work day is always one job, one date. Worked two jobs today? That's two days — start and file each on its own. **File this day** carries a quiet "Job · date" line under it so you can always see which one you're on, and the dialog you open with **+** reads "Start a day at a job".
+
 ## Your tiles
 
 Blasting log, Daily report and My time card each get a tile. A tile's state is that paper's own life — Not started, Started by Mark 7:10, 2 of 3 shots signed, Ready to file, Filed, Sent back (with the office's note), Approved — and its button is either **Start** (tapping it is the whole step — there's no sheet after) or **Open** / **View**. The first tile still waiting on you carries "Up next". The card sits above the tiles as one plain line — "Drill to Blast · Moderate · Cloudy · S · Normal", then who's on site and when the weather was read, said once ("On site 1:56 am · Barry, Dinis · NWS 1:30 am") — and is tappable to edit.
@@ -19,6 +23,14 @@ Blasting log, Daily report and My time card each get a tile. A tile's state is t
 ## Closing a day with nothing to file
 
 Some days don't go anywhere — rained out, rescheduled, started by mistake, or nothing happened. When there's nothing to file, **Close this day** appears at the bottom of the tiles instead. Tap it, give a reason (or pick one of the usual ones), and the day goes read-only with a grey **Closed · reason** banner and a **Reopen** button. Closed days drop off the office's queues.
+
+## Change the date
+
+Tap the date in the header to open a sheet: **Yesterday**, **Today**, **Tomorrow**, or pick a date. Picking one shows you what moves with the day — the card, the blasting log and its shots, the plan, the daily report, drill logs, and time cards (filed ones too — the person who filed one sees a line on their home saying it moved).
+
+You can't move a day that already has an office copy on it, or move it onto a date where this job already has a day with papers on it — open that day instead. Only whoever started the day, or a supervisor, can change its date.
+
+When the header date isn't today and nothing on the day is filed yet, it shows amber with **· not today** next to it, so a day left open from a different date is easy to spot.
 
 ## On a phone
 

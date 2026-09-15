@@ -53,19 +53,14 @@ export function blastLogTile(
   if (day.status === 'approved') return { title: 'Approved', sub: 'locked', action: 'View', tone: 'done', note };
   if (day.status === 'submitted') return { title: filedAt ? `Filed ${hhmm(filedAt)}` : 'Filed', sub: 'with the office', action: 'View', tone: 'done', note };
   if (day.sendBackNote) return { title: 'Sent back', sub: `Office: “${day.sendBackNote}”`, action: 'Open', tone: 'bad', note };
-  const signed = shots.filter((s) => s.signatureImage).length;
-  const logSigned = Boolean(log.signatureImage);
-  const allSigned = shots.length > 0 && (signed === shots.length || (logSigned && signed === 0));
-  if (allSigned) return { title: 'Ready to file', sub: `${shots.length === 1 ? 'shot signed' : `all ${shots.length} shots signed`}`, action: 'Open', tone: 'done', note };
-  if (signed === 0 && !logSigned) {
-    return { title: `Started ${who(log.blasterName || undefined, log.createdAt)}`, sub: shots.length > 1 ? `${shots.length} shots · none signed yet` : 'no shots signed yet', action: 'Open', tone: 'next', note };
-  }
-  const nextUnsigned = shots.find((s) => !s.signatureImage);
+  // S16 (Matthew): one log, one blaster, one signature — the log's box is it
+  const logSigned = Boolean(log.signatureImage) && shots.length > 0;
+  if (logSigned) return { title: 'Ready to file', sub: `signed · ${shots.length} shot${shots.length === 1 ? '' : 's'}`, action: 'Open', tone: 'done', note };
   return {
-    title: `${signed} of ${shots.length} shots signed`,
-    sub: nextUnsigned ? `shot ${nextUnsigned.shotNumber} needs a signature` : '',
+    title: `Started ${who(log.blasterName || undefined, log.createdAt)}`,
+    sub: shots.length === 0 ? 'no shots yet' : `${shots.length} shot${shots.length === 1 ? '' : 's'} · not signed yet`,
     action: 'Open',
-    tone: 'warn',
+    tone: 'next',
     note,
   };
 }
@@ -118,9 +113,9 @@ export function fileState(day: BlastDay, log: BlastLog | undefined, shots: Shot[
   const blasting = isBlastingWork(day.typeOfWork) || Boolean(log);
   if (blasting) {
     if (!log) return { kind: 'none', label: '' };
-    const signed = shots.filter((s) => s.signatureImage).length;
-    const allSigned = shots.length > 0 && (signed === shots.length || (Boolean(log.signatureImage) && signed === 0));
-    if (!allSigned) return { kind: 'blocked', label: `${signed} of ${shots.length} shot${shots.length === 1 ? '' : 's'} signed — sign ${shots.length === 1 ? 'it' : 'them'} to file` };
+    // S16: the log's signature is the one signature
+    if (shots.length === 0) return { kind: 'blocked', label: 'No shots on the blasting log yet' };
+    if (!log.signatureImage) return { kind: 'blocked', label: 'The blasting log is not signed — sign it to file' };
     return { kind: 'ready', label: 'File this day', note: report ? undefined : 'files with the note “No daily report”' };
   }
   if (!report && drillLogs === 0) return { kind: 'none', label: '' };
@@ -280,9 +275,11 @@ export function useMyReminders(): { reminder: DayReminder; jobName: string }[] {
       const rows = (await db.dayReminders.filter((r) => r.toUserId === me && !r.clearedAt).toArray()).sort((a, b) => b.at.localeCompare(a.at));
       const out: { reminder: DayReminder; jobName: string }[] = [];
       for (const r of rows) {
-        const filed = await db.timeCards
-          .filter((c) => c.userId === me && c.jobId === r.jobId && c.date === r.date && c.status !== 'draft')
-          .count();
+        const filed = r.what === 'timecard'
+          ? await db.timeCards
+              .filter((c) => c.userId === me && c.jobId === r.jobId && c.date === r.date && c.status !== 'draft')
+              .count()
+          : 0;
         if (filed > 0) {
           await dismissReminder(r.id);
           continue;

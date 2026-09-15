@@ -151,8 +151,8 @@ async (page, lib) => {
 
     // the start-work dialog: recent jobs are rows once there are four
     await PB.goto(`${WEB}/`);
-    await PB.getByRole('button', { name: /Start work at/ }).first().waitFor({ timeout: 20000 });
-    await PB.getByRole('button', { name: /Start work at/ }).first().click();
+    await PB.getByRole('button', { name: /Start a day at/ }).first().waitFor({ timeout: 20000 });
+    await PB.getByRole('button', { name: /Start a day at/ }).first().click();
     await PB.locator('[data-new-day-dialog]').waitFor({ timeout: 8000 });
     await sleep(500);
     const recent = PB.locator('[data-recent-jobs] [data-recent-job]');

@@ -37,7 +37,7 @@ async (page, lib) => {
       const shot = await db.shots.where('blastLogId').equals(log.id).first();
       const c = document.createElement('canvas'); c.width = 200; c.height = 80; const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, 200, 80); g.strokeStyle = '#000'; g.lineWidth = 3; g.beginPath(); g.moveTo(20, 50); g.lineTo(180, 30); g.stroke();
       const blob = await new Promise((r) => c.toBlob(r, 'image/png'));
-      await db.shots.update(shot.id, { signatureImage: blob, signedAt: nowISO(), updatedAt: nowISO() });
+      await db.blastLogs.update(log.id, { signatureImage: blob, signedAt: nowISO(), updatedAt: nowISO() }); // S16: the log signs
       return { id, shotId: shot.id, jobName: jobs[0].name };
     }, stamp);
     dayId = made.id; shotId = made.shotId;

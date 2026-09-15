@@ -71,9 +71,9 @@ export async function derivedRigHours(day: BlastDay): Promise<DerivedRig[]> {
   for (const rigId of rigIds) {
     const rig = await db.equipment.get(rigId);
     if (!rig) continue;
-    const chk = (await db.drillChecklists.filter((c) => c.equipmentId === rigId && c.date === day.date).toArray()).sort((a, b) =>
-      b.createdAt.localeCompare(a.createdAt),
-    )[0];
+    // S16: a checklist per rig per job-day — this job's first, a job-less one as fallback
+    const todays = (await db.drillChecklists.filter((c) => c.equipmentId === rigId && c.date === day.date).toArray()).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const chk = todays.find((c) => c.jobId === day.jobId) ?? todays.find((c) => !c.jobId);
     const ends = logs
       .filter((l) => l.drillRigEquipmentId === rigId && l.endingHours != null)
       .map((l) => l.endingHours as number)

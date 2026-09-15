@@ -93,7 +93,7 @@ const ITEMS: Record<TourBucket, Item[]> = {
     { key: 'license', text: 'Add your blasting license', to: '/profile', done: (c) => (c.me.licenses?.length ?? 0) > 0 },
     { key: 'sign', text: 'Sign once — every sign-off becomes one tap', to: '/profile', done: (c) => Boolean(c.me.signature) },
     TOUR,
-    { key: 'day', text: 'Start work at a job (the + button)', to: '/', done: (c) => c.blastLogsMine + c.shotsMine + c.drillLogsMine + c.timeCardsMine > 0 },
+    { key: 'day', text: 'Start a day at a job (the + button)', to: '/', done: (c) => c.blastLogsMine + c.shotsMine + c.drillLogsMine + c.timeCardsMine > 0 },
     { key: 'file', text: 'File a day to the office', to: '/', done: (c) => c.submissionsMine > 0 },
   ],
   driller: [

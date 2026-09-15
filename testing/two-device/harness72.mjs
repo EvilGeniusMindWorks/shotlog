@@ -75,7 +75,7 @@ async (page, lib) => {
     const started = await waitFor(() => tileState(PA, 'blast-log').then((s) => (/^Started/.test(s ?? '') ? s : null)));
     R.ok(`back on the tiles the log reads "${started}" · Open`, /^Started/.test(started ?? '') && (await tileAction(PA, 'blast-log')) === 'Open');
     const blocked = await PA.locator('[data-file-row]').getAttribute('data-file-row');
-    R.ok('File this day is blocked until the shot is signed', blocked === 'blocked' && /0 of 1 shot signed/.test(await PA.locator('[data-file-row]').innerText()));
+    R.ok('File this day is blocked until the log is signed', blocked === 'blocked' && /log is not signed/.test(await PA.locator('[data-file-row]').innerText()));
 
     await PA.locator('[data-tile="daily-report"] [data-tile-action="Start"]').click();
     const rep = await waitFor(() => tileState(PA, 'daily-report').then((s) => (/^Started/.test(s ?? '') ? s : null)));
@@ -86,12 +86,12 @@ async (page, lib) => {
       const { db } = await import('/src/db/index.ts');
       const { nowISO } = await import('/src/lib/utils.ts');
       const log = await db.blastLogs.where('blastDayId').equals(id).first();
-      const shot = await db.shots.where('blastLogId').equals(log.id).first();
+      // S16: the log's signature is the one signature
       // eslint-disable-next-line no-eval
-      await db.shots.update(shot.id, { signatureImage: eval(png), signedAt: nowISO(), updatedAt: nowISO() });
+      await db.blastLogs.update(log.id, { signatureImage: eval(png), signedAt: nowISO(), updatedAt: nowISO() });
     }, { id: dayId, png: PNG });
     const ready = await waitFor(() => PA.locator('[data-file-row]').getAttribute('data-file-row').then((k) => (k === 'ready' ? k : null)));
-    R.ok('with the shot signed, File this day appears', ready === 'ready' && (await PA.locator('[data-file-day]').count()) === 1);
+    R.ok('with the log signed, File this day appears', ready === 'ready' && (await PA.locator('[data-file-day]').count()) === 1);
     R.ok('the Blasting log tile reads Ready to file', (await tileState(PA, 'blast-log')) === 'Ready to file');
     await PA.locator('[data-tile="time-card"] [data-tile-action]').click();
     await PA.locator('[data-time-card-sheet]').waitFor({ timeout: 8000 });

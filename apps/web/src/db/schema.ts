@@ -316,6 +316,8 @@ export interface BlastDay extends BaseRecord {
   /** S15: a day that was started and abandoned — closed from the tiles with
    *  a reason, so it leaves the office's lists without a filing */
   closed?: { by: string; byName: string; at: string; reason: string };
+  /** S16: the day was moved to this date from another — the trail */
+  movedFrom?: { date: string; by: string; byName: string; at: string };
   /** S9a: who sent it back, and when (server-stamped) */
   sendBackBy?: string;
   sendBackAt?: string;
@@ -381,9 +383,28 @@ export interface DayReminder extends BaseRecord {
   toName: string;
   fromUserId: string;
   fromName: string;
-  what: 'timecard';
+  what: 'timecard' | 'moved';
+  /** S16 'moved': the sentence after the mover's name */
+  text?: string;
   at: string;
   clearedAt?: string;
+}
+
+/** S16: "Change the date" — one row per move. The server applies it to
+ *  every paper on the day (the mover cannot re-date other people's cards
+ *  on its own) and this row is what lets the date-only changes through. */
+export interface DayMove extends BaseRecord {
+  blastDayId: string;
+  jobId: string;
+  fromDate: string;
+  toDate: string;
+  by: string;
+  byName: string;
+  at: string;
+  moveChecklists: boolean;
+  status: 'pending' | 'applied' | 'refused';
+  reason?: string;
+  appliedAt?: string;
 }
 
 /** S13: one card fact changed by one person, based on the version they

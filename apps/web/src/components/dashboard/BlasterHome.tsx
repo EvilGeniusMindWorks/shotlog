@@ -215,7 +215,7 @@ export function BlasterHome() {
           className="w-full bg-white border border-gray-300 text-navy rounded-xl py-2.5 font-bold text-sm mt-2 hover:bg-gray-50"
           onClick={() => setShowNewDialog(true)}
         >
-          {(todayDays ?? []).length > 0 ? 'Start work at another job' : 'Start work at a job'}
+          {(todayDays ?? []).length > 0 ? 'Start a day at another job' : 'Start a day at a job'}
         </button>
       </div>
 

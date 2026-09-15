@@ -207,3 +207,17 @@ report (solo submit) · My Records · jobs list
 - **Rigs — the checklist is the rig's odometer.** Each checklist carries the hours the rig starts the day with and the hours it stops with; nothing about Joe's own time lives there. Two rigs means two checklists and two pairs of readings, nothing shared between them. The Rig checklists tile lists today's rigs as plain rows: "D50 · 1,198.2 → running" until stopped, then "D50 · 1,198.2 → 1,204.6 · 6.4 h". Tapping a rig opens **Open the checklist**, **Stop for the day** (asks the meter reading), or **Out of service** (asks the reading now and opens a shop ticket); **Start a checklist for another rig** is the last row and opens the rig picker with nothing pre-selected.
 - **No meter on the drill log anymore.** Marking a log complete only names the rig; hours live on that rig's checklist, and the shop's hour ledger and the daily report's equipment hours read start and stop from there.
 - **The reminder line.** A blaster missing Joe's time card can nudge him; the line reads "<Blaster> asked for your time card · <job> · today" on his home and clears the moment he files.
+
+## S16 — a rig checklist per job-day, and days that move (Sep 15 2026, plan artifact 59ebb05f)
+
+- **A rig checklist is per rig per job-day, not per date.** A rig that moves
+  to a second job the same day gets a second checklist there — prefilled
+  with the starting hours from its last reading and the morning's answers
+  carried over ("carried from this morning's checklist at <job>"). **Stop
+  for the day** records the reading on that job-day's own checklist, not
+  the first one.
+- Each job's daily report shows only its own segment of the rig's hours;
+  the shop's ledger reads both segments in order and totals them.
+- When a blaster changes a day's date, Joe's drill logs and the plan sent
+  to him move with it — nothing to re-send. A time card he already filed
+  moves too, and he sees a line on his home saying it moved.

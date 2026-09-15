@@ -357,38 +357,7 @@ async (page) => {
     }, { jobId: setup.jobId, adminId: ids.admin });
     await B.waitForTimeout(SYNC);
 
-    await B.evaluate(async (shotId) => {
-      const { db } = await import('/src/db/index.ts');
-      const { nowISO } = await import('/src/lib/utils.ts');
-      await db.shots.update(shotId, {
-        signatureImage: new Blob(['forged'], { type: 'image/png' }),
-        signedAt: nowISO(), updatedAt: nowISO(),
-      });
-    }, shotSetup.shotId);
-    await B.waitForTimeout(SYNC);
-    const forged = await A.evaluate(async (shotId) => {
-      const { db } = await import('/src/db/index.ts');
-      const s = await db.shots.get(shotId);
-      return s ? Boolean(s.signatureImage) : 'MISSING';
-    }, shotSetup.shotId);
-    ok("signing someone else's shot DISCARDED", forged === false);
-
-    await B.evaluate(async ({ shotId, meId, meName }) => {
-      const { db } = await import('/src/db/index.ts');
-      const { nowISO } = await import('/src/lib/utils.ts');
-      await db.shots.update(shotId, {
-        responsibleBlasterUserId: meId, responsibleBlasterName: meName,
-        signatureImage: new Blob(['mine'], { type: 'image/png' }),
-        signedAt: nowISO(), updatedAt: nowISO(),
-      });
-    }, { shotId: shotSetup.shotId, meId: setup.meId, meName: setup.meName });
-    await B.waitForTimeout(SYNC);
-    const ownSign = await A.evaluate(async (shotId) => {
-      const { db } = await import('/src/db/index.ts');
-      const s = await db.shots.get(shotId);
-      return s ? Boolean(s.signatureImage) : 'MISSING';
-    }, shotSetup.shotId);
-    ok('responsible blaster signs their own shot', ownSign === true);
+    // (S16: the per-shot sign-off guard was retired — one log, one blaster, one signature — so the forged/own-sign checks that lived here are gone.)
 
     // ── (14) UI spot checks ─────────────────────────────────────────────
     // Field home (B, blaster) — the FAB lives there, not on the admin home
@@ -398,7 +367,7 @@ async (page) => {
     ok('days-are-nouns: no "Start a Blast Day"/"New Work Day" on dashboard',
       !dashBody.includes('Start a Blast Day') && !dashBody.includes('New Work Day'));
     ok('FAB verbs the work, not the day',
-      (await B.locator('[title="Start work at a job"]').count()) === 1);
+      (await B.locator('[title="Start a day at a job"]').count()) === 1); // S16 wording
 
     await A.goto('http://localhost:5199/jobs');
     await A.waitForTimeout(1500);
@@ -411,10 +380,14 @@ async (page) => {
     ok('Hour Ledger card with the shop correction',
       /hour ledger/i.test(equipBody) && /shop correction/i.test(equipBody) && equipBody.includes('987'));
 
-    await B.goto(`http://localhost:5199/blast-day/${shotSetup.dayId}?tab=daily`);
-    await B.waitForTimeout(2000);
+    await B.goto(`http://localhost:5199/blast-day/${shotSetup.dayId}`); // S14: the tiles carry My time card
+    // S13: a day made without its card meets the setup gate first — this harness's own contexts have no auto-gate
+    const gate = B.locator('[data-day-save], [data-day-looks-right]').first();
+    if (await gate.waitFor({ timeout: 8000 }).then(() => true).catch(() => false)) await gate.click();
+    await B.locator('[data-day-hub]').waitFor({ timeout: 20000 }).catch(() => undefined);
+    await B.waitForTimeout(800);
     const dayBody = await B.locator('body').innerText();
-    ok('Time Cards card on the work day', /time cards/i.test(dayBody) && /my card/i.test(dayBody));
+    ok('Time Cards card on the work day', /my time card/i.test(dayBody));
 
     // cleanup: the H31 shot day + the blaster's customer/site + test card
     // (site deletes once its job is gone; customer once its site is gone)

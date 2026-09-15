@@ -20,7 +20,7 @@ import { PreBlastCard } from '@/components/day/PreBlastCard';
 import { DrillOnlyFileCard } from '@/components/day/DrillOnlyFileCard';
 import { authedFetch, getSessionUser } from '@/lib/session';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
-import { nowISO, formatDate, dayOfWeek } from '@/lib/utils';
+import { nowISO, formatDate, dayOfWeek, todayISO } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,6 +35,7 @@ import { DrillPlanCard } from '@/components/forms/DrillPlanCard';
 import { AttachmentsCard } from '@/components/forms/AttachmentsCard';
 import { DayHistorySheet } from '@/components/forms/DayHistorySheet';
 import { DayHub } from '@/components/day/DayHub';
+import { ChangeDateSheet } from '@/components/day/ChangeDateSheet';
 import { ContactList } from '@/components/forms/JobContactsCard';
 import { createIncident } from '@/pages/admin/AdminIncidentsPage';
 
@@ -87,6 +88,7 @@ export function BlastDayPage() {
   const [showContacts, setShowContacts] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showMore, setShowMore] = useState(false);
+  const [showDate, setShowDate] = useState(false);
   const [statusBusy, setStatusBusy] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
   const online = useOnlineStatus();
@@ -230,7 +232,23 @@ export function BlastDayPage() {
             </h2>
             <p className="text-xs text-navy-200 truncate">
               {blastDay.name ? `${job?.name ?? ''} · ` : ''}
-              {formatDate(blastDay.date)} ({dayOfWeek(blastDay.date)}) ·{' '}
+              {/* S16 (Matthew): the date is the door to Change the date; amber when it is not today */}
+              {status === 'draft' ? (
+                <button
+                  type="button"
+                  className={`inline rounded px-1 -mx-0.5 underline underline-offset-2 hover:text-white ${blastDay.date !== todayISO() && filedCount === 0 ? 'bg-amber-400 text-amber-950 font-semibold no-underline' : ''}`}
+                  data-day-date-button
+                  data-not-today={blastDay.date !== todayISO() && filedCount === 0 ? '1' : undefined}
+                  title="Change the date"
+                  onClick={() => setShowDate(true)}
+                >
+                  {formatDate(blastDay.date)}
+                  {blastDay.date !== todayISO() && filedCount === 0 ? ' · not today' : ''}
+                </button>
+              ) : (
+                `${formatDate(blastDay.date)} (${dayOfWeek(blastDay.date)})`
+              )}
+              {' · '}
               {[job?.address, job?.city, job?.state].filter(Boolean).join(', ') || job?.customer}
             </p>
           </div>
@@ -519,6 +537,7 @@ export function BlastDayPage() {
       </div>
       )}
 
+      {showDate && <ChangeDateSheet day={blastDay} job={job} onClose={() => setShowDate(false)} />}
       {showMore && (
         <ConsequenceSheet onClose={() => setShowMore(false)}>
           <div data-day-more-sheet className="space-y-2">

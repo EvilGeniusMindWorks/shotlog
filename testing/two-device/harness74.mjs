@@ -162,10 +162,10 @@ async (page, lib) => {
       const start = Math.ceil(Math.max(currentHours ?? 0, rig.hourMeter ?? 0)) + 10;
       const chk = emptyChecklist(rig.id, day.jobId);
       await fileChecklist({ ...chk, startingHours: start }); // saved, but no office copy (as after a failed filing)
-      return { rigId: rig.id, checklistId: chk.id };
+      return { rigId: rig.id, checklistId: chk.id, jobId: day.jobId };
     }, dayId);
     checklistId = r.checklistId;
-    await PD.goto(`${WEB}/drill-checklist/${r.rigId}`);
+    await PD.goto(`${WEB}/drill-checklist/${r.rigId}?job=${r.jobId}`); // S16: a checklist per rig per job-day
     await PD.locator('[data-chk-existing]').waitFor({ timeout: 15000 });
     await PD.locator('[data-chk-file-office]').waitFor({ timeout: 8000 });
     R.ok('today\'s checklist says it never reached the office and offers to file the copy', (await PD.locator('[data-chk-file-office]').count()) === 1 && /never reached the office/.test(await PD.locator('[data-chk-existing]').innerText()));
@@ -173,7 +173,7 @@ async (page, lib) => {
     await PD.getByText(/Checklist filed/).waitFor({ timeout: 30000 });
     const copies = await PD.evaluate(async (id) => (await (await import('/src/db/index.ts')).db.submissions.filter((s) => s.type === 'drill_checklist' && s.sourceId === id).toArray()).length, checklistId);
     R.ok('the office copy is filed', copies === 1);
-    await PD.goto(`${WEB}/drill-checklist/${r.rigId}`);
+    await PD.goto(`${WEB}/drill-checklist/${r.rigId}?job=${r.jobId}`); // S16: a checklist per rig per job-day
     await PD.locator('[data-chk-existing]').waitFor({ timeout: 15000 });
     await sleep(800);
     R.ok('the offer is gone once the copy exists', (await PD.locator('[data-chk-file-office]').count()) === 0);

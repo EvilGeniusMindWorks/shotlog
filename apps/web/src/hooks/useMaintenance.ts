@@ -166,7 +166,10 @@ export function useMyChecklistsToday(): { checklist: DrillChecklist; asset: stri
   }, [me?.id]);
 }
 
-export function useTodayChecklist(equipmentId: string | undefined) {
+/** Today's checklist for this rig AT THIS JOB (S16, Matthew: a checklist
+ *  per rig per job-day — a rig that moves to a second job the same day gets
+ *  a second checklist there). No job: the rig's job-less checklist today. */
+export function useTodayChecklist(equipmentId: string | undefined, jobId?: string) {
   return useLiveQuery(
     () =>
       equipmentId
@@ -174,8 +177,24 @@ export function useTodayChecklist(equipmentId: string | undefined) {
             .where('equipmentId')
             .equals(equipmentId)
             .toArray()
-            .then((cs) => cs.find((c) => c.date === todayISO()))
+            .then((cs) => cs.find((c) => c.date === todayISO() && (c.jobId ?? '') === (jobId ?? '')))
         : undefined,
-    [equipmentId],
+    [equipmentId, jobId ?? ''],
+  );
+}
+
+/** The rig's earlier checklist today at another job — its answers carry
+ *  over to the second job-day's checklist (S16) */
+export function useEarlierChecklistToday(equipmentId: string | undefined, jobId?: string) {
+  return useLiveQuery(
+    () =>
+      equipmentId
+        ? db.drillChecklists
+            .where('equipmentId')
+            .equals(equipmentId)
+            .toArray()
+            .then((cs) => cs.filter((c) => c.date === todayISO() && (c.jobId ?? '') !== (jobId ?? '')).sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0])
+        : undefined,
+    [equipmentId, jobId ?? ''],
   );
 }

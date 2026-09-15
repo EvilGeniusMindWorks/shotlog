@@ -21,7 +21,6 @@ import { dataUrlToBlob } from '@/lib/utils';
 import { fmtLbs, fmtPF } from '@/lib/format';
 import { Badge } from '@/components/ui/badge';
 import { ShotForm } from './ShotForm';
-import { ShotSignoff } from './ShotSignoff';
 import { SigningBlocked } from '@/components/onboarding/SigningBlocked';
 import { signingBlocked } from '@/components/onboarding/profileCompletion';
 import { ExplosiveUsageForm } from './ExplosiveUsageForm';
@@ -287,7 +286,6 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
                 kFactor={jobCtx?.kFactor ?? 180}
                 blastDayId={blastDay.id}
               />
-              <ShotSignoff shot={shot} />
             </CardContent>
           )}
         </Card>
@@ -418,8 +416,8 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
               rows={3}
             />
           </div>
-          <div>
-            <Label className="text-xs">Blaster Signature</Label>
+          <div data-tour="log-signature">
+            <Label className="text-xs">Blaster Signature <span className="text-gray-400 font-normal">— one signature covers the log and its shots</span></Label>
             {/* Hard stop (profile completion): a licensed role signs only
                 with a license on file — an already-signed log stays visible */}
             {!draft.signatureImage && signingBlocked() ? (

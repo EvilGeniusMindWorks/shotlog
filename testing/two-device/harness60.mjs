@@ -165,16 +165,17 @@ async (page, lib) => {
     await PB.goto(`${WEB}/blast-day/${dayId}/submit`);
     await PB.locator('[data-preflight]').waitFor({ timeout: 15000 });
     const red = PB.locator('[data-preflight-level="red"]');
-    R.ok(`an unsigned shot is a red item ("${(await red.first().innerText()).replace(/\s+/g, " ").trim().slice(0, 40)}")`, (await red.count()) === 1 && /no blaster signature/i.test(await red.first().innerText()));
+    R.ok(`an unsigned log is a red item ("${(await red.first().innerText()).replace(/\s+/g, " ").trim().slice(0, 40)}")`, (await red.count()) === 1 && /log is not signed/i.test(await red.first().innerText()));
     R.ok('the file button is disabled and says why', await PB.locator('[data-preflight-file]').isDisabled() && /Fix the red items first/.test(await PB.locator('[data-preflight-file]').innerText()));
     R.ok('nothing was filed', (await PB.evaluate(async (id) => { const { db } = await import('/src/db/index.ts'); return (await db.blastDays.get(id)).status; }, dayId)) === 'draft');
-    // sign the shot (a tiny signature image), then come back
+    // sign the LOG (S16: one signature covers its shots), then come back
     await PB.evaluate(async (shotId) => {
       const { db } = await import('/src/db/index.ts');
       const { nowISO } = await import('/src/lib/utils.ts');
       const c = document.createElement('canvas'); c.width = 200; c.height = 80; const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, 200, 80); g.strokeStyle = '#000'; g.lineWidth = 3; g.beginPath(); g.moveTo(20, 50); g.lineTo(180, 30); g.stroke();
       const blob = await new Promise((r) => c.toBlob(r, 'image/png'));
-      await db.shots.update(shotId, { signatureImage: blob, signedAt: nowISO(), updatedAt: nowISO() });
+      const shot = await db.shots.get(shotId);
+      await db.blastLogs.update(shot.blastLogId, { signatureImage: blob, signedAt: nowISO(), updatedAt: nowISO() });
     }, shotId);
     await PB.goto(`${WEB}/blast-day/${dayId}/submit`);
     await PB.locator('[data-preflight]').waitFor({ timeout: 15000 });
