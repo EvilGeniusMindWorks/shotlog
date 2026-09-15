@@ -5,7 +5,8 @@ import { Activity, BarChart3, Flame, MapPin, Wrench } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { nowISO } from '@/lib/utils';
 import { fmtLbs } from '@/lib/format';
-import { distributeByHoles, totalSqFt, avgDrillDepth, totalYardsShot } from '@shotlog/shared';
+import { distributeByHoles } from '@shotlog/shared';
+import { recalcShotTotals } from '@/lib/shotTotals';
 import { getPlanHoles } from '@/hooks/useDrillPlans';
 import { aggregateDrilling } from '@/hooks/useDrillLogs';
 import { seedDiagramFromPlan } from '@/lib/shotDiagram';
@@ -40,17 +41,7 @@ export function ShotForm({ shot, allShots, explosiveUsage, kFactor: _kFactor, bl
     [shot.id],
   );
 
-  const recalc = (dp: DrillParams, t: ShotTotals): ShotTotals => {
-    const next = { ...t };
-    next.totalSqFt = totalSqFt(dp.burden, dp.spacing, next.numHoles);
-    if (next.numHoles > 0 && next.totalDrillFootage > 0) {
-      next.avgDrillDepth = avgDrillDepth(next.totalDrillFootage, next.numHoles);
-    }
-    if (dp.burden > 0 && dp.spacing > 0 && next.totalDrillFootage > 0) {
-      next.totalYardsShot = totalYardsShot(dp.burden, dp.spacing, next.totalDrillFootage);
-    }
-    return next;
-  };
+  const recalc = recalcShotTotals;
 
   const updateDrillParam = (field: keyof DrillParams, value: string | boolean | number | undefined) => {
     const dp = {

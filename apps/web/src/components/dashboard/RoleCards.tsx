@@ -15,7 +15,10 @@ import { getSessionUser, getRealSessionUser, setViewRole } from '@/lib/session';
 import { listSubmissionSummaries, openSubmissionPdfById } from '@/lib/archive';
 import { formatDate, todayISO } from '@/lib/utils';
 import { fmtLbs } from '@/lib/format';
-import { isBlastingWork, type TimeCard } from '@/db/schema';
+import { isBlastingWork, type BlastDay, type DrillLog, type TimeCard } from '@/db/schema';
+import { dayChecklistsFor, dayCoverage, dayDrillLogsFor, plannedHoles, type Coverage } from '@/lib/dayHub';
+import { myDayIds } from '@/lib/mine';
+import { Dots } from './TodaysJobs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -296,8 +299,9 @@ export function DrillingWork() {
   // state must not call the day planless (S7a rehearsal finding)
   const workingToday = useLiveQuery(
     async () =>
+      // S17: a log made from a shot carries no date — its creation day counts
       (await projectDrillLogs()).some(
-        (l) => l.status === 'open' && l.date === todayISO() && (!me?.id || l.drillerUserId === me.id),
+        (l) => l.status === 'open' && (l.date ?? l.createdAt.slice(0, 10)) === todayISO() && (!me?.id || l.drillerUserId === me.id),
       ),
     [me?.id],
   );
@@ -457,10 +461,71 @@ export function DrillingWork() {
   );
 }
 
+interface JobDayCard {
+  day: BlastDay;
+  jobName: string;
+  rigLine: string;
+  logLine: string;
+  cardLine: string;
+  coverage: Coverage;
+  myLog?: DrillLog;
+}
+
+const fmtH = (n: number | null | undefined) => (n == null ? '—' : `${n.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} h`);
+
+/** The driller's home (S17, from Matthew's six feedback reports): Today —
+ *  one card per job-day I am on, opening that day's tiles; Plans sent to
+ *  you; Yesterday needs you; Coming up only when a future day exists. My
+ *  records and All work days live in the menu, not here. */
 export function DrillerHome() {
   const navigate = useNavigate();
   const me = getSessionUser();
-  const myChecklistsToday = useMyChecklistsToday();
+  const today = todayISO();
+
+  const homeDays = useLiveQuery(async () => {
+    const mine = await myDayIds();
+    const days = (await db.blastDays.toArray()).filter((d) => mine.has(d.id) && d.date >= today && d.status !== 'approved' && !d.closed);
+    const out: JobDayCard[] = [];
+    for (const day of days.sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt))) {
+      const job = await db.jobs.get(day.jobId);
+      const logs = await dayDrillLogsFor(day);
+      const myLogs = logs.filter((l) => l.drillerUserId === me?.id);
+      const rigs = await dayChecklistsFor(day, logs);
+      const myRig = rigs.find((r) => r.checklist.drillerUserId === me?.id) ?? rigs[0];
+      const blastLog = await db.blastLogs.where('blastDayId').equals(day.id).first();
+      const shots = blastLog ? await db.shots.where('blastLogId').equals(blastLog.id).toArray() : [];
+      const planned = plannedHoles(shots);
+      let holes = 0;
+      for (const l of myLogs) holes += (await db.drillLogHoles.where('drillLogId').equals(l.id).toArray()).filter((h) => !h.skipped).length;
+      const card = (await db.timeCards.filter((c) => c.userId === me?.id && (c.blastDayId === day.id || (c.jobId === day.jobId && c.date === day.date))).toArray())[0];
+      const open = myLogs.find((l) => l.status === 'open') ?? myLogs[0];
+      // A plan sent to me that I have not started is not a day I am on yet —
+      // it lives under "Plans sent to you" until the first hole
+      const onlySentPlans = myLogs.length > 0 && myLogs.every((l) => l.assignedBy) && holes === 0 && !card && !rigs.some((r) => r.checklist.drillerUserId === me?.id);
+      if (onlySentPlans) continue;
+      out.push({
+        day,
+        jobName: day.name || job?.name || 'Job',
+        rigLine: myRig
+          ? `${myRig.asset} · ${myRig.checklist.stopHours != null ? `stopped ${fmtH(myRig.checklist.stopHours)}` : `started ${fmtH(myRig.checklist.startingHours)}`}`
+          : 'No rig checklist yet',
+        logLine:
+          myLogs.length === 0
+            ? planned > 0
+              ? `Drill log · not started · plan sent, ${planned} holes`
+              : 'Drill log · not started'
+            : `Drill log · ${holes}${planned ? ` of ${planned}` : ''} holes · ${open?.status === 'complete' ? 'signed complete' : open?.status ?? 'open'}`,
+        cardLine: card ? `My time card · ${card.status}` : 'My time card · not filed',
+        coverage: await dayCoverage(day),
+        myLog: open,
+      });
+    }
+    return out;
+  }, [me?.id, today]);
+  const todays = (homeDays ?? []).filter((c) => c.day.date === today);
+  const upcoming = (homeDays ?? []).filter((c) => c.day.date > today);
+
+  // Plans sent to me that I have not started, and prior days' unsigned logs
   const myLogs = useLiveQuery(async () => {
     const logs = (await projectDrillLogs()).filter(
       (l) => l.status === 'open' && (!me?.id || l.drillerUserId === me.id || !l.drillerUserId),
@@ -472,380 +537,122 @@ export function DrillerHome() {
       const shot = log.shotId ? await db.shots.get(log.shotId) : undefined;
       const plan = log.drillPlanId ? await db.drillPlans.get(log.drillPlanId) : undefined;
       const holes = await db.drillLogHoles.where('drillLogId').equals(log.id).toArray();
-      // A log belongs to TODAY (trio) or to a prior day ("yesterday needs
-      // you") — plan logs carry a date; shot logs fall back to creation
       const logDay = log.date ?? log.createdAt.slice(0, 10);
       out.push({
         log,
-        jobId: log.jobId,
-        jobName: job?.name ?? '—',
         context: plan ? plan.name : `Shot ${shot?.shotNumber ?? '?'} · ${day?.name || job?.name || '—'}`,
+        sentBy: log.assignedBy ? ((await db.crewMembers.filter((m) => m.userId === log.assignedBy).first())?.name ?? '') : '',
         holes: holes.filter((h) => !h.skipped).length,
-        holesToday: holes.filter((h) => h.date === todayISO() && !h.skipped).length,
-        isPrior: logDay < todayISO(),
-        designed: plan
-          ? (getPlanHoles(plan)?.length ?? 0)
-          : (getShotPlan(shot)?.length ?? shot?.totals.numHoles ?? 0),
+        isPrior: logDay < today,
+        logDay,
+        designed: plan ? (getPlanHoles(plan)?.length ?? 0) : (getShotPlan(shot)?.length ?? shot?.totals.numHoles ?? 0),
       });
     }
     return out;
-  });
-  // Fresh dispatches: the blaster sent me this plan and I haven't started
+  }, [me?.id, today]);
   const assignedNew = (myLogs ?? []).filter((x) => x.log.assignedBy && x.holes === 0);
-  const activeLogs = (myLogs ?? []).filter((x) => !(x.log.assignedBy && x.holes === 0));
-  // Round 3 trio split: today's work up top, prior days need attention
-  const todayLogs = activeLogs.filter((x) => !x.isPrior);
-  const priorLogs = activeLogs.filter((x) => x.isPrior);
-  // The rig from my most recent log, else my usual rig (on the account —
-  // S7a), else this device's last picker choice, drives the nudge
-  const usualRigId = useUsualRigId();
-  const lastRigId =
-    myLogs?.find((r) => r.log.drillRigEquipmentId)?.log.drillRigEquipmentId ?? usualRigId;
+  const priorLogs = (myLogs ?? []).filter((x) => x.isPrior && !(x.log.assignedBy && x.holes === 0));
+
+  // The rig with the shop — one line, when its ticket is open
+  const lastRigId = myLogs?.find((r) => r.log.drillRigEquipmentId)?.log.drillRigEquipmentId;
   const rig = useLiveQuery(() => (lastRigId ? db.equipment.get(lastRigId) : undefined), [lastRigId]);
   const tickets = useOpenTickets().filter((t) => t.equipmentId === lastRigId);
-  // Information for the home only: the rig on today's log (the checklist form asks)
-  const todayLogRigId = todayLogs.find((x) => x.log.drillRigEquipmentId)?.log.drillRigEquipmentId;
-  const todayLogRigAsset = useLiveQuery(
-    async () => (todayLogRigId ? (await db.equipment.get(todayLogRigId))?.assetNumber : undefined),
-    [todayLogRigId],
-  );
-  const myDays = useLiveQuery(async () => {
-    const days = await db.blastDays
-      .filter((d) => !isBlastingWork(d.typeOfWork))
-      .toArray();
-    const withJobs = [];
-    for (const day of [...days].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5)) {
-      withJobs.push({ day, jobName: (await db.jobs.get(day.jobId))?.name });
-    }
-    return withJobs;
-  });
 
-  // Trio: my hours — today's time card (bound to a job, day optional)
-  const [showHours, setShowHours] = useState(false);
-  const myCardToday = useLiveQuery(
-    async () =>
-      me
-        ? db.timeCards
-            .filter((c) => c.userId === me.id && c.date === todayISO())
-            .first()
-        : undefined,
-    [me?.id],
+  const JobDay = ({ c }: { c: JobDayCard }) => (
+    <button
+      type="button"
+      className="w-full rounded-xl border border-gray-200 bg-white p-3 text-left hover:border-navy"
+      data-job-day={c.day.id}
+      onClick={() => navigate(`/blast-day/${c.day.id}`)}
+    >
+      <p className="font-bold text-sm flex items-center gap-2">
+        <span className="truncate">{c.jobName}</span>
+        <Dots d={c.coverage} />
+        {c.day.date !== today && <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{formatDate(c.day.date)}</span>}
+      </p>
+      <p className="text-xs text-gray-600 mt-0.5">{c.rigLine}</p>
+      <p className="text-xs text-gray-600">{c.logLine}</p>
+      <p className="text-xs text-gray-600">{c.cardLine}</p>
+      <p className="text-[11px] font-semibold text-safety-orange mt-1">{c.myLog && c.myLog.status === 'open' ? 'Continue drilling ›' : 'Open the day ›'}</p>
+    </button>
   );
-  // My drilling on today's plan, all drillers merged — the progress line.
-  // Prefer the log I'm actually working (most holes today) — stale
-  // zero-hole logs must never shadow the live pattern.
-  const drillingToday = useLiveQuery(async () => {
-    const mine = (myLogs ?? [])
-      .filter((x) => !x.isPrior && !(x.log.assignedBy && x.holes === 0))
-      .sort((a, b) => b.holesToday - a.holesToday || b.holes - a.holes);
-    const first = mine[0];
-    if (!first) return null;
-    let others = 0;
-    let total = first.designed;
-    if (first.log.drillPlanId) {
-      const siblings = (await projectDrillLogs()).filter(
-        (l) => l.drillPlanId === first.log.drillPlanId && l.id !== first.log.id,
-      );
-      const counts = await holeCountsByLog();
-      for (const s of siblings) others += counts.get(s.id) ?? 0;
-    }
-    return { ...first, others, total };
-  }, [myLogs?.map((x) => x.log.id + x.holes).join(',')]);
 
-  const holesTodayTotal = todayLogs.reduce((s, x) => s + x.holesToday, 0);
   return (
-    <div className="p-4 max-w-2xl mx-auto space-y-3" data-tour="home">
-      <h2 className="text-xl font-bold text-gray-900">My Drilling</h2>
-
-      {/* Yesterday needs you — unsigned prior logs, only when non-empty */}
-      {priorLogs.length > 0 && (
-        <div className="rounded-xl border border-gray-200 border-l-4 border-l-safety-orange bg-white p-3">
-          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
-            Yesterday needs you · {priorLogs.length}
-          </p>
-          {/* Capped AFTER ranking (S4 — mirrors the blaster strip): newest
-              unsigned first, sent-back ahead of the rest; the trio must
-              never sink below the fold behind a backlog */}
-          {[...priorLogs]
-            .sort(
-              (a, b) =>
-                Number(Boolean(b.log.reopenNote)) - Number(Boolean(a.log.reopenNote)) ||
-                (b.log.date ?? b.log.createdAt).localeCompare(a.log.date ?? a.log.createdAt),
-            )
-            .slice(0, 5)
-            .map(({ log, context, holes }) => (
-            <button
-              key={log.id}
-              className="w-full flex items-center gap-2 py-1.5 text-left hover:bg-gray-50 rounded-lg"
-              onClick={() => navigate(drillLogRoute(log))}
-            >
-              <Badge variant="warning">unsigned</Badge>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm truncate">{context}</p>
-                <p className="text-xs text-gray-400">
-                  {holes} holes logged, not signed complete
-                </p>
-              </div>
-              {log.reopenNote && <Badge variant="violation">sent back</Badge>}
-              <span className="text-gray-300">›</span>
-            </button>
-          ))}
-          {priorLogs.length > 5 && (
-            <button
-              className="w-full text-left px-1 py-1.5 text-xs text-gray-400 hover:text-navy"
-              data-driller-strip-more
-              onClick={() => navigate('/drilling')}
-            >
-              {priorLogs.length - 5} more on the Drilling tab ▸
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* The trio — the day's three obligations. All green = done. */}
-      <div className="flex gap-2">
-        {/* The tile is a VERB (Matthew, 2026-09-07): it opens the checklist,
-            where the rig is the first question. Done = I filed one today. */}
-        <TrioTile
-          state={(myChecklistsToday?.length ?? 0) > 0 ? 'done' : 'todo'}
-          label={
-            (myChecklistsToday?.length ?? 0) > 0
-              ? `Checklist filed\n${myChecklistsToday!.map((m) => m.asset).join(', ')}`
-              : 'File rig checklist\nnot filed today'
-          }
-          onClick={() => navigate('/drill-checklist')}
-        />
-        <TrioTile
-          state={
-            todayLogs.length > 0 ? 'active' : holesTodayTotal > 0 ? 'done' : 'todo'
-          }
-          label={`Drill log${holesTodayTotal > 0 ? `\n${holesTodayTotal} holes` : ''}`}
-          onClick={() =>
-            todayLogs[0]
-              ? navigate(drillLogRoute(todayLogs[0].log))
-              : undefined
-          }
-        />
-        <TrioTile
-          state={
-            myCardToday
-              ? myCardToday.status === 'draft'
-                ? 'active'
-                : 'done'
-              : 'todo'
-          }
-          label={'My hours'}
-          onClick={() => setShowHours(true)}
-        />
-      </div>
-      {/* Information only — the dashboard does not own the rig; the checklist
-          form asks. */}
-      {todayLogRigAsset && (
-        <p className="text-xs text-gray-400 -mt-1 px-1" data-rig-info>
-          Today's rig from your drill log: {todayLogRigAsset}
+    <div className="p-4 max-w-2xl mx-auto space-y-3" data-tour="home" data-driller-home>
+      <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Today · {formatDate(today)}</p>
+      {todays.map((c) => (
+        <JobDay key={c.day.id} c={c} />
+      ))}
+      {homeDays !== undefined && todays.length === 0 && (
+        <p className="text-sm text-gray-500 rounded-xl border border-dashed border-gray-300 bg-white px-3 py-3" data-driller-home-empty>
+          No job-day yet today. Start from a plan sent to you below, or tap + to log drilling at a job.
         </p>
       )}
 
-      {/* Drilling today — the active pattern with everyone's progress */}
-      {drillingToday && (
-        <div className="rounded-xl border border-gray-200 bg-white p-3">
-          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
-            Drilling today · {drillingToday.context}
-          </p>
-          <div className="flex items-center gap-2 py-1 text-sm">
-            <div className="flex-1 min-w-0">
-              <p>Progress (all drillers)</p>
-              <p className="text-xs text-gray-400">
-                you {drillingToday.holes}
-                {drillingToday.others > 0 && ` · others ${drillingToday.others}`}
-                {drillingToday.total > 0 &&
-                  ` · ${Math.max(0, drillingToday.total - drillingToday.holes - drillingToday.others)} open`}
-              </p>
-            </div>
-            {drillingToday.total > 0 && (
-              <span className="font-mono font-bold">
-                {drillingToday.holes + drillingToday.others}/{drillingToday.total}
-              </span>
-            )}
-          </div>
-          <button
-            className="w-full bg-safety-orange text-white rounded-xl py-2.5 font-bold text-sm mt-1 hover:bg-orange-600"
-            onClick={() => navigate(drillLogRoute(drillingToday.log))}
-          >
-            Continue drilling
-          </button>
-        </div>
-      )}
-
-      {/* More than one log open today — the rest live here */}
-      {todayLogs.length > 1 && (
-        <div className="rounded-xl border border-gray-200 bg-white p-3">
-          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
-            Also open today
-          </p>
-          {todayLogs.slice(1).map(({ log, context, holes, designed }) => (
-            <button key={log.id}
+      {assignedNew.length > 0 && (
+        <div className="rounded-xl border border-gray-200 border-l-4 border-l-navy bg-white p-3" data-plans-sent>
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Plans sent to you · {assignedNew.length}</p>
+          {assignedNew.map(({ log, context, designed, sentBy, logDay }) => (
+            <button
+              key={log.id}
+              type="button"
               className="w-full flex items-center gap-2 py-1.5 text-left hover:bg-gray-50 rounded-lg"
-              onClick={() => navigate(drillLogRoute(log))}>
+              data-plan-start={log.id}
+              onClick={() => navigate(drillLogRoute(log))}
+            >
               <div className="min-w-0 flex-1">
                 <p className="text-sm truncate">{context}</p>
                 <p className="text-xs text-gray-400">
-                  {holes}{designed ? ` of ${designed}` : ''} holes
+                  {designed} holes{sentBy ? ` · sent by ${sentBy}` : ''} · {formatDate(logDay)}
                 </p>
               </div>
-              <span className="text-sm text-safety-orange font-semibold">Continue</span>
+              <span className="text-sm font-semibold text-white bg-safety-orange rounded-lg px-3 py-1.5">Start</span>
             </button>
           ))}
         </div>
       )}
 
-      {/* Assigned · open plans · ready to drill — shared with /drilling */}
-      <DrillingWork />
+      {priorLogs.length > 0 && (
+        <div className="rounded-xl border border-gray-200 border-l-4 border-l-safety-orange bg-white p-3" data-yesterday>
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Yesterday needs you · {priorLogs.length}</p>
+          {[...priorLogs]
+            .sort((a, b) => Number(Boolean(b.log.reopenNote)) - Number(Boolean(a.log.reopenNote)) || b.logDay.localeCompare(a.logDay))
+            .slice(0, 5)
+            .map(({ log, context, holes, logDay }) => (
+              <button key={log.id} type="button" className="w-full flex items-center gap-2 py-1.5 text-left hover:bg-gray-50 rounded-lg" onClick={() => navigate(drillLogRoute(log))}>
+                <Badge variant="warning">unsigned</Badge>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm truncate">{context}</p>
+                  <p className="text-xs text-gray-400">
+                    {formatDate(logDay)} · {holes} holes logged, not signed complete
+                  </p>
+                </div>
+                {log.reopenNote && <Badge variant="violation">sent back</Badge>}
+                <span className="text-gray-300">›</span>
+              </button>
+            ))}
+        </div>
+      )}
+
+      {upcoming.length > 0 && (
+        <div data-coming-up>
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Coming up</p>
+          {upcoming.map((c) => (
+            <JobDay key={c.day.id} c={c} />
+          ))}
+        </div>
+      )}
 
       {tickets.length > 0 && (
-        <button
-          className="w-full rounded-xl border border-orange-200 bg-orange-50 p-3 text-left"
-          onClick={() => lastRigId && navigate(`/equipment/${lastRigId}`)}
-        >
+        <button type="button" className="w-full rounded-xl border border-orange-200 bg-orange-50 p-3 text-left" onClick={() => lastRigId && navigate(`/equipment/${lastRigId}`)}>
           <p className="text-sm font-medium text-safety-orange flex items-center gap-1.5">
             <Wrench className="h-4 w-4" /> {rig?.assetNumber}: “{tickets[0].description}” — with the shop ›
           </p>
         </button>
       )}
-
-      <div className="rounded-xl border border-gray-200 bg-white p-3">
-        <button
-          className="w-full flex items-center gap-2 py-1 text-left text-sm hover:bg-gray-50 rounded-lg"
-          onClick={() => navigate('/records')}
-        >
-          <span className="flex-1">My records</span>
-          <span className="text-gray-300">›</span>
-        </button>
-      </div>
-
-      <div className="rounded-xl border border-gray-200 bg-white p-3">
-        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
-          My work days
-        </p>
-        {(myDays ?? []).map(({ day, jobName }) => (
-          <button key={day.id}
-            className="w-full flex items-center gap-2 py-1.5 text-left hover:bg-gray-50 rounded-lg"
-            onClick={() => navigate(`/blast-day/${day.id}`)}>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium truncate">{dayTitle(day, jobName)}</p>
-              <p className="text-xs text-gray-400">{jobName} · {formatDate(day.date)}</p>
-            </div>
-            <Badge variant="secondary">{(day.typeOfWork ?? '?').replace(/_/g, ' ')}</Badge>
-            <Badge variant={day.status as 'draft' | 'submitted' | 'approved'}>{day.status}</Badge>
-          </button>
-        ))}
-        {(myDays ?? []).length === 0 && (
-          <p className="text-sm text-gray-400 py-1">
-            No drill-only days yet — tap + to log drilling at a job.
-          </p>
-        )}
-        <Button variant="outline" size="sm" className="mt-2" onClick={() => navigate('/days')}>
-          All work days
-        </Button>
-      </div>
-
-      {showHours && (
-        <MyHoursSheet
-          card={myCardToday}
-          defaultJobId={drillingToday?.jobId ?? todayLogs[0]?.jobId}
-          onClose={() => setShowHours(false)}
-        />
-      )}
     </div>
   );
 }
-
-/** One trio tile: ✅ done · 🟠 in progress · — not yet */
-function TrioTile({
-  state,
-  label,
-  onClick,
-}: {
-  state: 'done' | 'active' | 'todo';
-  label: string;
-  onClick?: () => void;
-}) {
-  return (
-    <button
-      className="flex-1 bg-white border border-gray-200 rounded-xl px-2 py-2.5 text-center hover:bg-gray-50 min-h-[72px]"
-      onClick={onClick}
-    >
-      <span className="block text-xl leading-none mb-1">
-        {state === 'done' ? '✅' : state === 'active' ? '🟠' : '—'}
-      </span>
-      <span className="block text-[11px] font-semibold text-gray-500 whitespace-pre-line leading-tight">
-        {label}
-      </span>
-    </button>
-  );
-}
-
-/** My hours, standalone (Round 3): the driller's card may exist before any
- *  work day does — cards bind to a job + date; the day attaches later. */
-function MyHoursSheet({
-  card,
-  defaultJobId,
-  onClose,
-}: {
-  card: TimeCard | undefined;
-  defaultJobId?: string;
-  onClose: () => void;
-}) {
-  const navigate = useNavigate();
-  const me = getSessionUser();
-  const jobs = useLiveQuery(() => db.jobs.filter((j) => j.isActive && !j.archivedAt).toArray()) ?? [];
-  const [jobId, setJobId] = useState(defaultJobId ?? '');
-  const roster = useLiveQuery(() => db.crewMembers.filter((m) => m.isActive).toArray()) ?? [];
-  return (
-    <ConsequenceSheet onClose={onClose}>
-      <h3 className="font-bold text-lg mb-2">My hours · today</h3>
-      {card ? (
-        <TimeCardRow card={card} editable={canEditCard(card, roster)} />
-      ) : (
-        <div className="space-y-2">
-          <Label className="text-xs">Which job?</Label>
-          <Select
-            value={jobId}
-            onChange={(e) => setJobId(e.target.value)}
-            placeholder="Pick a job…"
-            options={jobs.map((j) => ({ value: j.id, label: j.name }))}
-          />
-          <Button
-            className="w-full"
-            disabled={!jobId || !me}
-            onClick={() =>
-              void (async () => {
-                await createStandaloneTimeCard(jobId, {
-                  name: me!.name,
-                  userId: me!.id,
-                  crewMemberId: roster.find((m) => m.userId === me!.id)?.id,
-                });
-                // S13: a time card for a job whose day exists — the card asks once
-                const day = await findDayByDate(jobId, todayISO());
-                if (day) {
-                  const gate = await dayGate(day);
-                  if (gate === 'form' || gate === 'confirm') navigate(setupPath(day.id, '/'));
-                }
-              })()
-            }
-          >
-            Add my card
-          </Button>
-        </div>
-      )}
-      <Button variant="outline" className="w-full mt-3" onClick={onClose}>
-        Close
-      </Button>
-    </ConsequenceSheet>
-  );
-}
-
-// ── Mechanic home ──────────────────────────────────────────────────────────
 
 interface ShopWorkItem extends WorklistItem {
   kind: 'ticket' | 'service';

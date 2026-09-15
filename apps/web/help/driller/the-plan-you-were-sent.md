@@ -10,8 +10,8 @@ The blaster lays out the pattern — rows, columns, depths — and sends it to t
 
 ## Where it shows
 
-- On your home, the **Today's drill log** tile names it.
-- The **Drilling** tab lists every plan sent to you: what is assigned, what is ready to drill, what is done. Open one to log holes.
+- On your home, **Plans sent to you** names it with **Start**.
+- The **Drilling** page is the plan queue: every plan sent to you, what is assigned, what is ready to drill, what is done. Open one to log holes. It's a queue only now — a rig checklist is filed from the day's own rig list, not from here.
 
 ![The Drilling tab](drilling.png)
 

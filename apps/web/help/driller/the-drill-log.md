@@ -8,6 +8,10 @@ status: draft
 
 The drill log is the blaster's pattern, hole by hole, in the same shape they laid it out. You record what actually went into the ground.
 
+## The header
+
+Diameter, burden, spacing and depth at the top arrive **filled in from the blaster's plan** — you don't retype them. Change one only if the ground says otherwise; it's yours to correct, not theirs to lock.
+
 ## Logging holes
 
 1. **Tap the holes you drilled** on the grid. Tap a row handle (R1, R2…) to take a whole row; **Select all open** takes everything not yet logged.

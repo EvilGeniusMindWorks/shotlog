@@ -21,6 +21,12 @@ Rolling out over the coming days.
 - **Start a day at a job** now has a Date row of its own — Today by default, or choose Yesterday, Tomorrow, or pick a date.
 - **A rig checklist per job-day.** Move a rig to a second job the same day and it gets its own second checklist there, prefilled with its last reading and the morning's answers.
 - **Filed time cards move with a moved day**, and whoever filed one sees a line on their home saying so.
+- **Drillers: your home is Today.** One card per job-day you're on — the rig's reading, your drill log's holes against the plan, your time card, the office's four dots — tap a card to open that day.
+- **Plans sent to you** show with **Start**, above **Yesterday needs you**; **Coming up** appears only once a future day is scheduled. **My records** and **All work days** move to the ? menu.
+- **A drill-only day counts as yours** the moment you drill on it or file a rig checklist there, so it no longer goes missing from your list.
+- **The Drilling page is the plan queue only now** — a rig checklist is filed from the day's own rig list instead.
+- **Your drill log's header arrives filled in** from the blaster's plan — diameter, burden, spacing, depth — change a number only if the ground says otherwise.
+- **Blasters: the Drill plan screen leads with "The shot."** Diameter, burden, spacing and depth sit in one card on top, then the grid; new timing diagrams start 25 ms apart, and the pattern check rings only the holes over the job's Max holes/delay.
 
 ## September 15, 2026
 

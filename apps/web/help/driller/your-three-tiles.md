@@ -6,29 +6,39 @@ updated: September 2026
 status: draft
 ---
 
-Your home is the whole day from the rig: three tiles, and above them anything from yesterday that still needs you.
+Your home is **Today**: one card for every job-day you're on, what's been sent to you, and what still needs you from yesterday.
 
-## The tiles
+## Today
 
-- **Rig checklist** — the daily walk-around, one per rig. Do it first: its hour meter starts the day's clock. See [The rig checklist and hours](/help/driller/rig-checklist-and-hours).
-- **Today's drill log** — the plan the blaster sent, ready to log against. See [The drill log](/help/driller/the-drill-log).
-- **My hours** — your time card for the day, on the job you worked. Enter start and finish; it files with the day.
+One card per job-day you're on — a job where you drilled, or filed a rig checklist, that day. Each card shows the rig and its reading, how your drill log's holes compare to the plan, your time card, and the office's four dots. Tap a card to open that day's tiles: rig checklist, drill log, time card, daily report.
 
 ![The driller's home](driller-home.png)
 
-## The day's tiles
+## Plans sent to you
 
-Open a day — from Days, a job, or the blaster's tiles — and you land on its own set. **Rig checklists** lists every rig working that day as a row, with the hours it started and the hours it stopped ("D50 · 1,198.2 → running" until someone stops it); tap a rig for **Open the checklist**, **Stop for the day**, or **Out of service**, and **Start a checklist for another rig** is the last row. **Drill log** and **My time card** open as before. **Daily report** is yours to fill in on a drill-only day you started; on a blasting day it's read-only and marked as the blaster's.
-
-If a blaster is waiting on your time card, a line lands on your home — "Mark asked for your time card · Whately Quarry · today" — and clears itself the moment you file.
+Every drill plan a blaster has sent that you haven't started yet, with **Start**. Tap it to open that job-day and begin logging.
 
 ## Yesterday needs you
 
-A log you did not sign, a checklist not filed: they sit above the tiles until they are done, newest first. The strip shows five; the rest are on the Drilling tab.
+A log you did not sign, a checklist not filed: they sit here until they're done, newest first.
+
+## Coming up
+
+Shows up only when a future day exists for you — nothing to do yet, just so you know it's coming.
+
+## The day's tiles
+
+Open a day — from a card, Plans sent to you, or the blaster's tiles — and you land on its own set. **Rig checklists** lists every rig working that day as a row, with the hours it started and the hours it stopped ("D50 · 1,198.2 → running" until someone stops it); tap a rig for **Open the checklist**, **Stop for the day**, or **Out of service**, and **Start a checklist for another rig** is the last row. **Drill log** and **My time card** open as before. **Daily report** is yours to fill in on a drill-only day you started; on a blasting day it's read-only and marked as the blaster's.
+
+If a blaster is waiting on your time card, a line lands on your home — "Mark asked for your time card · Whately Quarry · today" — and clears itself the moment you file.
+
+## My records and All work days
+
+Everything you've filed, and every day at all — not just yours — live in the menu now, not on your home.
 
 ## Nothing here yet?
 
-No plan in sight means the blaster has not sent one. Ask them — they send it from the job. Your checklist and hours work without a plan, and **+** starts a drill-only day. See [A drill-only day](/help/driller/drill-only-day).
+No card and nothing sent means the blaster hasn't sent a plan yet. Ask them — they send it from the job. Your checklist and hours work without one, and **+** starts a drill-only day. See [A drill-only day](/help/driller/drill-only-day).
 
 ## Related
 

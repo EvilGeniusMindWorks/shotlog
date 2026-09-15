@@ -61,7 +61,7 @@ export interface AsDrilled {
 export const DELAY_SERIES = [9, 17, 24, 42, 65] as const;
 
 /** Default hole-to-hole increment (ms) */
-export const DEFAULT_INTER_HOLE_MS = 15;
+export const DEFAULT_INTER_HOLE_MS = 25; // S17 (Matthew): 25, was 15
 
 /** Delay ms → display color, matching the paper form legend (legacy render) */
 export const DELAY_COLORS: Record<number, string> = {

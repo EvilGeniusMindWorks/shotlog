@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { recalcShotTotals } from '@/lib/shotTotals';
 import { showToast } from '@/components/ui/undo-toast';
 import { can } from '@/lib/perms';
 import { AdvisoryTag } from '@/lib/complianceAdvisory';
@@ -97,6 +98,7 @@ function DesignPlanInner({
   // the rest of the shot design is one tap away. Matthew: "I had the drill
   // plan complete — there was nothing to do!"
   const planFirst = mode === 'plan';
+  const paramWrites = useRef<Promise<void>>(Promise.resolve());
   const [showRest, setShowRest] = useState(!planFirst);
   const [editorMode, setEditorMode] = useState<'timing' | 'plan'>(mode ?? 'timing');
   const [showSend, setShowSend] = useState(false);
@@ -459,6 +461,17 @@ function DesignPlanInner({
             initialMode={editorMode}
             onModeChange={setEditorMode}
             drilled={drilledOverlay}
+            allowedHolesPerDelay={shot.designPlan.maxHolesPerDelay || undefined}
+            shotParams={shot.drillParams}
+            onShotParams={(patch) => {
+              // one write at a time, each on the record as it is by then
+              paramWrites.current = paramWrites.current.then(async () => {
+                const current = await db.shots.get(shot.id);
+                if (!current) return;
+                const dp = { ...current.drillParams, ...patch };
+                await db.shots.update(shot.id, { drillParams: dp, totals: recalcShotTotals(dp, current.totals), updatedAt: nowISO() });
+              });
+            }}
           />
         </Panel>
 
@@ -512,6 +525,12 @@ function DesignPlanInner({
               {planHoles && planHoles.length > 0 ? (
                 <>
                   <b>Plan ready · {planHoles.length} holes</b>
+                  {(shot.drillParams.holeDiameter > 0 || shot.drillParams.burden > 0) && (
+                    <span className="text-gray-700" data-plan-footer-facts>
+                      {' · '}
+                      {[shot.drillParams.holeDiameter > 0 ? `${shot.drillParams.holeDiameter} in` : null, shot.drillParams.burden > 0 && shot.drillParams.spacing > 0 ? `${shot.drillParams.burden} × ${shot.drillParams.spacing} ft` : null, diagram.plan?.defaultDepth ? `${diagram.plan.defaultDepth} ft` : null].filter(Boolean).join(' · ')}
+                    </span>
+                  )}
                   <span className="text-gray-500">
                     {' · '}
                     {alreadyAssigned.size > 0

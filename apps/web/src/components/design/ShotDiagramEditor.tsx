@@ -5,7 +5,7 @@ import {
   DELAY_COLORS,
   DELAY_SERIES,
   areAdjacent,
-  computeFiringTimes, crowdedHoles,
+  computeFiringTimes, delayWindowGroups,
   delayWindowSizes,
   hasWire,
   materializeDrillPlan,
@@ -45,6 +45,12 @@ interface Props {
   /** S8: the drilled pattern — undrilled grid positions are greyed and
    *  unwireable in timing mode; hole conditions (W, V, SR…) get a mark */
   drilled?: DrilledOverlay;
+  /** S17: Max holes/delay from the compliance card — the pattern check's yardstick */
+  allowedHolesPerDelay?: number;
+  /** S17 (Matthew): diameter, burden and spacing are facts about the pattern —
+   *  edited on top of the plan, saved on the shot, carried to every drill log */
+  shotParams?: { holeDiameter: number; burden: number; spacing: number };
+  onShotParams?: (patch: Partial<{ holeDiameter: number; burden: number; spacing: number }>) => void;
 }
 
 export interface DrilledOverlay {
@@ -58,7 +64,7 @@ export interface DrilledOverlay {
  * wire carries its own delay instead (branching to another row). Every hole
  * shows its cumulative firing time; edits re-time everything downstream.
  */
-export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, designDepth, initialMode, onModeChange, drilled }: Props) {
+export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, designDepth, initialMode, onModeChange, drilled, allowedHolesPerDelay, shotParams, onShotParams }: Props) {
   const [activeLead, setActiveLead] = useState<number>(DELAY_SERIES[1]); // 17ms
   const [customLead, setCustomLead] = useState('');
   const [leadMode, setLeadMode] = useState(false);
@@ -80,9 +86,16 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
   const times = computeFiringTimes(diagram);
   const windows = delayWindowSizes(times);
   const maxWindow = Math.max(0, ...windows);
-  // Pattern check (Matthew, Sep 15 2026): holes that fire within 8 ms of
-  // another count as one delay under 30 CFR 816.67 — ring them in red
-  const crowded = crowdedHoles(times);
+  // Pattern check (Matthew, Sep 15 2026 + S17): holes within 8 ms of each
+  // other count as ONE delay under 30 CFR 816.67 — that is fine as long as
+  // the pounds per delay stay inside the limit, so the yardstick is the
+  // compliance card's Max holes/delay: ring only the windows that exceed it
+  const groups = delayWindowGroups(times);
+  const worstWindow = Math.max(0, ...groups.map((g) => g.length));
+  const allowed = allowedHolesPerDelay && allowedHolesPerDelay > 0 ? allowedHolesPerDelay : 0;
+  const exceeding = allowed > 0 ? groups.filter((g) => g.length > allowed) : [];
+  const crowded = new Set(exceeding.flat());
+  const patternState: 'clear' | 'clash' | 'unset' = allowed === 0 ? 'unset' : exceeding.length > 0 ? 'clash' : 'clear';
   const lastFire = Math.max(0, ...times.values());
   const legacyPainted = !start && Object.keys(delays).length > 0;
 
@@ -332,16 +345,40 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
         </Button>
       </div>
 
-      {/* Drill-plan toolbar — paint model: load the brush, tap holes */}
+      {/* S17 (Matthew): the shot's facts ride on top of the plan — diameter,
+          burden, spacing and the depth for all holes; the brush below sits
+          on the grid it paints */}
       {planMode && (
-        <div className="rounded-lg p-2 border bg-orange-50 border-orange-200 space-y-2">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-            <span className="flex items-center gap-2">
-              <Label className="text-xs whitespace-nowrap">All holes (ft)</Label>
+        <div className="rounded-lg p-3 border border-gray-200 bg-white" data-shot-facts>
+          <p className="text-[10.5px] font-semibold uppercase tracking-wide text-gray-500 mb-2">The shot · facts about the pattern</p>
+          <div className="grid grid-cols-4 gap-2">
+            {(
+              [
+                ['holeDiameter', 'Diameter (in)', 'data-shot-dia'],
+                ['burden', 'Burden (ft)', 'data-shot-burden'],
+                ['spacing', 'Spacing (ft)', 'data-shot-spacing'],
+              ] as const
+            ).map(([key, label, attr]) => (
+              <label key={key} className="block">
+                <span className="block text-[10px] text-gray-500 mb-0.5">{label}</span>
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  className="h-10 font-mono"
+                  {...{ [attr]: '' }}
+                  disabled={!onShotParams}
+                  value={shotParams && shotParams[key] > 0 ? shotParams[key] : ''}
+                  onChange={(e) => onShotParams?.({ [key]: parseFloat(e.target.value) || 0 })}
+                />
+              </label>
+            ))}
+            <label className="block">
+              <span className="block text-[10px] text-gray-500 mb-0.5">All holes (ft)</span>
               <Input
                 type="number"
                 inputMode="decimal"
-                className="h-10 w-20 font-mono"
+                className="h-10 font-mono"
+                data-plan-depth
                 placeholder={designDepth ? String(designDepth) : '—'}
                 value={plan.defaultDepth ?? ''}
                 onChange={(e) => {
@@ -349,8 +386,17 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
                   setPlan({ ...plan, defaultDepth: Number.isNaN(v) ? undefined : v });
                 }}
               />
-            </span>
-            <span className="flex items-center gap-2 pl-3 border-l border-orange-200">
+            </label>
+          </div>
+          <p className="text-[11px] text-gray-500 mt-1.5">Saved on the shot — the blasting log and the compliance card read the same numbers; every drill log made from this plan starts with them.</p>
+        </div>
+      )}
+
+      {/* Drill-plan toolbar — paint model: load the brush, tap holes */}
+      {planMode && (
+        <div className="rounded-lg p-2 border bg-orange-50 border-orange-200 space-y-2" data-plan-brush>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <span className="flex items-center gap-2">
               <Label className="text-xs whitespace-nowrap font-semibold text-safety-orange">
                 Brush
               </Label>
@@ -496,7 +542,7 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
 
       {/* Grid */}
       <div className="overflow-auto border border-gray-200 rounded-lg bg-white">
-        <svg width={width} height={height} className="touch-manipulation">
+        <svg width={width} height={height} className="touch-manipulation" data-diagram-grid>
           <defs>
             <marker id="wire-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
               <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a365d" />
@@ -716,13 +762,20 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
             {lastFire}ms · max <b>{maxWindow}</b> hole{maxWindow === 1 ? '' : 's'} in any 8ms window
           </p>
           <p
-            className={cn('text-xs rounded-lg border px-3 py-2', crowded.size > 0 ? 'text-red-800 bg-red-50 border-red-200' : 'text-green-800 bg-green-50 border-green-200')}
-            data-pattern-check={crowded.size > 0 ? 'clash' : 'clear'}
+            className={cn(
+              'text-xs rounded-lg border px-3 py-2',
+              patternState === 'clash' ? 'text-red-800 bg-red-50 border-red-200' : patternState === 'unset' ? 'text-amber-800 bg-amber-50 border-amber-200' : 'text-green-800 bg-green-50 border-green-200',
+            )}
+            data-pattern-check={patternState}
+            data-pattern-worst={worstWindow}
+            data-pattern-allowed={allowed}
             data-pattern-clashes={crowded.size}
           >
-            {crowded.size > 0
-              ? `Pattern check: ${crowded.size} holes fire within 8 ms of another — they count as one delay under 30 CFR 816.67. Ringed in red: ${[...crowded].sort((a, b) => a - b).map((h) => h + 1).join(', ')}.`
-              : 'Pattern check: every hole is at least 8 ms from the next — each is its own delay (30 CFR 816.67).'}
+            {patternState === 'clash'
+              ? `Pattern check: ${exceeding[0].length} holes share an 8 ms delay window in ${exceeding.length} place${exceeding.length === 1 ? '' : 's'} · only ${allowed} allowed on the compliance card — ringed in red. Widen the increment or raise the allowance on the card. 30 CFR 816.67.`
+              : patternState === 'unset'
+                ? `Pattern check: at worst ${worstWindow} hole${worstWindow === 1 ? '' : 's'} share an 8 ms delay window — set Max holes/delay on the compliance card to judge it (30 CFR 816.67).`
+                : `Pattern check: at worst ${worstWindow} hole${worstWindow === 1 ? '' : 's'} share an 8 ms delay window · ${allowed} allowed on the compliance card. 30 CFR 816.67.`}
           </p>
         </div>
       )}

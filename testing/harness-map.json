@@ -26,14 +26,16 @@
   ],
   "apps/web/src/components/dashboard/RoleCards.tsx": [
     53,
-    66
+    66,
+    76
   ],
   "apps/web/src/components/design/DrillGridEditor.tsx": [
     62
   ],
   "apps/web/src/components/design/ShotDiagramEditor.tsx": [
     62,
-    74
+    74,
+    76
   ],
   "apps/web/src/components/design/SiteDiagramEditor.tsx": [
     67,
@@ -86,7 +88,8 @@
     64,
     67,
     68,
-    70
+    70,
+    76
   ],
   "apps/web/src/pages/DrillChecklistPage.tsx": [
     63,
@@ -98,7 +101,8 @@
     60,
     63,
     66,
-    68
+    68,
+    76
   ],
   "apps/web/src/pages/EquipmentLocatorPage.tsx": [
     68
@@ -233,5 +237,14 @@
   ],
   "apps/web/src/lib/dailyReportView.ts": [
     75
+  ],
+  "apps/web/src/lib/mine.ts": [
+    76
+  ],
+  "apps/web/src/pages/DrillingPage.tsx": [
+    76
+  ],
+  "apps/web/src/lib/shotDiagram.ts": [
+    76
   ]
 }

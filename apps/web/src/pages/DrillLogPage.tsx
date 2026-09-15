@@ -489,8 +489,13 @@ export function DrillLogPage() {
           </button>
         )}
 
-        {/* Header card — pattern info prefilled from design */}
+        {/* Header card — pattern info prefilled from design (S17: the plan's numbers, named as such) */}
         <div className="rounded-xl border border-gray-200 bg-white p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {shot && shot.drillParams.holeDiameter === log.holeDiameter && shot.drillParams.burden === log.burden && shot.drillParams.spacing === log.spacing && (log.holeDiameter > 0 || log.burden > 0) && (
+            <p className="col-span-2 sm:col-span-4 text-[11px] text-blue-800 -mb-1" data-log-from-plan>
+              Diameter, burden and spacing filled from the blaster's plan — change one only if the ground says otherwise.
+            </p>
+          )}
           <div><Label className="text-xs">Diameter (in)</Label>
             <Input type="number" value={log.holeDiameter || ''} disabled={!editable}
               onChange={(e) => void update({ holeDiameter: parseFloat(e.target.value) || 0 })} /></div>

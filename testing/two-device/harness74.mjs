@@ -98,17 +98,31 @@ async (page, lib) => {
     R.ok('Undo brings the two wires back', w?.wires === 3);
   });
 
-  await R.section('The pattern check rings holes within 8 ms of each other (30 CFR 816.67)', async () => {
-    R.ok('at 15 ms per hole every hole is its own delay — the check is green', (await PB.locator('[data-pattern-check]').getAttribute('data-pattern-check')) === 'clear' && (await PB.locator('[data-window-clash]').count()) === 0);
+  await R.section('The pattern check judges against the allowed holes per delay (30 CFR 816.67; S17)', async () => {
+    const check = PB.locator('[data-pattern-check]');
+    R.ok('with no allowance on the compliance card the check is neutral and says to set one', (await check.getAttribute('data-pattern-check')) === 'unset' && /set Max holes\/delay/.test(await check.innerText()));
+    await PB.evaluate(async (shotId) => {
+      const { db } = await import('/src/db/index.ts');
+      const { nowISO } = await import('/src/lib/utils.ts');
+      const shot = await db.shots.get(shotId);
+      await db.shots.update(shotId, { designPlan: { ...shot.designPlan, maxHolesPerDelay: 1 }, updatedAt: nowISO() });
+    }, shotId);
+    await waitFor(() => check.getAttribute('data-pattern-check').then((v) => (v === 'clear' ? v : null)));
+    R.ok('allow 1 per delay: at 25 ms per hole every hole is alone in its window — green, naming the allowance', (await check.getAttribute('data-pattern-check')) === 'clear' && /1 allowed/.test(await check.innerText()) && (await PB.locator('[data-window-clash]').count()) === 0);
     const inc = PB.locator('input[title="Inter-hole increment (ms)"]');
     await inc.fill('5');
     await sleep(600);
-    const check = PB.locator('[data-pattern-check]');
-    R.ok('at 5 ms per hole the check turns red and names the rule', (await check.getAttribute('data-pattern-check')) === 'clash' && /30 CFR 816\.67/.test(await check.innerText()));
-    R.ok('the crowded holes are ringed in red on the grid', (await PB.locator('[data-window-clash]').count()) >= 2 && Number(await check.getAttribute('data-pattern-clashes')) >= 2);
-    await inc.fill('15');
-    await sleep(600);
-    R.ok('back at 15 ms the rings go and the check is green again', (await check.getAttribute('data-pattern-check')) === 'clear' && (await PB.locator('[data-window-clash]').count()) === 0);
+    R.ok('at 5 ms per hole windows hold more than allowed — red, the rule named, the exceeding holes ringed', (await check.getAttribute('data-pattern-check')) === 'clash' && /30 CFR 816\.67/.test(await check.innerText()) && (await PB.locator('[data-window-clash]').count()) >= 2);
+    await PB.evaluate(async (shotId) => {
+      const { db } = await import('/src/db/index.ts');
+      const { nowISO } = await import('/src/lib/utils.ts');
+      const shot = await db.shots.get(shotId);
+      await db.shots.update(shotId, { designPlan: { ...shot.designPlan, maxHolesPerDelay: 3 }, updatedAt: nowISO() });
+    }, shotId);
+    await waitFor(() => check.getAttribute('data-pattern-check').then((v) => (v === 'clear' ? v : null)));
+    R.ok('raise the allowance to 3 and the same pattern is green — the card is the yardstick', (await check.getAttribute('data-pattern-check')) === 'clear' && (await PB.locator('[data-window-clash]').count()) === 0);
+    await inc.fill('25');
+    await sleep(400);
   });
 
   await R.section('Accept from the crew list files the office copy', async () => {

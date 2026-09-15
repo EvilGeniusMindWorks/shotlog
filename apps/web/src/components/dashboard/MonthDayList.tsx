@@ -45,6 +45,7 @@ function DayRow({ s, navigate }: { s: DaySummary; navigate: (to: string) => void
   return (
     <button
       className="w-full flex items-center gap-2 py-2 border-t border-gray-100 text-left hover:bg-gray-50"
+      data-day-row={s.day.id}
       onClick={() => navigate(`/blast-day/${s.day.id}`)}
     >
       <div className="flex-1 min-w-0">

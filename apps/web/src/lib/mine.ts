@@ -4,8 +4,9 @@
 // field-home band and the Days list so the rule cannot drift.
 //
 //  · a work day is mine when I authored it (authorUserId, stamped since
-//    S7d — taking over the blast log re-stamps) or I hold a time card on
-//    it (I worked that day, whoever runs the report)
+//    S7d — taking over the blast log re-stamps), I hold a time card on
+//    it (I worked that day, whoever runs the report), I drilled on it, or
+//    I filed a rig checklist at that job that day (S17)
 //  · drilling waits on me when I laid the plan (createdBy) or, with no
 //    plan, the log sits on a shot of a day that is mine
 //  · office, admin and the shop see everything — that is their job
@@ -43,6 +44,15 @@ export async function myDayIds(): Promise<Set<string>> {
     if (c.blastDayId) out.add(c.blastDayId);
     else for (const id of byJobDate.get(`${c.jobId}|${c.date}`) ?? []) out.add(id);
   }
+  // S17 (Matthew's feedback: "I don't see Route 3 in my work days"): the
+  // days I drilled on, and the days I filed a rig checklist at that job
+  const logs = await db.drillLogs.filter((l) => l.drillerUserId === me.id).toArray();
+  for (const l of logs) {
+    if (l.blastDayId) out.add(l.blastDayId);
+    else for (const id of byJobDate.get(`${l.jobId}|${l.date ?? l.createdAt.slice(0, 10)}`) ?? []) out.add(id);
+  }
+  const checklists = await db.drillChecklists.filter((c) => c.drillerUserId === me.id && Boolean(c.jobId)).toArray();
+  for (const c of checklists) for (const id of byJobDate.get(`${c.jobId}|${c.date}`) ?? []) out.add(id);
   return out;
 }
 

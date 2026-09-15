@@ -285,3 +285,18 @@ page · customer/site/job create (new) · contacts · My Records · reference
   "· not today" whenever the day isn't today and nothing on it is filed yet;
   the start-work dialog gets the same Today / Yesterday / Tomorrow / pick-a-
   date row.
+
+## Round S17 — the driller's home, and the feedback fixes (2026-09-15, plan artifact ccd90447)
+
+- **The Drill plan screen reorders around "The shot."** Diameter, burden,
+  spacing and the depth for every hole sit in one card at the top; the
+  brush — depth, angle, **⌀ No hole** — moves onto the grid itself; the
+  footer names the four numbers instead of just "Plan ready." The same
+  numbers write to the shot and seed the driller's drill log header.
+- **New timing diagrams open at 25 ms between holes** (Mark's rule); a
+  diagram already wired keeps whatever numbers it has.
+- **The pattern check (30 CFR 816.67) now reads against the compliance
+  card.** It compares the worst 8 ms window in the wiring to the job's
+  **Max holes/delay** and rings only the holes over that limit — not
+  every hole within 8 ms of another. A job with no Max holes/delay set
+  never turns red.

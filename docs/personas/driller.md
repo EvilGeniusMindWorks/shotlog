@@ -221,3 +221,25 @@ report (solo submit) · My Records · jobs list
 - When a blaster changes a day's date, Joe's drill logs and the plan sent
   to him move with it — nothing to re-send. A time card he already filed
   moves too, and he sees a line on his home saying it moved.
+
+## S17 — the home becomes Today (Sep 15 2026, plan artifact ccd90447)
+
+- **Today replaces the trio.** Joe's home opens on Today: one card per
+  job-day he's on — the rig and its reading, his drill log's holes against
+  the plan, his time card, and the office's four dots. Tap a card to open
+  that day's tiles. Below it, **Plans sent to you** with **Start**, then
+  **Yesterday needs you**; **Coming up** shows only when a future day
+  exists. **My records** and **All work days** move to the menu — home no
+  longer carries them.
+- **A day is "mine" when I drilled on it or filed a rig checklist at that
+  job that day** — one rule, used for both the home and the "mine" list,
+  replacing the old rule (authored the day, or filed a time card on it)
+  that left drill-only days off a driller's own list.
+- **The Drilling page loses its rig-checklist door.** It's the plan queue
+  only now — what's assigned, ready to drill, done; checklists are filed
+  from the day's own rig list instead.
+- **The drill log's header arrives filled in.** Diameter, burden, spacing
+  and depth come straight from the blaster's plan; change them if the
+  ground says otherwise.
+- Six reports came in through the in-app feedback feature on Sep 15 —
+  screen-by-screen notes, the first real use of that channel. It works.
