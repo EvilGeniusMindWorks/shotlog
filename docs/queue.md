@@ -53,6 +53,17 @@ is built, move its line to docs/decisions.md with the round that shipped it.
 
 ## For Matthew to test
 
+### S18 (Sep 16, 2026) — on the phone, in Beta
+- Type fast into a shot's totals and drill parameters, a time card's IN/OUT, a materials row and the drill log header: every character stays, the chip spins once per pause.
+- The feedback bubble: over the Change-the-date sheet, on a print screen (the report should name the paper), and with a filed PDF open in Records (no picture, but "Open the PDF" on Admin › Feedback).
+- Shot 1 on Route 3 Widening: the totals should now read from the accepted 41-hole drilling; type a number, then "use the drilling's figures".
+- Time of shot beside "Shot #1" with Now; Blast Mats under Detonators & Lead (your earlier per-shot answer should carry over).
+- Review drilling: the log's header line and note, List view, Send back… to a driller (they see it on their home), accept shot 2 without touching shot 1.
+- A second shot's Drilling row: "Build the drill plan ›".
+- The typical column: three Add Layer taps land booster → explosive → stemming.
+- Mark the daily report done; the tile and the filing screen say so; Edit again.
+
+
 Things only he can judge, on Beta, when he has a moment. Each says what to do and what
 to look for; his findings become the next round's items.
 
