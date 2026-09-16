@@ -107,7 +107,7 @@ async (page, lib) => {
     R.ok('back on the day, the Rig checklists tile shows the rig running', (await PD.locator(`[data-rig-row="${rigs[0].asset}"]`).count()) === 1);
   });
 
-  await R.section("The checklist never guesses: from the rig it follows the driller's one open day at the job", async () => {
+  await R.section("The checklist never guesses: from the rig it follows the day the driller is on at the job", async () => {
     // job A has exactly one open day (yesterday's): the same rig → the notice names that date
     await PD.goto(`${WEB}/drill-checklist?job=${jobA.id}`);
     await PD.locator('[data-rig-field]').waitFor({ timeout: 20000 });
