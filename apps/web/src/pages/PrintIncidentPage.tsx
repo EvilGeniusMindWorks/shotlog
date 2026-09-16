@@ -3,6 +3,7 @@
 // the incident into office review.
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useBackHere } from '@/lib/nav';
 import { FileDown, Printer } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { getJobView } from '@/lib/jobContext';
@@ -102,6 +103,7 @@ function IncidentSheet({ incidentId }: { incidentId: string }) {
 export function PrintIncidentPage() {
   const { incidentId } = useParams<{ incidentId: string }>();
   const navigate = useNavigate();
+  const back = useBackHere('Incident · print');
   const [saving, setSaving] = useState(false);
   const incident = useLiveQuery(() => (incidentId ? db.incidents.get(incidentId) : undefined), [incidentId]);
   useFeedbackPaper(incident ? { label: `Incident report · ${formatDate(incident.date)} · print`, kind: 'incident', recordId: incident.id } : null);
@@ -130,8 +132,8 @@ export function PrintIncidentPage() {
         >
           <Printer size={16} /> Print
         </button>
-        <button className="px-3 py-1.5 rounded border text-sm" onClick={() => navigate(-1)}>
-          Back
+        <button className="px-3 py-1.5 rounded border text-sm" onClick={() => (back ? back.go() : navigate(-1))} data-nav-back data-nav-back-to={back?.to ?? ''}>
+          ‹ <span data-nav-back-label>{back?.label ?? 'Back'}</span>
         </button>
       </div>
       <IncidentSheet incidentId={incidentId} />

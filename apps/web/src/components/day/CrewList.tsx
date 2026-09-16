@@ -193,7 +193,7 @@ export function CrewList({
               ) : null}
             </div>
             <Button variant="outline" className="w-full mt-1" onClick={() => setOpen(null)}>
-              Back to the day
+              Close
             </Button>
           </div>
         </ConsequenceSheet>

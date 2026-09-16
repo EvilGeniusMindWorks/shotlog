@@ -4,7 +4,8 @@ import { showToast } from '@/components/ui/undo-toast';
 import { can } from '@/lib/perms';
 import { AdvisoryTag } from '@/lib/complianceAdvisory';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Check, Grid3x3, Layers3, Map as MapIcon, Ruler, Send } from 'lucide-react';
+import { Check, Grid3x3, Layers3, Map as MapIcon, Ruler, Send } from 'lucide-react';
+import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { applyAsDrilled, drilledSince } from '@/lib/shotDiagram';
 import { getShotPlan, useShotDrilling } from '@/hooks/useDrillLogs';
 import { SendToDrillersModal } from '@/components/forms/DrillingSection';
@@ -313,27 +314,16 @@ function DesignPlanInner({
 
   return (
     <div>
-      {/* Navy context header */}
-      <div className="bg-navy text-white px-4 py-3 sticky top-0 z-20">
-        <div className="max-w-6xl mx-auto flex items-center gap-3">
-          <button
-            className="h-10 w-10 rounded-lg flex items-center justify-center text-navy-200 hover:text-white hover:bg-white/10"
-            onClick={() => navigate(`/blast-day/${blastDayId}?view=hub`)}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <div className="flex-1 min-w-0">
-            <h2 className="font-bold text-lg leading-tight truncate" data-design-title>
-              {planFirst && editorMode === 'plan' ? 'Drill plan' : 'Design Plan'} — Shot #{shot.shotNumber}
-            </h2>
-            <p className="text-xs text-navy-200 truncate">
-              {[job?.name, shot.time, shot.totals.numHoles > 0 && `${shot.totals.numHoles} holes`]
-                .filter(Boolean)
-                .join(' · ')}
-            </p>
-          </div>
-        </div>
-      </div>
+      {/* One shared header (the navigation round): up to the Blasting log, or back to the walkthrough you came from */}
+      <ScreenHeader
+        maxWidth="max-w-6xl"
+        parent={{ to: `/blast-day/${blastDayId}?view=blast-log`, label: 'Blasting log' }}
+        trailLabel={`${planFirst && editorMode === 'plan' ? 'Drill plan' : 'Design plan'} · Shot ${shot.shotNumber}`}
+        path={[{ label: 'Work days', to: '/days' }, { label: job?.name ?? 'the work day', to: `/blast-day/${blastDayId}` }, { label: 'Blasting log', to: `/blast-day/${blastDayId}?view=blast-log` }, { label: `Shot ${shot.shotNumber}` }]}
+        titleAttrs={{ 'data-design-title': '' }}
+        title={`${planFirst && editorMode === 'plan' ? 'Drill plan' : 'Design Plan'} — Shot #${shot.shotNumber}`}
+        subtitle={[job?.name, shot.time, shot.totals.numHoles > 0 && `${shot.totals.numHoles} holes`].filter(Boolean).join(' · ')}
+      />
 
       {/* Compliance badge bar */}
       <div className="px-4 py-2 bg-gray-50">

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useBackHere } from '@/lib/nav';
 import { ArrowLeft, FileDown, Printer } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { useBlastDay } from '@/hooks/useBlastDay';
@@ -33,6 +34,7 @@ function fmtDate(iso: string): string {
 export function BlastReportPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const back = useBackHere('Blast report');
   const { blastDay, job, blastLog, shots, explosiveUsage } = useBlastDay(id);
   const [savingPdf, setSavingPdf] = useState(false);
   const shotIdsKey = shots.map((s) => s.id).join(',');
@@ -70,8 +72,8 @@ export function BlastReportPage() {
   return (
     <div className="print-blast-log blast-report">
       <div className="print-toolbar">
-        <button onClick={() => navigate(`/blast-day/${blastDay.id}`)}>
-          <ArrowLeft size={16} /> Back
+        <button onClick={() => (back ? back.go() : navigate(`/blast-day/${blastDay.id}`))} data-nav-back data-nav-back-to={back?.to ?? ''}>
+          <ArrowLeft size={16} /> <span data-nav-back-label>{back?.label ?? 'Back'}</span>
         </button>
         <span style={{ display: 'flex', gap: 8 }}>
           <button

@@ -10,7 +10,9 @@
 // is FILED. Old per-rig links (/drill-checklist/:id) preselect that rig.
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Search, Wrench } from 'lucide-react';
+import { useBack } from '@/lib/nav';
+import { BackButton } from '@/components/layout/ScreenHeader';
+import { Search, Wrench } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { emptyChecklist, fileChecklist, useEarlierChecklistToday, useTodayChecklist } from '@/hooks/useMaintenance';
 import { useJobs } from '@/hooks/useBlastDay';
@@ -247,6 +249,7 @@ export function DrillChecklistPage() {
   // S19 (Matthew): a checklist started from a work day is for THAT day — the
   // door hands over the date; this screen never guesses it
   const dateParam = params.get('date') ?? undefined;
+  const dayParam = params.get('day') ?? undefined;
   const navigate = useNavigate();
   const me = getSessionUser();
   const rigs =
@@ -334,6 +337,11 @@ export function DrillChecklistPage() {
   }, [dayHint?.date, dateParam, hintReady]);
   const jobName = jobs.find((j) => j.id === jobId)?.name;
   const forDay: 'door' | 'hint' | null = dateParam ? 'door' : dayHint ? 'hint' : null;
+  // The navigation round: up to the day it was started from (named), else the rig, else home
+  const back = useBack(
+    dayParam ? { to: `/blast-day/${dayParam}`, label: jobName ?? 'the work day' } : routeRigId ? { to: `/equipment/${routeRigId}`, label: rig?.assetNumber ?? 'the rig' } : { to: '/', label: 'Dashboard' },
+    'Rock Drill Check List',
+  );
 
   // The office copy of today's checklist, if it was ever filed (Matthew,
   // Sep 15 2026: a filing that failed mid-way left the checklist without one)
@@ -363,13 +371,7 @@ export function DrillChecklistPage() {
     <div>
       <div className="bg-navy text-white px-4 py-3 sticky top-0 z-20">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
-          <button
-            className="h-10 w-10 rounded-lg flex items-center justify-center text-navy-200 hover:text-white hover:bg-white/10"
-            onClick={() => navigate('/')}
-            aria-label="Back home"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
+          <BackButton back={back} />
           <div className="flex-1 min-w-0">
             <h2 className="font-bold text-lg truncate leading-tight">Rock Drill Check List</h2>
             <p className="text-xs text-navy-200 truncate" data-chk-rig-selected={rig?.assetNumber ?? ''}>

@@ -3,7 +3,8 @@
 // their own page fully, but a teammate's page shows header + documents only
 // (no day/hour tallies of coworkers).
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { useBack } from '@/lib/nav';
+import { BackButton } from '@/components/layout/ScreenHeader';
 import { useLiveQuery, db } from '@/db';
 import { getSessionUser } from '@/lib/session';
 import { buildPersonView } from '@/lib/personHistory';
@@ -28,6 +29,7 @@ export function CrewPage() {
   const role = me?.role ?? '';
 
   const crew = useLiveQuery(() => (id ? db.crewMembers.get(id) : undefined), [id]);
+  const back = useBack({ to: '/', label: 'Dashboard' }, crew?.name);
   const fullView =
     role === 'admin' ||
     role === 'office' ||
@@ -49,12 +51,7 @@ export function CrewPage() {
   return (
     <div className="p-4 max-w-2xl mx-auto space-y-3">
       <div className="flex items-center gap-2">
-        <button
-          className="h-10 w-10 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100"
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
+        <BackButton back={back} tone="gray" />
         <div className="min-w-0 flex-1">
           <h2 className="text-xl font-bold text-gray-900 truncate">{crew.name}</h2>
           <p className="text-xs text-gray-400">

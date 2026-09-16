@@ -314,7 +314,7 @@ export function DayHub({ day, job, blastLog, shots, dailyReport, locked, owner, 
             <h3 className="font-bold text-lg mb-2">Time cards · {job?.name ?? 'today'}</h3>
             <TimeCardsCard blastDay={day} />
             <Button variant="outline" className="w-full mt-3" onClick={() => setCardSheet(false)}>
-              Back to the day
+              Close
             </Button>
           </div>
         </ConsequenceSheet>

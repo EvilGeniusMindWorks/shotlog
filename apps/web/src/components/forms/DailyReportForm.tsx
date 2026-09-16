@@ -50,7 +50,7 @@ interface Props {
   readOnly?: boolean;
 }
 
-export function DailyReportForm({ blastDay, dailyReport, blastLog, shots, readOnly }: Props) {
+export function DailyReportForm({ blastDay, dailyReport, blastLog, shots, readOnly, onDone }: Props & { onDone?: () => void }) {
   const workforce = useLiveQuery(
     () => db.workForceEntries.where('dailyReportId').equals(dailyReport.id).sortBy('rowNumber'),
     [dailyReport.id]
@@ -183,7 +183,10 @@ export function DailyReportForm({ blastDay, dailyReport, blastLog, shots, readOn
             data-report-done
             onClick={() => {
               const me = getSessionUser();
-              void db.dailyReports.update(dailyReport.id, { doneAt: nowISO(), doneBy: me?.id ?? '', doneByName: me?.name ?? '', updatedAt: nowISO() });
+              // the navigation round (Matthew): marking it done lands on the day
+              void db.dailyReports
+                .update(dailyReport.id, { doneAt: nowISO(), doneBy: me?.id ?? '', doneByName: me?.name ?? '', updatedAt: nowISO() })
+                .then(() => onDone?.());
             }}
           >
             Mark the daily report done

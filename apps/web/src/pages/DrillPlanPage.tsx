@@ -4,7 +4,9 @@
 // drilled. The blast report later imports the as-drilled result.
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Send, X } from 'lucide-react';
+import { useBack } from '@/lib/nav';
+import { BackButton } from '@/components/layout/ScreenHeader';
+import { Send, X } from 'lucide-react';
 import { type Role } from '@shotlog/shared';
 import { can } from '@/lib/perms';
 import { LifecycleMenu } from '@/components/records/LifecycleMenu';
@@ -115,6 +117,8 @@ export function DrillPlanPage() {
 
   const plan = useLiveQuery(() => (planId ? db.drillPlans.get(planId) : undefined), [planId]);
   const job = useLiveQuery(() => (jobId ? db.jobs.get(jobId) : undefined), [jobId]);
+  // The navigation round: up to the job — or back to the shot / the Drilling page you came from
+  const back = useBack(plan ? { to: `/jobs/${plan.jobId}`, label: job?.name ?? 'the job' } : null, plan?.name);
   const drilling = usePlanDrilling(planId);
   const [dispatching, setDispatching] = useState(false);
   const [confirmComplete, setConfirmComplete] = useState(false);
@@ -137,12 +141,7 @@ export function DrillPlanPage() {
     <div>
       <div className="bg-navy text-white px-4 py-3 sticky top-0 z-20">
         <div className="max-w-3xl mx-auto flex items-center gap-3">
-          <button
-            className="h-10 w-10 rounded-lg flex items-center justify-center text-navy-200 hover:text-white hover:bg-white/10"
-            onClick={() => navigate(`/jobs/${plan.jobId}`)}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
+          <BackButton back={back} />
           <div className="flex-1 min-w-0">
             <h2 className="font-bold text-lg truncate leading-tight">{plan.name}</h2>
             <p className="text-xs text-navy-200 truncate">

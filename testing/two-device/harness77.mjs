@@ -420,7 +420,11 @@ async (page, lib) => {
     await PB.goto(`${WEB}/blast-day/${dayId}?view=daily-report`);
     await PB.locator('[data-report-done]').waitFor({ timeout: 20000 });
     await PB.locator('[data-report-done]').click();
-    await PB.locator('[data-report-done-banner]').waitFor({ timeout: 10000 });
+    // the navigation round: marking it done lands on the day; the banner waits on the report itself
+    await PB.waitForURL(new RegExp('/blast-day/' + dayId + '$'), { timeout: 10000 });
+    R.ok('Mark done lands on the day', new URL(PB.url()).search === '');
+    await PB.goto(`${WEB}/blast-day/${dayId}?view=daily-report`);
+    await PB.locator('[data-report-done-banner]').waitFor({ timeout: 20000 });
     R.ok('the banner names who marked it done', /Done/.test((await PB.locator('[data-report-done-banner]').textContent()) || ''));
     await PB.goto(`${WEB}/blast-day/${dayId}`);
     await PB.locator('[data-tile="daily-report"]').waitFor({ timeout: 20000 });

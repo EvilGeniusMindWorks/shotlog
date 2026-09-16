@@ -70,7 +70,7 @@ async (page, lib) => {
     await PA.locator('[data-tile="blast-log"] [data-tile-action="Start"]').click();
     await PA.locator('[data-day-continue]').waitFor({ timeout: 15000 });
     R.ok('Start creates the log and lands inside it — the spine with Continue', (await PA.locator('[data-day-continue]').count()) === 1 && (await PA.locator('[data-tour="day-tabs"]').count()) === 1);
-    await PA.locator('[data-back-to-day]').click();
+    await PA.locator('[data-nav-back]').first().click(); // the navigation round: the header's arrow reads "‹ <the day>"
     await PA.locator('[data-day-hub]').waitFor({ timeout: 10000 });
     const started = await waitFor(() => tileState(PA, 'blast-log').then((s) => (/^Started/.test(s ?? '') ? s : null)));
     R.ok(`back on the tiles the log reads "${started}" · Open`, /^Started/.test(started ?? '') && (await tileAction(PA, 'blast-log')) === 'Open');
@@ -96,7 +96,7 @@ async (page, lib) => {
     await PA.locator('[data-tile="time-card"] [data-tile-action]').click();
     await PA.locator('[data-time-card-sheet]').waitFor({ timeout: 8000 });
     R.ok('My time card opens the cards sheet', (await PA.locator('[data-time-card-sheet]').count()) === 1);
-    await PA.getByRole('button', { name: 'Back to the day' }).click();
+    await PA.getByRole('button', { name: 'Close' }).click();
     await waitForUpload(PA, 30000);
   });
 
@@ -157,7 +157,7 @@ async (page, lib) => {
     await PA.locator('[data-person-remind]').click();
     const reminded = await waitFor(() => PA.evaluate(async (id) => (await (await import('/src/db/index.ts')).db.dayReminders.where('blastDayId').equals(id).count()), dayId).then((n) => (n === 1 ? 1 : 0)));
     R.ok('Remind writes one reminder', reminded === 1);
-    await PA.getByRole('button', { name: 'Back to the day' }).click();
+    await PA.getByRole('button', { name: 'Close' }).click();
     await waitForUpload(PA, 30000);
 
     // Joe's home: the line, then filing the card clears it

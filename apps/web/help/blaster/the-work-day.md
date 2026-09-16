@@ -63,7 +63,9 @@ Tap **Continue** and you land on the next thing: *Build the drill plan*, *Send t
 
 ## Day · Blast log · Daily report
 
-Inside the Blasting log tile, three tabs still show the same day: the **Day** (the spine), the **Blasting log** (the technical record) and the **Daily report** (crew, hours, equipment). **Back to the day**, at the top, returns you to the tiles. They share everything — a crew member added on the daily report is on the blast log's sign-off list.
+Inside the Blasting log tile, three tabs still show the same day: the **Day** (the spine), the **Blasting log** (the technical record) and the **Daily report** (crew, hours, equipment). Each tab is a step of its own: the arrow in the header — **‹ Route 3 Widening** — returns you to the tiles, and on a phone the back gesture walks the tabs the same way. They share everything — a crew member added on the daily report is on the blast log's sign-off list.
+
+The arrow on the day itself goes back to wherever you opened it from — Work days, Records, a job, a card on your home — and says so. See [Finding your way around](/help/start-here/finding-your-way-around).
 
 ## The card, and who's on site
 

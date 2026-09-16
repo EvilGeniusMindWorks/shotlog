@@ -5,9 +5,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { compactAttribution } from '@/lib/mapAttribution';
 import { useNavigate } from 'react-router-dom';
+import { useBack } from '@/lib/nav';
+import { BackButton } from '@/components/layout/ScreenHeader';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { ArrowLeft } from 'lucide-react';
 import { db, useLiveQuery } from '@/db';
 import {
   buildAssetLocations,
@@ -232,6 +233,7 @@ function LocActions({ loc }: { loc: AssetLocation }) {
 
 export function EquipmentLocatorPage() {
   const navigate = useNavigate();
+  const back = useBack({ to: '/', label: 'Dashboard' }, "Where's my equipment");
   const { locations, pinned } = useLocatorData();
   const [selectedId, setSelectedId] = useState<string | undefined>();
   const [phoneView, setPhoneView] = useState<'list' | 'map'>('list');
@@ -241,12 +243,7 @@ export function EquipmentLocatorPage() {
     <div>
       <div className="bg-navy text-white px-4 py-3 sticky top-0 z-20">
         <div className="max-w-5xl mx-auto flex items-center gap-3">
-          <button
-            className="h-10 w-10 rounded-lg flex items-center justify-center text-navy-200 hover:text-white hover:bg-white/10"
-            onClick={() => navigate('/')}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
+          <BackButton back={back} />
           <div className="flex-1 min-w-0">
             <h2 className="font-bold text-lg leading-tight">Where's my equipment</h2>
             <p className="text-xs text-navy-200">

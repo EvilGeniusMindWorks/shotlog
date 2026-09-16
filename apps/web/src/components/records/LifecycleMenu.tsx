@@ -4,6 +4,7 @@
 // the record's name. After archiving: a 10s Undo toast.
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
+import { useInRouterContext, useLocation, useNavigate } from 'react-router-dom';
 import { Archive, ArchiveRestore, MoreVertical, Trash2 } from 'lucide-react';
 import { useLiveQuery } from '@/db';
 import type { Archivable } from '@/db/schema';
@@ -222,6 +223,9 @@ function MenuItem({
   );
 }
 
+/** A sheet over the screen. The navigation round: a sheet is one step in the
+ *  browser's history, so Android's back gesture closes the sheet first — and
+ *  Close walks that step back. Outside a router it is a plain overlay. */
 export function ConsequenceSheet({
   children,
   onClose,
@@ -229,12 +233,53 @@ export function ConsequenceSheet({
   children: React.ReactNode;
   onClose: () => void;
 }) {
+  const inRouter = useInRouterContext();
+  return inRouter ? (
+    <RoutedSheet onClose={onClose}>{children}</RoutedSheet>
+  ) : (
+    <SheetFrame onClose={onClose}>{children}</SheetFrame>
+  );
+}
+
+function SheetFrame({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center">
+    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center" data-sheet>
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className="relative bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-md p-5 pb-8 sm:pb-5">
         {children}
       </div>
     </div>
   );
+}
+
+function RoutedSheet({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const id = useRef(`sheet-${Math.random().toString(36).slice(2, 8)}`).current;
+  const pushed = useRef(false);
+  // Walked back (the gesture, or Close), or the app moved on: the sheet goes.
+  // Reads the browser's own entry, not the router's — a back that lands before
+  // the pushed step has even rendered (a fast thumb, a harness) still closes it.
+  useEffect(() => {
+    if (!pushed.current) return;
+    const live = ((window.history.state as { usr?: { sheet?: string } } | null)?.usr ?? (location.state as { sheet?: string } | null))?.sheet;
+    if (live !== id) {
+      pushed.current = false;
+      onClose();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs on every location change
+  }, [location]);
+  useEffect(() => {
+    // one history step for the sheet, same address (once — StrictMode mounts twice in dev)
+    if (pushed.current) return;
+    pushed.current = true;
+    navigate(location.pathname + location.search, { state: { ...((location.state as object | null) ?? {}), sheet: id } });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on open
+  }, []);
+  const close = () => {
+    const live = ((window.history.state as { usr?: { sheet?: string } } | null)?.usr ?? (location.state as { sheet?: string } | null))?.sheet;
+    if (pushed.current && live === id) navigate(-1);
+    else onClose();
+  };
+  return <SheetFrame onClose={close}>{children}</SheetFrame>;
 }

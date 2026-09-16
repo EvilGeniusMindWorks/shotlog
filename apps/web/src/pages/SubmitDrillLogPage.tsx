@@ -52,7 +52,12 @@ export function SubmitDrillLogPage() {
             updatedAt: nowISO(),
           });
         }
-        if (!cancelled) navigate(drillLogRoute(log), { replace: true });
+        // The navigation round (Matthew): finishing lands forward — on the day the
+        // log belongs to (the log reads Signed complete there), or on its plan
+        if (!cancelled)
+          navigate(log.blastDayId ? `/blast-day/${log.blastDayId}` : log.drillPlanId ? `/jobs/${log.jobId}/drill-plan/${log.drillPlanId}` : drillLogRoute(log), {
+            replace: true,
+          });
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'filing failed');
       }

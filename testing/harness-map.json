@@ -98,7 +98,8 @@
   "apps/web/src/components/forms/DailyReportForm.tsx": [
     60,
     65,
-    77
+    77,
+    79
   ],
   "apps/web/src/components/forms/DrillingSection.tsx": [
     77
@@ -227,7 +228,8 @@
     61,
     68,
     71,
-    75
+    75,
+    79
   ],
   "apps/web/src/pages/BlastDayPage.tsx apps/web/src/components/day/DayHub.tsx apps/web/src/components/day/CrewList.tsx apps/web/src/components/day/RigList.tsx apps/web/src/components/dashboard/OfficeHome.tsx apps/web/src/components/dashboard/RoleCards.tsx apps/web/src/pages/DrillChecklistPage.tsx apps/web/src/pages/DrillLogPage.tsx apps/web/src/hooks/useMaintenance.ts apps/web/src/lib/hourLedger.ts apps/web/src/pages/SitePage.tsx apps/web/src/components/forms/CustomerSitePicker.tsx apps/web/src/components/forms/NewJobForm.tsx": [
     72
@@ -238,14 +240,16 @@
     67,
     68,
     70,
-    76
+    76,
+    79
   ],
   "apps/web/src/pages/DrillChecklistPage.tsx": [
     63,
     65,
     74,
     75,
-    78
+    78,
+    79
   ],
   "apps/web/src/pages/DrillLogPage.tsx": [
     60,
@@ -254,10 +258,12 @@
     68,
     76,
     77,
-    78
+    78,
+    79
   ],
   "apps/web/src/pages/DrillPlanPage.tsx": [
-    77
+    77,
+    79
   ],
   "apps/web/src/pages/DrillingPage.tsx": [
     76
@@ -278,14 +284,16 @@
     69
   ],
   "apps/web/src/pages/PrintDrillChecklistPage.tsx": [
-    74
+    74,
+    79
   ],
   "apps/web/src/pages/RepairTicketPage.tsx": [
     60
   ],
   "apps/web/src/pages/SeismoPage.tsx": [
     62,
-    64
+    64,
+    79
   ],
   "apps/web/src/pages/SettingsPage.tsx": [
     77
@@ -333,5 +341,26 @@
   ],
   "apps/web/src/lib/screenName.ts": [
     78
+  ],
+  "apps/web/src/lib/nav.ts": [
+    79
+  ],
+  "apps/web/src/components/layout/ScreenHeader.tsx": [
+    79
+  ],
+  "apps/web/src/components/layout/NavTrail.tsx": [
+    79
+  ],
+  "apps/web/src/components/records/LifecycleMenu.tsx": [
+    79
+  ],
+  "apps/web/src/pages/DaySetupPage.tsx": [
+    79
+  ],
+  "apps/web/src/pages/SubmitDrillLogPage.tsx": [
+    79
+  ],
+  "apps/web/src/components/layout/RecordShell.tsx": [
+    79
   ]
 }

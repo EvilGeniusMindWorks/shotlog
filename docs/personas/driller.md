@@ -252,3 +252,8 @@ report (solo submit) · My Records · jobs list
   the rig, it follows his one open day at the job, else today. Starting
   hours has a row of its own. IN and OUT on a time card always share a row
   of their own, so the AM/PM shows in any window.
+- **Navigation round, push 1 (Sep 16 2026).** The drill log's arrow names
+  the day (or the home card he came from) — the S7 "always home" rule is
+  gone. Mark complete lands on the day, where the log reads Signed
+  complete; a checklist's Done lands on the day it belongs to, else the
+  rig. Sheets say Close.

@@ -48,6 +48,7 @@ import { AdminRolesPage } from '@/pages/admin/AdminRolesPage';
 import { UndoToastHost } from '@/components/ui/undo-toast';
 import { FeedbackHost } from '@/components/feedback/FeedbackComposer';
 import { FeedbackFab } from '@/components/feedback/FeedbackFab';
+import { NavTrail } from '@/components/layout/NavTrail';
 import { AdminFeedbackPage } from '@/pages/admin/AdminFeedbackPage';
 import { AdminCompaniesPage } from '@/pages/admin/AdminCompaniesPage';
 import { EquipmentLocatorPage } from '@/pages/EquipmentLocatorPage';
@@ -121,6 +122,7 @@ export function App() {
     <FeedbackHost />
     <BrowserRouter>
       <FeedbackFab />
+      <NavTrail />
       <Routes>
         <Route element={<AppShell />}>
           <Route path="/" element={<Dashboard />} />

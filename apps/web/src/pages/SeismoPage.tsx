@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { AdvisoryTag } from '@/lib/complianceAdvisory';
 import { ask } from '@/components/ui/ask-sheet';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Camera, Loader2, Pencil, Plus, ScanText, Trash2 } from 'lucide-react';
+import { ScreenHeader } from '@/components/layout/ScreenHeader';
+import { Camera, Loader2, Pencil, Plus, ScanText, Trash2 } from 'lucide-react';
 import { useLiveQuery, db, deleteWithTombstone } from '@/db';
 import { generateId, nowISO } from '@/lib/utils';
 import {
@@ -63,17 +64,16 @@ export function SeismoPage() {
 
   return (
     <div className="max-w-2xl mx-auto pb-8">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(`/blast-day/${id}`)}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="flex-1 min-w-0">
-            <h2 className="font-bold text-lg">Seismo Readings — Shot #{shot.shotNumber}</h2>
-            <p className="text-sm text-gray-500 truncate">{job?.name}</p>
-          </div>
-          {readings.length > 0 && (
+      {/* One shared header (the navigation round): up to the Blasting log */}
+      <ScreenHeader
+        maxWidth="max-w-2xl"
+        parent={{ to: `/blast-day/${id}?view=blast-log`, label: 'Blasting log' }}
+        trailLabel={`Seismo · Shot ${shot.shotNumber}`}
+        path={[{ label: 'Work days', to: '/days' }, { label: job?.name ?? 'the work day', to: `/blast-day/${id}` }, { label: 'Blasting log', to: `/blast-day/${id}?view=blast-log` }, { label: `Shot ${shot.shotNumber}` }]}
+        title={`Seismo Readings — Shot #${shot.shotNumber}`}
+        subtitle={job?.name}
+        actions={
+          readings.length > 0 ? (
             <span className="inline-flex items-center gap-1">
               <Badge variant={STATUS_VARIANT[worst]}>
                 {readings.length} graph{readings.length > 1 ? 's' : ''} ·{' '}
@@ -81,9 +81,9 @@ export function SeismoPage() {
               </Badge>
               <AdvisoryTag />
             </span>
-          )}
-        </div>
-      </div>
+          ) : undefined
+        }
+      />
 
       <div className="p-4 space-y-3">
         {readings.map((reading) => (

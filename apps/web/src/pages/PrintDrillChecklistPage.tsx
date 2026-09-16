@@ -3,6 +3,7 @@
 // the point-in-time PDF the moment the driller signs it.
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useBackHere } from '@/lib/nav';
 import { FileDown, Printer } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { getJobView } from '@/lib/jobContext';
@@ -108,6 +109,7 @@ function ChecklistSheet({ checklistId }: { checklistId: string }) {
 export function PrintDrillChecklistPage() {
   const { checklistId } = useParams<{ checklistId: string }>();
   const navigate = useNavigate();
+  const back = useBackHere('Rock Drill Check List · print');
   const [saving, setSaving] = useState(false);
   const checklist = useLiveQuery(() => (checklistId ? db.drillChecklists.get(checklistId) : undefined), [checklistId]);
   useFeedbackPaper(checklist ? { label: `Rig checklist · ${formatDate(checklist.date)} · print`, kind: 'drillChecklist', recordId: checklist.id } : null);
@@ -136,8 +138,8 @@ export function PrintDrillChecklistPage() {
         >
           <Printer size={16} /> Print
         </button>
-        <button className="px-3 py-1.5 rounded border text-sm" onClick={() => navigate(-1)}>
-          Back
+        <button className="px-3 py-1.5 rounded border text-sm" onClick={() => (back ? back.go() : navigate(-1))} data-nav-back data-nav-back-to={back?.to ?? ''}>
+          ‹ <span data-nav-back-label>{back?.label ?? 'Back'}</span>
         </button>
       </div>
       <ChecklistSheet checklistId={checklistId} />
@@ -157,6 +159,12 @@ export function FileDrillChecklistPage() {
     [checklistId],
   );
   const [done, setDone] = useState(false);
+  // The navigation round (Matthew): Done lands on the day the checklist belongs to, else on the rig
+  const landing = useLiveQuery(async () => {
+    if (!checklist) return undefined;
+    const day = checklist.jobId ? await db.blastDays.filter((d) => d.jobId === checklist.jobId && d.date === checklist.date).first() : undefined;
+    return day ? `/blast-day/${day.id}` : `/equipment/${checklist.equipmentId}`;
+  }, [checklist?.id, checklist?.jobId, checklist?.date]);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
   const ran = useRef(false);
@@ -197,7 +205,7 @@ export function FileDrillChecklistPage() {
                 The checklist itself is saved — only the office copy failed: {error}
               </p>
               <Button data-chk-file-retry onClick={() => { ran.current = false; setError(null); setTick((t) => t + 1); }}>Try again</Button>
-              <Button variant="outline" onClick={() => navigate('/')}>Done</Button>
+              <Button variant="outline" data-chk-done onClick={() => navigate(landing ?? '/', { replace: true })}>Done</Button>
             </>
           ) : done ? (
             <>
@@ -209,7 +217,7 @@ export function FileDrillChecklistPage() {
                 </p>
               )}
               <p className="text-xs text-gray-400">The office has the signed point-in-time copy.</p>
-              <Button className="w-full" onClick={() => navigate('/')}>Done</Button>
+              <Button className="w-full" data-chk-done onClick={() => navigate(landing ?? '/', { replace: true })}>Done</Button>
             </>
           ) : (
             <>

@@ -20,6 +20,9 @@ export function FeedbackFab() {
   }, []);
   if (!feedbackFabOn(getSessionUser()?.environment)) return null;
   const bare = isBareRoute(pathname);
+  // The home carries the orange + button in the same corner (harness53 found
+  // the bubble sitting on it): there the bubble stacks above it
+  const overFab = pathname === '/';
   return (
     <button
       type="button"
@@ -29,7 +32,7 @@ export function FeedbackFab() {
       data-html2canvas-ignore
       className={cn(
         'fixed z-[90] h-11 w-11 rounded-full bg-navy text-white shadow-lg border-2 border-white flex items-center justify-center print:hidden right-[calc(0.875rem+var(--sar))]',
-        bare ? 'bottom-[calc(1.25rem+var(--sab))]' : 'bottom-[calc(5.5rem+var(--sab))] lg:bottom-6',
+        bare ? 'bottom-[calc(1.25rem+var(--sab))]' : overFab ? 'bottom-[calc(10.25rem+var(--sab))] sm:bottom-[6.25rem]' : 'bottom-[calc(5.5rem+var(--sab))] lg:bottom-6',
       )}
       onClick={() => openFeedbackComposer()}
     >

@@ -316,3 +316,7 @@ page · customer/site/job create (new) · contacts · My Records · reference
   call) — and a number he types holds until he takes the drilling's
   figures back. A feedback report from any screen names that screen
   (job, date, shot) for Matthew's inbox.
+- **Navigation round, push 1 (Sep 16 2026).** Every arrow says where it
+  goes and goes there: up one level, or back to the list he came from.
+  The day's tabs are real steps, so the phone's back gesture walks them.
+  Marking the daily report done lands on the day.

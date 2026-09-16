@@ -3,6 +3,7 @@
 // Office-bound like the blast log.
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useBackHere } from '@/lib/nav';
 import { FileDown, Printer } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { getJobView } from '@/lib/jobContext';
@@ -14,6 +15,7 @@ const CONDITION_LEGEND = 'V = Void · SR = Soft Rock · O = Overburden · W = Wa
 export function PrintDrillLogPage() {
   const { logId } = useParams<{ id: string; logId: string }>();
   const navigate = useNavigate();
+  const back = useBackHere('Print · Drill log');
   const log = useLiveQuery(() => (logId ? db.drillLogs.get(logId) : undefined), [logId]);
   const holes =
     useLiveQuery(
@@ -89,8 +91,8 @@ export function PrintDrillLogPage() {
         >
           <Printer size={16} /> Print
         </button>
-        <button className="px-3 py-1.5 rounded border text-sm" onClick={() => navigate(-1)}>
-          Back
+        <button className="px-3 py-1.5 rounded border text-sm" onClick={() => (back ? back.go() : navigate(-1))} data-nav-back data-nav-back-to={back?.to ?? ''}>
+          ‹ <span data-nav-back-label>{back?.label ?? 'Back'}</span>
         </button>
       </div>
       <div className="page">

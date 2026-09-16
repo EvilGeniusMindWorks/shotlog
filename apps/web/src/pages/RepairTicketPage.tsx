@@ -6,7 +6,9 @@
 // out-of-service ticket restores the machine to Active on its own.
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Wrench, CheckCircle2 } from 'lucide-react';
+import { useBack } from '@/lib/nav';
+import { BackButton } from '@/components/layout/ScreenHeader';
+import { Wrench, CheckCircle2 } from 'lucide-react';
 import { db, useLiveQuery } from '@/db';
 import { resolveTicket, propagateHourMeter } from '@/hooks/useMaintenance';
 import { can } from '@/lib/perms';
@@ -20,6 +22,7 @@ export function RepairTicketPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const ticket = useLiveQuery(() => (id ? db.repairTickets.get(id) : undefined), [id]);
+  const back = useBack(ticket ? { to: `/equipment/${ticket.equipmentId}`, label: 'the rig' } : null, 'Repair ticket');
   const machine = useLiveQuery(() => (ticket ? db.equipment.get(ticket.equipmentId) : undefined), [ticket?.equipmentId]);
   const others = useLiveQuery(
     () => (ticket ? db.repairTickets.filter((t) => t.equipmentId === ticket.equipmentId && t.id !== ticket.id && t.status === 'open').toArray() : []),
@@ -65,9 +68,7 @@ export function RepairTicketPage() {
 
   return (
     <div className="p-4 space-y-4 max-w-xl" data-ticket-page={ticket.id} data-ticket-status={ticket.status}>
-      <button className="text-sm text-gray-500 inline-flex items-center gap-1" onClick={() => navigate(-1)}>
-        <ArrowLeft className="h-4 w-4" /> Back
-      </button>
+      <BackButton back={back} tone="gray" />
 
       <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-2">
         <div className="flex items-center gap-2">

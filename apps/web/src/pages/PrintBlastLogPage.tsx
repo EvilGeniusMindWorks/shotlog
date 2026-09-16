@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useBackHere } from '@/lib/nav';
 import { ArrowLeft, FileDown, Printer, TriangleAlert } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { useBlastDay } from '@/hooks/useBlastDay';
@@ -836,11 +837,12 @@ function PrintWarnings({ issues }: { issues: ReturnType<typeof validateForPrint>
 
 function PrintToolbar({ blastDayId, filename }: { blastDayId: string; filename: string }) {
   const navigate = useNavigate();
+  const back = useBackHere('Print · Blasting log');
   const [saving, setSaving] = useState(false);
   return (
     <div className="print-toolbar">
-      <button onClick={() => navigate(`/blast-day/${blastDayId}`)}>
-        <ArrowLeft size={16} /> Back
+      <button onClick={() => (back ? back.go() : navigate(`/blast-day/${blastDayId}`))} data-nav-back data-nav-back-to={back?.to ?? ''}>
+        <ArrowLeft size={16} /> <span data-nav-back-label>{back?.label ?? 'Back'}</span>
       </button>
       <span style={{ display: 'flex', gap: 8 }}>
         <button

@@ -4,15 +4,9 @@
 // registry, and anywhere a rig is named.
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import {
-  ArrowLeft,
-  CalendarClock,
-  ClipboardCheck,
-  Drill,
-  FileText,
-  TriangleAlert,
-  Wrench,
-} from 'lucide-react';
+import { useBack } from '@/lib/nav';
+import { BackButton } from '@/components/layout/ScreenHeader';
+import { CalendarClock, ClipboardCheck, Drill, FileText, TriangleAlert, Wrench } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { getSessionUser } from '@/lib/session';
 import { cn, formatDate, nowISO } from '@/lib/utils';
@@ -45,6 +39,7 @@ export function EquipmentPage() {
   const canSetStatus = role === 'mechanic' || role === 'supervisor' || role === 'admin';
 
   const equip = useLiveQuery(() => (id ? db.equipment.get(id) : undefined), [id]);
+  const back = useBack({ to: '/', label: 'Dashboard' }, equip?.assetNumber);
   const openOOS = useLiveQuery(
     async () =>
       id
@@ -74,12 +69,7 @@ export function EquipmentPage() {
   return (
     <div className="p-4 max-w-2xl mx-auto space-y-3">
       <div className="flex items-center gap-2">
-        <button
-          className="h-10 w-10 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100"
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
+        <BackButton back={back} tone="gray" />
         <div className="min-w-0 flex-1">
           <h2 className="text-xl font-bold text-gray-900 truncate">
             {equip.assetNumber} — {equip.description}

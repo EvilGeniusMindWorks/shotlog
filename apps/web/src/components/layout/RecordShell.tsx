@@ -7,7 +7,9 @@
 // The mode is width + orientation with a per-device override in Settings.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ChevronDown, ChevronRight } from 'lucide-react';
+import { useBack } from '@/lib/nav';
+import { BackButton } from '@/components/layout/ScreenHeader';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 
 export type LayoutPref = 'auto' | 'compact' | 'tabs';
 const LAYOUT_KEY = 'shotlog-layout';
@@ -119,17 +121,14 @@ export function RecordShell({ breadcrumb, title, badge, subline, stats, actions,
     </div>
   );
   const upTo = breadcrumb.length ? breadcrumb[breadcrumb.length - 1].to : undefined;
+  // The navigation round: up the shown path — or back to the list you came from
+  const back = useBack(upTo ? { to: upTo, label: breadcrumb[breadcrumb.length - 1].label } : { to: '/', label: 'Dashboard' }, title);
 
   const header = (
     <div className="bg-navy text-white px-4 pt-3 pb-0">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center gap-2">
-          <button
-            className="h-9 w-9 -ml-2 rounded-lg flex items-center justify-center text-navy-200 hover:text-white hover:bg-white/10"
-            onClick={() => (upTo ? navigate(upTo) : navigate(-1))}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
+          <BackButton back={back} />
           <p className="text-[11px] text-navy-200 truncate">
             {breadcrumb.map((c, i) => (
               <span key={i}>

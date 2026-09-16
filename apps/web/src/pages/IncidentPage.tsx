@@ -3,7 +3,8 @@
 // incident created from a work day arrives pre-linked to the day, shot,
 // and seismo reading with PPV/dB pulled in automatically.
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { useBack } from '@/lib/nav';
+import { BackButton } from '@/components/layout/ScreenHeader';
 import { type Role } from '@shotlog/shared';
 import { can } from '@/lib/perms';
 import { useLiveQuery, db } from '@/db';
@@ -29,18 +30,22 @@ export function IncidentPage() {
     () => (incidentId ? db.incidents.get(incidentId) : undefined),
     [incidentId],
   );
+  const back = useBack({ to: '/', label: 'Dashboard' }, 'Incident');
   if (!incident) return <div className="p-4 text-center text-gray-500">Loading…</div>;
-  return <IncidentForm incident={incident} role={role} onBack={() => navigate(-1)} />;
+  return <IncidentForm incident={incident} role={role} onBack={() => (back ? back.go() : navigate('/'))} backLabel={back?.label ?? 'Dashboard'} />;
 }
 
 function IncidentForm({
   incident,
   role,
   onBack,
+  backLabel,
 }: {
   incident: Incident;
   role: Role;
   onBack: () => void;
+  /** the navigation round: the arrow says where it goes */
+  backLabel?: string;
 }) {
   const navigate = useNavigate();
   const { draft, setField } = useDraftRecord(db.incidents, incident);
@@ -52,12 +57,7 @@ function IncidentForm({
     <div>
       <div className="bg-navy text-white px-4 py-3 sticky top-0 z-20">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
-          <button
-            className="h-10 w-10 rounded-lg flex items-center justify-center text-navy-200 hover:text-white hover:bg-white/10"
-            onClick={onBack}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
+          <BackButton back={{ label: backLabel ?? 'Back', go: onBack }} />
           <div className="flex-1 min-w-0">
             <h2 className="font-bold text-lg truncate leading-tight">{TYPE_LABEL[draft.type]}</h2>
             <p className="text-xs text-navy-200 truncate">

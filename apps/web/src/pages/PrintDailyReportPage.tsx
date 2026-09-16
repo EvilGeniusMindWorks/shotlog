@@ -1,4 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom';
+import { useBackHere } from '@/lib/nav';
 import { useState } from 'react';
 import { ArrowLeft, FileDown, Printer } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
@@ -35,6 +36,7 @@ function dash(v: string | number | null | undefined, suffix = ''): string {
 export function PrintDailyReportPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const back = useBackHere('Print · Daily report');
   const [savingPdf, setSavingPdf] = useState(false);
   const { blastDay, job, blastLog, dailyReport, shots, explosiveUsage } = useBlastDay(id);
   useFeedbackPaper(blastDay ? { label: `Daily report · ${job?.name ?? 'job'} · ${formatDate(blastDay.date)} · print`, kind: 'dailyReport', recordId: blastDay.id } : null);
@@ -116,8 +118,8 @@ export function PrintDailyReportPage() {
   return (
     <div className="print-blast-log">
       <div className="print-toolbar">
-        <button onClick={() => navigate(`/blast-day/${blastDay.id}`)}>
-          <ArrowLeft size={16} /> Back
+        <button onClick={() => (back ? back.go() : navigate(`/blast-day/${blastDay.id}`))} data-nav-back data-nav-back-to={back?.to ?? ''}>
+          <ArrowLeft size={16} /> <span data-nav-back-label>{back?.label ?? 'Back'}</span>
         </button>
         <span style={{ display: 'flex', gap: 8 }}>
           <button

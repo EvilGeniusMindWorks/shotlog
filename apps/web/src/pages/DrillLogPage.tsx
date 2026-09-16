@@ -4,9 +4,11 @@
 // for loading (which locks it against driller edits — server-enforced).
 import { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Check, Droplets, Printer, Trash2 } from 'lucide-react';
+import { Check, Droplets, Printer, Trash2 } from 'lucide-react';
 import { type Role } from '@shotlog/shared';
-import { canDrillLogTransition, canEditAcceptedLog, myHomeDashboard } from '@/lib/perms';
+import { canDrillLogTransition, canEditAcceptedLog } from '@/lib/perms';
+import { useBack } from '@/lib/nav';
+import { BackButton } from '@/components/layout/ScreenHeader';
 import { useLiveQuery, db, deleteWithTombstone } from '@/db';
 import { addHole, aggregateDrilling, drilledHoleNumbers, getShotPlan, nextHoleNumber } from '@/hooks/useDrillLogs';
 import { getPlanHoles, planDrilledHoleNumbers, planToDiagram } from '@/hooks/useDrillPlans';
@@ -177,18 +179,20 @@ export function DrillLogPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [holeNumber]);
 
+  // The navigation round: the arrow goes up to the day the log belongs to (or its
+  // plan) — or back to where you came from (the driller's home card, the Drilling
+  // page). The S7 "a driller's arrow goes home" rule retires with it.
+  const back = useBack(
+    log
+      ? log.blastDayId
+        ? { to: `/blast-day/${log.blastDayId}`, label: job?.name ?? 'the work day' }
+        : { to: `/jobs/${log.jobId}/drill-plan/${log.drillPlanId}`, label: 'Drill plan' }
+      : null,
+    log ? 'Drill log' : undefined,
+  );
   if (!log || gateUndecided) return <div className="p-4 text-center text-gray-500">Loading…</div>;
 
-  // Where "back", "print", and "accept" go depends on the log's world
-  // Back: the blaster returns to the plan or the day hub they came from; the
-  // DRILLER goes home to the trio — the plan page and the hub are the
-  // blaster's screens (Matthew's driller rehearsal, S7 follow-up)
-  const backTo =
-    myHomeDashboard() === 'driller'
-      ? '/'
-      : log.drillPlanId
-        ? `/jobs/${log.jobId}/drill-plan/${log.drillPlanId}`
-        : `/blast-day/${log.blastDayId}`;
+  // Where "print" and "accept" go depends on the log's world
   const logBase = log.drillPlanId
     ? `/jobs/${log.jobId}/drill-plan/${log.drillPlanId}/log/${log.id}`
     : `/blast-day/${log.blastDayId}/drill-log/${log.id}`;
@@ -332,12 +336,7 @@ export function DrillLogPage() {
     <div>
       <div className="bg-navy text-white px-4 py-3 sticky top-0 z-20">
         <div className="max-w-3xl mx-auto flex items-center gap-3">
-          <button
-            className="h-10 w-10 rounded-lg flex items-center justify-center text-navy-200 hover:text-white hover:bg-white/10"
-            onClick={() => navigate(backTo)}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
+          <BackButton back={back} />
           <div className="flex-1 min-w-0" data-tour="log-header">
             <h2 className="font-bold text-lg truncate leading-tight">
               Drill Log — {contextTitle}
@@ -922,12 +921,17 @@ export function DrillLogPage() {
                   onClick={() => {
                     const note = noteText.trim() || undefined;
                     if (notePrompt === 'complete') {
-                      // completing clears any sent-back reason from last round
+                      // completing clears any sent-back reason from last round;
+                      // the navigation round (Matthew): finishing lands forward —
+                      // on the day (or the plan), where the log reads Signed complete
                       void update({
                         status: 'complete',
                         completedAt: nowISO(),
                         completionNote: note,
                         reopenNote: undefined,
+                      }).then(() => {
+                        if (back) back.go();
+                        else navigate(log.blastDayId ? `/blast-day/${log.blastDayId}` : `/jobs/${log.jobId}/drill-plan/${log.drillPlanId}`, { replace: true });
                       });
                     } else {
                       void update({ status: 'open', reopenNote: note });

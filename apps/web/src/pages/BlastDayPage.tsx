@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { claimDay, ownerLine, ownsReport, shouldClaim } from '@/lib/dayOwnership';
 import { mergeDays } from '@/lib/lifecycle';
 import { useLocation, useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, CalendarCheck, FileText, ClipboardList, ChevronDown, ChevronUp, FileBarChart, History, Lock, MoreHorizontal, MoreVertical, PhoneCall, Printer } from 'lucide-react';
+import { CalendarCheck, FileText, ClipboardList, ChevronDown, ChevronUp, FileBarChart, History, Lock, MoreHorizontal, MoreVertical, PhoneCall, Printer } from 'lucide-react';
 import { type Role } from '@shotlog/shared';
 import { can, canDayTransition, canEditApprovedDay, myHomeDashboard } from '@/lib/perms';
 import { addBlastLogToDay, createDailyReport, useBlastDay } from '@/hooks/useBlastDay';
@@ -12,6 +12,7 @@ import { db, useLiveQuery } from '@/db';
 import { deleteDayCascade } from '@/lib/lifecycle';
 import { ConsequenceSheet, LifecycleMenu } from '@/components/records/LifecycleMenu';
 import { TimeCardsCard } from '@/components/forms/TimeCardsCard';
+import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { useDayPhases } from '@/hooks/useDayPhases';
 import { PhaseSpine } from '@/components/day/PhaseSpine';
 import { MergedDrillingView } from '@/components/day/MergedDrillingView';
@@ -63,12 +64,17 @@ export function BlastDayPage() {
   // Round 2: the day is a PHASE SPINE (hub) — the default view on blasting
   // days. ?view= deep-links a phase; legacy ?tab=daily still lands on the
   // daily report.
-  const [viewState, setViewState] = useState<DayView | null>(() => {
-    const v = searchParams.get('view');
-    if (v === 'tiles' || v === 'hub' || v === 'blast-log' || v === 'daily-report' || v === 'drilling' || v === 'readiness')
-      return v;
-    return searchParams.get('tab') === 'daily' ? 'daily-report' : null;
-  });
+  // The navigation round: the day's views are real steps in the browser's
+  // history (?view=), so the arrow and Android's back gesture agree
+  const viewParam = searchParams.get('view');
+  const viewState: DayView | null =
+    viewParam === 'tiles' || viewParam === 'hub' || viewParam === 'blast-log' || viewParam === 'daily-report' || viewParam === 'drilling' || viewParam === 'readiness'
+      ? viewParam
+      : viewParam === 'walkthrough'
+        ? 'hub'
+        : searchParams.get('tab') === 'daily'
+          ? 'daily-report'
+          : null;
   // Non-blasting days have no blast log — the daily report is the whole day.
   // S7 follow-up (Matthew's driller rehearsal): the DRILLER bucket lands on
   // the daily report too — the hub and its spine are the blaster's
@@ -79,7 +85,8 @@ export function BlastDayPage() {
   // into the blast side of a day with no log falls back to the tiles.
   const needsLog = (v: DayView | null) => v === 'hub' || v === 'blast-log' || v === 'drilling' || v === 'readiness';
   const view: DayView = !viewState ? 'tiles' : needsLog(viewState) && !blastLog ? 'tiles' : viewState;
-  const setView = (v: string) => setViewState(v as DayView);
+  const setView = (v: string, opts?: { replace?: boolean }) =>
+    navigate(v === 'tiles' ? `/blast-day/${id}` : `/blast-day/${id}?view=${v}`, { replace: opts?.replace });
   const tab: Tab = view === 'daily-report' ? 'daily-report' : 'blast-log';
   const phaseModel = useDayPhases(blastDay, blastLog, shots);
   const [showConditions, setShowConditions] = useState(false);
@@ -215,23 +222,36 @@ export function BlastDayPage() {
     );
   }
 
+  // The navigation round: this screen's place in the map. The tiles hang under
+  // Work days; a paper under the tiles; the review and readiness under the Day tab.
+  const dayLabel = blastDay.name || job?.name || 'Work day';
+  const dayParent =
+    view === 'tiles'
+      ? { to: '/days', label: 'Work days' }
+      : view === 'drilling' || view === 'readiness'
+        ? { to: `/blast-day/${blastDay.id}?view=hub`, label: 'Day' }
+        : { to: `/blast-day/${blastDay.id}`, label: dayLabel };
+  const viewName =
+    view === 'blast-log' ? 'Blasting log' : view === 'daily-report' ? 'Daily report' : view === 'hub' ? 'Day' : view === 'drilling' ? 'Review drilling' : view === 'readiness' ? 'Readiness' : '';
+  const dayPath = [
+    { label: 'Work days', to: '/days' },
+    ...(view === 'tiles' ? [] : [{ label: `${dayLabel} · ${formatDate(blastDay.date)}`, to: `/blast-day/${blastDay.id}` }]),
+    ...(view === 'drilling' || view === 'readiness' ? [{ label: 'Day', to: `/blast-day/${blastDay.id}?view=hub` }] : []),
+    ...(viewName ? [{ label: viewName }] : []),
+  ];
+  const dayTrailLabel = view === 'tiles' ? dayLabel : viewName;
+
   return (
     <div>
-      {/* Navy context header (wireframe §4.1) */}
-      <div className="bg-navy text-white px-4 py-3 sticky top-0 z-20">
-        <div className="max-w-5xl mx-auto flex items-center gap-3">
-          <button
-            className="h-10 w-10 rounded-lg flex items-center justify-center text-navy-200 hover:text-white hover:bg-white/10"
-            onClick={() => navigate('/')}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <div className="flex-1 min-w-0">
-            <h2 className="font-bold text-lg truncate leading-tight">
-              {blastDay.name || job?.name || 'Work Day'}
-            </h2>
-            <p className="text-xs text-navy-200 truncate">
-              {blastDay.name ? `${job?.name ?? ''} · ` : ''}
+      {/* One shared header (the navigation round): the arrow says where it goes */}
+      <ScreenHeader
+        parent={dayParent}
+        trailLabel={dayTrailLabel}
+        path={dayPath}
+        title={<>{blastDay.name || job?.name || 'Work Day'}</>}
+        subtitle={
+          <>
+            {blastDay.name ? `${job?.name ?? ''} · ` : ''}
               {/* S16 (Matthew): the date is the door to Change the date; amber when it is not today */}
               {status === 'draft' ? (
                 <button
@@ -250,9 +270,11 @@ export function BlastDayPage() {
               )}
               {' · '}
               {[job?.address, job?.city, job?.state].filter(Boolean).join(', ') || job?.customer}
-            </p>
-          </div>
-          <Badge variant={blastDay.status as 'draft' | 'submitted' | 'approved'}>
+          </>
+        }
+        actions={
+          <>
+            <Badge variant={blastDay.status as 'draft' | 'submitted' | 'approved'}>
             {blastDay.status}
           </Badge>
           {statusActions}
@@ -314,8 +336,9 @@ export function BlastDayPage() {
             onDeleted={() => navigate('/')}
             buttonClassName="h-10 w-10 rounded-lg bg-white/10 hidden sm:flex items-center justify-center text-white hover:bg-white/20"
           />
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* S13: someone else changed a shared fact after I confirmed — say so, once */}
       {gate === 'reconfirm' && (
@@ -502,9 +525,6 @@ export function BlastDayPage() {
       {view !== 'tiles' && (
       <div className="px-4 pt-3">
         <div className="max-w-5xl mx-auto space-y-2">
-          <button className="text-sm font-semibold text-navy" data-back-to-day onClick={() => setView('tiles')}>
-            ‹ Back to the day
-          </button>
           {blastLog ? (
             <div className="flex bg-gray-100 rounded-lg p-1" data-tour="day-tabs">
               {(
@@ -615,14 +635,6 @@ export function BlastDayPage() {
         </div>
       )}
 
-      {(view === 'drilling' || view === 'readiness') && blastLog && (
-        <div className="max-w-5xl mx-auto px-4 pt-3">
-          <button className="text-xs text-gray-400 hover:text-navy" onClick={() => setView('hub')}>
-            ‹ Back to the day
-          </button>
-        </div>
-      )}
-
       {/* Drill plan at-a-glance — the plan's home, above the fold. Outside the
           locked wrapper so accepted-log rows stay tappable on locked days. */}
       {view === 'blast-log' && blastLog && blastDay && (
@@ -692,6 +704,7 @@ export function BlastDayPage() {
             blastLog={blastLog}
             shots={shots}
             readOnly={!owner}
+            onDone={() => setView('tiles', { replace: true })}
           />
         )}
       </div>
