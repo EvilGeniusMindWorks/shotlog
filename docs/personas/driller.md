@@ -247,3 +247,8 @@ report (solo submit) · My Records · jobs list
   (draft inputs everywhere). The blaster can send a completed log back
   with a note from the review screen; it reopens with the note on top and
   a line on his home says so.
+- **S19 (Sep 16 2026).** A checklist he starts from a work day is dated
+  for that day and shows on that day's Rig checklists tile; started from
+  the rig, it follows his one open day at the job, else today. Starting
+  hours has a row of its own. IN and OUT on a time card always share a row
+  of their own, so the AM/PM shows in any window.

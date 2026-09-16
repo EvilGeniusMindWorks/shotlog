@@ -12,13 +12,17 @@ The rig checklist is the paper walk-around, once a day per machine — and the r
 
 The rig is the first question. The quick picks are the ones that matter today — the rig on your drill log, the last one you filed, your usual — and **All rigs** opens the whole fleet with search. Two rigs today means two checklists: file one, then tap **Start a checklist for another rig** to pick the next — nothing about the first is shared with it.
 
+## Which day
+
+Start the checklist from a work day — the **Start a checklist** row on the day's Rig checklists tile, or the nudge on your drill log — and it is for that day: the header shows the day's date and a line under the rig says "For the work day Thu, Sep 10 at Route 3 Widening". File it and it appears on that day's tile at once. Started from the rig or the fleet instead, it follows the day you are on at the job you pick — one you confirmed, drilled or carded — or today when there is none.
+
 ## One rig, two jobs in a day
 
 A checklist belongs to a rig **at a job, on a day** — not just to the day. Move a rig from one job to a second job the same day and it gets its own second checklist there, prefilled with the starting hours from the rig's last reading and the morning's walk-around answers carried over, marked "carried from this morning's checklist at <job>." **Stop for the day** always records its reading on the checklist for the job you're at — not the first one you filed.
 
 ## Hour meter first
 
-The field starts with the machine's last reading, and says so underneath. Read the gauge: if it matches, leave it; if not, type what you see. The starting hours drive the 50-hour service clock and the shop's ledger. A number going backwards is ignored, so a wrong one cannot roll a machine back. The drill log no longer asks for a meter reading — this checklist is the only place hours are entered; the log just names the rig.
+The field starts with the machine's last reading, and says so underneath, on a row of its own. When a rig's answers carry over from an earlier checklist that day, the note about it sits at the top of the Daily checks, where the answers are. Read the gauge: if it matches, leave it; if not, type what you see. The starting hours drive the 50-hour service clock and the shop's ledger. A number going backwards is ignored, so a wrong one cannot roll a machine back. The drill log no longer asks for a meter reading — this checklist is the only place hours are entered; the log just names the rig.
 
 ![The rig checklist](checklist.png)
 

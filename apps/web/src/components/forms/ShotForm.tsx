@@ -53,7 +53,9 @@ export function ShotForm({ shot, allShots, explosiveUsage, kFactor: _kFactor, bl
   };
 
   const updateTotal = (field: keyof ShotTotals, value: string) => {
-    const t = { ...shot.totals, [field]: parseFloat(value) || 0 };
+    const t: ShotTotals = { ...shot.totals, [field]: parseFloat(value) || 0 };
+    // S19: pay yards is worked out to grade unless a person typed it
+    if (field === 'totalPayYards') t.payYardsTyped = (parseFloat(value) || 0) > 0;
     // a number typed by hand stays until the person takes the drilling's figures back
     updateShot({ totals: recalc(shot.drillParams, t), totalsSource: 'edited' });
   };
@@ -182,7 +184,7 @@ export function ShotForm({ shot, allShots, explosiveUsage, kFactor: _kFactor, bl
               type="number"
               inputMode="decimal"
               className="h-8 border-0 px-0 font-mono font-bold text-[15px] focus-visible:ring-0"
-              value={t.totalPayYards || ''}
+              value={t.totalPayYards ? (t.payYardsTyped ? t.totalPayYards : Math.round(t.totalPayYards)) : ''}
               onCommit={(v) => updateTotal('totalPayYards', v)}
               data-total="totalPayYards"
               placeholder="0"
@@ -190,6 +192,13 @@ export function ShotForm({ shot, allShots, explosiveUsage, kFactor: _kFactor, bl
           </TotalsCell>
           <TotalsCell label="Yards Shot" value={t.totalYardsShot > 0 ? String(Math.round(t.totalYardsShot)) : '—'} />
         </div>
+        {t.totalSqFt > 0 && t.avgDrillDepth > 0 && (
+          <p className="text-xs text-gray-500 mt-1.5" data-pay-yards-line={t.payYardsTyped ? 'typed' : 'grade'}>
+            {t.payYardsTyped
+              ? 'Pay yards typed by you'
+              : `Pay yards to grade: ${Math.round(t.totalSqFt).toLocaleString('en-US')} sq ft × (${t.avgDrillDepth.toFixed(1)} − ${dp.subDrill || 0} ft sub drill) ÷ 27`}
+          </p>
+        )}
         <p className="text-xs text-gray-600 mt-1.5" data-totals-source={shot.totalsSource ?? 'none'}>
           {shot.totalsSource === 'edited' ? (
             <>
@@ -197,7 +206,7 @@ export function ShotForm({ shot, allShots, explosiveUsage, kFactor: _kFactor, bl
               {accepted && (
                 <>
                   {' · '}
-                  <button type="button" className="underline text-navy" data-totals-use-drilling onClick={() => updateShot({ totalsSource: undefined })}>
+                  <button type="button" className="underline text-navy" data-totals-use-drilling onClick={() => updateShot({ totalsSource: undefined, totals: { ...shot.totals, payYardsTyped: false } })}>
                     use the drilling’s figures ({accepted.holes} holes · {accepted.footage.toFixed(0)} ft)
                   </button>
                 </>

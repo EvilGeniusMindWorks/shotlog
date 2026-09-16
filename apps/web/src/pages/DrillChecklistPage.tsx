@@ -244,6 +244,9 @@ export function DrillChecklistPage() {
   const { equipmentId: routeRigId } = useParams<{ equipmentId?: string }>();
   const [params] = useSearchParams();
   const jobParam = params.get('job') ?? undefined;
+  // S19 (Matthew): a checklist started from a work day is for THAT day — the
+  // door hands over the date; this screen never guesses it
+  const dateParam = params.get('date') ?? undefined;
   const navigate = useNavigate();
   const me = getSessionUser();
   const rigs =
@@ -269,10 +272,10 @@ export function DrillChecklistPage() {
     setDraft((d) => (d.equipmentId === rig.id && d.startingHours == null ? { ...d, startingHours: rig.hourMeter ?? null } : d));
     setSuggestedHours(rig.hourMeter ?? null);
   }, [rig?.id, rig?.hourMeter]);
-  const [draft, setDraft] = useState(() => emptyChecklist(rigId ?? '', jobParam));
+  const [draft, setDraft] = useState(() => emptyChecklist(rigId ?? '', jobParam, dateParam));
   // S16: one checklist per rig per job-day; the morning's answers carry over
-  const existing = useTodayChecklist(rigId, draft.jobId || undefined);
-  const earlier = useEarlierChecklistToday(rigId, draft.jobId || undefined);
+  const existing = useTodayChecklist(rigId, draft.jobId || undefined, draft.date);
+  const earlier = useEarlierChecklistToday(rigId, draft.jobId || undefined, draft.date);
   const [carriedFrom, setCarriedFrom] = useState<string | null>(null);
   const earlierJob = useLiveQuery(() => (earlier?.jobId ? db.jobs.get(earlier.jobId) : undefined), [earlier?.jobId]);
   useEffect(() => {
@@ -283,7 +286,7 @@ export function DrillChecklistPage() {
   const [saved, setSaved] = useState<{ ticketId?: string } | null>(null);
   // Switching rig starts a fresh draft for that rig (the job choice carries over)
   useEffect(() => {
-    setDraft((d) => (d.equipmentId === (rigId ?? '') ? d : { ...emptyChecklist(rigId ?? '', d.jobId), jobId: d.jobId }));
+    setDraft((d) => (d.equipmentId === (rigId ?? '') ? d : { ...emptyChecklist(rigId ?? '', d.jobId, d.date), jobId: d.jobId }));
   }, [rigId]);
   // S7a: attaching to a job is OPTIONAL — a checklist needs nothing else.
   // Offered as a select, prefilled with the job I'm drilling today.
@@ -303,6 +306,35 @@ export function DrillChecklistPage() {
   }, [todaysJobId, jobTouched]);
   const jobId = draft.jobId;
 
+  // S19: with no date handed over, the checklist follows the work day the
+  // driller is ON at the picked job — an open day they confirmed, drilled or
+  // carded (a day left open on another date, S16); today's wins when there
+  // are several; none → today. An open day nobody is on (the blaster
+  // pre-started tomorrow's) never pulls a checklist onto its date.
+  const dayHint = useLiveQuery(async () => {
+    if (dateParam || !jobId) return null;
+    const open = await db.blastDays.filter((d) => d.jobId === jobId && d.status === 'draft' && !d.closed).toArray();
+    const mine: { id: string; date: string }[] = [];
+    for (const d of open) {
+      const confirmed = (await db.workDayConfirmations.where('blastDayId').equals(d.id).toArray()).some((c) => !me?.id || c.userId === me.id);
+      const drilled = confirmed || (await db.drillLogs.filter((l) => l.blastDayId === d.id && (!me?.id || l.drillerUserId === me.id)).toArray()).length > 0;
+      const carded =
+        drilled || (await db.timeCards.filter((c) => (c.blastDayId === d.id || (c.jobId === d.jobId && c.date === d.date)) && (!me?.id || c.userId === me.id)).toArray()).length > 0;
+      if (carded) mine.push({ id: d.id, date: d.date });
+    }
+    if (mine.length === 0) return null;
+    const today = todayISO();
+    return mine.find((d) => d.date === today) ?? mine.sort((a, b) => b.date.localeCompare(a.date))[0];
+  }, [jobId, dateParam, me?.id]);
+  const hintReady = dayHint !== undefined;
+  useEffect(() => {
+    if (dateParam || !hintReady) return;
+    const want = dayHint?.date ?? todayISO();
+    setDraft((d) => (d.date === want ? d : { ...d, date: want }));
+  }, [dayHint?.date, dateParam, hintReady]);
+  const jobName = jobs.find((j) => j.id === jobId)?.name;
+  const forDay: 'door' | 'hint' | null = dateParam ? 'door' : dayHint ? 'hint' : null;
+
   // The office copy of today's checklist, if it was ever filed (Matthew,
   // Sep 15 2026: a filing that failed mid-way left the checklist without one)
   const existingCopy = useLiveQuery(
@@ -310,7 +342,10 @@ export function DrillChecklistPage() {
     [existing?.id],
   );
   const readOnly = Boolean(existing) || Boolean(saved);
-  const carriedLine = carriedFrom && earlier ? `Answers carried from this morning's checklist${earlierJob?.name ? ` at ${earlierJob.name}` : ''} — change what changed.` : null;
+  const carriedLine =
+    carriedFrom && earlier
+      ? `Answers carried from ${draft.date === todayISO() ? "this morning's" : 'the earlier'} checklist${earlierJob?.name ? ` at ${earlierJob.name}` : ''} — change what changed.`
+      : null;
   const set = (patch: Partial<typeof draft>) => setDraft({ ...draft, ...patch });
 
   const submit = async () => {
@@ -357,7 +392,7 @@ export function DrillChecklistPage() {
         {rigId && existing && (
           <div className="text-sm text-green-800 border border-green-200 bg-green-50 rounded-lg px-3 py-2 space-y-1" data-chk-existing>
             <p>
-              <b>{rig?.assetNumber}</b> already has today's checklist at this job — filed by {existing.drillerName}
+              <b>{rig?.assetNumber}</b> already has {draft.date === todayISO() ? "today's checklist" : `a checklist for ${formatDate(draft.date)}`} at this job — filed by {existing.drillerName}
               {existing.repairsNote && ` — repairs noted: “${existing.repairsNote}”`}.
             </p>
             <p className="text-xs">
@@ -386,23 +421,29 @@ export function DrillChecklistPage() {
         {rigId && rig && !readOnly && (
           <>
             <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-3" data-tour="chk-hours">
-              <div className="flex gap-3">
-                <div className="w-40">
-                  <Label className="text-xs">Starting hours</Label>
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    placeholder="read the gauge"
-                    value={draft.startingHours ?? ''}
-                    onChange={(e) => set({ startingHours: e.target.value ? parseFloat(e.target.value) : null })}
-                    data-chk-hours
-                  />
-                </div>
-                {carriedLine && <p className="text-xs text-blue-800 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 w-full" data-chk-carried>{carriedLine}</p>}
-                <p className="text-xs text-gray-400 self-end pb-2" data-chk-hours-source>
+              {forDay && (
+                <p className="text-xs text-navy bg-blue-50 border border-blue-100 rounded-lg px-3 py-2" data-chk-for-day={forDay}>
+                  For the work day <b>{formatDate(draft.date)}</b>
+                  {jobName ? ` at ${jobName}` : ''}
+                  {forDay === 'door' ? ' — you started it from that day.' : ' — the day you are on at this job.'}
+                </p>
+              )}
+              {/* S19 (Matthew): the hours box had 70 px between two notes — its own row now */}
+              <div>
+                <Label className="text-xs">Starting hours</Label>
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  className="max-w-[12rem] font-mono text-base"
+                  placeholder="read the gauge"
+                  value={draft.startingHours ?? ''}
+                  onChange={(e) => set({ startingHours: e.target.value ? parseFloat(e.target.value) : null })}
+                  data-chk-hours
+                />
+                <p className="text-xs text-gray-400 mt-1" data-chk-hours-source>
                   {suggestedHours != null && draft.startingHours === suggestedHours
-                    ? `from ${rig.assetNumber}'s meter — change it if the gauge reads differently. A number going backwards is ignored.`
-                    : "Updates the registry's hour meter automatically (a number going backwards is ignored)."}
+                    ? `From ${rig.assetNumber}'s meter · change it if the gauge reads differently · a number going backwards is ignored`
+                    : 'Updates the registry’s hour meter · a number going backwards is ignored'}
                 </p>
               </div>
               <div>
@@ -428,6 +469,8 @@ export function DrillChecklistPage() {
 
             <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-2" data-tour="chk-daily">
               <p className="text-sm font-semibold">Daily — all start ✓; tap anything that's N/A or wasn't done</p>
+              {/* S19: the carried-answers note belongs with the answers, not the hours */}
+              {carriedLine && <p className="text-xs text-blue-800 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2" data-chk-carried>{carriedLine}</p>}
               <CheckGrid keys={DRILL_DAILY_CHECKS} values={draft.daily} onChange={(key, state) => set({ daily: { ...draft.daily, [key]: state } })} />
             </div>
 

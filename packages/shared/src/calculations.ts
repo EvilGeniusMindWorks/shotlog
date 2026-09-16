@@ -169,6 +169,13 @@ export function totalYardsShot(
   return cubicYardsPerFoot(burdenFt, spacingFt) * totalDrillFootage;
 }
 
+/** Pay yards: the rock down to grade — the sub drill below grade is drilled
+ *  but not paid for (Matthew, Sep 16 2026: "to grade, depth minus sub drill") */
+export function totalPayYards(totalSqFt: number, avgDrillDepthFt: number, subDrillFt: number): number {
+  if (totalSqFt <= 0 || avgDrillDepthFt <= 0) return 0;
+  return (totalSqFt * Math.max(0, avgDrillDepthFt - (subDrillFt || 0))) / 27;
+}
+
 /** Powder factor (lbs explosive per cubic yard of rock) */
 export function powderFactor(totalPoundsShot: number, totalYards: number): number {
   if (totalYards <= 0) return 0;

@@ -13,6 +13,7 @@ import { showToast } from '@/components/ui/undo-toast';
 import { cn } from '@/lib/utils';
 import { AdminCrashesTab } from './AdminCrashesTab';
 import { getSubmissionPdfBlob } from '@/lib/archive';
+import { screenNameFromRoute } from '@/lib/screenName';
 
 interface FeedbackRow {
   id: string;
@@ -91,6 +92,10 @@ export function AdminFeedbackPage() {
   };
   const [detail, setDetail] = useState<Record<string, FeedbackDetail>>({});
   const [filter, setFilter] = useState<'open' | 'all'>('open');
+  // S19 (Matthew): tick several, then Seen / Done / Delete without opening each
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const load = useCallback(async () => {
     setError(null);
@@ -135,23 +140,47 @@ export function AdminFeedbackPage() {
     const res = await authedFetch(`/feedback/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
     if (!res.ok) {
       showToast("Couldn't save — are you online?");
-      return;
+      return false;
     }
     const body = (await res.json()) as { feedback: FeedbackRow };
     setRows((rs) => (rs ?? []).map((r) => (r.id === id ? { ...r, ...body.feedback } : r)));
+    return true;
   };
 
   const remove = async (id: string) => {
     const res = await authedFetch(`/feedback/${id}`, { method: 'DELETE' });
     if (!res.ok) {
       showToast("Couldn't delete — are you online?");
-      return;
+      return false;
     }
     setRows((rs) => (rs ?? []).filter((r) => r.id !== id));
     if (openId === id) setOpenId(null);
+    return true;
   };
 
   const visible = (rows ?? []).filter((r) => filter === 'all' || r.status !== 'done');
+  const allShownPicked = visible.length > 0 && visible.every((r) => selected.has(r.id));
+  const togglePick = (id: string) =>
+    setSelected((s) => {
+      const n = new Set(s);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+  const bulk = async (action: 'seen' | 'done' | 'delete') => {
+    const ids = visible.filter((r) => selected.has(r.id)).map((r) => r.id);
+    if (ids.length === 0) return;
+    setBulkBusy(true);
+    let n = 0;
+    for (const id of ids) {
+      const ok = action === 'delete' ? await remove(id) : await patch(id, { status: action });
+      if (ok) n++;
+    }
+    setBulkBusy(false);
+    setConfirmDelete(false);
+    setSelected(new Set());
+    showToast(action === 'delete' ? `Deleted ${n} report${n === 1 ? '' : 's'}` : `Marked ${n} report${n === 1 ? '' : 's'} ${action}`);
+  };
   const counts = {
     new: (rows ?? []).filter((r) => r.status === 'new').length,
     seen: (rows ?? []).filter((r) => r.status === 'seen').length,
@@ -216,6 +245,51 @@ export function AdminFeedbackPage() {
 
       {error && <p className="text-sm text-red-700 rounded-lg border border-red-200 bg-red-50 px-3 py-2">{error}</p>}
 
+      {rows !== null && visible.length > 0 && (
+        <div className="flex items-center gap-3 flex-wrap text-sm" data-feedback-bulk>
+          <label className="inline-flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-navy"
+              checked={allShownPicked}
+              data-feedback-pick-all
+              onChange={(e) => setSelected(e.target.checked ? new Set(visible.map((r) => r.id)) : new Set())}
+            />
+            Select all shown
+          </label>
+          {selected.size > 0 && !confirmDelete && (
+            <>
+              <span className="text-gray-500" data-feedback-bulk-count>
+                {selected.size} selected
+              </span>
+              <Button size="sm" variant="outline" disabled={bulkBusy} data-feedback-bulk-seen onClick={() => void bulk('seen')}>
+                Mark seen
+              </Button>
+              <Button size="sm" disabled={bulkBusy} data-feedback-bulk-done onClick={() => void bulk('done')}>
+                Mark done
+              </Button>
+              <Button size="sm" variant="ghost" className="text-red-700" disabled={bulkBusy} data-feedback-bulk-delete onClick={() => setConfirmDelete(true)}>
+                <Trash2 className="h-4 w-4 mr-1" /> Delete…
+              </Button>
+              <button type="button" className="text-xs text-gray-400 underline" onClick={() => setSelected(new Set())}>
+                Clear
+              </button>
+            </>
+          )}
+          {selected.size > 0 && confirmDelete && (
+            <span className="inline-flex items-center gap-2 flex-wrap rounded-lg border border-red-200 bg-red-50 px-3 py-1.5" data-feedback-bulk-confirm>
+              Delete {selected.size} report{selected.size === 1 ? '' : 's'}? Their screenshots go with them.
+              <Button size="sm" variant="destructive" disabled={bulkBusy} data-feedback-bulk-confirm-yes onClick={() => void bulk('delete')}>
+                Delete
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setConfirmDelete(false)}>
+                Keep them
+              </Button>
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="divide-y divide-gray-100 rounded-xl border border-gray-200 bg-white">
         {rows === null && <p className="p-3 text-sm text-gray-400">Loading…</p>}
         {rows !== null && visible.length === 0 && !error && (
@@ -230,8 +304,17 @@ export function AdminFeedbackPage() {
           const d = detail[r.id];
           return (
             <div key={r.id} data-feedback-row={r.id} className={cn(isOpen && 'bg-gray-50')}>
+              <div className="flex items-start gap-2 pl-3">
+              <input
+                type="checkbox"
+                className="mt-4 h-4 w-4 shrink-0 accent-navy"
+                checked={selected.has(r.id)}
+                data-feedback-pick={r.id}
+                aria-label="Select this report"
+                onChange={() => togglePick(r.id)}
+              />
               <button
-                className="w-full flex items-start gap-3 p-3 text-left hover:bg-gray-50"
+                className="flex-1 min-w-0 flex items-start gap-3 py-3 pr-3 text-left hover:bg-gray-50"
                 onClick={() => setOpenId(isOpen ? null : r.id)}
               >
                 <span
@@ -246,8 +329,12 @@ export function AdminFeedbackPage() {
                   <p className={cn('text-sm whitespace-pre-wrap break-words', !isOpen && 'line-clamp-2', r.status === 'new' && 'font-medium')}>
                     {r.message}
                   </p>
-                  <p className="text-xs text-gray-400 mt-0.5 truncate">
-                    {r.userName} · {r.role} · {r.route || '/'}{r.paper ? ` · ${r.paper.label}` : ''} · {new Date(r.receivedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                  {/* S19 (Matthew): the screen's name, never its address — the date sits on its own at the right */}
+                  <p className="text-xs text-gray-400 mt-0.5 truncate" data-feedback-meta>
+                    {r.userName} ·{' '}
+                    <span className="text-gray-600" data-feedback-screen>
+                      {r.paper?.label || screenNameFromRoute(r.route || '/')}
+                    </span>
                     {!r.online && ' · filed offline'}
                     {r.hasScreenshot && (
                       <>
@@ -260,8 +347,12 @@ export function AdminFeedbackPage() {
                 <div className="flex flex-col items-end gap-1 shrink-0">
                   <Badge variant={STATUS_BADGE[r.status]}>{r.status}</Badge>
                   <span className="text-[10px] text-gray-400">{KIND_LABEL[r.kind]}</span>
+                  <span className="text-[11px] text-gray-500 whitespace-nowrap" data-feedback-when>
+                    {new Date(r.receivedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                  </span>
                 </div>
               </button>
+              </div>
 
               {isOpen && (
                 <div className="px-3 pb-3 space-y-3" data-feedback-detail>
@@ -288,6 +379,9 @@ export function AdminFeedbackPage() {
                         </>
                       )}
                       {r.paper && <span className="block text-xs text-gray-400">{r.paper.label}</span>}
+                      <span className="block text-[11px] text-gray-400 font-mono break-all" data-feedback-route>
+                        {r.route || '/'}
+                      </span>
                     </dd>
                   </dl>
 

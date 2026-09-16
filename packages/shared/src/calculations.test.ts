@@ -14,6 +14,7 @@ import {
   avgDrillDepth,
   cubicYardsPerFoot,
   totalYardsShot,
+  totalPayYards,
   powderFactor,
   powderFactorAssessment,
   poundsPerFoot,
@@ -425,6 +426,21 @@ describe('cubicYardsPerFoot', () => {
 
   it('handles non-integer result', () => {
     expect(cubicYardsPerFoot(8, 10)).toBeCloseTo(2.963, 2);
+  });
+});
+
+describe('totalPayYards', () => {
+  it('is the rock to grade: square feet × (depth − sub drill) ÷ 27', () => {
+    // Matthew's shot (Sep 16 2026): 1,100 sq ft, 32 ft average, 2 ft sub drill → 1,222 yd³
+    expect(totalPayYards(1100, 32, 2)).toBeCloseTo(1222.22, 1);
+  });
+  it('equals yards shot when there is no sub drill', () => {
+    expect(totalPayYards(1100, 32, 0)).toBeCloseTo(totalYardsShot(5, 5, 1408), 0);
+  });
+  it('never goes below zero and is zero without area or depth', () => {
+    expect(totalPayYards(1100, 2, 5)).toBe(0);
+    expect(totalPayYards(0, 32, 2)).toBe(0);
+    expect(totalPayYards(1100, 0, 2)).toBe(0);
   });
 });
 

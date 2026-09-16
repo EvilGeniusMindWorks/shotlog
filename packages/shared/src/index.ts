@@ -13,6 +13,7 @@ export {
   avgDrillDepth,
   cubicYardsPerFoot,
   totalYardsShot,
+  totalPayYards,
   powderFactor,
   powderFactorAssessment,
   poundsPerFoot,

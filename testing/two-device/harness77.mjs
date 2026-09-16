@@ -183,7 +183,10 @@ async (page, lib) => {
     await PP.locator('[data-feedback-fab]').click();
     await PP.locator('[data-feedback-composer]').waitFor({ timeout: 25000 });
     R.ok('the composer opens over the sheet', true);
-    R.ok('no paper is named on an ordinary screen', (await PP.locator('[data-feedback-paper]').count()) === 0);
+    // S19: an ordinary screen names itself ("This screen: Work day · <job> · <date>") — it arrives a beat after the sheet
+    await PP.locator('[data-feedback-paper]').waitFor({ timeout: 8000 }).catch(() => {});
+    const screenLine = (await PP.locator('[data-feedback-paper]').textContent().catch(() => '')) || '';
+    R.ok(`an ordinary screen names itself (${screenLine.slice(0, 60)})`, /This screen: /.test(screenLine));
     R.note(`screenshot offered: ${(await PP.locator('[data-feedback-screenshot]').count()) === 1}`);
     await PP.locator('[data-feedback-composer] button:has-text("Cancel")').click();
     await PP.locator('[data-feedback-composer]').waitFor({ state: 'detached', timeout: 5000 });

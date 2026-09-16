@@ -230,8 +230,11 @@ export function TimeCardRow({ card, editable }: { card: TimeCard; editable: bool
         </p>
       )}
       {editable ? (
-        // S18: IN and OUT get half the row each on a phone, wide enough for "06:30 AM" (Matthew: the AM/PM was cut off)
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        // S18/S19: IN and OUT always share a row of their own — the S18 rule keyed on the
+        // window's width, so inside a narrow sheet on a wide screen four boxes crept back
+        // and Safari cut the AM/PM again (Matthew, Sep 16)
+        <>
+        <div className="grid grid-cols-2 gap-2" data-card-times>
           <div>
             <Label className="text-xs">IN</Label>
             <DraftInput type="time" value={card.timeIn ?? ''} onCommit={(v) => setTimes('timeIn', v)} data-card-in />
@@ -240,6 +243,8 @@ export function TimeCardRow({ card, editable }: { card: TimeCard; editable: bool
             <Label className="text-xs">OUT</Label>
             <DraftInput type="time" value={card.timeOut ?? ''} onCommit={(v) => setTimes('timeOut', v)} data-card-out />
           </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
           <div>
             <Label className="text-xs text-gray-400">ST</Label>
             <p className="h-10 flex items-center font-mono text-sm bg-gray-50 rounded-md px-3 border border-gray-200">
@@ -264,6 +269,7 @@ export function TimeCardRow({ card, editable }: { card: TimeCard; editable: bool
             />
           </div>
         </div>
+        </>
       ) : (
         <p className="text-sm text-gray-500 font-mono">
           {card.timeIn && card.timeOut ? `${card.timeIn}–${card.timeOut} · ` : ''}

@@ -10,6 +10,7 @@ import { ChevronRight, Tractor } from 'lucide-react';
 import type { BlastDay, DrillChecklist } from '@/db/schema';
 import { stopChecklist } from '@/hooks/useMaintenance';
 import { hhmm } from '@/lib/dayCard';
+import { formatDate, todayISO } from '@/lib/utils';
 import { can } from '@/lib/perms';
 import { ConsequenceSheet } from '@/components/records/LifecycleMenu';
 import { Button } from '@/components/ui/button';
@@ -53,6 +54,8 @@ export function RigList({
   const canAct = !readOnly && can('drillChecklists', 'PATCH');
   const running = rows.filter((r) => r.checklist.stopHours == null && !r.checklist.outOfService).length;
   const allStopped = rows.length > 0 && running === 0;
+  // S19 (Matthew): a day that is not today says which day it is counting
+  const when = day.date === todayISO() ? 'today' : `on ${formatDate(day.date)}`;
 
   const save = async () => {
     if (!ask) return;
@@ -78,7 +81,7 @@ export function RigList({
         <div className="flex-1 min-w-0">
           <p className="font-bold text-sm">Rig checklists</p>
           <p className="text-xs text-gray-600">
-            {rows.length === 0 ? 'None today · the rig is the first question' : `${rows.length} today · ${allStopped ? 'all stopped' : `${running} running`}`}
+            {rows.length === 0 ? `None ${when} · the rig is the first question` : `${rows.length} ${when} · ${allStopped ? 'all stopped' : `${running} running`}`}
           </p>
         </div>
       </div>
@@ -104,7 +107,8 @@ export function RigList({
             type="button"
             className="w-full flex items-center gap-2 py-2.5 px-1 text-left border-t border-gray-100 min-h-[44px] text-sm font-semibold text-navy"
             data-rig-start
-            onClick={() => navigate(`/drill-checklist?job=${day.jobId}`)}
+            // S19: the door hands the checklist this day's date, so it lands on these tiles
+            onClick={() => navigate(`/drill-checklist?job=${day.jobId}&date=${day.date}&day=${day.id}`)}
           >
             <span className="flex-1">{rows.length === 0 ? 'Start a checklist' : 'Start a checklist for another rig'}</span>
             <ChevronRight className="h-4 w-4 text-gray-400 shrink-0" />

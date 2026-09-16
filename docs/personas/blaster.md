@@ -311,3 +311,8 @@ page · customer/site/job create (new) · contacts · My Records · reference
   drill plan ›**; the review grids keep one hole size. The column builder
   starts at the toe. The daily report can be marked **Done** before the
   day files.
+- **S19 (Sep 16 2026).** Pay yards fill themselves — square feet ×
+  (average depth − sub drill) ÷ 27, the rock down to grade (Matthew's
+  call) — and a number he types holds until he takes the drilling's
+  figures back. A feedback report from any screen names that screen
+  (job, date, shot) for Matthew's inbox.

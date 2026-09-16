@@ -49,7 +49,7 @@ async (page, lib) => {
     await PD.waitForFunction((m) => document.querySelector('[data-chk-hours]')?.value === String(m), meter, { timeout: 8000 }).catch(() => undefined);
     const val = await PD.locator('[data-chk-hours]').inputValue();
     const line = await PD.locator('[data-chk-hours-source]').innerText();
-    R.ok(`starting hours start as the meter's reading (${val}) — "${line.slice(0, 50)}…"`, val === String(meter) && /from .* meter/.test(line) && /change it if the gauge/.test(line));
+    R.ok(`starting hours start as the meter's reading (${val}) — "${line.slice(0, 50)}…"`, val === String(meter) && /from .* meter/i.test(line) && /change it if the gauge/.test(line));
     // file it without touching the number
     const sign = PD.getByRole('button', { name: /Tap to sign/ });
     if (await sign.count()) {

@@ -22,7 +22,9 @@ export async function propagateHourMeter(equipmentId: string, reading: number | 
   await db.equipment.update(equipmentId, { hourMeter: reading, updatedAt: nowISO() });
 }
 
-export function emptyChecklist(equipmentId: string, jobId?: string): DrillChecklist {
+/** S19 (Matthew): the door decides the date — a checklist started from a work
+ *  day is for that day; with no date handed over it is today's */
+export function emptyChecklist(equipmentId: string, jobId?: string, date?: string): DrillChecklist {
   const session = getSessionUser();
   const now = nowISO();
   const daily: Record<string, CheckState> = {};
@@ -33,7 +35,7 @@ export function emptyChecklist(equipmentId: string, jobId?: string): DrillCheckl
     id: generateId(),
     equipmentId,
     jobId,
-    date: todayISO(),
+    date: date ?? todayISO(),
     startingHours: null,
     daily,
     weeklyDone: false,
@@ -169,7 +171,8 @@ export function useMyChecklistsToday(): { checklist: DrillChecklist; asset: stri
 /** Today's checklist for this rig AT THIS JOB (S16, Matthew: a checklist
  *  per rig per job-day — a rig that moves to a second job the same day gets
  *  a second checklist there). No job: the rig's job-less checklist today. */
-export function useTodayChecklist(equipmentId: string | undefined, jobId?: string) {
+export function useTodayChecklist(equipmentId: string | undefined, jobId?: string, date?: string) {
+  const on = date ?? todayISO();
   return useLiveQuery(
     () =>
       equipmentId
@@ -177,15 +180,16 @@ export function useTodayChecklist(equipmentId: string | undefined, jobId?: strin
             .where('equipmentId')
             .equals(equipmentId)
             .toArray()
-            .then((cs) => cs.find((c) => c.date === todayISO() && (c.jobId ?? '') === (jobId ?? '')))
+            .then((cs) => cs.find((c) => c.date === on && (c.jobId ?? '') === (jobId ?? '')))
         : undefined,
-    [equipmentId, jobId ?? ''],
+    [equipmentId, jobId ?? '', on],
   );
 }
 
 /** The rig's earlier checklist today at another job — its answers carry
  *  over to the second job-day's checklist (S16) */
-export function useEarlierChecklistToday(equipmentId: string | undefined, jobId?: string) {
+export function useEarlierChecklistToday(equipmentId: string | undefined, jobId?: string, date?: string) {
+  const on = date ?? todayISO();
   return useLiveQuery(
     () =>
       equipmentId
@@ -193,8 +197,8 @@ export function useEarlierChecklistToday(equipmentId: string | undefined, jobId?
             .where('equipmentId')
             .equals(equipmentId)
             .toArray()
-            .then((cs) => cs.filter((c) => c.date === todayISO() && (c.jobId ?? '') !== (jobId ?? '')).sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0])
+            .then((cs) => cs.filter((c) => c.date === on && (c.jobId ?? '') !== (jobId ?? '')).sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0])
         : undefined,
-    [equipmentId, jobId ?? ''],
+    [equipmentId, jobId ?? '', on],
   );
 }

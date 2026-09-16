@@ -17,6 +17,8 @@ import {
 } from '@/lib/feedback';
 import { cn } from '@/lib/utils';
 import { getFeedbackPaper, type FeedbackPaper } from '@/lib/feedbackPaper';
+import { screenNameFor } from '@/lib/screenName';
+import { currentRoute } from '@/lib/diagnostics';
 
 export interface ComposerOptions {
   kind?: FeedbackKind;
@@ -49,12 +51,22 @@ export function FeedbackHost() {
   useEffect(() => {
     openFn = (given = {}) => {
       const opts: ComposerOptions = { ...given, paper: given.paper === undefined ? getFeedbackPaper() : given.paper };
+      // S19 (Matthew: "the URL long ID doesn't help me at all"): when no paper
+      // names itself, the report names its screen — the job, the date, the rig
+      const nameScreen = () => {
+        if (opts.paper || given.paper !== undefined) return;
+        void screenNameFor(currentRoute()).then((label) =>
+          setState((s) => (s.phase === 'closed' || s.opts.paper ? s : { ...s, opts: { ...s.opts, paper: { label, kind: 'screen' } } })),
+        );
+      };
       if (opts.screenshot === false) {
         setState({ phase: 'open', opts, screenshot: null });
+        nameScreen();
         return;
       }
       setState({ phase: 'capturing', opts });
-      void captureScreenshot().then((shot) => setState({ phase: 'open', opts, screenshot: shot }));
+      nameScreen();
+      void captureScreenshot().then((shot) => setState((s) => ({ phase: 'open', opts: s.phase === 'closed' ? opts : s.opts, screenshot: shot })));
     };
     return () => {
       openFn = null;
@@ -200,7 +212,7 @@ export function FeedbackComposer({
 
       {paper && (
         <p className="text-xs text-gray-700 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2" data-feedback-paper>
-          About <b>{paper.label}</b>
+          {paper.kind === 'screen' ? 'This screen: ' : 'About '}<b>{paper.label}</b>
           {paper.submissionId ? ' — the filed copy goes with this report' : ''}
         </p>
       )}

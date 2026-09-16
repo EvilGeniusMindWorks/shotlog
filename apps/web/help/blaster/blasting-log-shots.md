@@ -14,7 +14,7 @@ Each shot has:
 
 - **Time of shot** — at the top of the shot card, beside its number: the time it was fired. **Now** stamps the moment. The state form wants it per shot, and the seismograph readings are matched to it.
 - **Drill parameters** — hole diameter, burden, spacing, subdrill, stemming and water depth. From the drill plan when there is one; editable always.
-- **Totals** — holes, feet drilled, average depth, square feet and yards. Once the shot's drilling is accepted they fill themselves from the drillers' logs, and a line under them says so: *From the accepted drilling: 41 holes · 1,230 ft*. Before that they come from the plan, labelled *From the plan*. Change a number and the line reads *Edited by you*, with a tap to take the drilling's figures back.
+- **Totals** — holes, feet drilled, average depth, square feet and yards. Once the shot's drilling is accepted they fill themselves from the drillers' logs, and a line under them says so: *From the accepted drilling: 41 holes · 1,230 ft*. Before that they come from the plan, labelled *From the plan*. Change a number and the line reads *Edited by you*, with a tap to take the drilling's figures back. **Pay yards** work themselves out as the rock down to grade — square feet × (average depth − sub drill) ÷ 27 — and a line under the totals shows the sum; type your own number and it holds until you take the drilling's figures back.
 - **Blast mats** are entered once for the whole log, under Detonators and lead — see [Explosives](/help/blaster/explosives).
 - **Explosives** — what went in, top-down. See [Explosives, top-down](/help/blaster/explosives).
 - **Design and timing** — the wiring diagram and delays. See [Design, timing and compliance](/help/blaster/design-timing-compliance).

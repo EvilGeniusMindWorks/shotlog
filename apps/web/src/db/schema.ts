@@ -489,6 +489,8 @@ export interface ShotTotals {
   totalDrillFootage: number;
   totalPayYards: number;
   totalYardsShot: number;
+  /** S19: a pay-yards number typed by hand holds; otherwise it is worked out to grade */
+  payYardsTyped?: boolean;
 }
 
 export interface DesignPlan {

@@ -484,7 +484,11 @@ export function DrillLogPage() {
         {log.drillRigEquipmentId && !todayChecklist && editable && (
           <button
             className="w-full text-left text-sm text-safety-orange border border-orange-200 bg-orange-50 rounded-lg px-3 py-2"
-            onClick={() => navigate(`/drill-checklist/${log.drillRigEquipmentId}?job=${log.jobId}`)}
+            onClick={() =>
+              navigate(
+                `/drill-checklist/${log.drillRigEquipmentId}?job=${log.jobId}&date=${log.date ?? log.createdAt.slice(0, 10)}${log.blastDayId ? `&day=${log.blastDayId}` : ''}`,
+              )
+            }
           >
             ⚠ Rig checklist not filed today — tap to file it now.
           </button>
