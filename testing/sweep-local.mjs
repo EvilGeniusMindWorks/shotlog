@@ -7,9 +7,20 @@
 import { execSync } from 'node:child_process';
 const dry = process.argv.includes('--dry');
 const psql = (sql) => execSync(`docker exec -i powersync-spike-pg-1 psql -U postgres -d shotlog -X -At -c ${JSON.stringify(sql)}`).toString().trim();
-const PATTERN = '^(hub|diagram|holes|other day|s15|s16|s17|probe|S15|S8a plan day|S9a batch|S9a batch[0-9]) ';
+const PATTERN = '^(hub|diagram|holes|other day|s15|s16|s17|s18|s19|nav|walk|probe|S15|S8a plan day|S9a batch|S9a batch[0-9]) ';
 const ids = psql(`select id from records where table_name='blastDays' and payload::json->>'name' ~ '${PATTERN}'`).split('\n').filter(Boolean);
 console.log(`${ids.length} harness day(s) named like ${PATTERN}`);
+// Orphaned drill logs: an accepted log outlives the day it was on (the server refuses the
+// client's delete), and day + shot ids are fixed by job + date — so the next run at that job
+// is handed the old accepted log instead of a fresh one (harness79/80, Sep 16 2026)
+const orphans = psql(`select id from records where table_name='drillLogs' and coalesce(payload::json->>'blastDayId','') <> '' and payload::json->>'blastDayId' not in (select id from records where table_name='blastDays')`).split('\n').filter(Boolean);
+console.log(`${orphans.length} orphaned drill log(s) whose day is gone`);
+if (orphans.length && !dry) {
+  const oq = orphans.map((i) => `'${i}'`).join(',');
+  const holes = psql(`with d as (delete from records where table_name='drillLogHoles' and payload::json->>'drillLogId' in (${oq}) returning 1) select count(*) from d`);
+  const logs = psql(`with d as (delete from records where table_name='drillLogs' and id in (${oq}) returning 1) select count(*) from d`);
+  console.log(`deleted ${logs} orphaned log(s) and ${holes} hole(s)`);
+}
 if (ids.length === 0 || dry) process.exit(0);
 const list = ids.map((i) => `'${i}'`).join(',');
 const logIds = psql(`select id from records where table_name='blastLogs' and payload::json->>'blastDayId' in (${list})`).split('\n').filter(Boolean);

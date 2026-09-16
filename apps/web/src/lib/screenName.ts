@@ -65,9 +65,11 @@ export function screenNameFromRoute(route: string): string {
           ? 'Review drilling'
           : v === 'readiness'
             ? 'Readiness review'
-            : v === 'hub'
-              ? 'Work day · Day tab'
-              : 'Work day';
+            : v === 'hub' || v === 'walkthrough'
+              ? 'Walkthrough'
+              : v === 'check'
+                ? 'Check and sign'
+                : 'Work day';
   }
   if (/^\/jobs\/[^/]+\/drill-plan\//.test(pathname)) return 'Drill plan';
   if (/^\/jobs\//.test(pathname)) return 'Job';

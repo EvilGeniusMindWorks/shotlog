@@ -24,8 +24,11 @@ export function PhaseSpine({
                   ? 'bg-compliant border-compliant'
                   : p.state === 'now'
                     ? 'bg-white border-safety-orange'
-                    : 'bg-white border-gray-300')
+                    : p.state === 'wait'
+                      ? 'bg-blue-400 border-blue-400'
+                      : 'bg-white border-gray-300')
               }
+              data-phase-state={p.state}
             />
             <button
               className={

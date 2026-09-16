@@ -464,6 +464,11 @@ export interface BlastLog extends BaseRecord {
   licenseState: string;
   signatureImage: Blob | null;
   notes: string;
+  /** Navigation round (Matthew): the log's own "done" — Mark the blasting log
+   *  complete on the Check and sign screen; File this day waits for it */
+  doneAt?: string;
+  doneBy?: string;
+  doneByName?: string;
 }
 
 // ══════════════════════════════════════════════════════

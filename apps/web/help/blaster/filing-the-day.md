@@ -10,7 +10,8 @@ Filing turns the day into the record the office keeps: a signed PDF of the blast
 
 ## Before you file
 
-1. The blasting log is **signed**. Open the blasting log and scroll to the **Blaster Signature** box at the bottom, then sign on the screen — one signature covers every shot on the log. Your name and license come from your profile.
+1. The blasting log is **marked complete** — on its **Check and sign** step: every shot has seismo readings, explosives and totals, the log is signed (one signature covers every shot), then **Mark the blasting log complete**. The daily report is **marked done**. The pre-flight lists both in red until they are.
+2. The blasting log is **signed**. Open the blasting log and scroll to the **Blaster Signature** box at the bottom, then sign on the screen — one signature covers every shot on the log. Your name and license come from your profile.
 2. The daily report has the crew and their hours. Anyone who worked and is missing will not be on the paperwork.
 3. Look at the compliance badges on each shot. An amber or red badge is not a stop — but it is worth a note in the shot before you file, because the office will ask.
 

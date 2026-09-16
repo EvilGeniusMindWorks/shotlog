@@ -41,6 +41,7 @@ async (page, lib) => {
       return { id, shotId: shot.id, jobName: jobs[0].name };
     }, stamp);
     dayId = made.id; shotId = made.shotId;
+    await lib.finishPapers(PB, dayId); // the navigation round: complete + done gate the filing
     await PB.goto(`${WEB}/blast-day/${dayId}/submit`);
     await PB.locator('[data-preflight-file]').waitFor({ timeout: 15000 });
     await PB.locator('[data-preflight-file]').click();

@@ -351,7 +351,7 @@ export function screenTourFor(pathname: string, search: string, bucket: TourBuck
   const params = new URLSearchParams(search);
   if (/^\/blast-day\/[^/]+$/.test(pathname)) {
     const view = params.get('view');
-    return bucket === 'field' && (!view || view === 'hub' || view === 'blast-log') ? 'day' : null;
+    return bucket === 'field' && (!view || view === 'hub' || view === 'walkthrough' || view === 'blast-log') ? 'day' : null;
   }
   if (/^\/blast-day\/[^/]+\/drill-log\/[^/]+$/.test(pathname) || /^\/jobs\/[^/]+\/drill-plan\/[^/]+\/log\/[^/]+$/.test(pathname)) {
     return bucket === 'driller' ? 'drill-log' : null;

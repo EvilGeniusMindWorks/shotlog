@@ -60,6 +60,9 @@ export async function preflightDay(dayId: string): Promise<PreflightItem[]> {
     });
   }
   if (log?.signatureImage) items.push({ key: 'sig-ok', level: 'ok', text: `Blasting log signed${log.blasterName ? ` by ${log.blasterName}` : ''}${shots.length > 0 ? ` · ${shots.length} shot${shots.length === 1 ? '' : 's'}` : ''}` });
+  // Navigation round (Matthew): the log's own Complete mark, and the report's Done, gate the filing
+  if (log && !log.doneAt) items.push({ key: 'complete', level: 'red', text: 'The blasting log is not marked complete', to: `/blast-day/${dayId}?view=check`, toLabel: 'Check and sign' });
+  if (log?.doneAt) items.push({ key: 'complete-ok', level: 'ok', text: `Blasting log marked complete by ${log.doneByName || 'the blaster'} ${hhmm(log.doneAt)}` });
 
   // AMBER — seismo distance
   if (blasting && shots.length > 0) {
@@ -95,8 +98,9 @@ export async function preflightDay(dayId: string): Promise<PreflightItem[]> {
     const worked = rows.filter((r) => r.timeIn || r.timeOut || (r.straightTime ?? 0) > 0);
     if (worked.length === 0) items.push({ key: 'crew', level: 'amber', text: 'No crew on the daily report — nobody has a time card on this day yet', to: `/blast-day/${dayId}?view=daily-report`, toLabel: 'Daily report' });
     else items.push({ key: 'crew-ok', level: 'ok', text: `Crew on the daily report · ${worked.length} time card${worked.length === 1 ? '' : 's'}` });
-    // S18: the report's own "done" mark, named
+    // S18: the report's own "done" mark, named — and since the navigation round, required
     if (report.doneAt) items.push({ key: 'report-done', level: 'ok', text: `Daily report marked done by ${report.doneByName || 'the blaster'} ${hhmm(report.doneAt)}` });
+    else items.push({ key: 'report-not-done', level: 'red', text: 'The daily report is not marked done', to: `/blast-day/${dayId}?view=daily-report`, toLabel: 'Mark it done' });
   }
 
   // GREEN — drilling accepted (informational)

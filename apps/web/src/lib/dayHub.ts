@@ -53,9 +53,11 @@ export function blastLogTile(
   if (day.status === 'approved') return { title: 'Approved', sub: 'locked', action: 'View', tone: 'done', note };
   if (day.status === 'submitted') return { title: filedAt ? `Filed ${hhmm(filedAt)}` : 'Filed', sub: 'with the office', action: 'View', tone: 'done', note };
   if (day.sendBackNote) return { title: 'Sent back', sub: `Office: “${day.sendBackNote}”`, action: 'Open', tone: 'bad', note };
-  // S16 (Matthew): one log, one blaster, one signature — the log's box is it
+  // S16 (Matthew): one log, one blaster, one signature — the log's box is it.
+  // Navigation round: the log's own Complete mark is what "ready to file" means
   const logSigned = Boolean(log.signatureImage) && shots.length > 0;
-  if (logSigned) return { title: 'Ready to file', sub: `signed · ${shots.length} shot${shots.length === 1 ? '' : 's'}`, action: 'Open', tone: 'done', note };
+  if (log.doneAt) return { title: `Complete ${hhmm(log.doneAt)}`, sub: `ready to file · ${shots.length} shot${shots.length === 1 ? '' : 's'}`, action: 'Open', tone: 'done', note };
+  if (logSigned) return { title: 'Signed', sub: 'mark it complete on Check and sign', action: 'Open', tone: 'next', note };
   return {
     title: `Started ${who(log.blasterName || undefined, log.createdAt)}`,
     sub: shots.length === 0 ? 'no shots yet' : `${shots.length} shot${shots.length === 1 ? '' : 's'} · not signed yet`,
@@ -118,6 +120,9 @@ export function fileState(day: BlastDay, log: BlastLog | undefined, shots: Shot[
     // S16: the log's signature is the one signature
     if (shots.length === 0) return { kind: 'blocked', label: 'No shots on the blasting log yet' };
     if (!log.signatureImage) return { kind: 'blocked', label: 'The blasting log is not signed — sign it to file' };
+    // Navigation round (Matthew): File this day waits for the log marked complete and the report marked done
+    if (!log.doneAt) return { kind: 'blocked', label: 'The blasting log is not marked complete — Check and sign, then Complete' };
+    if (report && !report.doneAt) return { kind: 'blocked', label: 'The daily report is not marked done' };
     return { kind: 'ready', label: 'File this day', note: report ? undefined : 'files with the note “No daily report”' };
   }
   if (!report && drillLogs === 0) return { kind: 'none', label: '' };

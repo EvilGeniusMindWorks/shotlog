@@ -320,3 +320,8 @@ page · customer/site/job create (new) · contacts · My Records · reference
   goes and goes there: up one level, or back to the list he came from.
   The day's tabs are real steps, so the phone's back gesture walks them.
   Marking the daily report done lands on the day.
+- **Navigation round, push 2 (Sep 16 2026).** The Blasting log tile opens
+  the Walkthrough: Drill plan → Drilling → Review drilling → Fill out the
+  blasting log → Check and sign → Mark the blasting log complete, one ring,
+  Next: … The check screen needs seismo readings on every shot before
+  Complete. File this day waits for the log complete and the report done.

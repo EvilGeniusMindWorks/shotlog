@@ -15,6 +15,7 @@ import { TimeCardsCard } from '@/components/forms/TimeCardsCard';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { useDayPhases } from '@/hooks/useDayPhases';
 import { PhaseSpine } from '@/components/day/PhaseSpine';
+import { CheckAndSign } from '@/components/day/CheckAndSign';
 import { MergedDrillingView } from '@/components/day/MergedDrillingView';
 import { ReadinessView } from '@/components/day/ReadinessView';
 import { PreBlastCard } from '@/components/day/PreBlastCard';
@@ -41,7 +42,7 @@ import { ContactList } from '@/components/forms/JobContactsCard';
 import { createIncident } from '@/pages/admin/AdminIncidentsPage';
 
 type Tab = 'blast-log' | 'daily-report';
-type DayView = 'tiles' | 'hub' | 'blast-log' | 'daily-report' | 'drilling' | 'readiness';
+type DayView = 'tiles' | 'walkthrough' | 'blast-log' | 'daily-report' | 'drilling' | 'readiness' | 'check';
 
 
 export function BlastDayPage() {
@@ -67,11 +68,12 @@ export function BlastDayPage() {
   // The navigation round: the day's views are real steps in the browser's
   // history (?view=), so the arrow and Android's back gesture agree
   const viewParam = searchParams.get('view');
+  // the walkthrough (navigation round) replaces the old Day tab; ?view=hub still lands on it
   const viewState: DayView | null =
-    viewParam === 'tiles' || viewParam === 'hub' || viewParam === 'blast-log' || viewParam === 'daily-report' || viewParam === 'drilling' || viewParam === 'readiness'
+    viewParam === 'tiles' || viewParam === 'walkthrough' || viewParam === 'blast-log' || viewParam === 'daily-report' || viewParam === 'drilling' || viewParam === 'readiness' || viewParam === 'check'
       ? viewParam
-      : viewParam === 'walkthrough'
-        ? 'hub'
+      : viewParam === 'hub'
+        ? 'walkthrough'
         : searchParams.get('tab') === 'daily'
           ? 'daily-report'
           : null;
@@ -83,7 +85,7 @@ export function BlastDayPage() {
   // S14: the day opens on its TILES for every role; the tabs and the phase
   // spine live inside the Blasting log (view 'hub' and friends). A deep link
   // into the blast side of a day with no log falls back to the tiles.
-  const needsLog = (v: DayView | null) => v === 'hub' || v === 'blast-log' || v === 'drilling' || v === 'readiness';
+  const needsLog = (v: DayView | null) => v === 'walkthrough' || v === 'blast-log' || v === 'drilling' || v === 'readiness' || v === 'check';
   const view: DayView = !viewState ? 'tiles' : needsLog(viewState) && !blastLog ? 'tiles' : viewState;
   const setView = (v: string, opts?: { replace?: boolean }) =>
     navigate(v === 'tiles' ? `/blast-day/${id}` : `/blast-day/${id}?view=${v}`, { replace: opts?.replace });
@@ -228,15 +230,27 @@ export function BlastDayPage() {
   const dayParent =
     view === 'tiles'
       ? { to: '/days', label: 'Work days' }
-      : view === 'drilling' || view === 'readiness'
-        ? { to: `/blast-day/${blastDay.id}?view=hub`, label: 'Day' }
+      : view === 'drilling' || view === 'readiness' || view === 'check'
+        ? { to: `/blast-day/${blastDay.id}?view=walkthrough`, label: 'Walkthrough' }
         : { to: `/blast-day/${blastDay.id}`, label: dayLabel };
   const viewName =
-    view === 'blast-log' ? 'Blasting log' : view === 'daily-report' ? 'Daily report' : view === 'hub' ? 'Day' : view === 'drilling' ? 'Review drilling' : view === 'readiness' ? 'Readiness' : '';
+    view === 'blast-log'
+      ? 'Blasting log'
+      : view === 'daily-report'
+        ? 'Daily report'
+        : view === 'walkthrough'
+          ? 'Walkthrough'
+          : view === 'drilling'
+            ? 'Review drilling'
+            : view === 'readiness'
+              ? 'Readiness'
+              : view === 'check'
+                ? 'Check and sign'
+                : '';
   const dayPath = [
     { label: 'Work days', to: '/days' },
     ...(view === 'tiles' ? [] : [{ label: `${dayLabel} · ${formatDate(blastDay.date)}`, to: `/blast-day/${blastDay.id}` }]),
-    ...(view === 'drilling' || view === 'readiness' ? [{ label: 'Day', to: `/blast-day/${blastDay.id}?view=hub` }] : []),
+    ...(view === 'drilling' || view === 'readiness' || view === 'check' ? [{ label: 'Walkthrough', to: `/blast-day/${blastDay.id}?view=walkthrough` }] : []),
     ...(viewName ? [{ label: viewName }] : []),
   ];
   const dayTrailLabel = view === 'tiles' ? dayLabel : viewName;
@@ -525,17 +539,17 @@ export function BlastDayPage() {
       {view !== 'tiles' && (
       <div className="px-4 pt-3">
         <div className="max-w-5xl mx-auto space-y-2">
-          {blastLog ? (
+          {/* Navigation round (Matthew): Walkthrough · Blasting log — the daily report is the day's, reached from its tile */}
+          {blastLog && view !== 'daily-report' ? (
             <div className="flex bg-gray-100 rounded-lg p-1" data-tour="day-tabs">
               {(
                 [
-                  ['hub', 'Day', CalendarCheck],
-                  ['blast-log', 'Blasting Log', FileText],
-                  ['daily-report', 'Daily Report', ClipboardList],
+                  ['walkthrough', 'Walkthrough', CalendarCheck],
+                  ['blast-log', 'Blasting log', FileText],
                 ] as const
               ).map(([key, label, Icon]) => {
                 const active =
-                  key === 'hub' ? view === 'hub' || view === 'drilling' || view === 'readiness' : view === key;
+                  key === 'walkthrough' ? view === 'walkthrough' || view === 'drilling' || view === 'readiness' || view === 'check' : view === key;
                 return (
                 <button
                   key={key}
@@ -628,7 +642,7 @@ export function BlastDayPage() {
 
       {/* The day hub — phases in order, a map not a gate. Stays tappable on
           locked days (it's navigation, not editing). */}
-      {view === 'hub' && blastLog && phaseModel && (
+      {view === 'walkthrough' && blastLog && phaseModel && (
         <div className="p-4 max-w-5xl mx-auto space-y-3" data-tour="day-spine">
           <PhaseSpine model={phaseModel} onOpen={(v, to) => (to ? navigate(to) : setView(v))} />
           <PreBlastCard />
@@ -649,7 +663,10 @@ export function BlastDayPage() {
         aria-disabled={locked || undefined}
       >
         {view === 'drilling' && blastLog && (
-          <MergedDrillingView day={blastDay} shots={shots} onAccepted={() => setView('readiness')} />
+          <MergedDrillingView day={blastDay} shots={shots} onAccepted={() => setView('walkthrough')} />
+        )}
+        {view === 'check' && blastLog && (
+          <CheckAndSign day={blastDay} blastLog={blastLog} readOnly={locked || !owner} onComplete={() => setView('tiles', { replace: true })} />
         )}
         {view === 'readiness' && blastLog && (
           <ReadinessView

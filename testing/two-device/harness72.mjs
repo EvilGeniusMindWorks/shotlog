@@ -90,8 +90,11 @@ async (page, lib) => {
       // eslint-disable-next-line no-eval
       await db.blastLogs.update(log.id, { signatureImage: eval(png), signedAt: nowISO(), updatedAt: nowISO() });
     }, { id: dayId, png: PNG });
+    // the navigation round: the row waits for the log marked complete and the report done
+    await lib.finishPapers(PA, dayId);
+    await sleep(600);
     const ready = await waitFor(() => PA.locator('[data-file-row]').getAttribute('data-file-row').then((k) => (k === 'ready' ? k : null)));
-    R.ok('with the log signed, File this day appears', ready === 'ready' && (await PA.locator('[data-file-day]').count()) === 1);
+    R.ok('with the log signed and marked complete, File this day appears', ready === 'ready' && (await PA.locator('[data-file-day]').count()) === 1);
     R.ok('the Blasting log tile reads Ready to file', (await tileState(PA, 'blast-log')) === 'Ready to file');
     await PA.locator('[data-tile="time-card"] [data-tile-action]').click();
     await PA.locator('[data-time-card-sheet]').waitFor({ timeout: 8000 });

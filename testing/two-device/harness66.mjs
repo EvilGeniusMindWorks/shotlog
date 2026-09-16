@@ -88,7 +88,8 @@ async (page, lib) => {
     await PB.locator('[data-phase="drilling"]').waitFor({ timeout: 10000 });
     const chip = await PB.locator('[data-phase="drilling"]').getAttribute('data-phase-chip');
     const sub = (await PB.locator('[data-phase="drilling"]').innerText()).replace(/\s+/g, ' ');
-    R.ok(`the day's Drilling phase still reads "${chip}" (${sub.slice(0, 60)})`, chip === 'accepted' && /1 driller\b/.test(sub));
+    // the walkthrough's words (navigation round): the step reads Done and names the driller
+    R.ok(`the day's Drilling phase still reads "${chip}" (${sub.slice(0, 60)})`, chip === 'Done' && /holes · /.test(sub));
     await sleep(2500);
     const cA = await mkCtx(browser, { viewport: { width: 1280, height: 800 } });
     const PA = await cA.newPage();

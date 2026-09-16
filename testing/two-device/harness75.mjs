@@ -57,7 +57,7 @@ async (page, lib) => {
     await PB.goto(`${WEB}/blast-day/${dayId}/submit`);
     await PB.locator('[data-preflight]').waitFor({ timeout: 15000 });
     const red = PB.locator('[data-preflight-level="red"]');
-    R.ok(`the filing screen's red item is about the log ("${(await red.first().innerText()).replace(/\s+/g, ' ').trim().slice(0, 40)}")`, (await red.count()) === 1 && /blasting log is not signed/i.test(await red.first().innerText()) && (await PB.getByText(/has no blaster signature/).count()) === 0);
+    R.ok(`the filing screen's red item is about the log ("${(await red.first().innerText()).replace(/\s+/g, ' ').trim().slice(0, 40)}")`, (await red.count()) >= 1 && /blasting log is not signed/i.test(await red.first().innerText()) && (await PB.getByText(/has no blaster signature/).count()) === 0); // the navigation round adds "not marked complete" and "report not done" reds after it
     // sign the log, the one signature
     await PB.evaluate(async ({ logId, png }) => {
       const { db } = await import('/src/db/index.ts');
@@ -65,14 +65,16 @@ async (page, lib) => {
       // eslint-disable-next-line no-eval
       await db.blastLogs.update(logId, { signatureImage: eval(png), signedAt: nowISO(), updatedAt: nowISO() });
     }, { logId, png: PNG });
+    await lib.finishPapers(PB, dayId); // the navigation round: complete + done gate the filing
     await PB.goto(`${WEB}/blast-day/${dayId}/submit`);
     await PB.locator('[data-preflight]').waitFor({ timeout: 15000 });
     await sleep(500);
     R.ok('with the log signed the red is gone and the green line names the signer', (await PB.locator('[data-preflight-level="red"]').count()) === 0 && (await PB.getByText(/Blasting log signed/).count()) === 1);
     await PB.goto(`${WEB}/blast-day/${dayId}`);
     await PB.locator('[data-day-hub]').waitFor({ timeout: 20000 });
-    const ready = await waitFor(() => tileState(PB, 'blast-log').then((x) => (x === 'Ready to file' ? x : null)));
-    R.ok('the tile reads Ready to file and File this day is offered — the same rule as the filing screen', ready === 'Ready to file' && (await waitFor(() => PB.locator('[data-file-row]').getAttribute('data-file-row').then((k) => (k === 'ready' ? k : null)))) === 'ready');
+    // the navigation round: the log's own Complete mark is what "ready to file" means (finishPapers set it above)
+    const ready = await waitFor(() => tileState(PB, 'blast-log').then((x) => (/^Complete /.test(x ?? '') ? x : null)));
+    R.ok(`the tile reads "${ready}" and File this day is offered — the same rule as the filing screen`, /^Complete /.test(ready ?? '') && (await waitFor(() => PB.locator('[data-file-row]').getAttribute('data-file-row').then((k) => (k === 'ready' ? k : null)))) === 'ready');
   });
 
   await R.section("Change the date from the header: the sheet, what moves, the blocks, the trail", async () => {
@@ -187,6 +189,21 @@ async (page, lib) => {
     R.ok('at the morning job the rig already has today’s checklist', /already has today's checklist at this job/.test(await PD.locator('[data-chk-existing]').innerText()));
     await PD.goto(`${WEB}/drill-checklist/${m.rigId}?job=${jobs[2].id}`);
     await PD.locator('[data-chk-hours]').waitFor({ timeout: 15000 });
+    await sleep(800);
+    R.note('checklist at job 2: ' + JSON.stringify(await PD.evaluate(async (jobB) => {
+      const { db } = await import('/src/db/index.ts');
+      const { getSessionUser } = await import('/src/lib/session.ts');
+      const me = getSessionUser();
+      const days = await db.blastDays.filter((d) => d.jobId === jobB && d.status === 'draft' && !d.closed).toArray();
+      const mine = [];
+      for (const d of days) {
+        const confirmed = (await db.workDayConfirmations.where('blastDayId').equals(d.id).toArray()).some((c) => c.userId === me?.id);
+        const logged = (await db.drillLogs.filter((l) => l.blastDayId === d.id && l.drillerUserId === me?.id).toArray()).length;
+        const carded = (await db.timeCards.filter((c) => (c.blastDayId === d.id || (c.jobId === d.jobId && c.date === d.date)) && c.userId === me?.id).toArray()).length;
+        mine.push(`${d.date}:${d.name || ''}:${confirmed ? 'C' : ''}${logged ? 'L' : ''}${carded ? 'T' : ''}`);
+      }
+      return { header: document.querySelector('[data-chk-rig-selected]')?.textContent, forDay: document.querySelector('[data-chk-for-day]')?.textContent, carried: document.querySelectorAll('[data-chk-carried]').length, days: mine };
+    }, jobs[2].id)));
     await PD.locator('[data-chk-carried]').waitFor({ timeout: 8000 });
     R.ok('at the second job the same rig gets a NEW checklist, answers carried from the morning', (await PD.locator('[data-chk-existing]').count()) === 0 && /carried from this morning/.test(await PD.locator('[data-chk-carried]').innerText()));
     await PD.waitForFunction((x) => Number(document.querySelector('[data-chk-hours]')?.value) >= x, m.start, { timeout: 8000 }).catch(() => undefined);

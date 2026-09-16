@@ -2,6 +2,9 @@
 
 An offline-first Progressive Web App for commercial blasting crews to digitize blasting logs and daily reports. Eliminates redundant data entry between forms, auto-calculates industry-standard formulas (Scaled Distance, PPV, K Factor, USBM RI8507/OSM compliance), captures seismograph printouts via camera, and syncs to a server when connectivity is available.
 
+## Purpose (Matthew, Sep 16 2026)
+A licensed commercial blasting operations application: it runs the company's day-to-day operations AND is how the company shows compliance with every applicable federal, state and local law, regulation and safety requirement (ATF explosives records, OSHA/MSHA safety, DOT transport, Massachusetts 527 CMR and per-state blaster licenses, local blasting permits, USBM RI8507 / OSM vibration limits). The blasting log, daily report, drill logs, rig checklists, incident reports and their filed office copies are legal records: write-once when filed, corrected only by a new version, audited on the server, retained to the regulators' floors. Prefer the compliant shape over the quick one; flag regulatory questions for Matthew rather than guessing.
+
 ## Primary User
 Field blaster at Baystate Blasting, Inc. (single user MVP, multi-user later)
 

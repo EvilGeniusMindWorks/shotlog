@@ -165,7 +165,8 @@ async (page, lib) => {
     await PB.goto(`${WEB}/blast-day/${dayId}/submit`);
     await PB.locator('[data-preflight]').waitFor({ timeout: 15000 });
     const red = PB.locator('[data-preflight-level="red"]');
-    R.ok(`an unsigned log is a red item ("${(await red.first().innerText()).replace(/\s+/g, " ").trim().slice(0, 40)}")`, (await red.count()) === 1 && /log is not signed/i.test(await red.first().innerText()));
+    // the navigation round added two more reds (log not marked complete, report not done) — the signature stays first
+    R.ok(`an unsigned log is a red item ("${(await red.first().innerText()).replace(/\s+/g, " ").trim().slice(0, 40)}")`, (await red.count()) >= 1 && /log is not signed/i.test(await red.first().innerText()));
     R.ok('the file button is disabled and says why', await PB.locator('[data-preflight-file]').isDisabled() && /Fix the red items first/.test(await PB.locator('[data-preflight-file]').innerText()));
     R.ok('nothing was filed', (await PB.evaluate(async (id) => { const { db } = await import('/src/db/index.ts'); return (await db.blastDays.get(id)).status; }, dayId)) === 'draft');
     // sign the LOG (S16: one signature covers its shots), then come back
@@ -177,6 +178,8 @@ async (page, lib) => {
       const shot = await db.shots.get(shotId);
       await db.blastLogs.update(shot.blastLogId, { signatureImage: blob, signedAt: nowISO(), updatedAt: nowISO() });
     }, shotId);
+    // the navigation round: filing waits for the log marked complete and the report done
+    await lib.finishPapers(PB, dayId);
     await PB.goto(`${WEB}/blast-day/${dayId}/submit`);
     await PB.locator('[data-preflight]').waitFor({ timeout: 15000 });
     const ambers = await PB.locator('[data-preflight-level="amber"]').allInnerTexts();

@@ -148,7 +148,8 @@
   ],
   "apps/web/src/hooks/useDayPhases.ts": [
     53,
-    66
+    66,
+    80
   ],
   "apps/web/src/hooks/useDrillLogs.ts": [
     66
@@ -178,7 +179,8 @@
   "apps/web/src/lib/dayHub.ts": [
     75,
     77,
-    78
+    78,
+    80
   ],
   "apps/web/src/lib/docRows.ts": [
     68
@@ -229,7 +231,8 @@
     68,
     71,
     75,
-    79
+    79,
+    80
   ],
   "apps/web/src/pages/BlastDayPage.tsx apps/web/src/components/day/DayHub.tsx apps/web/src/components/day/CrewList.tsx apps/web/src/components/day/RigList.tsx apps/web/src/components/dashboard/OfficeHome.tsx apps/web/src/components/dashboard/RoleCards.tsx apps/web/src/pages/DrillChecklistPage.tsx apps/web/src/pages/DrillLogPage.tsx apps/web/src/hooks/useMaintenance.ts apps/web/src/lib/hourLedger.ts apps/web/src/pages/SitePage.tsx apps/web/src/components/forms/CustomerSitePicker.tsx apps/web/src/components/forms/NewJobForm.tsx": [
     72
@@ -302,7 +305,8 @@
     60,
     71,
     75,
-    77
+    77,
+    80
   ],
   "apps/web/src/pages/admin/AdminApprovalsPage.tsx": [
     61
@@ -362,5 +366,17 @@
   ],
   "apps/web/src/components/layout/RecordShell.tsx": [
     79
+  ],
+  "apps/web/src/lib/logChecks.ts": [
+    80
+  ],
+  "apps/web/src/components/day/CheckAndSign.tsx": [
+    80
+  ],
+  "apps/web/src/components/day/PhaseSpine.tsx": [
+    80
+  ],
+  "apps/web/src/components/day/DayHub.tsx": [
+    80
   ]
 }

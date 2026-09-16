@@ -1,14 +1,19 @@
-// The day as a PHASE SPINE (Round 2, blaster study): each phase shows its
-// state and the one number that matters. A map, not a gate — nothing is
-// enforced as sequence; Continue just targets the current phase.
+// The blasting log's WALKTHROUGH (navigation round, Matthew's six steps,
+// Sep 16 2026): Drill plan → Drilling → Review drilling → Fill out the
+// blasting log → Check and sign → Mark the blasting log complete. One
+// vocabulary for the chips (Later · To do · Waiting · In progress · Done ·
+// Complete), exactly one step wears the ring, and Continue always reads
+// "Next: …" — or "Waiting: …" while the drillers work. A map, not a gate:
+// nothing is enforced as a sequence. The daily report and time cards are
+// tiles of the day, not steps of the log.
 import { db, useLiveQuery } from '@/db';
 import type { BlastDay, BlastLog, DrillLog, Shot } from '@/db/schema';
-import { getSessionUser } from '@/lib/session';
 import { getShotPlan } from '@/hooks/useDrillLogs';
-import { fmtLbs } from '@/lib/format';
+import { logChecks } from '@/lib/logChecks';
+import { hhmm } from '@/lib/dayCard';
 
-export type PhaseKey = 'drilling' | 'readiness' | 'shots' | 'seismo' | 'timecards' | 'file';
-export type PhaseState = 'done' | 'now' | 'todo' | 'later';
+export type PhaseKey = 'plan' | 'drilling' | 'review' | 'fill' | 'check' | 'complete';
+export type PhaseState = 'done' | 'now' | 'wait' | 'todo' | 'later';
 
 export interface DayPhase {
   key: PhaseKey;
@@ -19,13 +24,13 @@ export interface DayPhase {
   state: PhaseState;
   /** BlastDayPage ?view= target */
   view: string;
-  /** S8: a full route to open instead of a day view (the plan page) */
+  /** a full route to open instead of a day view (the plan page) */
   to?: string;
 }
 
 export interface DayPhaseModel {
   phases: DayPhase[];
-  /** The phase Continue points at (undefined when the day is filed) */
+  /** The step Continue points at (undefined when the log is complete) */
   current?: DayPhase;
   continueLabel?: string;
 }
@@ -43,6 +48,8 @@ export async function dayDrillLogs(day: BlastDay, shots: Shot[]): Promise<DrillL
   return [...byDay, ...byPlan.filter((l) => !seen.has(l.id))];
 }
 
+const VARIANT: Record<PhaseState, DayPhase['chipVariant']> = { done: 'compliant', now: 'warning', wait: 'submitted', todo: 'warning', later: 'secondary' };
+
 export function useDayPhases(
   day: BlastDay | undefined,
   blastLog: BlastLog | undefined,
@@ -50,7 +57,6 @@ export function useDayPhases(
 ): DayPhaseModel | undefined {
   return useLiveQuery(async () => {
     if (!day || !blastLog) return { phases: [] };
-    const me = getSessionUser();
 
     // ── drilling ──
     const logs = await dayDrillLogs(day, shots);
@@ -63,183 +69,120 @@ export function useDayPhases(
       holesByLog.set(log.id, holes.length);
       hazardCount += holes.filter((h) => h.conditions.length > 0).length;
     }
-    // S9b follow-up (Matthew, Sep 9): an open log with NO holes — one a tap opened
-    // by mistake on a finished pattern — must not drag the phase back to "in progress"
-    // …but a freshly SENT plan is an empty open log too — only ignore an empty
-    // log when other logs on the day already carry holes (that is a stray)
+    // S9b follow-up: a stray empty open log on a finished pattern must not drag
+    // the day back — but a freshly SENT plan is an empty open log too
     const anyHoles = logs.some((l) => (holesByLog.get(l.id) ?? 0) > 0);
     const counted = logs.filter((l) => !(anyHoles && l.status === 'open' && (holesByLog.get(l.id) ?? 0) === 0));
     const drillerNames = [...new Set(counted.map((l) => l.drillerName).filter(Boolean))];
     const allAccepted = counted.length > 0 && counted.every((l) => l.status === 'accepted');
     const allComplete = counted.length > 0 && counted.every((l) => l.status !== 'open');
     const hasDrilling = logs.length > 0;
-    // S8: before any drilling, the plan itself is the phase — build it,
-    // then send it (Matthew: "there was nothing to do!")
     const plannedHoles = shots.reduce((a, s) => a + (getShotPlan(s)?.length ?? 0), 0);
     const hasPlan = plannedHoles > 0;
     const drillingDay = day.typeOfWork !== 'blasting';
     const firstShot = shots[0];
-    // A blaster who went straight to loading (holes entered, or signed) has
-    // skipped the plan on purpose — the spine is a map, not a gate: the plan
-    // phase steps aside instead of nagging
+    // a blaster who went straight to loading skipped the plan on purpose
     const shotStarted = shots.some((s) => s.totals.numHoles > 0 || Boolean(s.signatureImage));
+    const holesLine = `${holeCount}${plannedHoles ? `/${plannedHoles}` : ''} holes`;
+    const who = drillerNames.slice(0, 2).join(', ');
 
-    // ── shots (per-shot sign-off, model (a); a log-level signature covers
-    // single-blaster days that never used the per-shot row) ──
-    const signedCount = shots.filter((s) => s.signatureImage).length;
-    const logSigned = Boolean(blastLog.signatureImage);
-    const allSigned = shots.length > 0 && (signedCount === shots.length || (logSigned && signedCount === 0));
-    const firstUnsigned = shots.find((s) => !s.signatureImage);
+    // ── the log itself ──
+    const checks = await logChecks(day.id);
+    const reds = checks.filter((c) => c.level === 'red');
+    const signed = Boolean(blastLog.signatureImage);
+    const complete = Boolean(blastLog.doneAt);
+    const fillDone = reds.every((c) => c.key === 'sig');
 
-    // ── seismo ──
-    const readShots = new Set<string>();
-    for (const s of shots) {
-      if ((await db.seismoReadings.where('shotId').equals(s.id).count()) > 0) readShots.add(s.id);
-    }
-    const shotsWithReadings = readShots.size;
-
-    // ── time cards ──
-    // S7d: cards belong to the job + date (day id kept as a convenience)
-    const cards = await db.timeCards
-      .filter((c) => c.blastDayId === day.id || (c.jobId === day.jobId && c.date === day.date))
-      .toArray();
-    const mine = me ? cards.find((c) => c.userId === me.id) : undefined;
-    const others = cards.filter((c) => c.id !== mine?.id);
-    const othersFiled = others.filter((c) => c.status !== 'draft').length;
-
-    const review = blastLog.readinessReview;
     const phases: DayPhase[] = [];
+    const push = (p: Omit<DayPhase, 'chipVariant'>) => phases.push({ ...p, chipVariant: VARIANT[p.state] });
 
-    if (!hasDrilling && drillingDay && firstShot) {
-      phases.push(
-        !hasPlan
-          ? {
-              key: 'drilling',
-              label: 'Drill plan',
-              sub: 'no plan yet — lay the pattern, then send it',
-              chip: shotStarted ? 'skipped' : 'to do',
-              chipVariant: shotStarted ? 'secondary' : 'warning',
-              state: shotStarted ? 'later' : 'now',
-              view: 'blast-log',
-              to: `/blast-day/${day.id}/design/${firstShot.id}?mode=plan`,
-            }
-          : {
-              key: 'drilling',
-              label: 'Drill plan',
-              sub: `${plannedHoles} holes planned · not sent to a driller yet`,
-              chip: shotStarted ? 'not sent' : 'ready',
-              chipVariant: shotStarted ? 'secondary' : 'warning',
-              state: shotStarted ? 'later' : 'now',
-              view: 'blast-log',
-              to: `/blast-day/${day.id}/design/${firstShot.id}?mode=plan`,
-            },
-      );
+    if (drillingDay && firstShot) {
+      const planTo = `/blast-day/${day.id}/design/${firstShot.id}?mode=plan`;
+      // 1 · Drill plan
+      if (hasDrilling) push({ key: 'plan', label: 'Drill plan', sub: `sent · ${plannedHoles} holes`, chip: 'Done', state: 'done', view: 'walkthrough', to: planTo });
+      else if (hasPlan) push({ key: 'plan', label: 'Drill plan', sub: `${plannedHoles} holes planned · not sent to a driller yet`, chip: shotStarted ? 'Skipped' : 'Built · not sent', state: shotStarted ? 'later' : 'now', view: 'walkthrough', to: planTo });
+      else push({ key: 'plan', label: 'Drill plan', sub: 'lay the pattern, then send it to the drillers', chip: shotStarted ? 'Skipped' : 'To do', state: shotStarted ? 'later' : 'now', view: 'walkthrough', to: planTo });
+      // 2 · Drilling — the drillers' logs; yours to watch, not to do
+      if (!hasDrilling) push({ key: 'drilling', label: 'Drilling', sub: hasPlan ? 'starts when the plan is sent' : 'starts when the plan is sent', chip: 'Later', state: 'later', view: 'drilling' });
+      else if (!allComplete) push({ key: 'drilling', label: 'Drilling', sub: `${holesLine}${who ? ` · ${who}` : ''}${hazardCount ? ` · ${hazardCount} hazards` : ''}`, chip: 'Waiting', state: 'wait', view: 'drilling' });
+      else push({ key: 'drilling', label: 'Drilling', sub: `${holesLine}${who ? ` · ${who}` : ''}${hazardCount ? ` · ${hazardCount} hazards` : ''}`, chip: allAccepted ? 'Done' : 'Signed complete', state: 'done', view: 'drilling' });
+      // 3 · Review drilling — accept, or send a log back
+      if (!hasDrilling || !allComplete) push({ key: 'review', label: 'Review drilling', sub: 'accept, or send a log back with a note', chip: 'Later', state: 'later', view: 'drilling' });
+      else if (!allAccepted) push({ key: 'review', label: 'Review drilling', sub: `${counted.length} log${counted.length === 1 ? '' : 's'} signed complete`, chip: 'To do', state: 'now', view: 'drilling' });
+      else {
+        const at = counted.map((l) => l.acceptedAt ?? '').sort().pop();
+        push({ key: 'review', label: 'Review drilling', sub: `accepted${at ? ` ${hhmm(at)}` : ''}`, chip: 'Done', state: 'done', view: 'drilling' });
+      }
     }
+    const drillingSettled = !drillingDay || !firstShot || allAccepted || (shotStarted && !hasDrilling);
 
-    if (hasDrilling) {
-      phases.push({
-        key: 'drilling',
-        label: 'Drilling',
-        sub: `${holeCount}${plannedHoles ? `/${plannedHoles}` : ''} holes · ${drillerNames.length} driller${drillerNames.length === 1 ? '' : 's'}${hazardCount > 0 ? ` · ${hazardCount} hazards` : ''}`,
-        // S8a follow-up (Matthew): a finished plan says so — not "in progress"
-        chip: allAccepted ? 'accepted' : allComplete ? 'ready to review' : 'in progress',
-        chipVariant: allAccepted ? 'compliant' : allComplete ? 'submitted' : 'warning',
-        state: allAccepted ? 'done' : 'now',
-        view: 'drilling',
-      });
-      phases.push({
-        key: 'readiness',
-        label: 'Readiness review',
-        sub: review
-          ? `design confirmed${review.maxPoundsPerDelay ? ` · max ${Number.isFinite(review.maxPoundsPerDelay) ? fmtLbs(review.maxPoundsPerDelay) : review.maxPoundsPerDelay} lbs/delay` : ''}`
-          : 'plan intent vs as-drilled → adjust',
-        chip: review ? 'confirmed' : 'open',
-        chipVariant: review ? 'compliant' : 'warning',
-        state: review ? 'done' : allAccepted ? 'now' : 'todo',
-        view: 'readiness',
-      });
-    }
-
-    phases.push({
-      key: 'shots',
-      label: 'Shots',
+    // 4 · Fill out the blasting log
+    const fillState: PhaseState = complete || signed || fillDone ? 'done' : drillingSettled ? 'now' : 'later';
+    const openReds = reds.filter((c) => c.key !== 'sig');
+    push({
+      key: 'fill',
+      label: 'Fill out the blasting log',
       sub:
         shots.length === 0
-          ? 'none yet'
-          : logSigned && signedCount === 0
-            ? `${shots.length} shot${shots.length === 1 ? '' : 's'} · log signed`
-            : `${signedCount} of ${shots.length} signed`,
-      chip: allSigned ? 'signed' : 'in progress',
-      chipVariant: allSigned ? 'compliant' : 'warning',
-      state: allSigned ? 'done' : 'now',
+          ? 'no shots yet'
+          : fillState === 'done'
+            ? `${shots.length} shot${shots.length === 1 ? '' : 's'} · nothing missing`
+            : `${shots.length} shot${shots.length === 1 ? '' : 's'} · parameters, explosives, timing, seismo${openReds.length ? ` · ${openReds.length} missing` : ''}`,
+      chip: fillState === 'done' ? 'Done' : fillState === 'now' ? 'In progress' : 'Later',
+      state: fillState,
       view: 'blast-log',
     });
-
-    phases.push({
-      key: 'seismo',
-      label: 'Seismo',
-      sub:
-        shots.length === 0
-          ? '—'
-          : shots
-              .map((s, i) => `shot ${s.shotNumber || i + 1} ${readShots.has(s.id) ? 'attached' : '—'}`)
-              .slice(0, 2)
-              .join(' · ') + (shots.length > 2 ? ' …' : ''),
-      chip: shotsWithReadings >= shots.length && shots.length > 0 ? 'attached' : 'later ok',
-      chipVariant: shotsWithReadings >= shots.length && shots.length > 0 ? 'compliant' : 'submitted',
-      // Late attachment is NORMAL — this phase never becomes "now"
-      state: shotsWithReadings >= shots.length && shots.length > 0 ? 'done' : 'later',
-      view: 'blast-log',
+    // 5 · Check and sign
+    const checkState: PhaseState = signed ? 'done' : fillState === 'done' ? 'now' : 'later';
+    push({
+      key: 'check',
+      label: 'Check and sign',
+      sub: signed ? `signed${blastLog.blasterName ? ` by ${blastLog.blasterName}` : ''}` : openReds.length ? `${openReds.length} thing${openReds.length === 1 ? '' : 's'} to fix first` : 'nothing missing — sign it',
+      chip: signed ? 'Done' : checkState === 'now' ? 'To do' : 'Later',
+      state: checkState,
+      view: 'check',
+    });
+    // 6 · Mark the blasting log complete
+    const completeState: PhaseState = complete ? 'done' : signed ? 'now' : 'later';
+    push({
+      key: 'complete',
+      label: 'Mark the blasting log complete',
+      sub: complete ? `complete ${hhmm(blastLog.doneAt!)}${blastLog.doneByName ? ` · ${blastLog.doneByName}` : ''} · ready to file` : "the log's own done mark — File this day waits for it",
+      chip: complete ? 'Complete' : completeState === 'now' ? 'To do' : 'Later',
+      state: completeState,
+      view: 'check',
     });
 
-    phases.push({
-      key: 'timecards',
-      label: 'Time cards',
-      sub: `mine ${mine ? mine.status : '—'}${others.length > 0 ? ` · crew ${othersFiled}/${others.length} filed` : ''}`,
-      chip: mine && mine.status !== 'draft' ? 'filed' : 'open',
-      chipVariant: mine && mine.status !== 'draft' ? 'compliant' : 'warning',
-      state: mine && mine.status !== 'draft' ? 'done' : 'todo',
-      view: 'daily-report',
-    });
-
-    phases.push({
-      key: 'file',
-      label: 'Report & file',
-      sub: day.status === 'draft' ? 'equipment, materials, sign, submit' : `day ${day.status}`,
-      chip: day.status,
-      chipVariant: day.status === 'draft' ? 'draft' : day.status === 'submitted' ? 'submitted' : 'compliant',
-      state: day.status !== 'draft' ? 'done' : 'todo',
-      view: 'daily-report',
-    });
-
-    // Continue targets the first live phase, in day order
-    const order: PhaseKey[] = ['drilling', 'readiness', 'shots', 'timecards', 'file'];
+    // exactly one ring: the first live step in order
+    const order: PhaseKey[] = ['plan', 'drilling', 'review', 'fill', 'check', 'complete'];
     let current: DayPhase | undefined;
     for (const key of order) {
       const p = phases.find((x) => x.key === key);
-      if (p && p.state !== 'done' && p.state !== 'later') {
+      if (p && (p.state === 'now' || p.state === 'wait')) {
         current = p;
         break;
       }
     }
-    if (current) current.state = 'now';
+    for (const p of phases) if (p.state === 'now' && p !== current) p.state = 'todo';
     const continueLabel = !current
       ? undefined
-      : current.key === 'shots' && firstUnsigned
-        ? `Continue — Shot ${firstUnsigned.shotNumber}`
+      : current.key === 'plan'
+        ? hasPlan
+          ? 'Next: send the plan to drillers'
+          : 'Next: build the drill plan'
         : current.key === 'drilling'
-          ? !hasDrilling
-            ? hasPlan
-              ? 'Send the plan to drillers'
-              : 'Build the drill plan'
-            : allComplete
-              ? 'Review drilling & build timing'
-              : `Drilling — ${drillerNames.slice(0, 2).join(', ') || 'in progress'} ${holeCount}${plannedHoles ? `/${plannedHoles}` : ''}`
-          : current.key === 'readiness'
-            ? 'Confirm design & build timing'
-            : current.key === 'timecards'
-              ? 'Continue — my time card'
-              : 'Continue — report & file';
+          ? who
+            ? `Waiting: ${who} · ${holeCount}${plannedHoles ? ` of ${plannedHoles}` : ''}`
+            : 'Waiting: drilling to start'
+          : current.key === 'review'
+            ? 'Next: review the drilling'
+            : current.key === 'fill'
+              ? shots.length === 1
+                ? 'Next: fill out Shot 1'
+                : 'Next: fill out the blasting log'
+              : current.key === 'check'
+                ? 'Next: check and sign'
+                : 'Next: mark the log complete';
 
     return { phases, current, continueLabel };
   }, [day?.id, day?.status, day?.updatedAt, blastLog?.id, blastLog?.updatedAt, shots.map((s) => s.id + (s.signatureImage ? 's' : '') + s.updatedAt).join(',')]);

@@ -148,8 +148,9 @@ export function DayHub({ day, job, blastLog, shots, dailyReport, locked, owner, 
       name: 'Blasting log',
       state: logState,
       onAction: () => {
-        if (logState.action === 'Start') void addBlastLogToDay(day.id).then(() => setView('hub'));
-        else setView('hub');
+        // the tile opens the walkthrough; the log itself is one tab away
+        if (logState.action === 'Start') void addBlastLogToDay(day.id).then(() => setView('walkthrough'));
+        else setView('walkthrough');
       },
     });
   }

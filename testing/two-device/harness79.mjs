@@ -47,8 +47,12 @@ async (page, lib) => {
   const picked = await PB.evaluate(async () => {
     const { db } = await import('/src/db/index.ts');
     const { todayISO } = await import('/src/lib/utils.ts');
-    const taken = new Set((await db.blastDays.filter((d) => d.date === todayISO()).toArray()).map((d) => d.jobId));
-    const free = (await db.jobs.filter((j) => !j.archivedAt && j.isActive && !taken.has(j.id) && !/^S1[124]/.test(j.name)).toArray()).sort((a, b) => a.name.localeCompare(b.name));
+    const today = todayISO();
+    const taken = new Set((await db.blastDays.filter((d) => d.date === today).toArray()).map((d) => d.jobId));
+    // an accepted drill log outlives its day on the server, and day and shot ids are fixed by job + date —
+    // a job with a log today would hand the driller an old accepted log instead of a fresh one
+    const logged = new Set((await db.drillLogs.filter((l) => (l.date ?? l.createdAt.slice(0, 10)) === today).toArray()).map((l) => l.jobId));
+    const free = (await db.jobs.filter((j) => !j.archivedAt && j.isActive && !taken.has(j.id) && !logged.has(j.id) && !/^S1[124]/.test(j.name)).toArray()).sort((a, b) => a.name.localeCompare(b.name));
     const drills = (await db.equipment.filter((e) => e.isActive && (e.category === 'rock_drill' || e.category === 'equip_drill')).toArray()).sort((a, b) =>
       a.assetNumber.localeCompare(b.assetNumber, undefined, { numeric: true }),
     );
@@ -105,8 +109,8 @@ async (page, lib) => {
     await spa(PB, DAY);
     await PB.locator('[data-tile="blast-log"] [data-tile-action]').waitFor({ timeout: 20000 });
     await PB.locator('[data-tile="blast-log"] [data-tile-action]').click();
-    await waitFor(async () => (/view=hub/.test(PB.url()) ? 1 : null), 10000);
-    R.ok(`the Blasting log tile opens a step of its own (${path(PB).replace(dayId, '…')})`, /\?view=hub$/.test(path(PB)));
+    await waitFor(async () => (/view=walkthrough/.test(PB.url()) ? 1 : null), 10000);
+    R.ok(`the Blasting log tile opens a step of its own (${path(PB).replace(dayId, '…')})`, /\?view=walkthrough$/.test(path(PB)));
     R.ok(`inside the day the arrow names the day ("‹ ${await backLabel(PB)}")`, (await backLabel(PB)) === dayName);
     await PB.locator('[data-tour="day-tabs"] button', { hasText: 'Blasting Log' }).click();
     await waitFor(async () => (/view=blast-log/.test(PB.url()) ? 1 : null), 10000);
@@ -122,17 +126,17 @@ async (page, lib) => {
     R.ok('and lands on the Blasting log, not the Day tab', /\?view=blast-log$/.test(path(PB)));
     await PB.goBack();
     await sleep(500);
-    R.ok(`the back gesture walks the tabs: ${path(PB).replace(dayId, '…')}`, /\?view=hub$/.test(path(PB)));
+    R.ok(`the back gesture walks the tabs: ${path(PB).replace(dayId, '…')}`, /\?view=walkthrough$/.test(path(PB)));
     await PB.goBack();
     await sleep(500);
     R.ok('…then the tiles, still inside the day', path(PB) === DAY);
-    // from the Day tab (the walkthrough) into the plan: the arrow goes back to the Day tab
-    await spa(PB, `${DAY}?view=hub`);
+    // from the walkthrough into the plan: the arrow goes back to the walkthrough
+    await spa(PB, `${DAY}?view=walkthrough`);
     await spa(PB, `${DAY}/design/${shotId}?mode=plan`);
     await PB.locator('[data-design-title]').waitFor({ timeout: 20000 });
-    R.ok(`opened from the Day tab, the plan's arrow reads "‹ ${await backLabel(PB)}"`, (await backLabel(PB)) === 'Day');
+    R.ok(`opened from the walkthrough, the plan's arrow reads "‹ ${await backLabel(PB)}"`, (await backLabel(PB)) === 'Walkthrough');
     await tapBack(PB);
-    R.ok('and returns to the Day tab', /\?view=hub$/.test(path(PB)));
+    R.ok('and returns to the walkthrough', /\?view=walkthrough$/.test(path(PB)));
   });
 
   await R.section('The driller: home card → day → drill log → the arrow reads the day; Mark complete lands on the day', async () => {

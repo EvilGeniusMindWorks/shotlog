@@ -537,7 +537,7 @@ function DesignPlanInner({
                 <Send className="h-4 w-4 mr-1" /> {alreadyAssigned.size > 0 ? 'Send to more' : 'Send to drillers'}
               </Button>
             )}
-            <Button variant="outline" data-plan-done onClick={() => { flush(); navigate(`/blast-day/${blastDayId}?view=hub`); }}>
+            <Button variant="outline" data-plan-done onClick={() => { flush(); navigate(`/blast-day/${blastDayId}?view=walkthrough`); }}>
               Done for now
             </Button>
           </div>
@@ -550,7 +550,7 @@ function DesignPlanInner({
           jobId={job?.id ?? ''}
           alreadyAssigned={alreadyAssigned}
           onClose={() => setShowSend(false)}
-          onSent={() => { flush(); navigate(`/blast-day/${blastDayId}?view=hub`); }}
+          onSent={() => { flush(); navigate(`/blast-day/${blastDayId}?view=walkthrough`); }}
         />
       )}
     </div>

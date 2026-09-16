@@ -40,18 +40,20 @@ The report, contacts, history and print icons that sit in the header on a wide s
 
 Under your tiles sits one row per person on the day — anyone who confirmed the card, filed a rig checklist, or has a drill log or time card there — each with the state of their own papers. Tap a row to read what they filed, **Accept** a drill log they signed complete (accepting files its office copy at the same time), or **Remind** them when their time card is missing; the reminder puts one line on their home and clears itself the moment they file. With eight or more people the list adds a summary line, a **Needs something / All** filter (Needs something by default), and a search box, and anyone who needs something floats to the top.
 
-## The phases
+## The walkthrough
 
-Tap the **Blasting log** tile and you're on today's blasting-log screen, with the spine of phases down the middle: each phase says where it stands, and **Continue** always names the next thing.
+Tap the **Blasting log** tile and you're on the **Walkthrough**: six steps, each saying where it stands — Later, To do, Waiting, In progress, Done, Complete — with exactly one step ringed and a button that always reads **Next: …** (or **Waiting: …** while the drillers work). Tap any step to open its screen; the arrow brings you back to the walkthrough.
 
-| Phase | What it holds |
+| Step | What it is |
 |---|---|
-| **Drill plan** | The pattern you lay out and send to the drillers. |
-| **Drilling** | The drillers' logs, and your review of what was actually drilled. |
-| **Readiness** | The checks before loading: plan accepted, crew, equipment. |
-| **Shots** | The blasting log: drill parameters, explosives, design and timing, compliance. |
-| **Seismo** | The seismograph readings for each shot. |
-| **File** | Sign-off and filing to the office. |
+| **Drill plan** | Lay the pattern, send it to the drillers. |
+| **Drilling** | The drillers' logs — yours to watch, not to do. |
+| **Review drilling** | Accept, or send a log back with a note. |
+| **Fill out the blasting log** | The shot's parameters and totals, explosives, design and timing, seismo readings, media. |
+| **Check and sign** | One screen lists what the log still needs — seismo readings on every shot, explosives, totals — each line a tap into the place. Nothing red, then sign. |
+| **Mark the blasting log complete** | The log's own done mark. The tile reads *Complete · ready to file*, and **Edit again** reopens it. |
+
+**File this day** waits for the blasting log marked complete and the daily report marked done.
 
 A phase's chip reads *in progress*, *ready to review*, *accepted*, or *skipped* (a blast-only day has no drilling, for instance).
 
@@ -63,7 +65,7 @@ Tap **Continue** and you land on the next thing: *Build the drill plan*, *Send t
 
 ## Day · Blast log · Daily report
 
-Inside the Blasting log tile, three tabs still show the same day: the **Day** (the spine), the **Blasting log** (the technical record) and the **Daily report** (crew, hours, equipment). Each tab is a step of its own: the arrow in the header — **‹ Route 3 Widening** — returns you to the tiles, and on a phone the back gesture walks the tabs the same way. They share everything — a crew member added on the daily report is on the blast log's sign-off list.
+Inside the Blasting log tile two tabs show the same log: the **Walkthrough** (the steps, with Next naming what comes next) and the **Blasting log** (the technical record). The daily report is the day's, not the log's — it has its own tile. Each tab is a step of its own: the arrow in the header — **‹ Route 3 Widening** — returns you to the tiles, and on a phone the back gesture walks the tabs the same way.
 
 The arrow on the day itself goes back to wherever you opened it from — Work days, Records, a job, a card on your home — and says so. See [Finding your way around](/help/start-here/finding-your-way-around).
 

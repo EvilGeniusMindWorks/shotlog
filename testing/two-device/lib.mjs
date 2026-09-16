@@ -317,3 +317,20 @@ export async function deactivateUsers(page, adminToken, predicate) {
     await api(`/users/${u.id}`, { method: 'PATCH', body: JSON.stringify({ isActive: false }) }, adminToken);
   }
 }
+
+/** Navigation round: File this day waits for the blasting log marked COMPLETE and the
+ *  daily report marked DONE. Harnesses that file a day call this after signing the log. */
+export async function finishPapers(P, dayId) {
+  return P.evaluate(async (dayId) => {
+    const { db } = await import('/src/db/index.ts');
+    const { nowISO } = await import('/src/lib/utils.ts');
+    const { getSessionUser } = await import('/src/lib/session.ts');
+    const me = getSessionUser();
+    const now = nowISO();
+    const log = await db.blastLogs.where('blastDayId').equals(dayId).first();
+    if (log && !log.doneAt) await db.blastLogs.update(log.id, { doneAt: now, doneBy: me?.id ?? '', doneByName: me?.name ?? '', updatedAt: now });
+    const report = await db.dailyReports.where('blastDayId').equals(dayId).first();
+    if (report && !report.doneAt) await db.dailyReports.update(report.id, { doneAt: now, doneBy: me?.id ?? '', doneByName: me?.name ?? '', updatedAt: now });
+    return { log: Boolean(log), report: Boolean(report) };
+  }, dayId);
+}

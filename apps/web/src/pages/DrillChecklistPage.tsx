@@ -316,7 +316,11 @@ export function DrillChecklistPage() {
   // pre-started tomorrow's) never pulls a checklist onto its date.
   const dayHint = useLiveQuery(async () => {
     if (dateParam || !jobId) return null;
-    const open = await db.blastDays.filter((d) => d.jobId === jobId && d.status === 'draft' && !d.closed).toArray();
+    // a day dated after today (the blaster pre-started tomorrow's) never captures today's
+    // walk-around, and neither does a stale draft from weeks ago — the last seven days only
+    const today = todayISO();
+    const floor = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10);
+    const open = await db.blastDays.filter((d) => d.jobId === jobId && d.status === 'draft' && !d.closed && d.date <= today && d.date >= floor).toArray();
     const mine: { id: string; date: string }[] = [];
     for (const d of open) {
       const confirmed = (await db.workDayConfirmations.where('blastDayId').equals(d.id).toArray()).some((c) => !me?.id || c.userId === me.id);
@@ -326,7 +330,6 @@ export function DrillChecklistPage() {
       if (carded) mine.push({ id: d.id, date: d.date });
     }
     if (mine.length === 0) return null;
-    const today = todayISO();
     return mine.find((d) => d.date === today) ?? mine.sort((a, b) => b.date.localeCompare(a.date))[0];
   }, [jobId, dateParam, me?.id]);
   const hintReady = dayHint !== undefined;
