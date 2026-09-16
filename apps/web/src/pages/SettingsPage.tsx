@@ -252,7 +252,7 @@ function HelpCard() {
           />
           <span>
             Feedback bubble in the corner of every screen
-            <span className="block text-xs text-gray-400">Reaches the composer over any sheet and on the print screens.</span>
+            <span className="block text-xs text-gray-400">Reaches Send feedback over any sheet and on the print screens. On for everyone during beta.</span>
           </span>
         </label>
         {queued > 0 && (

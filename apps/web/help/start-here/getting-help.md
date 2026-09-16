@@ -36,7 +36,7 @@ While ShotLog is in beta, a small speech-bubble button sits in the bottom corner
 
 On a print screen, or with a filed copy open in Records, the report also names the paper it is about, so the fix lands against the right page. (A picture of a filed PDF comes out blank — the browser's own viewer draws it — so the report carries the copy itself instead.)
 
-The bubble is on by itself in the Alpha and Beta companies and off in Production; **Settings › Help &amp; feedback › Feedback bubble** turns it on or off on this device.
+The bubble is on for everyone. **Settings › Help &amp; feedback › Feedback bubble** turns it off, or back on, on this device.
 
 ## Related
 

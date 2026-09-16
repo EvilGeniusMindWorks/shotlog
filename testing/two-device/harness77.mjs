@@ -156,7 +156,7 @@ async (page, lib) => {
   let paperLabel = '';
   const envOf = (P) => P.evaluate(async () => (await import('/src/lib/session.ts')).getSessionUser()?.environment ?? null);
   await R.section('The feedback bubble reaches the composer over a sheet and on a print screen, and names the paper', async () => {
-    // this test company may be Production-flavoured (bubble off by default) — switch it on the way a person would in Settings
+    // make sure it is on (a device may have switched it off) the way a person would in Settings
     await PP.goto(`${WEB}/settings`);
     await PP.locator('[data-pref-feedback-fab]').waitFor({ timeout: 20000 });
     R.note(`company environment: ${await envOf(PP)}`);
@@ -211,13 +211,13 @@ async (page, lib) => {
     R.ok('the paper carries the record behind the print', Boolean(row?.paper?.recordId) && row.paper.recordId === dayId && row.paper.kind === 'blastLog');
   });
 
-  await R.section('The Settings switch hides the bubble; production stays off by default', async () => {
+  await R.section('The Settings switch hides the bubble; on by default everywhere', async () => {
     await PP.evaluate(() => localStorage.removeItem('shotlog-feedback-button'));
     await PP.goto(`${WEB}/settings`);
     await PP.locator('[data-pref-feedback-fab]').waitFor({ timeout: 20000 });
     const env = await envOf(PP);
     const checked = await PP.locator('[data-pref-feedback-fab]').isChecked();
-    R.ok(`with no preference the switch follows the company: ${env} → ${checked ? 'on' : 'off'}`, checked === (env !== 'production'));
+    R.ok(`with no preference the bubble is on whatever the company (${env}) — Matthew, Sep 16: everywhere`, checked === true);
     if (!checked) await PP.locator('[data-pref-feedback-fab]').check();
     await sleep(300);
     R.ok('on: the bubble shows on Settings too', (await PP.locator('[data-feedback-fab]').count()) === 1);
@@ -236,7 +236,7 @@ async (page, lib) => {
         bare: m.isBareRoute('/blast-day/x/print') && m.isBareRoute('/blast-day/x/print-daily') && m.isBareRoute('/blast-day/x/submit') && m.isBareRoute('/help/blaster/x') && m.isBareRoute('/drill-checklist-print/x') && !m.isBareRoute('/blast-day/x') && !m.isBareRoute('/records'),
       };
     });
-    R.ok('Production is off by default; Alpha and Beta are on', !rule.prod && rule.beta && rule.alpha);
+    R.ok('on by default in Production, Alpha and Beta alike', rule.prod && rule.beta && rule.alpha);
     R.ok('print, filing and help screens count as bare — the bubble sits lower there', rule.bare);
   });
 
