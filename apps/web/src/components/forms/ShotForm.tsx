@@ -13,6 +13,7 @@ import { seedDiagramFromPlan } from '@/lib/shotDiagram';
 import type { Shot, DrillParams, ShotTotals, ExplosiveUsage, DrillPlanRecord } from '@/db/schema';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DraftInput } from '@/components/ui/draft-input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { ChipSelect } from '@/components/ui/chip-select';
@@ -93,7 +94,7 @@ export function ShotForm({ shot, allShots, explosiveUsage, kFactor: _kFactor, bl
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label className="text-[10px] uppercase tracking-wide text-gray-500">Time</Label>
-            <Input type="time" value={shot.time} onChange={(e) => updateShot({ time: e.target.value })} />
+            <DraftInput type="time" value={shot.time} onCommit={(v) => updateShot({ time: v })} data-shot-time />
           </div>
           <div>
             <Label className="text-[10px] uppercase tracking-wide text-gray-500">Blast Mats</Label>
@@ -108,7 +109,7 @@ export function ShotForm({ shot, allShots, explosiveUsage, kFactor: _kFactor, bl
                 ]}
               />
               {dp.blastMats === true && (
-                <Input
+                <DraftInput
                   type="number"
                   inputMode="numeric"
                   min={0}
@@ -117,7 +118,7 @@ export function ShotForm({ shot, allShots, explosiveUsage, kFactor: _kFactor, bl
                   aria-label="How many mats"
                   data-blast-mat-count
                   value={dp.blastMatCount ?? ''}
-                  onChange={(e) => updateDrillParam('blastMatCount', e.target.value === '' ? undefined : Math.max(0, parseInt(e.target.value, 10) || 0))}
+                  onCommit={(v) => updateDrillParam('blastMatCount', v === '' ? undefined : Math.max(0, parseInt(v, 10) || 0))}
                 />
               )}
             </div>
@@ -134,12 +135,13 @@ export function ShotForm({ shot, allShots, explosiveUsage, kFactor: _kFactor, bl
           ).map(([field, label]) => (
             <div key={field}>
               <Label className="text-[10px] uppercase tracking-wide text-gray-500">{label}</Label>
-              <Input
+              <DraftInput
                 type="number"
                 inputMode="decimal"
                 step="0.1"
                 value={dp[field] || ''}
-                onChange={(e) => updateDrillParam(field, e.target.value)}
+                onCommit={(v) => updateDrillParam(field, v)}
+                data-dp={field}
                 placeholder="0"
               />
             </div>
@@ -157,12 +159,13 @@ export function ShotForm({ shot, allShots, explosiveUsage, kFactor: _kFactor, bl
         <ImportFromDrillPlan shot={shot} />
         <div className="grid grid-cols-3 border border-gray-200 rounded-lg overflow-hidden divide-x divide-y divide-gray-200 -space-y-px">
           <TotalsCell label="# Holes">
-            <Input
+            <DraftInput
               type="number"
               inputMode="numeric"
               className="h-8 border-0 px-0 font-mono font-bold text-[15px] focus-visible:ring-0"
               value={t.numHoles || ''}
-              onChange={(e) => updateTotal('numHoles', e.target.value)}
+              onCommit={(v) => updateTotal('numHoles', v)}
+              data-total="numHoles"
               placeholder="0"
             />
           </TotalsCell>
@@ -170,24 +173,26 @@ export function ShotForm({ shot, allShots, explosiveUsage, kFactor: _kFactor, bl
           <TotalsCell label="Avg Depth" value={t.avgDrillDepth > 0 ? `${t.avgDrillDepth.toFixed(1)}'` : '—'} />
           <TotalsCell label="Drill Footage">
             <div className="flex items-baseline">
-              <Input
+              <DraftInput
                 type="number"
                 inputMode="decimal"
                 className="h-8 border-0 px-0 font-mono font-bold text-[15px] focus-visible:ring-0"
                 value={t.totalDrillFootage || ''}
-                onChange={(e) => updateTotal('totalDrillFootage', e.target.value)}
+                onCommit={(v) => updateTotal('totalDrillFootage', v)}
+              data-total="totalDrillFootage"
                 placeholder="0"
               />
               <span className="text-xs text-gray-400">'</span>
             </div>
           </TotalsCell>
           <TotalsCell label="Pay Yards">
-            <Input
+            <DraftInput
               type="number"
               inputMode="decimal"
               className="h-8 border-0 px-0 font-mono font-bold text-[15px] focus-visible:ring-0"
               value={t.totalPayYards || ''}
-              onChange={(e) => updateTotal('totalPayYards', e.target.value)}
+              onCommit={(v) => updateTotal('totalPayYards', v)}
+              data-total="totalPayYards"
               placeholder="0"
             />
           </TotalsCell>

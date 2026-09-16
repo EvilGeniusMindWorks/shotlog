@@ -3,6 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, FileDown, Printer, TriangleAlert } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { useBlastDay } from '@/hooks/useBlastDay';
+import { useFeedbackPaper } from '@/lib/feedbackPaper';
+import { formatDate } from '@/lib/utils';
 import { ColumnVisual } from '@/components/design/TypicalColumnBuilder';
 import { distributeByHoles, powderFactor } from '@shotlog/shared';
 import { validateForPrint } from '@/lib/validation';
@@ -43,6 +45,7 @@ function dash(v: string | number | null | undefined, suffix = ''): string {
 export function PrintBlastLogPage() {
   const { id } = useParams<{ id: string }>();
   const { blastDay, job, blastLog, shots, explosiveUsage } = useBlastDay(id);
+  useFeedbackPaper(blastDay ? { label: `Blasting log · ${job?.name ?? 'job'} · ${formatDate(blastDay.date)} · print`, kind: 'blastLog', recordId: blastDay.id } : null);
   const typicalColumns =
     useLiveQuery(async () => {
       const shotIds = shots.map((s) => s.id);

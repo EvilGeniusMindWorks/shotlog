@@ -8,7 +8,7 @@ import { equipmentEntryBucket } from '@/db/schema';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { DraftInput, DraftTextarea } from '@/components/ui/draft-input';
 import { Select } from '@/components/ui/select';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { canEditApprovedDay, can } from '@/lib/perms';
@@ -148,11 +148,10 @@ export function DailyReportForm({ blastDay, dailyReport, blastLog, shots, readOn
           <CardTitle className="text-base">Notes</CardTitle>
         </CardHeader>
         <CardContent>
-          <Textarea
+          <DraftTextarea
             value={dailyReport.notes}
-            onChange={(e) =>
-              db.dailyReports.update(dailyReport.id, { notes: e.target.value, updatedAt: nowISO() })
-            }
+            data-report-notes
+            onCommit={(v) => void db.dailyReports.update(dailyReport.id, { notes: v, updatedAt: nowISO() })}
             rows={4}
             placeholder="Daily notes..."
           />
@@ -382,29 +381,31 @@ function EquipmentSection({
                         options={EQUIPMENT_CATEGORIES}
                         className="w-32"
                       />
-                      <Input
+                      <DraftInput
                         value={e.assetNumber}
-                        onChange={(ev) => updateEntry(e.id, 'assetNumber', ev.target.value)}
+                        onCommit={(v) => updateEntry(e.id, 'assetNumber', v)}
                         placeholder="Asset #"
                         className="w-28"
                       />
                     </>
                   )}
                   <div className="w-20">
-                    <Input
+                    <DraftInput
                       type="number"
                       step="0.1"
                       value={e.hoursStart || ''}
-                      onChange={(ev) => updateEntry(e.id, 'hoursStart', parseFloat(ev.target.value) || 0)}
+                      data-equipment-start
+                      onCommit={(v) => updateEntry(e.id, 'hoursStart', parseFloat(v) || 0)}
                       placeholder="Start"
                     />
                   </div>
                   <div className="w-20">
-                    <Input
+                    <DraftInput
                       type="number"
                       step="0.1"
                       value={e.hoursEnd || ''}
-                      onChange={(ev) => updateEntry(e.id, 'hoursEnd', parseFloat(ev.target.value) || 0)}
+                      data-equipment-end
+                      onCommit={(v) => updateEntry(e.id, 'hoursEnd', parseFloat(v) || 0)}
                       placeholder="End"
                     />
                   </div>
@@ -480,25 +481,20 @@ function GenericLineItems({
           <Plus className="h-4 w-4 mr-1" /> Add
         </Button>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="space-y-2" data-line-items={title}>
         {entries.length === 0 && (
           <p className="text-sm text-gray-400 text-center py-3">None added</p>
         )}
         {entries.map((e) => (
           <div key={e.id} className="flex items-center gap-2">
             {fields.map((f, i) => (
-              <Input
+              <DraftInput
                 key={f}
                 type={fieldTypes[i]}
                 step={fieldTypes[i] === 'number' ? '0.01' : undefined}
                 value={(e as unknown as Record<string, string | number>)[f] || ''}
-                onChange={(ev) =>
-                  updateEntry(
-                    e.id,
-                    f,
-                    fieldTypes[i] === 'number' ? parseFloat(ev.target.value) || 0 : ev.target.value
-                  )
-                }
+                data-line-field={f}
+                onCommit={(v) => updateEntry(e.id, f, fieldTypes[i] === 'number' ? parseFloat(v) || 0 : v)}
                 placeholder={fieldLabels[i]}
                 className="flex-1"
               />

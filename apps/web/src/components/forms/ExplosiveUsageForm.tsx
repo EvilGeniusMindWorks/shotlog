@@ -13,6 +13,7 @@ import type {
 } from '@/db/schema';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DraftInput } from '@/components/ui/draft-input';
 import { Label } from '@/components/ui/label';
 import { SectionCard, IconChip } from '@/components/ui/section-card';
 
@@ -278,12 +279,13 @@ function DetonatorsCard({
       {/* Lead line */}
       <div className="flex items-center gap-2 py-1.5">
         <span className="text-sm font-semibold flex-1">Lead In Line</span>
-        <Input
+        <DraftInput
           type="number"
           inputMode="decimal"
           className="w-24 h-9 text-right font-mono"
           value={explosiveUsage.leadLine || ''}
-          onChange={(e) => onUpdate({ leadLine: parseFloat(e.target.value) || 0 })}
+          data-lead-line
+          onCommit={(v) => onUpdate({ leadLine: parseFloat(v) || 0 })}
           placeholder="0"
         />
         <span className="text-xs text-gray-400 w-8">LF</span>

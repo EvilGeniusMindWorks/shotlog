@@ -16,6 +16,7 @@ import {
   type FeedbackKind,
 } from '@/lib/feedback';
 import { cn } from '@/lib/utils';
+import { getFeedbackPaper, type FeedbackPaper } from '@/lib/feedbackPaper';
 
 export interface ComposerOptions {
   kind?: FeedbackKind;
@@ -25,6 +26,8 @@ export interface ComposerOptions {
   /** S11: the automatic crash report these words belong to */
   parentId?: string;
   reportCode?: string;
+  /** S18: the paper this report is about; taken from the screen when omitted */
+  paper?: FeedbackPaper | null;
 }
 
 type OpenFn = (opts?: ComposerOptions) => void;
@@ -44,7 +47,8 @@ export function FeedbackHost() {
   >({ phase: 'closed' });
 
   useEffect(() => {
-    openFn = (opts = {}) => {
+    openFn = (given = {}) => {
+      const opts: ComposerOptions = { ...given, paper: given.paper === undefined ? getFeedbackPaper() : given.paper };
       if (opts.screenshot === false) {
         setState({ phase: 'open', opts, screenshot: null });
         return;
@@ -73,6 +77,7 @@ export function FeedbackHost() {
       screenshot={state.screenshot}
       parentId={state.opts.parentId}
       reportCode={state.opts.reportCode}
+      paper={state.opts.paper}
       onClose={() => setState({ phase: 'closed' })}
     />
   );
@@ -87,11 +92,13 @@ export function FeedbackComposer({
   embedded,
   parentId,
   reportCode,
+  paper,
 }: {
   initialKind?: FeedbackKind;
   initialMessage?: string;
   parentId?: string;
   reportCode?: string;
+  paper?: FeedbackPaper | null;
   screenshot: string | null;
   onClose: () => void;
   /** Render inline (crash screen) instead of as an overlay sheet */
@@ -114,6 +121,7 @@ export function FeedbackComposer({
         message,
         screenshot: includeShot ? screenshot : null,
         ...(parentId ? { parentId } : {}),
+        ...(paper ? { paper } : {}),
       });
       showToast(
         outcome === 'sent'
@@ -189,6 +197,13 @@ export function FeedbackComposer({
         className="min-h-[110px]"
         data-feedback-message
       />
+
+      {paper && (
+        <p className="text-xs text-gray-700 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2" data-feedback-paper>
+          About <b>{paper.label}</b>
+          {paper.submissionId ? ' — the filed copy goes with this report' : ''}
+        </p>
+      )}
 
       {screenshot && (
         <label className="flex items-center gap-3 rounded-lg border border-gray-200 p-2 cursor-pointer">

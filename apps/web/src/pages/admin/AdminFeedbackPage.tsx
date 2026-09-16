@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { showToast } from '@/components/ui/undo-toast';
 import { cn } from '@/lib/utils';
 import { AdminCrashesTab } from './AdminCrashesTab';
+import { getSubmissionPdfBlob } from '@/lib/archive';
 
 interface FeedbackRow {
   id: string;
@@ -33,6 +34,19 @@ interface FeedbackRow {
   createdAt: string;
   receivedAt: string;
   hasScreenshot: boolean;
+  /** S18: the paper the report is about */
+  paper?: { label: string; kind?: string; submissionId?: string; recordId?: string } | null;
+}
+
+async function openFiledPdf(submissionId: string): Promise<void> {
+  const blob = await getSubmissionPdfBlob(submissionId).catch(() => null);
+  if (!blob) {
+    showToast('That filed copy is not on this device yet — it needs the company\u2019s sync, or the device that filed it.');
+    return;
+  }
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 interface FeedbackDetail extends FeedbackRow {
@@ -233,7 +247,7 @@ export function AdminFeedbackPage() {
                     {r.message}
                   </p>
                   <p className="text-xs text-gray-400 mt-0.5 truncate">
-                    {r.userName} · {r.role} · {r.route || '/'} · {new Date(r.receivedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                    {r.userName} · {r.role} · {r.route || '/'}{r.paper ? ` · ${r.paper.label}` : ''} · {new Date(r.receivedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
                     {!r.online && ' · filed offline'}
                     {r.hasScreenshot && (
                       <>
@@ -260,6 +274,21 @@ export function AdminFeedbackPage() {
                     <dd className="col-span-1 sm:col-span-2 text-gray-700">{shortUA(r.userAgent)} · {r.viewport}{r.standalone ? ' · installed' : ' · browser tab'}</dd>
                     <dt className="text-gray-400">Email</dt>
                     <dd className="col-span-1 sm:col-span-2 text-gray-700">{r.notified === 'sent' ? 'sent' : r.notified === 'failed' ? 'FAILED' : 'email off'}</dd>
+                    <dt className="text-gray-400">Screen</dt>
+                    <dd className="col-span-1 sm:col-span-2 text-gray-700">
+                      <a className="underline text-navy" href={r.route || '/'} target="_blank" rel="noreferrer" data-feedback-open-screen>
+                        Open this screen
+                      </a>
+                      {r.paper?.submissionId && (
+                        <>
+                          {' · '}
+                          <button type="button" className="underline text-navy" data-feedback-open-pdf onClick={() => void openFiledPdf(r.paper!.submissionId!)}>
+                            Open the PDF
+                          </button>
+                        </>
+                      )}
+                      {r.paper && <span className="block text-xs text-gray-400">{r.paper.label}</span>}
+                    </dd>
                   </dl>
 
                   {/* The preview uses the width it has and scrolls inside its own

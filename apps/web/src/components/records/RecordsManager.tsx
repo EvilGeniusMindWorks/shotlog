@@ -33,6 +33,7 @@ import {
 } from '@/lib/archive';
 import { toCsv } from '@/lib/csv';
 import { cn, formatDate } from '@/lib/utils';
+import { useFeedbackPaper } from '@/lib/feedbackPaper';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -219,6 +220,8 @@ function Preview({ row, onClose, compact }: { row: RecRow; onClose?: () => void;
   const [url, setUrl] = useState<string | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'missing'>('loading');
   const filed = row.filed;
+  // S18: a report sent while this copy is open names it — a picture of the PDF viewer comes out blank
+  useFeedbackPaper(filed ? { label: `${DOC_KIND_LABEL[row.kind]} · ${row.title} · ${formatDate(row.date)} · office copy v${filed.version}`, kind: String(row.kind), submissionId: filed.id } : null);
   useEffect(() => {
     let revoke: string | null = null;
     let cancelled = false;

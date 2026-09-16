@@ -6,6 +6,7 @@ import { generateId, nowISO, cn } from '@/lib/utils';
 import type { ColumnLayer, TypicalColumn } from '@/db/schema';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DraftInput } from '@/components/ui/draft-input';
 import { Select } from '@/components/ui/select';
 
 export const LAYER_STYLES: Record<
@@ -208,15 +209,16 @@ export function TypicalColumnBuilder({ shotId }: { shotId: string }) {
                     <span className="text-xs italic text-gray-400 w-24 text-right pr-1">point</span>
                   ) : (
                     <>
-                      <Input
+                      <DraftInput
                         type="number"
                         inputMode="decimal"
                         className="w-20 h-9 text-right font-mono"
                         value={layer.lengthFt || ''}
                         placeholder="0"
-                        onChange={(e) => {
+                        data-layer-ft={i}
+                        onCommit={(text) => {
                           const next = [...topDown];
-                          next[i] = { ...layer, lengthFt: parseFloat(e.target.value) || 0 };
+                          next[i] = { ...layer, lengthFt: parseFloat(text) || 0 };
                           saveLayers(next);
                         }}
                       />

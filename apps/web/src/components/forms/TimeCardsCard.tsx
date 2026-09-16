@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { DraftInput } from '@/components/ui/draft-input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { SignatureField } from '@/components/ui/signature-field';
@@ -229,14 +230,15 @@ export function TimeCardRow({ card, editable }: { card: TimeCard; editable: bool
         </p>
       )}
       {editable ? (
-        <div className="grid grid-cols-4 gap-2">
+        // S18: IN and OUT get half the row each on a phone, wide enough for "06:30 AM" (Matthew: the AM/PM was cut off)
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <div>
             <Label className="text-xs">IN</Label>
-            <Input type="time" value={card.timeIn ?? ''} onChange={(e) => setTimes('timeIn', e.target.value)} />
+            <DraftInput type="time" value={card.timeIn ?? ''} onCommit={(v) => setTimes('timeIn', v)} data-card-in />
           </div>
           <div>
             <Label className="text-xs">OUT</Label>
-            <Input type="time" value={card.timeOut ?? ''} onChange={(e) => setTimes('timeOut', e.target.value)} />
+            <DraftInput type="time" value={card.timeOut ?? ''} onCommit={(v) => setTimes('timeOut', v)} data-card-out />
           </div>
           <div>
             <Label className="text-xs text-gray-400">ST</Label>
@@ -246,12 +248,13 @@ export function TimeCardRow({ card, editable }: { card: TimeCard; editable: bool
           </div>
           <div>
             <Label className="text-xs">OT</Label>
-            <Input
+            <DraftInput
               type="number"
               step="0.5"
               value={card.overtime || ''}
-              onChange={(e) => {
-                const ot = parseFloat(e.target.value) || 0;
+              data-card-ot
+              onCommit={(v) => {
+                const ot = parseFloat(v) || 0;
                 const changes: Partial<TimeCard> = { overtime: ot };
                 if (card.timeIn && card.timeOut)
                   changes.straightTime = calcST(card.timeIn, card.timeOut, ot);

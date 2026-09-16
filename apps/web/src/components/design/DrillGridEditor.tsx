@@ -12,6 +12,7 @@ import { KICK_DIRECTIONS, deriveDrillAngle, deriveHoleLength, type KickDirection
 import type { DrillPlanHoleOverride } from '@/db/schema';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DraftInput } from '@/components/ui/draft-input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 
@@ -123,14 +124,15 @@ export function DrillGridEditor({
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <span className="flex items-center gap-2">
               <Label className="text-xs whitespace-nowrap">All holes (ft)</Label>
-              <Input
+              <DraftInput
                 type="number"
                 inputMode="decimal"
                 className="h-10 w-20 font-mono"
                 placeholder={fallbackDepth ? String(fallbackDepth) : '—'}
                 value={defaultDepth ?? ''}
-                onChange={(e) => {
-                  const v = parseFloat(e.target.value);
+                data-grid-depth
+                onCommit={(text) => {
+                  const v = parseFloat(text);
                   onDefaultDepth(Number.isNaN(v) ? undefined : v);
                 }}
               />

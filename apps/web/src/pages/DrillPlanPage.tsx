@@ -21,7 +21,7 @@ import { formatDate, nowISO } from '@/lib/utils';
 import type { DrillPlanRecord } from '@/db/schema';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { DraftInput } from '@/components/ui/draft-input';
 import { Label } from '@/components/ui/label';
 
 const STATUS_BADGE = { open: 'draft', complete: 'approved' } as const;
@@ -189,18 +189,18 @@ export function DrillPlanPage() {
           <div className="rounded-xl border border-gray-200 bg-white p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="col-span-2 sm:col-span-1">
               <Label className="text-xs">Plan name</Label>
-              <Input value={plan.name} disabled={!editable}
-                onChange={(e) => void update({ name: e.target.value })} />
+              <DraftInput value={plan.name} disabled={!editable} data-plan-field="name"
+                onCommit={(v) => void update({ name: v })} />
             </div>
             <div><Label className="text-xs">Diameter (in)</Label>
-              <Input type="number" value={plan.holeDiameter || ''} disabled={!editable}
-                onChange={(e) => void update({ holeDiameter: parseFloat(e.target.value) || 0 })} /></div>
+              <DraftInput type="number" value={plan.holeDiameter || ''} disabled={!editable} data-plan-field="holeDiameter"
+                onCommit={(v) => void update({ holeDiameter: parseFloat(v) || 0 })} /></div>
             <div><Label className="text-xs">Burden (ft)</Label>
-              <Input type="number" value={plan.burden || ''} disabled={!editable}
-                onChange={(e) => void update({ burden: parseFloat(e.target.value) || 0 })} /></div>
+              <DraftInput type="number" value={plan.burden || ''} disabled={!editable} data-plan-field="burden"
+                onCommit={(v) => void update({ burden: parseFloat(v) || 0 })} /></div>
             <div><Label className="text-xs">Spacing (ft)</Label>
-              <Input type="number" value={plan.spacing || ''} disabled={!editable}
-                onChange={(e) => void update({ spacing: parseFloat(e.target.value) || 0 })} /></div>
+              <DraftInput type="number" value={plan.spacing || ''} disabled={!editable} data-plan-field="spacing"
+                onCommit={(v) => void update({ spacing: parseFloat(v) || 0 })} /></div>
           </div>
         )}
 
@@ -298,9 +298,9 @@ export function DrillPlanPage() {
         {canEdit && (
           <div className="rounded-xl border border-gray-200 bg-white p-3">
             <Label className="text-xs">Notes for the drillers</Label>
-            <Input value={plan.notes ?? ''} disabled={!editable}
+            <DraftInput value={plan.notes ?? ''} disabled={!editable} data-plan-field="notes"
               placeholder="e.g. bench is tight on the west edge — start row 1 east"
-              onChange={(e) => void update({ notes: e.target.value })} />
+              onCommit={(v) => void update({ notes: v })} />
           </div>
         )}
         {!canEdit && plan.notes && (

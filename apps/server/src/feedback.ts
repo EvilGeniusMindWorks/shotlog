@@ -97,6 +97,14 @@ function feedbackRecipients(): string[] {
 const KINDS = ['bug', 'idea', 'question', 'crash'] as const;
 const STATUSES = ['new', 'seen', 'done'] as const;
 
+// S18: the paper a report is about — a print screen or a filed copy
+const paperSchema = z.object({
+  label: z.string().max(240),
+  kind: z.string().max(40).optional(),
+  submissionId: z.string().max(64).optional(),
+  recordId: z.string().max(64).optional(),
+});
+
 const postSchema = z.object({
   id: z.string().min(8).max(64),
   kind: z.enum(KINDS),
@@ -118,6 +126,7 @@ const postSchema = z.object({
   reportCode: z.string().max(12).optional(),
   parentId: z.string().max(64).optional(),
   commit: z.string().max(64).default(''),
+  paper: paperSchema.optional(),
 });
 
 feedbackRouter.post('/', rateLimit, requireAuth, async (req: AuthedRequest, res: Response) => {
@@ -197,6 +206,7 @@ feedbackRouter.post('/', rateLimit, requireAuth, async (req: AuthedRequest, res:
       syncLogTail: d.syncLogTail as Prisma.InputJsonValue,
       errorLog: d.errorLog as Prisma.InputJsonValue,
       screenshot: d.screenshot ?? null,
+      paper: d.paper ? (d.paper as Prisma.InputJsonValue) : undefined,
       createdAt: when,
       commit: d.commit,
       // A person's words about an automatic crash attach to that crash
@@ -266,6 +276,7 @@ const listSelect = {
   notified: true,
   createdAt: true,
   receivedAt: true,
+  paper: true,
 } as const;
 
 feedbackRouter.get('/', requireAuth, requirePlatformAdmin, async (req: AuthedRequest, res) => {

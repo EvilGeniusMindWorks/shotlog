@@ -7,6 +7,7 @@ import { FileDown, Printer } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { getJobView } from '@/lib/jobContext';
 import { formatDate } from '@/lib/utils';
+import { useFeedbackPaper } from '@/lib/feedbackPaper';
 import { fileSubmission } from '@/lib/archive';
 import { DRILL_DAILY_CHECKS, DRILL_WEEKLY_CHECKS, type CheckState } from '@/db/schema';
 import { Button } from '@/components/ui/button';
@@ -108,6 +109,8 @@ export function PrintDrillChecklistPage() {
   const { checklistId } = useParams<{ checklistId: string }>();
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
+  const checklist = useLiveQuery(() => (checklistId ? db.drillChecklists.get(checklistId) : undefined), [checklistId]);
+  useFeedbackPaper(checklist ? { label: `Rig checklist · ${formatDate(checklist.date)} · print`, kind: 'drillChecklist', recordId: checklist.id } : null);
   if (!checklistId) return null;
   return (
     <div className="print-blast-log">

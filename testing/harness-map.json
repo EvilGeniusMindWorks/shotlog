@@ -30,12 +30,14 @@
     76
   ],
   "apps/web/src/components/design/DrillGridEditor.tsx": [
-    62
+    62,
+    77
   ],
   "apps/web/src/components/design/ShotDiagramEditor.tsx": [
     62,
     74,
-    76
+    76,
+    77
   ],
   "apps/web/src/components/design/SiteDiagramEditor.tsx": [
     67,
@@ -44,10 +46,12 @@
   ],
   "apps/web/src/components/forms/DailyReportForm.tsx": [
     60,
-    65
+    65,
+    77
   ],
   "apps/web/src/components/forms/TimeCardsCard.tsx": [
-    65
+    65,
+    77
   ],
   "apps/web/src/components/layout/AppShell.tsx": [
     57
@@ -102,7 +106,8 @@
     63,
     66,
     68,
-    76
+    76,
+    77
   ],
   "apps/web/src/pages/EquipmentLocatorPage.tsx": [
     68
@@ -163,7 +168,8 @@
     69
   ],
   "apps/web/src/components/forms/ExplosiveUsageForm.tsx": [
-    69
+    69,
+    77
   ],
   "apps/web/src/components/forms/BlastLogForm.tsx": [
     69,
@@ -246,5 +252,44 @@
   ],
   "apps/web/src/lib/shotDiagram.ts": [
     76
+  ],
+  "apps/web/src/components/ui/draft-input.tsx": [
+    77
+  ],
+  "apps/web/src/components/feedback/FeedbackFab.tsx": [
+    77
+  ],
+  "apps/web/src/components/feedback/FeedbackComposer.tsx": [
+    77
+  ],
+  "apps/web/src/lib/feedback.ts": [
+    77
+  ],
+  "apps/web/src/lib/feedbackPaper.ts": [
+    77
+  ],
+  "apps/web/src/components/forms/ShotForm.tsx": [
+    77
+  ],
+  "apps/web/src/pages/DrillPlanPage.tsx": [
+    77
+  ],
+  "apps/web/src/components/design/TypicalColumnBuilder.tsx": [
+    77
+  ],
+  "apps/web/src/components/records/RecordsManager.tsx": [
+    77
+  ],
+  "apps/web/src/pages/admin/AdminFeedbackPage.tsx": [
+    77
+  ],
+  "apps/server/src/feedback.ts": [
+    77
+  ],
+  "apps/web/src/pages/SettingsPage.tsx": [
+    77
+  ],
+  "apps/web/src/App.tsx": [
+    77
   ]
 }

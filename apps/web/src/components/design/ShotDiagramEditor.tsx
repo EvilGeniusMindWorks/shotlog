@@ -16,6 +16,7 @@ import {
 } from '@/lib/shotDiagram';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DraftInput } from '@/components/ui/draft-input';
 import { Label } from '@/components/ui/label';
 
 type UndoAction =
@@ -361,28 +362,28 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
             ).map(([key, label, attr]) => (
               <label key={key} className="block">
                 <span className="block text-[10px] text-gray-500 mb-0.5">{label}</span>
-                <Input
+                <DraftInput
                   type="number"
                   inputMode="decimal"
                   className="h-10 font-mono"
                   {...{ [attr]: '' }}
                   disabled={!onShotParams}
                   value={shotParams && shotParams[key] > 0 ? shotParams[key] : ''}
-                  onChange={(e) => onShotParams?.({ [key]: parseFloat(e.target.value) || 0 })}
+                  onCommit={(text) => onShotParams?.({ [key]: parseFloat(text) || 0 })}
                 />
               </label>
             ))}
             <label className="block">
               <span className="block text-[10px] text-gray-500 mb-0.5">All holes (ft)</span>
-              <Input
+              <DraftInput
                 type="number"
                 inputMode="decimal"
                 className="h-10 font-mono"
                 data-plan-depth
                 placeholder={designDepth ? String(designDepth) : '—'}
                 value={plan.defaultDepth ?? ''}
-                onChange={(e) => {
-                  const v = parseFloat(e.target.value);
+                onCommit={(text) => {
+                  const v = parseFloat(text);
                   setPlan({ ...plan, defaultDepth: Number.isNaN(v) ? undefined : v });
                 }}
               />

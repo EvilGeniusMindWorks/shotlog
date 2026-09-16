@@ -24,6 +24,7 @@ import { showToast } from '@/components/ui/undo-toast';
 import { Button } from '@/components/ui/button';
 import { LifecycleMenu } from '@/components/records/LifecycleMenu';
 import { Input } from '@/components/ui/input';
+import { DraftInput } from '@/components/ui/draft-input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { SignatureField } from '@/components/ui/signature-field';
@@ -497,17 +498,17 @@ export function DrillLogPage() {
             </p>
           )}
           <div><Label className="text-xs">Diameter (in)</Label>
-            <Input type="number" value={log.holeDiameter || ''} disabled={!editable}
-              onChange={(e) => void update({ holeDiameter: parseFloat(e.target.value) || 0 })} /></div>
+            <DraftInput type="number" value={log.holeDiameter || ''} disabled={!editable} data-log-field="holeDiameter"
+              onCommit={(v) => void update({ holeDiameter: parseFloat(v) || 0 })} /></div>
           <div><Label className="text-xs">Burden (ft)</Label>
-            <Input type="number" value={log.burden || ''} disabled={!editable}
-              onChange={(e) => void update({ burden: parseFloat(e.target.value) || 0 })} /></div>
+            <DraftInput type="number" value={log.burden || ''} disabled={!editable} data-log-field="burden"
+              onCommit={(v) => void update({ burden: parseFloat(v) || 0 })} /></div>
           <div><Label className="text-xs">Spacing (ft)</Label>
-            <Input type="number" value={log.spacing || ''} disabled={!editable}
-              onChange={(e) => void update({ spacing: parseFloat(e.target.value) || 0 })} /></div>
+            <DraftInput type="number" value={log.spacing || ''} disabled={!editable} data-log-field="spacing"
+              onCommit={(v) => void update({ spacing: parseFloat(v) || 0 })} /></div>
           <div><Label className="text-xs">Face height (ft)</Label>
-            <Input type="number" value={log.faceHeight || ''} disabled={!editable}
-              onChange={(e) => void update({ faceHeight: parseFloat(e.target.value) || 0 })} /></div>
+            <DraftInput type="number" value={log.faceHeight || ''} disabled={!editable} data-log-field="faceHeight"
+              onCommit={(v) => void update({ faceHeight: parseFloat(v) || 0 })} /></div>
           <div className="col-span-2">
             <div className="flex items-center justify-between">
               <Label className="text-xs">Drill rig</Label>
@@ -534,8 +535,8 @@ export function DrillLogPage() {
           </div>
           <div className="col-span-2">
             <Label className="text-xs">Location / GPS</Label>
-            <Input value={log.locationNote} placeholder="e.g. NE corner, lift 2" disabled={!editable}
-              onChange={(e) => void update({ locationNote: e.target.value })} />
+            <DraftInput value={log.locationNote} placeholder="e.g. NE corner, lift 2" disabled={!editable} data-log-field="locationNote"
+              onCommit={(v) => void update({ locationNote: v })} />
           </div>
         </div>
 

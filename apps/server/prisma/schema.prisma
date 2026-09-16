@@ -109,6 +109,8 @@ model Feedback {
   errorLog    Json     @default("[]")
   /// JPEG data URL of the screen at send time (≤1280px), when included
   screenshot  String?
+  /// S18: the paper the report is about — {label, kind?, submissionId?, recordId?}
+  paper       Json?
   /// new | seen | done
   status      String   @default("new")
   replyNote   String?

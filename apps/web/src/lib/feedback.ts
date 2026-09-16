@@ -9,6 +9,7 @@ import { deleteLocalMedia, getLocalMedia, putLocalMedia } from '@/lib/localMedia
 import { blobToDataUrl, dataUrlToBlob, generateId, nowISO } from '@/lib/utils';
 import { collectDiagnostics, type DiagnosticsSnapshot } from '@/lib/diagnostics';
 import { logSyncEvent } from '@/lib/syncLog';
+import type { FeedbackPaper } from '@/lib/feedbackPaper';
 
 const OUTBOX_KEY = 'shotlog-feedback-outbox';
 export const FEEDBACK_OUTBOX_EVENT = 'shotlog-feedback-outbox-changed';
@@ -45,6 +46,8 @@ export interface FeedbackDraft {
   parentId?: string;
   /** Use this id instead of minting one (the crash reporter mints early) */
   id?: string;
+  /** S18: the paper on screen when the composer opened (a print, a filed copy) */
+  paper?: FeedbackPaper | null;
 }
 
 interface OutboxItem extends DiagnosticsSnapshot {
@@ -57,6 +60,7 @@ interface OutboxItem extends DiagnosticsSnapshot {
   crash?: CrashDetail;
   reportCode?: string;
   parentId?: string;
+  paper?: FeedbackPaper;
 }
 
 const shotKey = (id: string) => `feedback-shot-${id}`;
@@ -146,6 +150,7 @@ export async function submitFeedback(draft: FeedbackDraft): Promise<'sent' | 'qu
     ...(draft.crash ? { crash: draft.crash } : {}),
     ...(draft.reportCode ? { reportCode: draft.reportCode } : {}),
     ...(draft.parentId ? { parentId: draft.parentId } : {}),
+    ...(draft.paper ? { paper: draft.paper } : {}),
   };
   writeOutbox([...readOutbox(), item]);
   await drainFeedbackOutbox();

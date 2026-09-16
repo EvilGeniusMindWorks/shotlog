@@ -30,6 +30,14 @@ Feedback goes to Matthew, who builds ShotLog — not to your office. It is the f
 
 > **Something crashed?** The app catches it and offers **Report** on the spot. Tap it; the details go with the report.
 
+## The feedback bubble
+
+While ShotLog is in beta, a small speech-bubble button sits in the bottom corner of every screen — over any sheet or dialog, and on the print and filing screens, which have no ? menu. Tap it and the same composer opens with a picture of exactly what is on screen, the open sheet included.
+
+On a print screen, or with a filed copy open in Records, the report also names the paper it is about, so the fix lands against the right page. (A picture of a filed PDF comes out blank — the browser's own viewer draws it — so the report carries the copy itself instead.)
+
+The bubble is on by itself in the Alpha and Beta companies and off in Production; **Settings › Help &amp; feedback › Feedback bubble** turns it on or off on this device.
+
 ## Related
 
 [Report a problem](/help/troubleshooting/report-a-problem)

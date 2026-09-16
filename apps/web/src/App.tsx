@@ -47,6 +47,7 @@ import { hasCap } from '@/lib/perms';
 import { AdminRolesPage } from '@/pages/admin/AdminRolesPage';
 import { UndoToastHost } from '@/components/ui/undo-toast';
 import { FeedbackHost } from '@/components/feedback/FeedbackComposer';
+import { FeedbackFab } from '@/components/feedback/FeedbackFab';
 import { AdminFeedbackPage } from '@/pages/admin/AdminFeedbackPage';
 import { AdminCompaniesPage } from '@/pages/admin/AdminCompaniesPage';
 import { EquipmentLocatorPage } from '@/pages/EquipmentLocatorPage';
@@ -103,6 +104,7 @@ export function App() {
     return (
       <BrowserRouter>
         <FeedbackHost />
+        <FeedbackFab />
         <Routes>
           <Route path="/help" element={<HelpPage standalone />} />
           <Route path="/help/:section" element={<HelpPage standalone />} />
@@ -118,6 +120,7 @@ export function App() {
     <AskHost />
     <FeedbackHost />
     <BrowserRouter>
+      <FeedbackFab />
       <Routes>
         <Route element={<AppShell />}>
           <Route path="/" element={<Dashboard />} />

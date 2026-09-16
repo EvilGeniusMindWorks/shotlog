@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { ArrowLeft, FileDown, Printer } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { useBlastDay } from '@/hooks/useBlastDay';
+import { useFeedbackPaper } from '@/lib/feedbackPaper';
+import { formatDate } from '@/lib/utils';
 import { fmtLbs } from '@/lib/format';
 import { equipmentRows, workForceRows } from '@/lib/dailyReportView';
 import type { EquipmentEntry, ProductCategory, WorkForceEntry } from '@/db/schema';
@@ -35,6 +37,7 @@ export function PrintDailyReportPage() {
   const navigate = useNavigate();
   const [savingPdf, setSavingPdf] = useState(false);
   const { blastDay, job, blastLog, dailyReport, shots, explosiveUsage } = useBlastDay(id);
+  useFeedbackPaper(blastDay ? { label: `Daily report · ${job?.name ?? 'job'} · ${formatDate(blastDay.date)} · print`, kind: 'dailyReport', recordId: blastDay.id } : null);
   // The company's own name on its own document — the blasting log already did this (S10)
   const company = useLiveQuery(() => db.companySettings.get('companySettings-singleton'));
   const companyName = company?.companyName || 'Baystate Blasting, Inc.';

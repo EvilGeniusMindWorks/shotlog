@@ -7,6 +7,7 @@ import { FileDown, Printer } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { getJobView } from '@/lib/jobContext';
 import { formatDate } from '@/lib/utils';
+import { useFeedbackPaper } from '@/lib/feedbackPaper';
 
 const CONDITION_LEGEND = 'V = Void · SR = Soft Rock · O = Overburden · W = Water';
 
@@ -29,6 +30,7 @@ export function PrintDrillLogPage() {
     [log?.shotId],
   );
   const job = useLiveQuery(() => getJobView(log?.jobId), [log?.jobId]);
+  useFeedbackPaper(log ? { label: `Drill log · ${job?.name ?? 'job'} · ${formatDate(log.date ?? log.createdAt.slice(0, 10))} · print`, kind: 'drillLog', recordId: log.id } : null);
   const day = useLiveQuery(
     () => (log?.blastDayId ? db.blastDays.get(log.blastDayId) : undefined),
     [log?.blastDayId],

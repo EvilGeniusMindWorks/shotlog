@@ -7,6 +7,7 @@ import { FileDown, Printer } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { getJobView } from '@/lib/jobContext';
 import { formatDate, nowISO } from '@/lib/utils';
+import { useFeedbackPaper } from '@/lib/feedbackPaper';
 import { fileSubmission } from '@/lib/archive';
 import { Button } from '@/components/ui/button';
 import './print-blast-log.css';
@@ -102,6 +103,8 @@ export function PrintIncidentPage() {
   const { incidentId } = useParams<{ incidentId: string }>();
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
+  const incident = useLiveQuery(() => (incidentId ? db.incidents.get(incidentId) : undefined), [incidentId]);
+  useFeedbackPaper(incident ? { label: `Incident report · ${formatDate(incident.date)} · print`, kind: 'incident', recordId: incident.id } : null);
   if (!incidentId) return null;
   return (
     <div className="print-blast-log">

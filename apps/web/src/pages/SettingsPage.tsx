@@ -15,6 +15,7 @@ import { forgetUsualRig, rememberUsualRig, useUsualRigId } from '@/components/da
 import { useLiveQuery, db } from '@/db';
 import { useTheme } from '@/hooks/useTheme';
 import { getRealSessionUser, getSessionUser } from '@/lib/session';
+import { feedbackFabOn, setFeedbackFabPref } from '@/lib/feedbackFab';
 import { myHomeDashboard } from '@/lib/perms';
 import { FEEDBACK_OUTBOX_EVENT, outboxCount } from '@/lib/feedback';
 import { REHEARSAL_ROLES, rehearsalRole, startRehearsal } from '@/lib/rehearsal';
@@ -204,6 +205,7 @@ function PreferencesCard() {
 /** Help & feedback (Round S3; S2 adds Walkthrough + coach sheets here) */
 function HelpCard() {
   const [queued, setQueued] = useState(outboxCount);
+  const [fab, setFab] = useState(() => feedbackFabOn(getSessionUser()?.environment));
   useEffect(() => {
     const refresh = () => setQueued(outboxCount());
     window.addEventListener(FEEDBACK_OUTBOX_EVENT, refresh);
@@ -237,6 +239,22 @@ function HelpCard() {
             </Link>
           </Button>
         </div>
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-gray-300 text-navy"
+            checked={fab}
+            data-pref-feedback-fab
+            onChange={(e) => {
+              setFab(e.target.checked);
+              setFeedbackFabPref(e.target.checked);
+            }}
+          />
+          <span>
+            Feedback bubble in the corner of every screen
+            <span className="block text-xs text-gray-400">Reaches the composer over any sheet and on the print screens.</span>
+          </span>
+        </label>
         {queued > 0 && (
           <p className="text-xs text-amber-700" data-feedback-queued>
             {queued} report{queued === 1 ? '' : 's'} waiting for signal — sends automatically.
