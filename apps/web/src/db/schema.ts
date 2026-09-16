@@ -383,8 +383,8 @@ export interface DayReminder extends BaseRecord {
   toName: string;
   fromUserId: string;
   fromName: string;
-  what: 'timecard' | 'moved';
-  /** S16 'moved': the sentence after the mover's name */
+  what: 'timecard' | 'moved' | 'sentback';
+  /** S16 'moved' / S18 'sentback': the sentence after the sender's name */
   text?: string;
   at: string;
   clearedAt?: string;
@@ -516,6 +516,8 @@ export interface Shot extends BaseRecord {
   designPlan: DesignPlan;
   /** Standalone drill plan this shot was imported from (totals + grid) */
   drillPlanId?: string;
+  /** S18: where the totals came from — the accepted drilling, the plan, or typed by hand */
+  totalsSource?: 'drilling' | 'plan' | 'edited';
   // ── Multi-blaster model (a), 2026-08-17: ONE log per day, each shot
   // carries the blaster responsible for it + their signature. The server
   // guards the sign-off: only the responsible blaster signs their shot. ──
@@ -593,6 +595,9 @@ export interface ExplosiveUsage extends BaseRecord {
   detonators: DetonatorLineItem[];
   leadLine: number; // LF
   coverType: string;
+  /** S18: blast mats once for the whole log (Matthew: "the total for all shots on the log"); older records carry them per shot */
+  blastMats?: boolean;
+  blastMatCount?: number;
 }
 
 // ══════════════════════════════════════════════════════
@@ -624,6 +629,10 @@ export interface TypicalColumn extends BaseRecord {
 export interface DailyReport extends BaseRecord {
   blastDayId: string;
   notes: string;
+  /** S18: marked done before the day files — the tile and the filing screen say so */
+  doneAt?: string;
+  doneBy?: string;
+  doneByName?: string;
 }
 
 export interface WorkForceEntry extends BaseRecord {

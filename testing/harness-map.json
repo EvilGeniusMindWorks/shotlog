@@ -5,6 +5,9 @@
   "apps/server/src/auth.ts": [
     68
   ],
+  "apps/server/src/feedback.ts": [
+    77
+  ],
   "apps/server/src/files.ts": [
     68
   ],
@@ -21,16 +24,43 @@
   "apps/server/src/rateLimit.ts": [
     68
   ],
+  "apps/server/src/records.ts": [
+    71
+  ],
   "apps/web/help": [
     57
+  ],
+  "apps/web/src/App.tsx": [
+    77
   ],
   "apps/web/src/components/dashboard/RoleCards.tsx": [
     53,
     66,
     76
   ],
+  "apps/web/src/components/dashboard/StartGrid.tsx": [
+    69
+  ],
+  "apps/web/src/components/day/CrewList.tsx": [
+    74
+  ],
+  "apps/web/src/components/day/DayCardConfirm.tsx": [
+    71
+  ],
+  "apps/web/src/components/day/DayCardForm.tsx": [
+    71
+  ],
+  "apps/web/src/components/day/MergedDrillingView.tsx": [
+    77
+  ],
+  "apps/web/src/components/day/ReminderCard.tsx": [
+    77
+  ],
   "apps/web/src/components/design/DrillGridEditor.tsx": [
     62,
+    77
+  ],
+  "apps/web/src/components/design/PatternGrid.tsx": [
     77
   ],
   "apps/web/src/components/design/ShotDiagramEditor.tsx": [
@@ -44,20 +74,73 @@
     68,
     70
   ],
+  "apps/web/src/components/design/TypicalColumnBuilder.tsx": [
+    77
+  ],
+  "apps/web/src/components/feedback/FeedbackComposer.tsx": [
+    77
+  ],
+  "apps/web/src/components/feedback/FeedbackFab.tsx": [
+    77
+  ],
+  "apps/web/src/components/forms/BlastLogForm.tsx": [
+    69,
+    75,
+    77
+  ],
+  "apps/web/src/components/forms/BlastLogForm.tsx apps/web/src/components/forms/ShotForm.tsx apps/web/src/pages/admin/AdminCatalogPage.tsx apps/web/src/components/admin/AddPersonPanel.tsx apps/web/src/pages/admin/AdminEquipmentPage.tsx apps/web/src/components/forms/NewBlastDayDialog.tsx apps/web/src/components/dashboard/MonthDayList.tsx apps/web/src/main.tsx apps/web/src/components/layout/SyncChip.tsx apps/web/src/pages/BlastDayPage.tsx apps/web/src/components/day/DayHub.tsx apps/web/src/lib/dayHub.ts": [
+    73
+  ],
+  "apps/web/src/components/forms/CustomerSitePicker.tsx": [
+    69
+  ],
   "apps/web/src/components/forms/DailyReportForm.tsx": [
     60,
     65,
+    77
+  ],
+  "apps/web/src/components/forms/DrillingSection.tsx": [
+    77
+  ],
+  "apps/web/src/components/forms/ExplosiveUsageForm.tsx": [
+    69,
+    77
+  ],
+  "apps/web/src/components/forms/NewBlastDayDialog.tsx": [
+    75
+  ],
+  "apps/web/src/components/forms/NewJobForm.tsx": [
+    69
+  ],
+  "apps/web/src/components/forms/ShotForm.tsx": [
     77
   ],
   "apps/web/src/components/forms/TimeCardsCard.tsx": [
     65,
     77
   ],
+  "apps/web/src/components/guidance/FirstWeekCard.tsx": [
+    69
+  ],
   "apps/web/src/components/layout/AppShell.tsx": [
     57
   ],
+  "apps/web/src/components/records/RecordsManager.tsx": [
+    77
+  ],
   "apps/web/src/components/ui/ask-sheet.tsx": [
     61
+  ],
+  "apps/web/src/components/ui/draft-input.tsx": [
+    77
+  ],
+  "apps/web/src/db/schema.ts": [
+    71,
+    77
+  ],
+  "apps/web/src/hooks/useBlastDay.ts": [
+    69,
+    71
   ],
   "apps/web/src/hooks/useDayPhases.ts": [
     53,
@@ -66,18 +149,70 @@
   "apps/web/src/hooks/useDrillLogs.ts": [
     66
   ],
+  "apps/web/src/hooks/useLauncher.ts": [
+    71
+  ],
+  "apps/web/src/hooks/useMaintenance.ts": [
+    75
+  ],
+  "apps/web/src/lib/blastMats.ts": [
+    77
+  ],
   "apps/web/src/lib/complianceAdvisory.tsx": [
     64
+  ],
+  "apps/web/src/lib/crash.ts": [
+    69
+  ],
+  "apps/web/src/lib/dailyReportView.ts": [
+    75
+  ],
+  "apps/web/src/lib/dayCard.ts": [
+    71
+  ],
+  "apps/web/src/lib/dayHub.ts": [
+    75,
+    77
   ],
   "apps/web/src/lib/docRows.ts": [
     68
   ],
+  "apps/web/src/lib/feedback.ts": [
+    77
+  ],
+  "apps/web/src/lib/feedbackPaper.ts": [
+    77
+  ],
+  "apps/web/src/lib/format.ts": [
+    69
+  ],
   "apps/web/src/lib/geo.ts": [
     67
+  ],
+  "apps/web/src/lib/jobContext.ts": [
+    69
   ],
   "apps/web/src/lib/mapProviders.ts": [
     64,
     68
+  ],
+  "apps/web/src/lib/mine.ts": [
+    76
+  ],
+  "apps/web/src/lib/shotDiagram.ts": [
+    76
+  ],
+  "apps/web/src/lib/shotTotals.ts": [
+    77
+  ],
+  "apps/web/src/lib/siteDiagram.ts": [
+    70
+  ],
+  "apps/web/src/lib/weather.ts": [
+    71
+  ],
+  "apps/web/src/main.tsx": [
+    69
   ],
   "apps/web/src/pages/BlastDayPage.tsx": [
     53,
@@ -86,6 +221,9 @@
     68,
     71,
     75
+  ],
+  "apps/web/src/pages/BlastDayPage.tsx apps/web/src/components/day/DayHub.tsx apps/web/src/components/day/CrewList.tsx apps/web/src/components/day/RigList.tsx apps/web/src/components/dashboard/OfficeHome.tsx apps/web/src/components/dashboard/RoleCards.tsx apps/web/src/pages/DrillChecklistPage.tsx apps/web/src/pages/DrillLogPage.tsx apps/web/src/hooks/useMaintenance.ts apps/web/src/lib/hourLedger.ts apps/web/src/pages/SitePage.tsx apps/web/src/components/forms/CustomerSitePicker.tsx apps/web/src/components/forms/NewJobForm.tsx": [
+    72
   ],
   "apps/web/src/pages/DesignPlanPage.tsx": [
     62,
@@ -109,8 +247,17 @@
     76,
     77
   ],
+  "apps/web/src/pages/DrillPlanPage.tsx": [
+    77
+  ],
+  "apps/web/src/pages/DrillingPage.tsx": [
+    76
+  ],
   "apps/web/src/pages/EquipmentLocatorPage.tsx": [
     68
+  ],
+  "apps/web/src/pages/JobDetailPage.tsx": [
+    69
   ],
   "apps/web/src/pages/PrintBlastLogPage.tsx": [
     64,
@@ -121,6 +268,9 @@
     68,
     69
   ],
+  "apps/web/src/pages/PrintDrillChecklistPage.tsx": [
+    74
+  ],
   "apps/web/src/pages/RepairTicketPage.tsx": [
     60
   ],
@@ -128,18 +278,32 @@
     62,
     64
   ],
+  "apps/web/src/pages/SettingsPage.tsx": [
+    77
+  ],
   "apps/web/src/pages/SubmitDayPage.tsx": [
     60,
     71,
-    75
+    75,
+    77
   ],
   "apps/web/src/pages/admin/AdminApprovalsPage.tsx": [
     61
   ],
+  "apps/web/src/pages/admin/AdminFeedbackPage.tsx": [
+    77
+  ],
   "apps/web/src/pdfdocs/blastLog.tsx": [
     64,
     69,
-    70
+    70,
+    77
+  ],
+  "apps/web/src/pdfdocs/dailyReport.tsx": [
+    69
+  ],
+  "infra/powersync/sync_rules.yaml": [
+    71
   ],
   "packages/shared/src/capabilities.ts": [
     30
@@ -148,148 +312,7 @@
     30,
     71
   ],
-  "apps/web/src/components/forms/CustomerSitePicker.tsx": [
-    69
-  ],
-  "apps/web/src/components/forms/NewJobForm.tsx": [
-    69
-  ],
-  "apps/web/src/hooks/useBlastDay.ts": [
-    69,
-    71
-  ],
-  "apps/web/src/lib/jobContext.ts": [
-    69
-  ],
-  "apps/web/src/pages/JobDetailPage.tsx": [
-    69
-  ],
-  "apps/web/src/lib/format.ts": [
-    69
-  ],
-  "apps/web/src/components/forms/ExplosiveUsageForm.tsx": [
-    69,
-    77
-  ],
-  "apps/web/src/components/forms/BlastLogForm.tsx": [
-    69,
-    75
-  ],
-  "apps/web/src/pdfdocs/dailyReport.tsx": [
-    69
-  ],
-  "apps/web/src/components/guidance/FirstWeekCard.tsx": [
-    69
-  ],
-  "apps/web/src/components/dashboard/StartGrid.tsx": [
-    69
-  ],
-  "apps/web/src/lib/crash.ts": [
-    69
-  ],
-  "apps/web/src/main.tsx": [
-    69
-  ],
-  "apps/web/src/lib/siteDiagram.ts": [
-    70
-  ],
-  "apps/web/src/db/schema.ts": [
-    71
-  ],
-  "apps/web/src/hooks/useLauncher.ts": [
-    71
-  ],
-  "apps/web/src/lib/dayCard.ts": [
-    71
-  ],
-  "apps/web/src/lib/weather.ts": [
-    71
-  ],
-  "apps/web/src/components/day/DayCardForm.tsx": [
-    71
-  ],
-  "apps/web/src/components/day/DayCardConfirm.tsx": [
-    71
-  ],
-  "apps/server/src/records.ts": [
-    71
-  ],
-  "infra/powersync/sync_rules.yaml": [
-    71
-  ],
-  "apps/web/src/pages/BlastDayPage.tsx apps/web/src/components/day/DayHub.tsx apps/web/src/components/day/CrewList.tsx apps/web/src/components/day/RigList.tsx apps/web/src/components/dashboard/OfficeHome.tsx apps/web/src/components/dashboard/RoleCards.tsx apps/web/src/pages/DrillChecklistPage.tsx apps/web/src/pages/DrillLogPage.tsx apps/web/src/hooks/useMaintenance.ts apps/web/src/lib/hourLedger.ts apps/web/src/pages/SitePage.tsx apps/web/src/components/forms/CustomerSitePicker.tsx apps/web/src/components/forms/NewJobForm.tsx": [
-    72
-  ],
-  "apps/web/src/components/forms/BlastLogForm.tsx apps/web/src/components/forms/ShotForm.tsx apps/web/src/pages/admin/AdminCatalogPage.tsx apps/web/src/components/admin/AddPersonPanel.tsx apps/web/src/pages/admin/AdminEquipmentPage.tsx apps/web/src/components/forms/NewBlastDayDialog.tsx apps/web/src/components/dashboard/MonthDayList.tsx apps/web/src/main.tsx apps/web/src/components/layout/SyncChip.tsx apps/web/src/pages/BlastDayPage.tsx apps/web/src/components/day/DayHub.tsx apps/web/src/lib/dayHub.ts": [
-    73
-  ],
-  "apps/web/src/components/day/CrewList.tsx": [
-    74
-  ],
-  "apps/web/src/pages/PrintDrillChecklistPage.tsx": [
-    74
-  ],
   "packages/shared/src/timing.ts": [
     74
-  ],
-  "apps/web/src/lib/dayHub.ts": [
-    75
-  ],
-  "apps/web/src/components/forms/NewBlastDayDialog.tsx": [
-    75
-  ],
-  "apps/web/src/hooks/useMaintenance.ts": [
-    75
-  ],
-  "apps/web/src/lib/dailyReportView.ts": [
-    75
-  ],
-  "apps/web/src/lib/mine.ts": [
-    76
-  ],
-  "apps/web/src/pages/DrillingPage.tsx": [
-    76
-  ],
-  "apps/web/src/lib/shotDiagram.ts": [
-    76
-  ],
-  "apps/web/src/components/ui/draft-input.tsx": [
-    77
-  ],
-  "apps/web/src/components/feedback/FeedbackFab.tsx": [
-    77
-  ],
-  "apps/web/src/components/feedback/FeedbackComposer.tsx": [
-    77
-  ],
-  "apps/web/src/lib/feedback.ts": [
-    77
-  ],
-  "apps/web/src/lib/feedbackPaper.ts": [
-    77
-  ],
-  "apps/web/src/components/forms/ShotForm.tsx": [
-    77
-  ],
-  "apps/web/src/pages/DrillPlanPage.tsx": [
-    77
-  ],
-  "apps/web/src/components/design/TypicalColumnBuilder.tsx": [
-    77
-  ],
-  "apps/web/src/components/records/RecordsManager.tsx": [
-    77
-  ],
-  "apps/web/src/pages/admin/AdminFeedbackPage.tsx": [
-    77
-  ],
-  "apps/server/src/feedback.ts": [
-    77
-  ],
-  "apps/web/src/pages/SettingsPage.tsx": [
-    77
-  ],
-  "apps/web/src/App.tsx": [
-    77
   ]
 }

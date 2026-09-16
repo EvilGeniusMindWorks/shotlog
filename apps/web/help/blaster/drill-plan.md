@@ -18,6 +18,10 @@ The drill plan is the pattern: rows and columns of holes with their depths. You 
 
 ![The drill plan](drill-plan.png)
 
+## A second shot
+
+Each shot has its own plan. On the shot's card in the blasting log, the **Drilling** row offers **Build the drill plan ›** until the shot has one; **Send to drillers** appears once it does.
+
 ## Sending
 
 Pick the driller or drillers. Each gets a drill log on their device with your pattern on it. The day's Drilling phase now reads *in progress* with their names and progress, and **Continue** waits for them.

@@ -25,6 +25,23 @@ const LAYER_OPTIONS = Object.entries(LAYER_STYLES).map(([value, s]) => ({
   label: s.label,
 }));
 
+// S18 (Matthew: "I think in terms of bottom up — the opposite of what it does
+// today"): the builder starts at the toe; the device remembers a switch.
+type AddAt = 'toe' | 'collar';
+const ADD_AT_KEY = 'shotlog-column-add-at';
+function readAddAt(): AddAt {
+  try {
+    return localStorage.getItem(ADD_AT_KEY) === 'collar' ? 'collar' : 'toe';
+  } catch {
+    return 'toe';
+  }
+}
+const FIRST_LAYER: Record<AddAt, ColumnLayer['layerType']> = { toe: 'booster', collar: 'stemming' };
+const NEXT_LAYER: Record<AddAt, Partial<Record<ColumnLayer['layerType'], ColumnLayer['layerType']>>> = {
+  toe: { booster: 'explosive', explosive: 'stemming' },
+  collar: { stemming: 'explosive', explosive: 'booster' },
+};
+
 export function TypicalColumnBuilder({ shotId }: { shotId: string }) {
   const columns =
     useLiveQuery(
@@ -36,7 +53,8 @@ export function TypicalColumnBuilder({ shotId }: { shotId: string }) {
     ) ?? [];
   const [activeId, setActiveId] = useState<string | null>(null);
   const [renaming, setRenaming] = useState(false);
-  const [addType, setAddType] = useState<ColumnLayer['layerType']>('stemming');
+  const [addAt, setAddAt] = useState<AddAt>(readAddAt);
+  const [addType, setAddType] = useState<ColumnLayer['layerType']>(() => FIRST_LAYER[readAddAt()]);
 
   const active = columns.find((c) => c.id === activeId) ?? columns[0];
 
@@ -83,19 +101,18 @@ export function TypicalColumnBuilder({ shotId }: { shotId: string }) {
   };
 
   const addLayer = () => {
-    // Append below existing layers — blasters describe columns top-down
-    // (stemming first), so adding in speaking order builds correctly
-    saveLayers([
-      ...topDown,
-      {
-        layerOrder: 0, // re-assigned by saveLayers
-        layerType: addType,
-        lengthFt: 0,
-        productId: null,
-        productName: null,
-        notes: null,
-      },
-    ]);
+    const layer: ColumnLayer = {
+      layerOrder: 0, // re-assigned by saveLayers
+      layerType: addType,
+      lengthFt: 0,
+      productId: null,
+      productName: null,
+      notes: null,
+    };
+    // From the toe up (default): each new layer goes ABOVE the last, so the
+    // booster lands first and stemming last; from the collar down: below.
+    saveLayers(addAt === 'toe' ? [layer, ...topDown] : [...topDown, layer]);
+    setAddType(NEXT_LAYER[addAt][addType] ?? addType);
   };
 
   const totalDepth = topDown.reduce((s, l) => s + l.lengthFt, 0);
@@ -176,6 +193,30 @@ export function TypicalColumnBuilder({ shotId }: { shotId: string }) {
         <div className="flex gap-4">
           {/* Layer editor */}
           <div className="flex-1 space-y-2">
+            <div className="flex items-center gap-1" data-column-add-at={addAt}>
+              {(['toe', 'collar'] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  data-column-add-at-pick={v}
+                  className={cn(
+                    'px-3 min-h-[36px] rounded-lg border text-xs font-semibold',
+                    addAt === v ? 'bg-navy text-white border-navy' : 'bg-white border-gray-300 text-gray-700',
+                  )}
+                  onClick={() => {
+                    setAddAt(v);
+                    try {
+                      localStorage.setItem(ADD_AT_KEY, v);
+                    } catch {
+                      /* private mode */
+                    }
+                    if (topDown.length === 0) setAddType(FIRST_LAYER[v]);
+                  }}
+                >
+                  {v === 'toe' ? 'Build from the toe up' : 'Build from the collar down'}
+                </button>
+              ))}
+            </div>
             <div className="flex gap-2">
               <Select
                 value={addType}
@@ -188,8 +229,8 @@ export function TypicalColumnBuilder({ shotId }: { shotId: string }) {
             </div>
 
             {topDown.length === 0 && (
-              <p className="text-sm text-gray-400 text-center py-3">
-                Add layers top-down: stemming, explosive, booster…
+              <p className="text-sm text-gray-400 text-center py-3" data-column-empty>
+                {addAt === 'toe' ? 'Add layers from the toe up: booster, explosive, stemming…' : 'Add layers from the collar down: stemming, explosive, booster…'}
               </p>
             )}
             {topDown.map((layer, i) => {
@@ -197,6 +238,8 @@ export function TypicalColumnBuilder({ shotId }: { shotId: string }) {
               return (
                 <div
                   key={i}
+                  data-layer-row={i}
+                  data-layer-type={layer.layerType}
                   className="flex items-center gap-2 rounded-md px-2 py-1.5"
                   style={{
                     backgroundColor: `${style.color}22`,

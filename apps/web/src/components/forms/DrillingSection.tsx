@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { Drill, Plus, Send, X } from 'lucide-react';
 import { type Role } from '@shotlog/shared';
 import { can } from '@/lib/perms';
-import { createDrillLog, useShotDrilling } from '@/hooks/useDrillLogs';
+import { createDrillLog, getShotPlan, useShotDrilling } from '@/hooks/useDrillLogs';
 import { materializeDrillPlan, parseDiagram } from '@/lib/shotDiagram';
 import { getSessionUser } from '@/lib/session';
 import { useLiveQuery, db } from '@/db';
@@ -189,6 +189,9 @@ export function DrillingSection({
   const role = (getSessionUser()?.role ?? 'blaster') as Role;
   const drilling = useShotDrilling(shot.id);
   const canRequest = can('drillLogs', 'PUT');
+  // S18 (Matthew: "I'm not able to do a second drill plan for it"): the door
+  // to build this shot's plan sits here, where he looked, until a plan exists
+  const plan = getShotPlan(shot);
   const [showSend, setShowSend] = useState(false);
   const assignedUserIds = new Set((drilling?.logs ?? []).map((l) => l.drillerUserId).filter(Boolean));
 
@@ -218,15 +221,27 @@ export function DrillingSection({
         </p>
         {canRequest && (
           <>
-            <Button
-              size="sm"
-              variant={drilling?.logs.length ? 'outline' : 'default'}
-              onClick={() => setShowSend(true)}
-              title="Pick which drillers this plan goes to"
-            >
-              <Send className="h-4 w-4 mr-1" />
-              {drilling?.logs.length ? 'Send to more' : 'Send to drillers'}
-            </Button>
+            {plan ? (
+              <Button
+                size="sm"
+                variant={drilling?.logs.length ? 'outline' : 'default'}
+                onClick={() => setShowSend(true)}
+                title="Pick which drillers this plan goes to"
+              >
+                <Send className="h-4 w-4 mr-1" />
+                {drilling?.logs.length ? 'Send to more' : 'Send to drillers'}
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                data-build-plan-shot={shot.id}
+                onClick={() => navigate(`/blast-day/${blastDayId}/design/${shot.id}?mode=plan`)}
+                title="Lay out this shot's pattern for the drillers"
+              >
+                <Drill className="h-4 w-4 mr-1" />
+                Build the drill plan ›
+              </Button>
+            )}
             <Button size="sm" variant="outline" onClick={() => void start()} title="Start a drill log yourself">
               <Plus className="h-4 w-4 mr-1" />
               Log

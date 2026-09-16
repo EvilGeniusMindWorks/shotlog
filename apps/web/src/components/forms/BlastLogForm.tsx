@@ -17,7 +17,8 @@ import { ChecklistSheet, ChooserSheet, FactRow } from '@/components/ui/fact-row'
 import { cardValueLabelFor } from '@/lib/cardOptions';
 import { SignatureField } from '@/components/ui/signature-field';
 import { getSessionUser } from '@/lib/session';
-import { dataUrlToBlob } from '@/lib/utils';
+import { dataUrlToBlob, nowISO } from '@/lib/utils';
+import { DraftInput } from '@/components/ui/draft-input';
 import { fmtLbs, fmtPF } from '@/lib/format';
 import { Badge } from '@/components/ui/badge';
 import { ShotForm } from './ShotForm';
@@ -249,7 +250,34 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
             onKeyDown={(e) => e.key === 'Enter' && toggleShot(shot.id)}
           >
             <span className="font-bold">Shot #{shot.shotNumber}</span>
-            {shot.time && <span className="text-sm text-gray-500">{shot.time}</span>}
+            {/* S18: the time the shot was fired sits with the shot's number (Matthew: "why is there a time field on the drill parameters?") */}
+            <span
+              className="flex items-center gap-1"
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+              data-shot-time-row
+            >
+              <span className="text-[10px] uppercase tracking-wide text-gray-500">Time of shot</span>
+              <DraftInput
+                type="time"
+                value={shot.time}
+                className="h-8 w-[7.5rem] px-2 text-sm"
+                data-shot-time
+                onCommit={(v) => void db.shots.update(shot.id, { time: v, updatedAt: nowISO() })}
+              />
+              <button
+                type="button"
+                className="text-xs text-navy underline px-1 min-h-[32px]"
+                data-shot-time-now
+                onClick={() => {
+                  const d = new Date();
+                  const hhmm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                  void db.shots.update(shot.id, { time: hhmm, updatedAt: nowISO() });
+                }}
+              >
+                Now
+              </button>
+            </span>
             <span className="text-sm text-gray-500">
               {shot.totals.numHoles > 0 && `${shot.totals.numHoles} holes`}
               {shot.totals.numHoles > 0 && shotLbs > 0 && ' · '}

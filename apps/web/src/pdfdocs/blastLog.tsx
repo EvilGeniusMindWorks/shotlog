@@ -3,6 +3,7 @@
 // diagrams port to PDF-native SVG: map snapshots embed as images, the
 // projected site schematic and timed shot diagram redraw as vectors.
 import { COMPLIANCE_ADVISORY } from '@/lib/complianceAdvisory';
+import { blastMatsText } from '@/lib/blastMats';
 import { pdf, Circle, Line, Polygon, Rect, Svg, Text as SvgText } from '@react-pdf/renderer';
 import { db } from '@/db';
 import { getJobView } from '@/lib/jobContext';
@@ -439,7 +440,6 @@ function BlastLogDoc(d: Data) {
               <ShotRow label="Burden:" shots={shots} get={(s) => dash(s.drillParams.burden, "'")} />
               <ShotRow label="Spacing:" shots={shots} get={(s) => dash(s.drillParams.spacing, "'")} />
               <ShotRow label="Stemming:" shots={shots} get={(s) => dash(s.drillParams.stemming, "'")} />
-              <ShotRow label="Blast mats:" shots={shots} get={(s) => (s.drillParams.blastMats === true ? `Yes${s.drillParams.blastMatCount ? ` · ${s.drillParams.blastMatCount}` : ''}` : s.drillParams.blastMats === false ? 'No' : '—')} />
               <ShotRow label="Sub Drill:" shots={shots} get={(s) => dash(s.drillParams.subDrill, "'")} />
               <TR>
                 <TD w={92}> </TD>
@@ -497,6 +497,11 @@ function BlastLogDoc(d: Data) {
                 <TD>
                   <Text style={{ fontSize: 7.5 }}>
                     Lead Line: <Text style={K.val}>{dash(explosiveUsage?.leadLine, "'")}</Text>
+                  </Text>
+                </TD>
+                <TD>
+                  <Text style={{ fontSize: 7.5 }}>
+                    Blast Mats: <Text style={K.val}>{blastMatsText(explosiveUsage, shots)}</Text>
                   </Text>
                 </TD>
                 <TD>

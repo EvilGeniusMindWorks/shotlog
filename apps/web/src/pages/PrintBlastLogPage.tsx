@@ -4,6 +4,7 @@ import { ArrowLeft, FileDown, Printer, TriangleAlert } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { useBlastDay } from '@/hooks/useBlastDay';
 import { useFeedbackPaper } from '@/lib/feedbackPaper';
+import { blastMatsText } from '@/lib/blastMats';
 import { formatDate } from '@/lib/utils';
 import { ColumnVisual } from '@/components/design/TypicalColumnBuilder';
 import { distributeByHoles, powderFactor } from '@shotlog/shared';
@@ -186,7 +187,6 @@ export function PrintBlastLogPage() {
                 <ShotRow label="Burden:" shots={shots} get={(s) => dash(s.drillParams.burden, "'")} />
                 <ShotRow label="Spacing:" shots={shots} get={(s) => dash(s.drillParams.spacing, "'")} />
                 <ShotRow label="Stemming:" shots={shots} get={(s) => dash(s.drillParams.stemming, "'")} />
-                <ShotRow label="Blast mats:" shots={shots} get={(s) => (s.drillParams.blastMats === true ? `Yes${s.drillParams.blastMatCount ? ` · ${s.drillParams.blastMatCount}` : ''}` : s.drillParams.blastMats === false ? 'No' : '—')} />
                 <ShotRow label="Sub Drill:" shots={shots} get={(s) => dash(s.drillParams.subDrill, "'")} />
                 <tr>
                   <td></td>
@@ -266,6 +266,9 @@ export function PrintBlastLogPage() {
                 <tr>
                   <td>
                     Lead Line: <span className="val">{dash(explosiveUsage?.leadLine, "'")}</span>
+                  </td>
+                  <td>
+                    Blast Mats: <span className="val" data-print-mats>{blastMatsText(explosiveUsage, shots)}</span>
                   </td>
                   <td>
                     Type of Cover (Dirt/Mats): <span className="val">{dash(explosiveUsage?.coverType)}</span>

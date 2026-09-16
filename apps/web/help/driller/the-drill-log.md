@@ -33,6 +33,10 @@ Pick the rig at the top of the log. It ties the day's hours to the machine, and 
 
 Under the grid, your logged holes newest first — the latest eight, with **Show all** for the rest. Tap one to change it.
 
+## If the blaster sends it back
+
+The blaster can send a completed log back with a note. It reopens with **Sent back by the blaster** and the note at the top, and a line on your home says so. Fix what the note asks and sign it complete again.
+
 ## If the day moves
 
 If the blaster changes the day's date, your drill log and the plan sent to you move with it — there's nothing to re-send.

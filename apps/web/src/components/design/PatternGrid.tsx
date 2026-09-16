@@ -37,9 +37,11 @@ interface Props {
   extras?: PatternExtra[];
   /** data-* hook for tours and harnesses */
   testId?: string;
+  /** S18: every hole the same size whatever the column count (the review); unset = stretch to the width */
+  cellPx?: number;
 }
 
-export function PatternGrid({ diagram, fallbackDepth, cell, onTap, onTapRow, rowLabel, extras, testId }: Props) {
+export function PatternGrid({ diagram, fallbackDepth, cell, onTap, onTapRow, rowLabel, extras, testId, cellPx }: Props) {
   const plan = materializeDrillPlan(diagram, fallbackDepth);
   if (plan.length === 0) return null;
   const byIdx = new Map(plan.map((h) => [h.idx, h]));
@@ -49,7 +51,8 @@ export function PatternGrid({ diagram, fallbackDepth, cell, onTap, onTapRow, row
     <div className="overflow-x-auto" data-pattern-grid={testId ?? ''} data-rows={rows} data-cols={cols}>
       <div
         className="grid gap-1.5 items-center"
-        style={{ gridTemplateColumns: `${onTapRow ? '2rem ' : ''}repeat(${cols}, minmax(28px, 1fr))`, minWidth: cols * 32 + (onTapRow ? 40 : 0) }}
+        style={{ gridTemplateColumns: `${onTapRow ? '2rem ' : ''}repeat(${cols}, ${cellPx ? `${cellPx}px` : 'minmax(28px, 1fr)'})`, minWidth: cols * (cellPx ? cellPx + 6 : 32) + (onTapRow ? 40 : 0) }}
+        data-cell-px={cellPx ?? ''}
       >
         {Array.from({ length: rows }, (_, r) => {
           const holes = rowHoles(r);

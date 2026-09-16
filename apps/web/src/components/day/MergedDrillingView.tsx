@@ -9,8 +9,13 @@ import type { BlastDay, DrillLog, DrillLogHole, Shot } from '@/db/schema';
 import { dayDrillLogs } from '@/hooks/useDayPhases';
 import { canDrillLogTransition } from '@/lib/perms';
 import { getSessionUser } from '@/lib/session';
-import { formatDate, nowISO } from '@/lib/utils';
+import { formatDate, generateId, nowISO } from '@/lib/utils';
+import { hhmm } from '@/lib/dayCard';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { showToast } from '@/components/ui/undo-toast';
+import { ConsequenceSheet } from '@/components/records/LifecycleMenu';
 import { PatternGrid } from '@/components/design/PatternGrid';
 import { getPlanHoles, planToDiagram, drillLogRoute } from '@/hooks/useDrillPlans';
 import { hasDrillPlan, materializeDrillPlan, parseDiagram, type ShotDiagram } from '@/lib/shotDiagram';
@@ -49,6 +54,10 @@ export function MergedDrillingView({
   onAccepted: () => void;
 }) {
   const [selected, setSelected] = useState<MergedHole | null>(null);
+  // S18 (Matthew): the whole of what the driller filled out, a list of the
+  // holes, and a way to send a log back — not just Accept
+  const [view, setView] = useState<'grid' | 'list'>('grid');
+  const [sendBack, setSendBack] = useState<{ ids: Set<string>; note: string } | null>(null);
   const navigate = useNavigate();
   const data = useLiveQuery(async () => {
     const logs = await dayDrillLogs(day, shots);
@@ -94,12 +103,18 @@ export function MergedDrillingView({
       patterns.push({ shot, diagram, fallbackDepth, holes: mine, extras });
     }
     const placed = new Set(patterns.flatMap((p) => p.holes.map((m) => m.hole.id)));
-    return { logs, drillers: [...drillers.values()], merged, patterns, unplaced: merged.filter((m) => !placed.has(m.hole.id)) };
+    const rigNames = new Map<string, string>();
+    for (const log of logs) {
+      if (!log.drillRigEquipmentId) continue;
+      const rig = await db.equipment.get(log.drillRigEquipmentId);
+      if (rig) rigNames.set(log.id, rig.assetNumber);
+    }
+    return { logs, drillers: [...drillers.values()], merged, patterns, unplaced: merged.filter((m) => !placed.has(m.hole.id)), rigNames };
     // shots arrive a beat after the day — the query must re-run when they do
   }, [day.id, shots.map((s) => `${s.id}:${s.drillPlanId ?? ''}:${s.updatedAt}`).join(',')]);
 
   if (!data) return <p className="text-sm text-gray-400 p-4 text-center">Loading…</p>;
-  const { logs, drillers, merged, patterns, unplaced } = data;
+  const { logs, drillers, merged, patterns, unplaced, rigNames } = data;
   const cellFor = (m: MergedHole | undefined, sel: MergedHole | null) => ({
     className:
       (m?.hole.skipped ? 'border-2 border-dashed border-gray-400 ' : m ? 'text-white ' : 'border border-gray-300 text-gray-400 bg-white ') +
@@ -117,6 +132,40 @@ export function MergedDrillingView({
     (l) => l.status === 'complete' && canDrillLogTransition('complete', 'accepted'),
   );
   const allAccepted = logs.length > 0 && logs.every((l) => l.status === 'accepted');
+  const accepted = logs.filter((l) => l.status === 'accepted');
+  const sendable = logs.filter((l) => l.status === 'complete' && canDrillLogTransition('complete', 'open'));
+
+  const doSendBack = async () => {
+    if (!sendBack) return;
+    const me = getSessionUser();
+    const now = nowISO();
+    const note = sendBack.note.trim();
+    const names: string[] = [];
+    for (const l of sendable.filter((x) => sendBack.ids.has(x.id))) {
+      await db.drillLogs.update(l.id, { status: 'open', reopenNote: note || undefined, updatedAt: now });
+      names.push(l.drillerName || 'the driller');
+      if (l.drillerUserId && l.drillerUserId !== me?.id) {
+        await db.dayReminders.add({
+          id: generateId(),
+          blastDayId: day.id,
+          jobId: day.jobId,
+          date: day.date,
+          toUserId: l.drillerUserId,
+          toName: l.drillerName || '',
+          fromUserId: me?.id ?? '',
+          fromName: me?.name ?? '',
+          what: 'sentback',
+          text: `sent your drill log back${note ? `: “${note}”` : ''}`,
+          at: now,
+          createdAt: now,
+          updatedAt: now,
+          syncStatus: 'local',
+        });
+      }
+    }
+    setSendBack(null);
+    showToast(`Sent back to ${names.join(', ')}`);
+  };
 
   const acceptAll = async () => {
     const me = getSessionUser();
@@ -151,13 +200,68 @@ export function MergedDrillingView({
           {/* S9a: both evaluation blasters found the off-plan hole only by counting */}
           {offPlanCount > 0 && <span className="text-navy" data-off-plan-count={offPlanCount}> · {offPlanCount} off-plan</span>}
         </p>
-        {patterns.map(({ shot, diagram, fallbackDepth, holes, extras }) => {
+        <div className="flex items-center gap-1 mb-2" role="tablist" data-review-view={view}>
+          {(['grid', 'list'] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              role="tab"
+              aria-selected={view === v}
+              data-review-view-pick={v}
+              className={`px-3 min-h-[36px] rounded-lg border text-xs font-semibold ${view === v ? 'bg-navy text-white border-navy' : 'bg-white border-gray-300 text-gray-700'}`}
+              onClick={() => setView(v)}
+            >
+              {v === 'grid' ? 'Grid' : 'List'}
+            </button>
+          ))}
+        </div>
+        {view === 'list' && (
+          <div className="mb-2 overflow-x-auto" data-review-list>
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-left text-[10px] uppercase tracking-wider text-gray-400 border-b border-gray-100">
+                  <th className="py-1 pr-2">Hole</th>
+                  <th className="py-1 pr-2">Plan → drilled</th>
+                  <th className="py-1 pr-2">Angle</th>
+                  <th className="py-1 pr-2">Found</th>
+                  <th className="py-1 pr-2">Comment</th>
+                  <th className="py-1">By</th>
+                </tr>
+              </thead>
+              <tbody>
+                {merged.map((m) => (
+                  <tr
+                    key={m.hole.id}
+                    data-review-list-row={m.hole.holeNumber}
+                    className={`border-b border-gray-50 cursor-pointer ${selected?.hole.id === m.hole.id ? 'bg-blue-50' : ''}`}
+                    onClick={() => setSelected(selected?.hole.id === m.hole.id ? null : m)}
+                  >
+                    <td className="py-1.5 pr-2 font-mono font-bold">H-{m.hole.holeNumber}</td>
+                    <td className="py-1.5 pr-2 font-mono">
+                      {m.hole.skipped ? 'skipped' : `${m.hole.plannedDepth != null ? `${m.hole.plannedDepth.toFixed(1)} → ` : ''}${m.hole.actualDepth.toFixed(1)} ft`}
+                    </td>
+                    <td className="py-1.5 pr-2 font-mono">{m.hole.angle > 0 ? `${m.hole.angle}°` : '—'}</td>
+                    <td className="py-1.5 pr-2 text-safety-orange">{m.hole.conditions.length > 0 ? conditionText(m.hole) : ''}</td>
+                    <td className="py-1.5 pr-2 text-gray-500">{m.hole.comment || ''}</td>
+                    <td className="py-1.5">
+                      <span className="h-5 w-5 rounded-full text-white text-[9px] font-bold inline-flex items-center justify-center" style={{ background: m.color }}>
+                        {initials(m.log.drillerName || '')}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {view === 'grid' && patterns.map(({ shot, diagram, fallbackDepth, holes, extras }) => {
           const byNumber = new Map(holes.map((m) => [m.hole.holeNumber.trim(), m]));
           return (
             <div key={shot.id} className="mb-2">
               {patterns.length > 1 && <p className="text-xs text-gray-500 mb-1">Shot {shot.shotNumber}</p>}
               <PatternGrid
                 testId="review"
+                cellPx={34}
                 diagram={diagram}
                 fallbackDepth={fallbackDepth}
                 cell={(p) => cellFor(byNumber.get(String(p.n)), selected)}
@@ -176,7 +280,7 @@ export function MergedDrillingView({
             </div>
           );
         })}
-        <div className={`grid grid-cols-10 gap-1.5 mb-2 ${patterns.length > 0 && unplaced.length === 0 ? 'hidden' : ''}`}>
+        <div className={`grid grid-cols-10 gap-1.5 mb-2 ${view !== 'grid' || (patterns.length > 0 && unplaced.length === 0) ? 'hidden' : ''}`}>
           {unplaced.length > 0 && patterns.length > 0 && <p className="col-span-10 text-[11px] text-gray-400">Off-plan holes:</p>}
           {(patterns.length > 0 ? unplaced : merged).map((m) => (
             <button
@@ -279,9 +383,28 @@ export function MergedDrillingView({
             data-review-log={l.id}
             onClick={() => navigate(drillLogRoute(l))}
           >
-            <span className="flex-1 min-w-0 truncate">
-              {l.drillerName || 'Unknown'}
-              {l.date && <span className="text-gray-400"> · {formatDate(l.date)}</span>}
+            <span className="flex-1 min-w-0">
+              <span className="block truncate">
+                {l.drillerName || 'Unknown'}
+                {l.date && <span className="text-gray-400"> · {formatDate(l.date)}</span>}
+                {rigNames.get(l.id) && <span className="text-gray-400"> · {rigNames.get(l.id)}</span>}
+              </span>
+              {/* S18: the whole of what the driller filled out is on this screen */}
+              <span className="block text-xs text-gray-500" data-review-log-specs={l.id}>
+                {l.holeDiameter || '—'} in · {l.burden || '—'} × {l.spacing || '—'} ft · face {l.faceHeight || '—'} ft
+                {l.locationNote ? ` · ${l.locationNote}` : ''}
+              </span>
+              {l.completionNote && (
+                <span className="block text-xs text-gray-700" data-review-log-note={l.id}>
+                  Driller’s note: “{l.completionNote}”
+                </span>
+              )}
+              {l.status === 'accepted' && l.acceptedAt && (
+                <span className="block text-xs text-green-800" data-review-accepted={l.id}>
+                  accepted {hhmm(l.acceptedAt)}{l.acceptedBy ? ` by ${l.acceptedBy}` : ''}
+                </span>
+              )}
+              {l.status === 'open' && l.reopenNote && <span className="block text-xs text-amber-800">sent back: “{l.reopenNote}”</span>}
             </span>
             <Badge variant={l.status === 'accepted' ? 'approved' : l.status === 'complete' ? 'submitted' : 'draft'}>
               {l.status}
@@ -291,21 +414,86 @@ export function MergedDrillingView({
         ))}
       </div>
 
-      {completable.length > 0 ? (
-        <button
-          className="w-full bg-safety-orange text-white rounded-xl py-3 font-bold text-sm hover:bg-orange-600"
-          onClick={() => void acceptAll()}
-        >
-          Accept pattern → Readiness review
-        </button>
-      ) : allAccepted ? (
-        <button
-          className="w-full bg-white border border-gray-300 text-navy rounded-xl py-3 font-bold text-sm hover:bg-gray-50"
-          onClick={onAccepted}
-        >
-          Readiness review →
-        </button>
-      ) : null}
+      {completable.length > 0 && (
+        <p className="text-xs text-gray-500" data-review-accept-scope>
+          Accepting locks {completable.map((l) => l.drillerName || 'a log').join(', ')}
+          {accepted.length > 0
+            ? ` — already accepted and untouched: ${accepted.map((l) => `${l.drillerName || 'a log'}${l.acceptedAt ? ` (${hhmm(l.acceptedAt)})` : ''}`).join(', ')}`
+            : ''}
+        </p>
+      )}
+      <div className="flex gap-2">
+        {sendable.length > 0 && (
+          <button
+            type="button"
+            className="flex-1 bg-white border border-gray-300 text-navy rounded-xl py-3 font-bold text-sm hover:bg-gray-50 min-h-[48px]"
+            data-review-sendback
+            onClick={() => setSendBack({ ids: new Set(sendable.length === 1 ? [sendable[0].id] : []), note: '' })}
+          >
+            Send back…
+          </button>
+        )}
+        {completable.length > 0 ? (
+          <button
+            className="flex-[2] bg-safety-orange text-white rounded-xl py-3 font-bold text-sm hover:bg-orange-600 min-h-[48px]"
+            data-review-accept
+            onClick={() => void acceptAll()}
+          >
+            Accept pattern → Readiness review
+          </button>
+        ) : allAccepted ? (
+          <button
+            className="flex-[2] bg-white border border-gray-300 text-navy rounded-xl py-3 font-bold text-sm hover:bg-gray-50 min-h-[48px]"
+            onClick={onAccepted}
+          >
+            Readiness review →
+          </button>
+        ) : null}
+      </div>
+
+      {sendBack && (
+        <ConsequenceSheet onClose={() => setSendBack(null)}>
+          <div data-review-sendback-sheet>
+            <h3 className="font-bold text-lg">Send the drill log back</h3>
+            <p className="text-xs text-gray-500 mb-2">The log reopens on the driller’s device with your note on top; nothing they logged is lost.</p>
+            {sendable.length > 1 && (
+              <div className="space-y-1 mb-2">
+                {sendable.map((l) => (
+                  <label key={l.id} className="flex items-center gap-2 min-h-[44px] text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="h-5 w-5 rounded border-gray-300 text-navy"
+                      checked={sendBack.ids.has(l.id)}
+                      data-review-sendback-log={l.id}
+                      onChange={(e) => {
+                        const ids = new Set(sendBack.ids);
+                        if (e.target.checked) ids.add(l.id);
+                        else ids.delete(l.id);
+                        setSendBack({ ...sendBack, ids });
+                      }}
+                    />
+                    {l.drillerName || 'Unknown'}
+                    {l.date ? ` · ${formatDate(l.date)}` : ''}
+                  </label>
+                ))}
+              </div>
+            )}
+            <Textarea
+              rows={3}
+              value={sendBack.note}
+              placeholder="What needs fixing? e.g. rows 4–5: log the actual depth per hole"
+              data-review-sendback-note
+              onChange={(e) => setSendBack({ ...sendBack, note: e.target.value })}
+            />
+            <Button className="w-full mt-3 min-h-[48px]" disabled={sendBack.ids.size === 0} data-review-sendback-go onClick={() => void doSendBack()}>
+              Send back
+            </Button>
+            <Button variant="outline" className="w-full mt-2" onClick={() => setSendBack(null)}>
+              Cancel
+            </Button>
+          </div>
+        </ConsequenceSheet>
+      )}
     </div>
   );
 }

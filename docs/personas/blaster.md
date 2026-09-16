@@ -300,3 +300,14 @@ page · customer/site/job create (new) · contacts · My Records · reference
   **Max holes/delay** and rings only the holes over that limit — not
   every hole within 8 ms of another. A job with no Max holes/delay set
   never turns red.
+- **S18 (Sep 16 2026), from his thirteen feedback reports.** Every number
+  and text box keeps what he types and saves when he pauses — no more
+  "30 becomes 3" on the phone. A feedback bubble sits in the corner of
+  every screen (over sheets, on the print screens) during beta. The shot's
+  totals fill from the accepted drilling; **Time of shot** moves to the
+  shot's header; blast mats are one row on the log. The drilling review
+  shows the log's header numbers, a hole list, the driller's note, and
+  **Send back…** with a note. A second shot's card offers **Build the
+  drill plan ›**; the review grids keep one hole size. The column builder
+  starts at the toe. The daily report can be marked **Done** before the
+  day files.

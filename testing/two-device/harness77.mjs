@@ -240,15 +240,210 @@ async (page, lib) => {
     R.ok('print, filing and help screens count as bare — the bubble sits lower there', rule.bare);
   });
 
+  // ── push 2: a plan on the shot, a driller's log, the review ─────────────
+  const cD = await mkCtx(browser, { viewport: { width: 420, height: 860 } });
+  const PD = await cD.newPage();
+  await signIn(PD, 'dinis');
+  await skipTours(PD);
+  const meD = await PD.evaluate(async () => (await import('/src/lib/session.ts')).getSessionUser());
+  let logId, shot2Id;
+  const setPlan = (P, id, rows, cols, depth) =>
+    P.evaluate(async ({ id, rows, cols, depth }) => {
+      const { db } = await import('/src/db/index.ts');
+      const { serializeDiagram, emptyDiagram } = await import('/src/lib/shotDiagram.ts');
+      const { nowISO } = await import('/src/lib/utils.ts');
+      const shot = await db.shots.get(id);
+      const d = { ...emptyDiagram(rows, cols), interHoleMs: 25, plan: { defaultDepth: depth, overrides: {} } };
+      await db.shots.update(id, { designPlan: { ...shot.designPlan, shotDiagramData: serializeDiagram(d) }, updatedAt: nowISO() });
+    }, { id, rows, cols, depth });
+  const openTotals = async (P) => {
+    await P.locator('[role="button"]:has-text("Totals")').first().waitFor({ timeout: 20000 });
+    if (!(await P.locator('[data-totals-source]').first().isVisible().catch(() => false))) await P.locator('[role="button"]:has-text("Totals")').first().click();
+    await P.locator('[data-totals-source]').first().waitFor({ timeout: 10000 });
+  };
+  const shotRow = (P, id) => P.evaluate(async (id) => { const s = await (await import('/src/db/index.ts')).db.shots.get(id); return s ? { holes: s.totals.numHoles, ft: s.totals.totalDrillFootage, src: s.totalsSource ?? null, time: s.time } : null; }, id);
+
+  await R.section("The shot's totals: from the plan before drilling, from the accepted drilling after, edited by hand until you take them back", async () => {
+    // his 4321 holes / 12.5 burden from §1 are typed numbers — the plan must not replace them; take them back first
+    await PB.evaluate(async (id) => { const { db } = await import('/src/db/index.ts'); const { nowISO } = await import('/src/lib/utils.ts'); const s = await db.shots.get(id); await db.shots.update(id, { totals: { ...s.totals, numHoles: 0, totalDrillFootage: 0, avgDrillDepth: 0 }, totalsSource: undefined, updatedAt: nowISO() }); }, shotId);
+    await setPlan(PB, shotId, 2, 10, 20); // 20 planned holes × 20 ft
+    await PB.goto(`${WEB}/blast-day/${dayId}?view=blast-log`);
+    await openTotals(PB);
+    const fromPlan = await waitFor(() => shotRow(PB, shotId).then((r) => (r?.src === 'plan' ? r : undefined)));
+    R.ok(`with a plan and no drilling the totals read from the plan: ${fromPlan?.holes} holes · ${fromPlan?.ft} ft`, fromPlan?.holes === 20 && fromPlan?.ft === 400);
+    R.ok('the line under the totals says "From the plan"', /From the plan/.test((await PB.locator('[data-totals-source="plan"]').first().textContent()) || ''));
+
+    // the driller logs 18 of the 20 and signs complete with a note
+    await waitForUpload(PB, 30000);
+    logId = await waitFor(() => PD.evaluate(async ({ dayId, shotId }) => {
+      const { db } = await import('/src/db/index.ts');
+      const shot = await db.shots.get(shotId);
+      const day = await db.blastDays.get(dayId);
+      if (!shot || !day) return undefined;
+      const { createDrillLog, addHole } = await import('/src/hooks/useDrillLogs.ts');
+      const id = await createDrillLog(shot, dayId, day.jobId);
+      const log = await db.drillLogs.get(id);
+      for (let n = 1; n <= 18; n++) await addHole(log, { holeNumber: String(n), actualDepth: n === 7 ? 22 : 20, angle: 0, subdrill: 0, conditions: n === 7 ? [{ code: 'W', fromFt: 0, toFt: 22 }] : [], comment: n === 7 ? 'ran wet' : '' });
+      const { nowISO } = await import('/src/lib/utils.ts');
+      await db.drillLogs.update(id, { holeDiameter: 3.5, burden: 6, spacing: 6, faceHeight: 20, status: 'complete', completedAt: nowISO(), completionNote: 'hit clay in row 2', updatedAt: nowISO() });
+      return id;
+    }, { dayId, shotId }), 30000);
+    R.ok('the driller logged 18 holes and signed complete', Boolean(logId));
+    await waitForUpload(PD, 30000);
+  });
+
+  await R.section('The review: the header the driller drilled to, a list of the holes, the note, and Send back', async () => {
+    await PB.goto(`${WEB}/blast-day/${dayId}?view=drilling`);
+    await PB.locator(`[data-review-log-specs="${logId}"]`).waitFor({ timeout: 25000 });
+    const specs = (await PB.locator(`[data-review-log-specs="${logId}"]`).textContent()) || '';
+    R.ok(`the log's line reads the driller's header: "${specs.trim()}"`, /3\.5 in/.test(specs) && /6 × 6 ft/.test(specs) && /face 20 ft/.test(specs));
+    R.ok("the driller's sign-off note is on the screen", /hit clay in row 2/.test((await PB.locator(`[data-review-log-note="${logId}"]`).textContent()) || ''));
+    R.ok('the grid draws every hole at one size (34 px)', (await PB.locator('[data-pattern-grid="review"] [data-cell-px="34"]').count()) === 1);
+    await PB.locator('[data-review-view-pick="list"]').click();
+    await PB.locator('[data-review-list]').waitFor({ timeout: 5000 });
+    R.ok('List shows all 18 holes as rows', (await PB.locator('[data-review-list-row]').count()) === 18);
+    const row7 = (await PB.locator('[data-review-list-row="7"]').textContent()) || '';
+    R.ok(`hole 7's row carries its depth, the water and the comment: "${row7.replace(/\s+/g, ' ').trim()}"`, /22\.0 ft/.test(row7) && /Water/.test(row7) && /ran wet/.test(row7));
+    await PB.locator('[data-review-view-pick="grid"]').click();
+    R.ok('back to Grid', (await PB.locator('[data-pattern-grid="review"]').count()) === 1);
+
+    await PB.locator('[data-review-sendback]').click();
+    await PB.locator('[data-review-sendback-sheet]').waitFor({ timeout: 5000 });
+    await PB.locator('[data-review-sendback-note]').fill('Row 2: log the actual depth per hole');
+    await PB.locator('[data-review-sendback-go]').click();
+    const reopened = await waitFor(() => PB.evaluate(async (id) => { const l = await (await import('/src/db/index.ts')).db.drillLogs.get(id); return l?.status === 'open' && l.reopenNote ? l.reopenNote : undefined; }, logId));
+    R.ok(`the log is open again with the note: "${reopened}"`, reopened === 'Row 2: log the actual depth per hole');
+    const doorGone = await waitFor(() => PB.locator('[data-review-sendback]').count().then((n) => (n === 0 ? 1 : 0)), 10000);
+    R.ok('the Send back door is gone while nothing is complete', doorGone === 1);
+    await waitForUpload(PB, 30000);
+    await PD.goto(`${WEB}/`);
+    const line = await waitFor(async () => { const n = await PD.locator('[data-reminder-kind="sentback"]').count(); return n ? (await PD.locator('[data-reminder-kind="sentback"]').first().textContent()) : undefined; }, 30000);
+    R.ok(`the driller's home says who sent it back and why: "${(line || '').trim()}"`, /sent your drill log back/.test(line || '') && /Row 2/.test(line || ''));
+    await PD.goto(`${WEB}/blast-day/${dayId}/drill-log/${logId}`);
+    await PD.getByText('Sent back by the blaster').first().waitFor({ timeout: 20000 });
+    R.ok('the log itself shows the sent-back note on top', true);
+    // the driller signs it complete again — the line on the home clears itself
+    await PD.evaluate(async (id) => { const { db } = await import('/src/db/index.ts'); const { nowISO } = await import('/src/lib/utils.ts'); await db.drillLogs.update(id, { status: 'complete', completedAt: nowISO(), reopenNote: undefined, updatedAt: nowISO() }); }, logId);
+    await PD.goto(`${WEB}/`);
+    await PD.locator('[data-driller-home]').waitFor({ timeout: 20000 });
+    const cleared = await waitFor(() => PD.locator('[data-reminder-kind="sentback"]').count().then((n) => (n === 0 ? 1 : 0)), 15000);
+    R.ok('signed complete again, the sent-back line leaves the home on its own', cleared === 1);
+    await waitForUpload(PD, 30000);
+  });
+
+  await R.section('Accepting fills the totals from the drilling; a typed number holds until you take the figures back', async () => {
+    await PB.goto(`${WEB}/blast-day/${dayId}?view=drilling`);
+    await PB.locator('[data-review-accept]').waitFor({ timeout: 25000 });
+    const scope = (await PB.locator('[data-review-accept-scope]').textContent()) || '';
+    R.ok(`the button says what it locks: "${scope.trim()}"`, /Accepting locks/.test(scope));
+    await PB.locator('[data-review-accept]').click();
+    const acc = await waitFor(() => PB.evaluate(async (id) => (await (await import('/src/db/index.ts')).db.drillLogs.get(id))?.status, logId).then((v) => (v === 'accepted' ? v : undefined)));
+    R.ok('the log is accepted', acc === 'accepted');
+    await PB.goto(`${WEB}/blast-day/${dayId}?view=blast-log`);
+    await openTotals(PB);
+    const fromDrilling = await waitFor(() => shotRow(PB, shotId).then((r) => (r?.src === 'drilling' ? r : undefined)));
+    R.ok(`the totals now read the drilling: ${fromDrilling?.holes} holes · ${fromDrilling?.ft} ft (18 × 20 + 2 extra)`, fromDrilling?.holes === 18 && fromDrilling?.ft === 362);
+    const srcLine = (await PB.locator('[data-totals-source="drilling"]').first().textContent()) || '';
+    R.ok(`the line names the source: "${srcLine.trim().slice(0, 80)}…"`, /From the accepted drilling: 18 holes · 362 ft/.test(srcLine) && /accepted/.test(srcLine));
+    if (!(await PB.locator('[data-total="numHoles"]').isVisible().catch(() => false))) await PB.locator('[role="button"]:has-text("Totals")').first().click();
+    await typeFast(PB, '[data-total="numHoles"]', '19');
+    const edited = await waitFor(() => shotRow(PB, shotId).then((r) => (r?.src === 'edited' && r.holes === 19 ? r : undefined)));
+    const useDoor = await waitFor(() => PB.locator('[data-totals-use-drilling]').count().then((n) => (n === 1 ? n : 0)), 10000);
+    R.ok('a typed 19 holds and the line reads "Edited by you" with a way back', edited?.holes === 19 && useDoor === 1 && /Edited by you/.test((await PB.locator('[data-totals-source="edited"]').first().textContent()) || ''));
+    await PB.locator('[data-totals-use-drilling]').click();
+    const back = await waitFor(() => shotRow(PB, shotId).then((r) => (r?.src === 'drilling' && r.holes === 18 ? r : undefined)));
+    R.ok("tapping \"use the drilling's figures\" brings 18 back", back?.holes === 18);
+    R.ok('the review names when the log was accepted', await PB.evaluate(async (id) => (await (await import('/src/db/index.ts')).db.drillLogs.get(id))?.acceptedAt ? true : false, logId));
+  });
+
+  await R.section('Blast mats once for the log; the time of shot on the shot header with Now', async () => {
+    await PB.locator('[data-shot-time-row]').first().waitFor({ timeout: 20000 });
+    R.ok('Time of shot sits on the shot header, not under Drill parameters', (await PB.locator('[data-shot-time-row] [data-shot-time]').count()) >= 1 && (await PB.locator('[data-tour="shot-drill"] [data-shot-time]').count()) === 0);
+    await PB.locator('[data-shot-time-now]').first().click();
+    const t = await waitFor(() => shotRow(PB, shotId).then((r) => (r?.time && /^\d{2}:\d{2}$/.test(r.time) ? r.time : undefined)));
+    R.ok(`Now stamps the shot's time (${t})`, Boolean(t));
+    await PB.locator('[data-log-mats]').waitFor({ timeout: 10000 });
+    await PB.locator('[data-log-mats] button:has-text("Yes")').click();
+    await PB.locator('[data-log-mat-count]').waitFor({ timeout: 5000 });
+    await typeFast(PB, '[data-log-mat-count]', '12');
+    const mats = await waitFor(() => PB.evaluate(async (dayId) => { const { db } = await import('/src/db/index.ts'); const log = await db.blastLogs.where('blastDayId').equals(dayId).first(); const u = log ? await db.explosiveUsages.where('blastLogId').equals(log.id).first() : null; return u?.blastMats === true && u.blastMatCount === 12 ? 12 : undefined; }, dayId));
+    R.ok('the log holds Yes · 12 for all shots', mats === 12);
+    R.ok('the shot card no longer asks about mats', (await PB.locator('[data-blast-mat-count]').count()) === 0);
+    await PB.goto(`${WEB}/blast-day/${dayId}/print`);
+    const printed = await waitFor(async () => { const t = ((await PB.locator('[data-print-mats]').textContent().catch(() => '')) || '').trim(); return t === 'Yes · 12' ? t : undefined; }, 20000);
+    R.ok(`the print reads "Blast Mats: ${printed || '—'}" beside the lead line`, printed === 'Yes · 12');
+    const legacy = await PB.evaluate(async () => { const m = await import('/src/lib/blastMats.ts'); return m.blastMatsText(undefined, [{ drillParams: { blastMats: true, blastMatCount: 3 } }, { drillParams: { blastMats: true, blastMatCount: 4 } }]); });
+    R.ok(`an older log with mats per shot still prints their sum (${legacy})`, legacy === 'Yes · 7');
+  });
+
+  await R.section("A second shot: the plan door on the shot's own card, and equal grids on the review", async () => {
+    await PB.goto(`${WEB}/blast-day/${dayId}?view=blast-log`);
+    await PB.locator('button:has-text("Add Shot")').waitFor({ timeout: 20000 });
+    await PB.locator('button:has-text("Add Shot")').click();
+    shot2Id = await waitFor(() => PB.evaluate(async (dayId) => { const { db } = await import('/src/db/index.ts'); const log = await db.blastLogs.where('blastDayId').equals(dayId).first(); const shots = (await db.shots.where('blastLogId').equals(log.id).toArray()).sort((a, b) => a.shotNumber - b.shotNumber); return shots[1]?.id; }, dayId));
+    await PB.locator(`[data-build-plan-shot="${shot2Id}"]`).waitFor({ timeout: 15000 });
+    R.ok('the new shot\'s Drilling row offers "Build the drill plan ›" and not "Send to drillers"', (await PB.locator(`[data-build-plan-shot="${shot2Id}"]`).count()) === 1);
+    await PB.locator(`[data-build-plan-shot="${shot2Id}"]`).click();
+    await PB.locator('[data-shot-facts]').waitFor({ timeout: 20000 });
+    R.ok('it opens the plan builder for shot 2', new RegExp(`/design/${shot2Id}`).test(PB.url()) && /mode=plan/.test(PB.url()));
+    await setPlan(PB, shot2Id, 2, 5, 18); // five columns against shot 1's ten
+    await PB.goto(`${WEB}/blast-day/${dayId}?view=blast-log`);
+    await PB.locator('[data-shot-time-row]').nth(1).waitFor({ timeout: 20000 });
+    R.ok('with a plan, shot 2 offers Send to drillers instead', (await PB.locator(`[data-build-plan-shot="${shot2Id}"]`).count()) === 0);
+    await PB.goto(`${WEB}/blast-day/${dayId}?view=drilling`);
+    await waitFor(() => PB.locator('[data-pattern-grid="review"]').count().then((n) => (n === 2 ? n : 0)), 20000);
+    const widths = await PB.evaluate(() => [...document.querySelectorAll('[data-pattern-grid="review"]')].map((g) => { const b = g.querySelector('[data-pattern-hole]'); return b ? Math.round(b.getBoundingClientRect().width) : 0; }));
+    R.ok(`two grids (10 and 5 columns) draw holes the same size: ${widths.join(' / ')} px`, widths.length === 2 && widths[0] > 0 && Math.abs(widths[0] - widths[1]) <= 1);
+    R.ok("shot 1's accepted log is untouched by shot 2's plan", (await PB.evaluate(async (id) => (await (await import('/src/db/index.ts')).db.drillLogs.get(id))?.status, logId)) === 'accepted');
+  });
+
+  await R.section('The typical column builds from the toe up by default; the switch is remembered', async () => {
+    await PB.evaluate(() => localStorage.removeItem('shotlog-column-add-at'));
+    await PB.goto(`${WEB}/blast-day/${dayId}/design/${shotId}?mode=timing`);
+    await PB.getByText('Typical Column', { exact: true }).first().waitFor({ timeout: 20000 });
+    if (await PB.locator('button:has-text("Add Typical Column")').isVisible().catch(() => false)) await PB.locator('button:has-text("Add Typical Column")').click();
+    await PB.locator('[data-column-add-at]').waitFor({ timeout: 10000 });
+    R.ok('with no preference the builder starts from the toe', (await PB.locator('[data-column-add-at]').getAttribute('data-column-add-at')) === 'toe');
+    for (let i = 0; i < 3; i++) { await PB.locator('button:has-text("Add Layer")').click(); await sleep(400); }
+    await waitFor(() => PB.locator('[data-layer-row]').count().then((n) => (n === 3 ? n : 0)));
+    const order = await PB.evaluate(() => [...document.querySelectorAll('[data-layer-row]')].map((r) => r.getAttribute('data-layer-type')));
+    R.ok(`three taps from the toe up: booster first, stemming last, drawn collar-down as ${order.join(' → ')}`, order.join(',') === 'stemming,explosive,booster');
+    await PB.locator('[data-column-add-at-pick="collar"]').click();
+    R.ok('the switch is remembered on the device', (await PB.evaluate(() => localStorage.getItem('shotlog-column-add-at'))) === 'collar');
+    await PB.locator('[data-column-add-at-pick="toe"]').click();
+  });
+
+  await R.section('The daily report can be marked done: the tile, the filing screen, and Edit again', async () => {
+    await PB.goto(`${WEB}/blast-day/${dayId}?view=daily-report`);
+    await PB.locator('[data-report-done]').waitFor({ timeout: 20000 });
+    await PB.locator('[data-report-done]').click();
+    await PB.locator('[data-report-done-banner]').waitFor({ timeout: 10000 });
+    R.ok('the banner names who marked it done', /Done/.test((await PB.locator('[data-report-done-banner]').textContent()) || ''));
+    await PB.goto(`${WEB}/blast-day/${dayId}`);
+    await PB.locator('[data-tile="daily-report"]').waitFor({ timeout: 20000 });
+    const tile = (await PB.locator('[data-tile="daily-report"]').getAttribute('data-tile-state')) || '';
+    R.ok(`the tile reads "${tile}"`, /^Done /.test(tile));
+    await PB.goto(`${WEB}/blast-day/${dayId}/submit`);
+    await PB.locator('[data-preflight-item="report-done"]').waitFor({ timeout: 25000 });
+    const pre = (await PB.locator('[data-preflight-item="report-done"]').textContent()) || '';
+    R.ok(`the filing screen shows the green line: "${pre.trim()}"`, /Daily report marked done by/.test(pre) && (await PB.locator('[data-preflight-item="report-done"]').getAttribute('data-preflight-level')) === 'ok');
+    await PB.goto(`${WEB}/blast-day/${dayId}?view=daily-report`);
+    await PB.locator('[data-report-undone]').waitFor({ timeout: 20000 });
+    await PB.locator('[data-report-undone]').click();
+    await PB.locator('[data-report-done]').waitFor({ timeout: 10000 });
+    R.ok('Edit again reopens it', true);
+  });
+
   await R.section('the error spy saw nothing during this run', async () => {
     const errs = browserErrors();
     R.ok(`no browser errors (${errs.length})${errs[0] ? ` — first: ${errs[0].text.slice(0, 120)}` : ''}`, errs.length === 0);
   });
 
   await R.section('cleanup', async () => {
-    const removed = await lib.cleanupAsAdmin(browser, { days: [dayId].filter(Boolean) }).catch(() => -1);
+    const removed = await lib.cleanupAsAdmin(browser, { days: [dayId].filter(Boolean), drillLogs: [logId].filter(Boolean) }).catch(() => -1);
     R.ok(`cleanup removed ${removed} day(s)`, removed >= 0);
   });
+  await cD.close();
   await cP.close();
   await cB.close();
   return R.summary();

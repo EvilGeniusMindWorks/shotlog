@@ -243,3 +243,7 @@ report (solo submit) · My Records · jobs list
   ground says otherwise.
 - Six reports came in through the in-app feedback feature on Sep 15 —
   screen-by-screen notes, the first real use of that channel. It works.
+- **S18 (Sep 16 2026).** The drill log's header numbers keep what he types
+  (draft inputs everywhere). The blaster can send a completed log back
+  with a note from the review screen; it reopens with the note on top and
+  a line on his home says so.

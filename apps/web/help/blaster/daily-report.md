@@ -22,6 +22,10 @@ Short and plain. The office reads these when a question comes up weeks later.
 
 ![The daily report](daily-report.png)
 
+## Marking it done
+
+The day files as one packet — log, report and cards together — so the report has no filing of its own. When it is finished, tap **Mark the daily report done** at the bottom. The day's tile reads *Done · ready to file*, the filing screen shows a green line naming who marked it, and **Edit again** reopens it.
+
 > **Copying from the previous day** brings the crew and equipment over, so on a multi-day job the report is mostly done before you start.
 
 ## Related

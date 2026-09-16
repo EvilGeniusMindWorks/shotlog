@@ -76,6 +76,8 @@ export function dailyReportTile(
   if (!report) return { title: 'Not started', sub: 'crew, hours, materials, equipment', action: canStart && !readOnly ? 'Start' : 'None', tone: 'plain' };
   if (day.status === 'approved') return { title: 'Approved', sub: 'locked', action: 'View', tone: 'done' };
   if (day.status === 'submitted') return { title: filedAt ? `Filed ${hhmm(filedAt)}` : 'Filed', sub: 'with the office', action: 'View', tone: 'done' };
+  // S18: marked done before the day files
+  if (report.doneAt) return { title: `Done ${hhmm(report.doneAt)}`, sub: `ready to file · crew from cards: ${cardsFiled}`, action: readOnly ? 'View' : 'Open', tone: 'done' };
   return {
     title: `Started ${hhmm(report.createdAt)}`,
     sub: `crew from cards: ${cardsFiled}`,
@@ -279,7 +281,12 @@ export function useMyReminders(): { reminder: DayReminder; jobName: string }[] {
           ? await db.timeCards
               .filter((c) => c.userId === me && c.jobId === r.jobId && c.date === r.date && c.status !== 'draft')
               .count()
-          : 0;
+          : r.what === 'sentback'
+            ? // S18: a sent-back log signed complete again clears the line
+              await db.drillLogs
+                .filter((l) => l.drillerUserId === me && (l.blastDayId === r.blastDayId || (l.jobId === r.jobId && l.date === r.date)) && l.status !== 'open' && l.updatedAt > r.at)
+                .count()
+            : 0;
         if (filed > 0) {
           await dismissReminder(r.id);
           continue;

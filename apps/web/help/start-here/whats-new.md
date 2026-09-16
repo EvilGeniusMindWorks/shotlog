@@ -10,6 +10,14 @@ Short notes on what changed, newest first. Ask in ? → **Send feedback** if som
 
 ## September 16, 2026
 
+- **What you type stays typed.** Every number and text box — the shot's drill parameters and totals, IN and OUT on your time card, the daily report's rows, the drill log's header — keeps every character and saves when you pause, so a fast thumb no longer turns "30" into "3". IN and OUT get half the row each on a phone.
+- **A feedback bubble in the corner of every screen.** Tap it over any sheet, on a print screen or a filing screen, and **Send feedback** opens with a picture of exactly what is on screen. On a print or a filed copy the report names the paper it is about. **Settings › Help & feedback** turns the bubble off.
+- **The shot's totals fill themselves.** Before drilling they read from the plan; once you accept the drilling they follow it, with a line under them saying so. Type a number and it holds until you tap **use the drilling's figures**.
+- **Time of shot** sits beside the shot's number with a **Now** button; **Blast Mats** are one answer for the whole log, under Detonators & Lead.
+- **Review drilling shows the whole log** — the header the driller drilled to, their sign-off note, **Grid / List** for every hole, and **Send back…** with a note. The driller sees it on their home and on the log.
+- **A second shot's card offers Build the drill plan ›** until it has a plan; the review draws every shot's holes at one size.
+- **The typical column builds from the toe up** — booster first, stemming last — with a switch for collar-down that the device remembers.
+- **Mark the daily report done** at the bottom of the report: the tile reads "Done · ready to file" and the filing screen names who marked it. **Edit again** reopens it.
 - **"No crew on the daily report" counts your time cards.** The filing screen used to look only at the old typed crew rows, so every day said No crew; now it counts the day's time cards, and says "nobody has a time card on this day yet" when that is what it means.
 
 Rolling out over the coming days.

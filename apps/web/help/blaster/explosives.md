@@ -18,6 +18,10 @@ Weights show to four decimals everywhere — on this form, the blasting log, the
 
 The shot's totals (pounds per shot, pounds per delay, powder factor) update as you type. Pounds per delay is what the compliance checks use.
 
+## Blast mats
+
+Under **Detonators** and **Lead In Line**, one row for the whole log: **Yes** or **No**, and how many. It counts every shot on the day at once; the printed and PDF logs read "Blast mats: Yes · 12" beside the lead line.
+
 ## A product that is not in the list
 
 Ask your office to add it in **Admin › Catalog**. Until then, pick the nearest product and note the difference in the shot's notes so the record is honest.

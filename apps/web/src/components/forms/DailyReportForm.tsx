@@ -13,6 +13,7 @@ import { Select } from '@/components/ui/select';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { canEditApprovedDay, can } from '@/lib/perms';
 import { getSessionUser } from '@/lib/session';
+import { hhmm } from '@/lib/dayCard';
 import { propagateHourMeter, stopChecklist } from '@/hooks/useMaintenance';
 
 /** S4 (I3): an empty section is ONE row, not a card of nothing — tap to add
@@ -158,6 +159,36 @@ export function DailyReportForm({ blastDay, dailyReport, blastLog, shots, readOn
         </CardContent>
       </Card>
       )}
+
+      {/* S18 (Matthew: "I can't mark the daily report ready before submitting the
+          day"): the day still files as one packet — this says the report is finished */}
+      {!locked &&
+        (dailyReport.doneAt ? (
+          <div className="rounded-xl border border-green-300 bg-green-50 p-3 text-sm text-green-900 flex items-center gap-2 flex-wrap" data-report-done-banner>
+            <span>
+              <b>Done</b> · marked by {dailyReport.doneByName || 'you'} {hhmm(dailyReport.doneAt)}
+            </span>
+            <button
+              type="button"
+              className="underline ml-auto min-h-[36px]"
+              data-report-undone
+              onClick={() => void db.dailyReports.update(dailyReport.id, { doneAt: undefined, doneBy: undefined, doneByName: undefined, updatedAt: nowISO() })}
+            >
+              Edit again
+            </button>
+          </div>
+        ) : (
+          <Button
+            className="w-full min-h-[48px]"
+            data-report-done
+            onClick={() => {
+              const me = getSessionUser();
+              void db.dailyReports.update(dailyReport.id, { doneAt: nowISO(), doneBy: me?.id ?? '', doneByName: me?.name ?? '', updatedAt: nowISO() });
+            }}
+          >
+            Mark the daily report done
+          </Button>
+        ))}
     </div>
   );
 }

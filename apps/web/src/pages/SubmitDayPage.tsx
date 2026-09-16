@@ -10,6 +10,7 @@
 // while seismo readings exist, no crew on the daily report, a blasting day
 // with no explosives. Everything else is a green tick.
 import { useEffect, useRef, useState } from 'react';
+import { hhmm } from '@/lib/dayCard';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertTriangle, CheckCircle2, ChevronRight, OctagonX } from 'lucide-react';
 import { db } from '@/db';
@@ -94,6 +95,8 @@ export async function preflightDay(dayId: string): Promise<PreflightItem[]> {
     const worked = rows.filter((r) => r.timeIn || r.timeOut || (r.straightTime ?? 0) > 0);
     if (worked.length === 0) items.push({ key: 'crew', level: 'amber', text: 'No crew on the daily report — nobody has a time card on this day yet', to: `/blast-day/${dayId}?view=daily-report`, toLabel: 'Daily report' });
     else items.push({ key: 'crew-ok', level: 'ok', text: `Crew on the daily report · ${worked.length} time card${worked.length === 1 ? '' : 's'}` });
+    // S18: the report's own "done" mark, named
+    if (report.doneAt) items.push({ key: 'report-done', level: 'ok', text: `Daily report marked done by ${report.doneByName || 'the blaster'} ${hhmm(report.doneAt)}` });
   }
 
   // GREEN — drilling accepted (informational)

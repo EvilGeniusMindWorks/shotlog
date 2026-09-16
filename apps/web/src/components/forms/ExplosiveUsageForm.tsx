@@ -14,6 +14,8 @@ import type {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DraftInput } from '@/components/ui/draft-input';
+import { ChipSelect } from '@/components/ui/chip-select';
+import { logBlastMats } from '@/lib/blastMats';
 import { Label } from '@/components/ui/label';
 import { SectionCard, IconChip } from '@/components/ui/section-card';
 
@@ -132,7 +134,7 @@ export function ExplosiveUsageForm({ explosiveUsage, shots: _shots }: Props) {
       </SectionCard>
 
       {/* ── Detonators & Lead ── */}
-      <DetonatorsCard explosiveUsage={explosiveUsage} onUpdate={updateUsage} />
+      <DetonatorsCard explosiveUsage={explosiveUsage} shots={_shots} onUpdate={updateUsage} />
 
       {/* ── Total banner ── */}
       <div className="bg-navy rounded-xl px-4 py-3 flex items-center justify-between">
@@ -223,9 +225,11 @@ function ProductLine({
 /** Detonators by delay series + lead line (wireframe §4.7) */
 function DetonatorsCard({
   explosiveUsage,
+  shots,
   onUpdate,
 }: {
   explosiveUsage: ExplosiveUsage;
+  shots: Shot[];
   onUpdate: (updates: Partial<ExplosiveUsage>) => void;
 }) {
   const [adding, setAdding] = useState(false);
@@ -290,6 +294,37 @@ function DetonatorsCard({
         />
         <span className="text-xs text-gray-400 w-8">LF</span>
       </div>
+
+      {/* S18: blast mats — one answer for the whole log; older per-shot answers read through until this is set */}
+      {(() => {
+        const mats = logBlastMats(explosiveUsage, shots);
+        return (
+          <div className="flex items-center gap-2 py-1.5 flex-wrap" data-log-mats={mats.mats === undefined ? '' : mats.mats ? 'yes' : 'no'}>
+            <span className="text-sm font-semibold flex-1">Blast Mats <span className="font-normal text-gray-400">· all shots</span></span>
+            <ChipSelect
+              value={mats.mats === true ? 'yes' : mats.mats === false ? 'no' : ''}
+              onChange={(v) => onUpdate({ blastMats: v === 'yes', blastMatCount: v === 'yes' ? mats.count : undefined })}
+              options={[
+                { value: 'yes', label: 'Yes' },
+                { value: 'no', label: 'No' },
+              ]}
+            />
+            {mats.mats === true && (
+              <DraftInput
+                type="number"
+                inputMode="numeric"
+                min={0}
+                className="w-24 h-9 text-right font-mono"
+                placeholder="How many"
+                aria-label="How many mats"
+                data-log-mat-count
+                value={mats.count ?? ''}
+                onCommit={(v) => onUpdate({ blastMats: true, blastMatCount: v === '' ? undefined : Math.max(0, parseInt(v, 10) || 0) })}
+              />
+            )}
+          </div>
+        );
+      })()}
 
       {adding ? (
         <div className="flex gap-2 items-end border border-navy rounded-lg p-2">

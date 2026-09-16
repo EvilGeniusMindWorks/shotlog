@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { COMPLIANCE_ADVISORY } from '@/lib/complianceAdvisory';
 import { useNavigate } from 'react-router-dom';
 import { Activity, BarChart3, Flame, MapPin, Wrench } from 'lucide-react';
@@ -6,9 +6,10 @@ import { useLiveQuery, db } from '@/db';
 import { nowISO } from '@/lib/utils';
 import { fmtLbs } from '@/lib/format';
 import { distributeByHoles } from '@shotlog/shared';
-import { recalcShotTotals } from '@/lib/shotTotals';
+import { acceptedFigures, planFigures, recalcShotTotals, totalsFrom } from '@/lib/shotTotals';
+import { hhmm } from '@/lib/dayCard';
 import { getPlanHoles } from '@/hooks/useDrillPlans';
-import { aggregateDrilling } from '@/hooks/useDrillLogs';
+import { aggregateDrilling, getShotPlan, useShotDrilling } from '@/hooks/useDrillLogs';
 import { seedDiagramFromPlan } from '@/lib/shotDiagram';
 import type { Shot, DrillParams, ShotTotals, ExplosiveUsage, DrillPlanRecord } from '@/db/schema';
 import { Button } from '@/components/ui/button';
@@ -16,7 +17,6 @@ import { Input } from '@/components/ui/input';
 import { DraftInput } from '@/components/ui/draft-input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { ChipSelect } from '@/components/ui/chip-select';
 import { IconChip, SubSection } from '@/components/ui/section-card';
 import { AttachmentsCard } from './AttachmentsCard';
 import { ShotHazardRail } from './ShotHazardRail';
@@ -54,11 +54,33 @@ export function ShotForm({ shot, allShots, explosiveUsage, kFactor: _kFactor, bl
 
   const updateTotal = (field: keyof ShotTotals, value: string) => {
     const t = { ...shot.totals, [field]: parseFloat(value) || 0 };
-    updateShot({ totals: recalc(shot.drillParams, t) });
+    // a number typed by hand stays until the person takes the drilling's figures back
+    updateShot({ totals: recalc(shot.drillParams, t), totalsSource: 'edited' });
   };
 
   const dp = shot.drillParams;
   const t = shot.totals;
+
+  // S18 (Matthew: "shouldn't the totals be auto calculating from the drill
+  // plan?"): once the shot's drilling is accepted the totals follow it; before
+  // that an empty shot reads the plan's figures. Nothing overwrites a typed
+  // number, and nothing is written on a filed or approved day.
+  const drilling = useShotDrilling(shot.id);
+  const dayStatus = useLiveQuery(async () => (blastDayId ? (await db.blastDays.get(blastDayId))?.status : undefined), [blastDayId]);
+  const accepted = acceptedFigures(drilling);
+  const planned = planFigures(getShotPlan(shot));
+  useEffect(() => {
+    if (!drilling || dayStatus !== 'draft' || shot.totalsSource === 'edited') return;
+    const source = accepted ? 'drilling' : planned ? 'plan' : null;
+    const fig = accepted ?? planned;
+    if (!source || !fig) return;
+    const typed = shot.totalsSource === undefined && (shot.totals.numHoles > 0 || shot.totals.totalDrillFootage > 0);
+    if (source === 'plan' && typed) return;
+    const next = totalsFrom(shot.drillParams, shot.totals, fig);
+    if (shot.totalsSource === source && next.numHoles === shot.totals.numHoles && next.totalDrillFootage === shot.totals.totalDrillFootage) return;
+    updateShot({ totals: next, totalsSource: source });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs on the figures, not the whole shot
+  }, [drilling, dayStatus, shot.id, shot.totalsSource, shot.totals.numHoles, shot.totals.totalDrillFootage, accepted?.holes, accepted?.footage, planned?.holes, planned?.footage]);
 
   // Sub-section summaries (wireframe style)
   const drillSummary =
@@ -92,37 +114,7 @@ export function ShotForm({ shot, allShots, explosiveUsage, kFactor: _kFactor, bl
         defaultOpen={t.numHoles === 0}
       >
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <Label className="text-[10px] uppercase tracking-wide text-gray-500">Time</Label>
-            <DraftInput type="time" value={shot.time} onCommit={(v) => updateShot({ time: v })} data-shot-time />
-          </div>
-          <div>
-            <Label className="text-[10px] uppercase tracking-wide text-gray-500">Blast Mats</Label>
-            {/* S15: Yes/No stays; Yes asks how many, on its own line so a phone's half column never wraps the chips */}
-            <div className="flex flex-col items-start gap-2 mt-1">
-              <ChipSelect
-                value={dp.blastMats === true ? 'yes' : dp.blastMats === false ? 'no' : ''}
-                onChange={(v) => updateDrillParam('blastMats', v === 'yes')}
-                options={[
-                  { value: 'yes', label: 'Yes' },
-                  { value: 'no', label: 'No' },
-                ]}
-              />
-              {dp.blastMats === true && (
-                <DraftInput
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  className="w-28"
-                  placeholder="How many"
-                  aria-label="How many mats"
-                  data-blast-mat-count
-                  value={dp.blastMatCount ?? ''}
-                  onCommit={(v) => updateDrillParam('blastMatCount', v === '' ? undefined : Math.max(0, parseInt(v, 10) || 0))}
-                />
-              )}
-            </div>
-          </div>
+          {/* S18: the time of shot lives on the shot's header; blast mats on the log */}
           {(
             [
               ['holeDiameter', 'Hole Dia (in)'],
@@ -198,6 +190,32 @@ export function ShotForm({ shot, allShots, explosiveUsage, kFactor: _kFactor, bl
           </TotalsCell>
           <TotalsCell label="Yards Shot" value={t.totalYardsShot > 0 ? String(Math.round(t.totalYardsShot)) : '—'} />
         </div>
+        <p className="text-xs text-gray-600 mt-1.5" data-totals-source={shot.totalsSource ?? 'none'}>
+          {shot.totalsSource === 'edited' ? (
+            <>
+              Edited by you
+              {accepted && (
+                <>
+                  {' · '}
+                  <button type="button" className="underline text-navy" data-totals-use-drilling onClick={() => updateShot({ totalsSource: undefined })}>
+                    use the drilling’s figures ({accepted.holes} holes · {accepted.footage.toFixed(0)} ft)
+                  </button>
+                </>
+              )}
+            </>
+          ) : shot.totalsSource === 'drilling' && accepted ? (
+            <>
+              From the accepted drilling: {accepted.holes} holes · {accepted.footage.toFixed(0)} ft
+              {accepted.who ? ` · ${accepted.who}` : ''}
+              {accepted.acceptedAt ? `, accepted ${hhmm(accepted.acceptedAt)}` : ''}
+              {dp.burden > 0 && dp.spacing > 0 ? ` · square feet and yards from ${dp.burden} × ${dp.spacing} ft` : ''}
+            </>
+          ) : shot.totalsSource === 'plan' && planned ? (
+            <>From the plan: {planned.holes} planned holes · {planned.footage.toFixed(0)} ft — they follow the drilling once it is accepted</>
+          ) : (
+            <>Typed by hand — they fill themselves once the drilling is accepted</>
+          )}
+        </p>
       </SubSection>
 
       {/* Hazard rail (Round 2): the drill's findings one glance away while

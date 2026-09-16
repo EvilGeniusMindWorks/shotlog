@@ -45,6 +45,10 @@ A ring sits around the blast pin — 250 ft unless you change it with the slider
 
 Dropping a structure pin asks for a name ("Stevens residence"); skip keeps "Structure 3". Tap a pin to rename it. Names print on the log. Whenever the closest structure changes — a pin added or moved, the blast pin moved — the map offers its distance for the plan: **Use 180 ft for compliance**. It never fills the plan by itself. Using it also redoes the scaled distance and the predicted vibration, so the badge, the plan and the seismo page agree.
 
+## The typical column
+
+The column builder starts at the toe: the first layer you add is the booster, the next goes above it, and stemming lands at the collar last. If you think from the collar down, switch **Build from the toe up / from the collar down** on the builder — the device remembers your choice. The drawing stays collar-at-the-top either way.
+
 ## Related
 
 [Seismo readings](/help/blaster/seismo-readings) · [What ShotLog checks](/help/reference/what-shotlog-checks)
