@@ -17,6 +17,7 @@ import { emailEnabled } from './email.js';
 import { filesConfigured } from './files.js';
 import { countLegacyInlinePdfs, migrateLegacyInlinePdfs } from './legacyPdfs.js';
 import { countLegacyInlineImages, migrateLegacyInlineImages } from './legacyImages.js';
+import { adoptStrandedFilings, countStrandedFilings } from './strandedFilings.js';
 import { seedCompanyReference } from './seed.js';
 import { isProduction } from './env.js';
 import { recordServerCrash } from './feedback.js';
@@ -49,6 +50,9 @@ app.get('/health', async (_req, res) => {
   // after the boot migration (legacyPdfs.ts); null when the DB is unreachable
   const legacyInlinePdfs = await countLegacyInlinePdfs().catch(() => null);
   const legacyInlineImages = await countLegacyInlineImages().catch(() => null);
+  // S20: filed copies whose PDF is in storage but whose record still says
+  // "device", or whose photos are not yet pointed at — watched reaching zero
+  const strandedFilings = await countStrandedFilings().catch(() => null);
   const sourcemaps = await prisma.sourceMap
     .findFirst({ orderBy: { createdAt: 'desc' }, select: { buildId: true, createdAt: true } })
     .then(async (latest) => ({
@@ -77,6 +81,7 @@ app.get('/health', async (_req, res) => {
     production: isProduction(),
     legacyInlinePdfs,
     legacyInlineImages,
+    strandedFilings,
     // S11: are crash traces decodable? The web build uploads its source maps
     // (scripts/build-web.mjs); this shows the newest build that has them.
     sourcemaps,
@@ -176,7 +181,10 @@ async function main() {
   void migrateLegacyInlinePdfs()
     .catch((err) => console.error('[legacy-pdfs]', err))
     .then(() => migrateLegacyInlineImages())
-    .catch((err) => console.error('[legacy-images]', err));
+    .catch((err) => console.error('[legacy-images]', err))
+    // S20: then adopt filed copies whose bytes reached storage but whose record never said so
+    .then(() => adoptStrandedFilings())
+    .catch((err) => console.error('[stranded-filings]', err));
 }
 
 void main();

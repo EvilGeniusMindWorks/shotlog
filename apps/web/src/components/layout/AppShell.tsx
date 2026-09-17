@@ -27,15 +27,11 @@ import { getSessionUser, getRealSessionUser, getViewRole, setViewRole } from '@/
 import { hasCap, myHomeDashboard, useRoleDefsSync } from '@/lib/perms';
 import { FirstSyncStrip, SessionExpiredBanner, SyncChip, UpdateChip } from './SyncChip';
 import {
-  SCREEN_TOUR_EVENT,
   START_TOUR_EVENT,
   Tour,
-  shouldAutoRunScreenTour,
   shouldAutoRunTour,
   startTour,
-  tourBucket,
 } from './Tour';
-import { screenTourFor, type ScreenTourKey } from '@/components/guidance/tourScripts';
 import { HelpMenu } from '@/components/feedback/HelpMenu';
 import { addBreadcrumb } from '@/lib/breadcrumbs';
 import { RehearsalBar } from '@/components/rehearsal/RehearsalBar';
@@ -246,20 +242,9 @@ export function AppShell() {
     window.addEventListener('shotlog-sw-update-ready', apply);
     return () => window.removeEventListener('shotlog-sw-update-ready', apply);
   }, [onHome]);
-  const [screenTour, setScreenTour] = useState<ScreenTourKey | null>(null);
-  useEffect(() => {
-    const open = (e: Event) => setScreenTour((e as CustomEvent<ScreenTourKey>).detail);
-    window.addEventListener(SCREEN_TOUR_EVENT, open);
-    return () => window.removeEventListener(SCREEN_TOUR_EVENT, open);
-  }, []);
-  useEffect(() => {
-    if (touring || screenTour) return;
-    if (shellLocation.pathname === '/' && shouldAutoRunTour()) return; // the walkthrough goes first
-    const key = screenTourFor(shellLocation.pathname, shellLocation.search, tourBucket());
-    if (!key || !shouldAutoRunScreenTour(key)) return;
-    const t = window.setTimeout(() => setScreenTour(key), 1400);
-    return () => window.clearTimeout(t);
-  }, [shellLocation.pathname, shellLocation.search, touring, screenTour]);
+  // S20 (Matthew, Sep 16 2026): the per-screen tours of S7c ("Show me your
+  // work day") retired — the walkthrough tab does that job; About this
+  // screen and the guide stay in Help
   const profile = useLiveQuery(() => db.blasterProfiles.filter((b) => b.isCurrentUser).first());
   const session = getSessionUser();
   // View as is Matthew's (platform admin) preview tool, not a company admin's —
@@ -401,7 +386,6 @@ export function AppShell() {
       </div>
 
       {touring && <Tour onEnd={() => setTouring(false)} />}
-      {!touring && screenTour && <Tour screenKey={screenTour} onEnd={() => setScreenTour(null)} />}
       {import.meta.env.DEV && <CrashProbe />}
 
       {/* Mobile bottom navigation — each rail's top four, then Settings

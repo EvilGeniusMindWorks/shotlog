@@ -142,7 +142,14 @@ export function MergedDrillingView({
     const note = sendBack.note.trim();
     const names: string[] = [];
     for (const l of sendable.filter((x) => sendBack.ids.has(x.id))) {
-      await db.drillLogs.update(l.id, { status: 'open', reopenNote: note || undefined, updatedAt: now });
+      await db.drillLogs.update(l.id, {
+        status: 'open',
+        reopenNote: note || undefined,
+        // S20: the log says it was sent back until it is marked complete again
+        sentBackAt: now,
+        sentBackByName: me?.name ?? '',
+        updatedAt: now,
+      });
       names.push(l.drillerName || 'the driller');
       if (l.drillerUserId && l.drillerUserId !== me?.id) {
         await db.dayReminders.add({

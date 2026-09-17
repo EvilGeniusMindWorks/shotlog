@@ -7,7 +7,7 @@
 import { execSync } from 'node:child_process';
 const dry = process.argv.includes('--dry');
 const psql = (sql) => execSync(`docker exec -i powersync-spike-pg-1 psql -U postgres -d shotlog -X -At -c ${JSON.stringify(sql)}`).toString().trim();
-const PATTERN = '^(hub|diagram|holes|other day|s15|s16|s17|s18|s19|nav|walk|probe|S15|S8a plan day|S9a batch|S9a batch[0-9]) ';
+const PATTERN = '^(hub|diagram|holes|other day|s15|s16|s17|s18|s19|s20|nav|walk|probe|S15|S8a plan day|S9a batch|S9a batch[0-9]) ';
 const ids = psql(`select id from records where table_name='blastDays' and payload::json->>'name' ~ '${PATTERN}'`).split('\n').filter(Boolean);
 console.log(`${ids.length} harness day(s) named like ${PATTERN}`);
 // Orphaned drill logs: an accepted log outlives the day it was on (the server refuses the

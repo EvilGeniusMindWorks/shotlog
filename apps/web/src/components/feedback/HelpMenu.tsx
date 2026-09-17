@@ -3,14 +3,13 @@
 // whenever the coach map knows the current route (Round S2).
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { BookOpen, CircleHelp, Footprints, Info, ListChecks, MessageSquarePlus, Route } from 'lucide-react';
+import { BookOpen, CircleHelp, Info, ListChecks, MessageSquarePlus, Route } from 'lucide-react';
 import { helpForRoute, helpPath } from '@/help';
 import { cn } from '@/lib/utils';
 import { openFeedbackComposer } from './FeedbackComposer';
 import { coachFor } from '@/components/guidance/coach';
 import { CoachSheet } from '@/components/guidance/CoachSheet';
-import { SCREEN_TOUR_TITLE, screenTourFor } from '@/components/guidance/tourScripts';
-import { startScreenTour, tourBucket } from '@/components/layout/Tour';
+import { tourBucket } from '@/components/layout/Tour';
 import { showFirstWeekCard } from '@/components/guidance/FirstWeekCard';
 
 export function HelpMenu({
@@ -26,7 +25,6 @@ export function HelpMenu({
   const location = useLocation();
   const navigate = useNavigate();
   const coach = coachFor(location.pathname, location.search, tourBucket());
-  const screenTour = screenTourFor(location.pathname, location.search, tourBucket());
 
   useEffect(() => {
     if (!open) return;
@@ -65,19 +63,6 @@ export function HelpMenu({
           }}
         >
           <Info className="h-4 w-4 text-gray-500" /> About this screen
-        </button>
-      )}
-      {screenTour && (
-        <button
-          role="menuitem"
-          className={item}
-          data-help-screen-tour={screenTour}
-          onClick={() => {
-            setOpen(false);
-            startScreenTour(screenTour);
-          }}
-        >
-          <Footprints className="h-4 w-4 text-gray-500" /> Show me {SCREEN_TOUR_TITLE[screenTour]}
         </button>
       )}
       <button
@@ -172,11 +157,6 @@ export function HelpMenu({
             >
               <BookOpen className="h-3.5 w-3.5 opacity-70" /> Help guide
             </button>
-            {screenTour && (
-              <button className={sub} data-help-screen-tour={screenTour} onClick={() => startScreenTour(screenTour)}>
-                <Footprints className="h-3.5 w-3.5 opacity-70" /> Show me {SCREEN_TOUR_TITLE[screenTour]}
-              </button>
-            )}
             <button className={sub} data-help-walkthrough onClick={onWalkthrough}>
               <Route className="h-3.5 w-3.5 opacity-70" /> Walkthrough
             </button>

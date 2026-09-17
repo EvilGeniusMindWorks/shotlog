@@ -17,10 +17,10 @@ import { PatternGrid } from '@/components/design/PatternGrid';
 import { AttachmentsCard } from '@/components/forms/AttachmentsCard';
 import { useSubmissions } from '@/lib/archive';
 import { findCrewId } from '@/lib/personHistory';
-import { setupPath, useDayGate } from '@/lib/dayCard';
+import { setupPath, useDayGate, type GateState } from '@/lib/dayCard';
 import { getSessionUser } from '@/lib/session';
 import { nowISO, formatDate } from '@/lib/utils';
-import type { HoleCondition, HoleConditionCode } from '@/db/schema';
+import type { HoleCondition, HoleConditionCode, BlastDay } from '@/db/schema';
 import { Badge } from '@/components/ui/badge';
 import { showToast } from '@/components/ui/undo-toast';
 import { Button } from '@/components/ui/button';
@@ -76,19 +76,48 @@ export function DrillLogPage() {
   const job = useLiveQuery(() => (log ? db.jobs.get(log.jobId) : undefined), [log?.jobId]);
   // S13: the day's card asks once — the first time a job is known for the
   // driller that day (a checklist with no job never waits)
-  const logDay = useLiveQuery(
-    () => (log?.blastDayId ? db.blastDays.get(log.blastDayId) : undefined),
+  // S20: the lookup says WHICH day it answered for, so a stale answer (from
+  // before the log itself had loaded) never passes for "looked up, not here"
+  // — that gap let the page show, then blink to "Loading…" once the day and
+  // its card gate caught up, taking an open sheet's signature pad with it
+  const logDayLookup = useLiveQuery(
+    async () => {
+      const id = log?.blastDayId ?? null;
+      return { forId: id, day: id ? ((await db.blastDays.get(id)) ?? null) : null };
+    },
     [log?.blastDayId],
   );
-  const gate = useDayGate(logDay);
+  const lookedUp = logDayLookup && logDayLookup.forId === (log?.blastDayId ?? null) ? logDayLookup : undefined;
+  // A day that blinks out for a beat (a sync checkpoint swapping rows) keeps
+  // its last copy, so the gate never re-decides from nothing mid-page
+  const lastDay = useRef<BlastDay | undefined>(undefined);
+  if (lookedUp?.day) lastDay.current = lookedUp.day;
+  const logDay = lookedUp?.day ?? lastDay.current;
+  const dayPending = Boolean(log?.blastDayId) && !lookedUp && !lastDay.current;
+  const gateNow = useDayGate(logDay);
+  // S20: the gate re-decides whenever the day changes (a sync echo, a card edit)
+  // and answers `undefined` while it thinks — keep the last answer meanwhile, or
+  // the page blinks to "Loading…" and an open sheet loses its signature pad
+  // (harness60 caught it on the phone's Mark complete sheet)
+  const lastGate = useRef<GateState | undefined>(undefined);
+  if (gateNow !== undefined) lastGate.current = gateNow;
+  const gate = gateNow ?? lastGate.current;
   const location = useLocation();
   useEffect(() => {
     if ((gate === 'form' || gate === 'confirm') && logDay)
       navigate(setupPath(logDay.id, location.pathname + location.search), { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gate, logDay?.id]);
-  // Until the day's card has answered, show nothing a tap could be lost on
-  const gateUndecided = Boolean(log?.blastDayId) && logDay !== undefined && gate !== 'none' && gate !== 'reconfirm';
+  // Until the day's card has answered, show nothing a tap could be lost on.
+  // S20: the page waits for the day AND the gate's first answer together —
+  // the log's own query answers before the day's, and showing the page in
+  // between blinked it to "Loading…" a beat later, taking an open sheet's
+  // signature pad with it (harness60). A re-decision keeps the last answer
+  // (lastGate), so the page never blinks once it is up; a day that is not
+  // here at all (null) renders the log as it always did.
+  const gateUndecided =
+    Boolean(log?.blastDayId) &&
+    (dayPending || (logDay !== undefined && (gate === undefined || gate === 'form' || gate === 'confirm')));
   const rigs =
     useLiveQuery(() =>
       db.equipment
@@ -899,6 +928,27 @@ export function DrillLogPage() {
                   The rig's meter reading is entered on its checklist — stop the rig from the day's rig list when you park it.
                 </p>
               )}
+              {/* S20 (Driller Test, Sep 16 2026: "I shouldn't be able to submit this
+                  without the rig having been selected"): the rig is what the hours,
+                  the checklist and the billing tie to — Complete waits for it */}
+              {notePrompt === 'complete' && !log.drillRigEquipmentId && (
+                <div className="rounded-lg bg-red-50 border border-red-200 p-2 space-y-1" data-log-complete-rig>
+                  <Label className="text-xs font-semibold text-red-800">Which rig drilled it?</Label>
+                  <p className="text-[11px] text-red-700">A log can't be marked complete without its rig — the hours, the checklist and the billing tie to it.</p>
+                  <Select
+                    value=""
+                    data-log-complete-rig-select
+                    onChange={(e) => {
+                      const id = e.target.value || undefined;
+                      if (!id) return;
+                      void update({ drillRigEquipmentId: id });
+                      void rememberUsualRig(id);
+                    }}
+                    options={[{ value: '', label: 'Pick the rig…' },
+                      ...rigs.map((r) => ({ value: r.id, label: `${r.assetNumber} — ${r.description}` }))]}
+                  />
+                </div>
+              )}
               <div>
                 <Label className="text-xs">
                   {notePrompt === 'complete'
@@ -917,7 +967,7 @@ export function DrillLogPage() {
                 </Button>
                 <Button
                   data-log-complete-confirm
-                  disabled={notePrompt === 'complete' && !log.signatureImage}
+                  disabled={notePrompt === 'complete' && (!log.signatureImage || !log.drillRigEquipmentId)}
                   onClick={() => {
                     const note = noteText.trim() || undefined;
                     if (notePrompt === 'complete') {
@@ -929,17 +979,25 @@ export function DrillLogPage() {
                         completedAt: nowISO(),
                         completionNote: note,
                         reopenNote: undefined,
+                        sentBackAt: undefined,
+                        sentBackByName: undefined,
                       }).then(() => {
                         if (back) back.go();
                         else navigate(log.blastDayId ? `/blast-day/${log.blastDayId}` : `/jobs/${log.jobId}/drill-plan/${log.drillPlanId}`, { replace: true });
                       });
                     } else {
-                      void update({ status: 'open', reopenNote: note });
+                      void update({ status: 'open', reopenNote: note, sentBackAt: nowISO(), sentBackByName: me?.name ?? '' });
                     }
                     setNotePrompt(null);
                   }}
                 >
-                  {notePrompt === 'complete' ? (log.signatureImage ? 'Complete' : 'Sign and complete') : 'Send back'}
+                  {notePrompt === 'complete'
+                    ? !log.drillRigEquipmentId
+                      ? 'Pick the rig first'
+                      : log.signatureImage
+                        ? 'Complete'
+                        : 'Sign and complete'
+                    : 'Send back'}
                 </Button>
               </div>
             </div>

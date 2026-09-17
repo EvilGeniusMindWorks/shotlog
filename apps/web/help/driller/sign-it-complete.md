@@ -10,7 +10,7 @@ When the pattern is done, sign the log. That hands it to the blaster, who accept
 
 ## Signing
 
-Tap **Mark complete** (top or bottom). The sheet asks for your **signature** if you have not signed yet — the button reads **Sign and complete** until there is ink — and for the rig's **end-of-day hour meter**, which starts at the ledger's reading: leave it or type what the gauge says. That closes the day's hours for the shop. Missed it? Open the day's **Daily report**: your rig's row reads "R1004 · 4,120 → — h", and the — is a button.
+Tap **Mark complete** (top or bottom). The sheet asks for your **signature** if you have not signed yet — the button reads **Sign and complete** until there is ink — and for the **rig** if the log has none: "Which rig drilled it?" with your rigs listed, and the button reads **Pick the rig first** until you do. The rig is what the hours, the checklist and the billing tie to, so a log never completes without one. The rig's hours themselves live on its checklist (see [Rig checklist and hours](/help/driller/rig-checklist-and-hours)).
 
 **Complete** lands you on the day, where your log's tile reads *Signed complete · waiting on the blaster* and your time card is up next.
 

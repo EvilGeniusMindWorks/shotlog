@@ -30,6 +30,15 @@ export function filesConfigured(): boolean {
   return configured;
 }
 
+/** S20: is this object already in storage? (the stranded-filing sweep) */
+export async function objectExists(key: string): Promise<boolean> {
+  if (!s3) return false;
+  return s3
+    .send(new HeadObjectCommand({ Bucket: R2_BUCKET, Key: key }))
+    .then(() => true)
+    .catch(() => false);
+}
+
 /** The exact key the client's presign would have produced for this file —
  *  so a server-side move (legacy inline PDFs → R2) lands where the app's
  *  own uploader would have put it. */

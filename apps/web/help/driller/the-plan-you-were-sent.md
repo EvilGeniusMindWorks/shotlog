@@ -11,6 +11,7 @@ The blaster lays out the pattern — rows, columns, depths — and sends it to t
 ## Where it shows
 
 - On your home, **Plans sent to you** names it with **Start**.
+- **Sent back to you** is the first band on your home and on Drilling when the blaster sends a log back after review: the job, the shot, your holes, who sent it and their note. Open the log, fix what the note says, and mark it complete again — the band goes when you do.
 - The **Drilling** page is the plan queue: every plan sent to you, what is assigned, what is ready to drill, what is done. Open one to log holes. It's a queue only now — a rig checklist is filed from the day's own rig list, not from here.
 
 ![The Drilling tab](drilling.png)

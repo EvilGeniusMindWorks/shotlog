@@ -127,3 +127,9 @@ Incidents · People (read) · company/customer/site pages · export surfaces
 
 - A day the blaster closed (rained out, started by mistake, nothing to file) drops out of Evette's Today's jobs and never reaches "never submitted" — it shows "Closed · reason" on the work-day lists instead of sitting there looking abandoned.
 - The four dots and status pill on every day row now sit in fixed columns so the lists line up.
+
+## Round S20 — the field (Sep 17 2026, plan artifact LkRaNnTcd8JPxkVyMUNFd3)
+
+- **Filed blasting logs open in Records.** The copy's PDF counts the moment it lands in storage; the photos follow, and a photo already in storage as an attachment is reused, not re-sent. Three Beta copies stranded "on the filing device" are adopted by the server at boot (watched on /health as strandedFilings). Each attachment on a filed copy now carries its context — where it hangs ("Shot 1 › Seismo reading 2 · pump house · PPV 0.18"), its kind, who took it, when — for the S21 filmstrip viewer.
+- **The office may file incidents** (push 3), not only process them: Office Test's two attempts on Sep 16 were refused silently by role. Admin › Incidents gets New incident; a refused write says so on screen.
+- **Admin › Company › The home screen**: "Count a draft as unfiled after N days" (default 2) sets the blaster's Needs attention line.

@@ -61,9 +61,9 @@ npm run dev -w apps/web -- --port 5199 --strictPort
 npm run typecheck:web            # incremental (~1 s warm)
 ```
 
-Pre-steps some harnesses need are noted at the top of each file (e.g.
-harness44 resets `User.toursDone` for the dev accounts — run the SQL
-*before* starting it). Run harness42 (rehearsal) alone: it asserts the home
+Pre-steps some harnesses need are noted at the top of each file. (harness44,
+the S7c screen tours, was retired with S20 when the tours went — harness81 §6
+checks they are gone.) Run harness42 (rehearsal) alone: it asserts the home
 company's record count never changes, so any harness writing in parallel
 fails it.
 
@@ -125,3 +125,4 @@ Lessons from the first run: tell agents explicitly never to run other scripts (o
 - `78` — Round S19 — The checklist on its day, the hours row, AM/PM, pay yards, and a tidier inbox: A checklist started from a not-today day is dated for that day and shows on its tiles; The checklist never guesses: from the rig it follows the day the driller is on at the job; Starting hours has its own row and the carried-answers note sits on the Daily checks card; IN and OUT share a row of their own inside a narrow sheet in a wide window; Pay yards fills itself from square feet, depth and sub drill, and a typed number holds; A feedback report names its screen; the inbox shows person and screen with the date on its own; Tick several reports, then Mark seen, Mark done or Delete.
 - `79` — Navigation round, push 1 — the arrow says where it goes: From Work days, Records and a job into the day: the arrow returns to where you came from; Inside the day: Blasting log → Design plan → the arrow lands on the Blasting log; the tabs are real steps the back gesture walks; The driller: home card → day → drill log → the arrow reads the day; Mark complete lands on the day; The rig checklist from the day: Done lands on the day with the rig row; from the rig, Done lands on the rig; Mark the daily report done lands on the day; sheets say Close and the back gesture closes them first; A fresh open and a print screen: up the map, labelled.
 - `80` — Navigation round, push 2 — the walkthrough tab: The Blasting log tile opens the Walkthrough tab; two tabs, no Daily report tab; ?view=hub still lands there; The six steps through a day: plan → sent → drilling waiting → review → fill → check → sign → complete, one ring, Continue reads Next: …; Check and sign: seismo readings are required, each red line is a door, Complete lands on the day and the tile reads Complete; File this day waits for the log complete and the report done; the pre-flight says so; The home's Continue and the walkthrough agree; the arrow from Check and sign returns to the Walkthrough.
+- `81` — Round S20 — The field: copies that reach the office, sent-back logs, rigs on Mark complete, checklist hours, the shot plan following the drilling, incidents on the day: A filed blasting log with photos reaches the office; The copy carries each attachment's context; A sent-back drill log shows on Drilling and the home; Mark complete needs a rig; Needs attention is one line, with the age setting; The screen tours are gone; Checklist hours: start and stop, one paper; The daily report reads rig hours from the checklist; File this day waits; The shot plan follows the accepted drilling; Incidents: the tile, the + door, Injury and Near miss, Do now and the call log; The office may file an incident; a refused write says so.

@@ -81,6 +81,16 @@ to look for; his findings become the next round's items.
 Running list. Nothing here is scheduled; Matthew decides when the freeze lifts and what
 becomes a round. Each item says what the app does today so the plan starts from facts.
 
+- **Walkthroughs per role (Matthew, Sep 16 2026, S20 plan item E: "put this in the
+  backlog").** The S7c screen tours ("Show me your work day") retired with S20; the
+  blasting log's Walkthrough tab (navigation round, push 2) is the pattern: named
+  steps, one ringed, one Next button, Waiting when someone else holds the step. To
+  design as their own round, the driller's first (Rig checklist → Drill plan →
+  Drilling → Mark complete → Stop hours → Time card), then the blaster's whole day
+  (Start the day → Crew and rigs → Blasting log → Daily report → File), the office's
+  day (Today's jobs → Approvals → Print pack → Reminders) and Setting up a job
+  (Customer → Site → Job → Contacts → Permits → Site K → Contact sheet). Today: only
+  the blasting log has one.
 - **Documents that stand on their own for a day (Matthew, Sep 10 2026).** A gas-main
   leak stopped drilling and blasting; Mark and Joe still had a day to account for, so
   the only paper that day is time cards. Today: every work day carries a daily report,

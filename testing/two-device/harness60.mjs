@@ -85,11 +85,18 @@ async (page, lib) => {
       await PD.locator('[data-tour="log-complete"]').click();
       const confirm = PD.locator('[data-log-complete-confirm]');
       await confirm.waitFor({ timeout: 5000 });
+      // S20: a log with no rig asks for it in the sheet and Complete waits — pick one, as the driller would
+      if (await PD.locator('[data-log-complete-rig-select]').count()) {
+        const rigId = await PD.evaluate(async () => (await (await import('/src/db/index.ts')).db.equipment.filter((e) => e.isActive && (e.category === 'rock_drill' || e.category === 'equip_drill')).first())?.id);
+        await PD.locator('[data-log-complete-rig-select]').selectOption(rigId);
+        await PD.waitForTimeout(500);
+      }
       // S9b: an unsigned log signs inside the sheet before Complete enables
       if (await PD.locator('[data-log-complete-signature]').count()) {
         await PD.locator('[data-log-complete-signature]').getByRole('button', { name: /Tap to sign/ }).click();
-        const canvas = PD.locator('canvas').first();
+        const canvas = PD.locator('[data-log-complete-signature] canvas').first();
         await canvas.waitFor({ timeout: 5000 });
+        await PD.waitForTimeout(600); // the bottom sheet grows upward as the pad opens — measure after it settles
         const cb = await canvas.boundingBox();
         await PD.mouse.move(cb.x + 30, cb.y + 40); await PD.mouse.down();
         for (let i = 1; i <= 20; i++) await PD.mouse.move(cb.x + 30 + i * 8, cb.y + 40 + Math.sin(i / 2) * 15);
@@ -124,6 +131,7 @@ async (page, lib) => {
     await PM.goto(`${WEB}/admin/equipment`);
     await PM.locator('[data-equip-list]').waitFor({ timeout: 10000 });
     const badge = PM.locator(`[data-equip-row] [data-equip-repair]`).first();
+    await badge.waitFor({ timeout: 20000 }).catch(() => undefined); // the ticket may still be arriving on the shop's device
     if (await badge.count()) {
       await badge.click();
       await PM.waitForURL(/\/tickets\//, { timeout: 8000 }).catch(() => undefined);

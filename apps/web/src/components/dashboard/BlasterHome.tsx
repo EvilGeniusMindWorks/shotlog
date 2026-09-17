@@ -40,13 +40,20 @@ function useNeedsAttention(): AttentionRow[] | undefined {
     // patterns. Everyone else's lives under Days › Everyone / Records.
     const mineFirst = homeIsMineFirst();
     const mine = mineFirst ? await myDayIds() : null;
+    // S20 (Matthew, Sep 16 2026): a draft counts as unfiled once it is
+    // older than the company's setting (default 2 days) — today's and
+    // yesterday's drafts are just work in progress
+    const staleDays = (await db.companySettings.get('companySettings-singleton'))?.homeStaleDraftDays ?? 2;
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - Math.max(0, staleDays));
+    const cutoff = `${cutoffDate.getFullYear()}-${String(cutoffDate.getMonth() + 1).padStart(2, '0')}-${String(cutoffDate.getDate()).padStart(2, '0')}`;
 
     for (const day of days) {
       if (day.status !== 'draft') continue;
       if (mine && !mine.has(day.id)) continue;
       // Sent-back days surface from ANY date (today included); ordinary
       // drafts only once they're stale — today's draft is just today's work
-      if (!day.sendBackNote && day.date >= today) continue;
+      if (!day.sendBackNote && (day.date >= today || day.date > cutoff)) continue;
       const jobName = jobs.get(day.jobId)?.name ?? 'Unknown job';
       if (day.sendBackNote) {
         rows.push({
@@ -97,7 +104,9 @@ function useNeedsAttention(): AttentionRow[] | undefined {
     // drafts — newest first within each; the cap applies AFTER ranking so
     // a pile of old drafts can never bury a send-back
     rows.sort((a, b) => a.rank - b.rank || b.date.localeCompare(a.date));
-    return rows.slice(0, 6);
+    // S20: the stale drafts fold into one line on the home, so no cap is needed
+    // to keep them from burying a send-back
+    return rows;
   }, []);
 }
 
@@ -136,9 +145,29 @@ function TodayDayRow({ day, jobLabel }: { day: BlastDay; jobLabel: string }) {
   );
 }
 
+function AttentionRowButton({ row }: { row: AttentionRow }) {
+  const navigate = useNavigate();
+  return (
+    <button
+      className="w-full flex items-center gap-2 py-1.5 border-t border-gray-100 first:border-t-0 text-left hover:bg-gray-50"
+      data-attention-row={row.key}
+      onClick={() => navigate(row.to)}
+    >
+      <Badge variant={row.chipVariant}>{row.chip}</Badge>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm truncate">{row.title}</p>
+        {row.sub && <p className="text-xs text-gray-400 truncate">{row.sub}</p>}
+      </div>
+      <span className="text-gray-300">›</span>
+    </button>
+  );
+}
+
 export function BlasterHome() {
   const navigate = useNavigate();
   const attention = useNeedsAttention();
+  const drafts = (attention ?? []).filter((r) => r.rank === 2);
+  const [showDrafts, setShowDrafts] = useState(false);
   const summaries = useDaySummaries();
   const [showNewDialog, setShowNewDialog] = useState(false);
   const today = todayISO();
@@ -165,26 +194,45 @@ export function BlasterHome() {
 
   return (
     <div className="space-y-4" data-tour="home" data-home-scope={mineFirst ? 'mine' : 'all'}>
-      {/* Band 1 — needs attention (only exists when non-empty) */}
+      {/* Band 1 — needs attention (only exists when non-empty). S20 (Matthew,
+          Sep 16 2026: six draft rows pushed today off the screen): sent-back
+          days and patterns to review stay as rows; the unfiled drafts fold
+          into ONE line that opens on a tap */}
       {attention && attention.length > 0 && (
-        <div className="bg-white border border-gray-200 border-l-4 border-l-safety-orange rounded-xl px-3 py-2">
+        <div className="bg-white border border-gray-200 border-l-4 border-l-safety-orange rounded-xl px-3 py-2" data-needs-attention>
           <p className="text-[10px] font-bold tracking-widest text-gray-400 uppercase mb-1">
             Needs attention · {attention.length}
           </p>
-          {attention.map((row) => (
-            <button
-              key={row.key}
-              className="w-full flex items-center gap-2 py-1.5 border-t border-gray-100 first:border-t-0 text-left hover:bg-gray-50"
-              onClick={() => navigate(row.to)}
-            >
-              <Badge variant={row.chipVariant}>{row.chip}</Badge>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm truncate">{row.title}</p>
-                {row.sub && <p className="text-xs text-gray-400 truncate">{row.sub}</p>}
-              </div>
-              <span className="text-gray-300">›</span>
-            </button>
+          {attention.filter((r) => r.rank < 2).map((row) => (
+            <AttentionRowButton key={row.key} row={row} />
           ))}
+          {drafts.length > 0 && (
+            <>
+              <button
+                type="button"
+                className="w-full flex items-center gap-2 py-1.5 border-t border-gray-100 first:border-t-0 text-left hover:bg-gray-50"
+                data-attention-drafts={drafts.length}
+                aria-expanded={showDrafts}
+                onClick={() => setShowDrafts((v) => !v)}
+              >
+                <Badge variant="warning">unfiled</Badge>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm truncate">
+                    {drafts.length === 1 ? '1 unfiled day' : `${drafts.length} unfiled days`} · oldest {formatDate(drafts[drafts.length - 1].date)}
+                  </p>
+                  <p className="text-xs text-gray-400 truncate">{showDrafts ? 'tap to fold them away' : 'tap to see them'}</p>
+                </div>
+                <span className="text-gray-300">{showDrafts ? '⌃' : '⌄'}</span>
+              </button>
+              {showDrafts && (
+                <div className="pl-2" data-attention-drafts-open>
+                  {drafts.map((row) => (
+                    <AttentionRowButton key={row.key} row={row} />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
 

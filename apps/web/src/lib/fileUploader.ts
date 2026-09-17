@@ -3,6 +3,7 @@
 // 'stored'. Sequential + retry-safe; runs after capture, on 'online', and on
 // app-foreground. Devices that DON'T hold the binary skip the record.
 import { db } from '@/db';
+import { getPowerSync } from '@/db/powersync/client';
 import { authedFetch, getSession } from '@/lib/session';
 import { nowISO } from '@/lib/utils';
 import { logSyncEvent } from '@/lib/syncLog';
@@ -41,43 +42,90 @@ async function presignAndPut(
 
 /** Move filed-submission binaries (PDF + frozen assets) from this device
  *  into R2, then flip the record's storage pointer — the one post-file
- *  change the server's write-once rule permits. */
+ *  change the server's write-once rule permits.
+ *
+ *  S20 (Office Test, Sep 16 2026: every Beta blasting log read "still on
+ *  the device that filed it" while the daily reports opened fine): the
+ *  PDF counts the moment it lands — the pointer flips as soon as the PDF
+ *  is in storage, and the photos follow. A photo whose frozen copy is not
+ *  on this device but whose attachment already sits in storage is pointed
+ *  at that object instead of re-sent; only a photo that exists nowhere but
+ *  here is waited for, and the record says how many are still to come. */
 async function uploadSubmissionBinaries(localIds: Set<string>): Promise<void> {
-  const pending = (await db.submissions.filter((s) => s.storageStatus === 'device').toArray())
-    .filter((s) => localIds.has(subPdfKey(s.id)) || (s.pdf instanceof Blob && s.pdf.size > 0));
-  for (const s of pending) {
+  // A light pass first — ids and pointers only, never the payloads. A
+  // table-wide filter revived every filed copy in the local table, legacy
+  // inline PDFs included, and stalled the page for seconds on every device
+  // at every kick (harness78 caught it on the work day's time-card sheet).
+  const light = await getPowerSync().getAll<{
+    id: string;
+    storageStatus: string | null;
+    pdfKey: string | null;
+    hasInlinePdf: number;
+    assetCount: number | null;
+    keyCount: number | null;
+  }>(
+    `SELECT id,
+            json_extract(payload,'$.storageStatus') AS storageStatus,
+            json_extract(payload,'$.pdfKey')        AS pdfKey,
+            CASE WHEN json_type(payload,'$.pdf') IN ('object','text') THEN 1 ELSE 0 END AS hasInlinePdf,
+            json_array_length(payload,'$.assets')   AS assetCount,
+            (SELECT count(*) FROM json_each(payload,'$.assetKeys')) AS keyCount
+     FROM records WHERE table_name = 'submissions'`,
+  );
+  const candidates = light.filter((r) =>
+    r.storageStatus === 'device'
+      ? localIds.has(subPdfKey(r.id)) || r.hasInlinePdf === 1 // this device's filing, or the inline copy it kept
+      : r.storageStatus === 'stored' && (r.assetCount ?? 0) > (r.keyCount ?? 0),
+  );
+  for (const c of candidates) {
+    const s = await db.submissions.get(c.id); // one full record at a time
+    if (!s) continue;
     try {
-      // the device copy, else the PDF that rode inline when the device refused the copy
-      const pdf = (await getLocalMedia(subPdfKey(s.id)).catch(() => undefined)) ?? (s.pdf instanceof Blob && s.pdf.size > 0 ? s.pdf : undefined);
-      if (!pdf) continue;
-      const pdfKey = await presignAndPut(subPdfKey(s.id), `${s.type}-${s.date}-v${s.version}.pdf`, 'application/pdf', pdf);
-      if (pdfKey === 'unconfigured') return;
-      if (!pdfKey) continue;
-      const assetKeys: Record<string, string> = {};
-      let allAssets = true;
-      for (const a of s.assets) {
-        const blob = await getLocalMedia(subAssetKey(s.id, a.id));
-        if (!blob) {
-          allAssets = false;
-          continue;
-        }
-        const key = await presignAndPut(subAssetKey(s.id, a.id), a.fileName || a.id, a.mimeType, blob);
+      let pdfKey = s.pdfKey;
+      if (s.storageStatus !== 'stored' || !pdfKey) {
+        // the device copy, else the PDF that rode inline when the device refused the copy
+        const pdf =
+          (await getLocalMedia(subPdfKey(s.id)).catch(() => undefined)) ??
+          (s.pdf instanceof Blob && s.pdf.size > 0 ? s.pdf : undefined);
+        if (!pdf) continue; // not this device's filing
+        const key = await presignAndPut(subPdfKey(s.id), `${s.type}-${s.date}-v${s.version}.pdf`, 'application/pdf', pdf);
         if (key === 'unconfigured') return;
-        if (!key) {
-          allAssets = false;
+        if (!key) continue;
+        pdfKey = key;
+        await db.submissions.update(s.id, { storageStatus: 'stored', pdfKey, pdf: null, updatedAt: nowISO() });
+        logSyncEvent(`filing uploaded: ${s.title} v${s.version}`);
+      }
+      const assetKeys: Record<string, string> = { ...(s.assetKeys ?? {}) };
+      let changed = false;
+      let missing = 0;
+      for (const a of s.assets ?? []) {
+        if (assetKeys[a.id]) continue;
+        const frozenId = subAssetKey(s.id, a.id);
+        const frozen = localIds.has(frozenId) ? await getLocalMedia(frozenId).catch(() => null) : null;
+        if (frozen) {
+          const key = await presignAndPut(frozenId, a.fileName || a.id, a.mimeType, frozen);
+          if (key === 'unconfigured') return;
+          if (key) {
+            assetKeys[a.id] = key;
+            changed = true;
+            continue;
+          }
+        }
+        // no frozen copy on this device — the attachment itself may already be in storage
+        const att = await db.attachments.get(a.id);
+        if (att?.storageStatus === 'stored' && att.storageKey) {
+          assetKeys[a.id] = att.storageKey;
+          changed = true;
           continue;
         }
-        assetKeys[a.id] = key;
+        missing++;
       }
-      if (!allAssets) continue; // retry the whole submission next run
-      await db.submissions.update(s.id, {
-        storageStatus: 'stored',
-        pdfKey,
-        assetKeys,
-        pdf: null,
-        updatedAt: nowISO(),
-      });
-      logSyncEvent(`filing uploaded: ${s.title} v${s.version}`);
+      if (changed) {
+        await db.submissions.update(s.id, { assetKeys, updatedAt: nowISO() });
+        logSyncEvent(
+          `filing photos in storage: ${Object.keys(assetKeys).length} of ${(s.assets ?? []).length} — ${s.title} v${s.version}${missing ? ` (${missing} still on the device that took them)` : ''}`,
+        );
+      }
     } catch {
       return; // offline blip — next run retries
     }
@@ -89,6 +137,11 @@ export async function runFileUploader(): Promise<void> {
   running = true;
   try {
     const localIds = new Set(await listLocalMediaIds());
+    // A device holding no media of its own has nothing to send: its filed
+    // copies were made elsewhere, and copies stranded by an older build are
+    // the server's boot sweep's job (strandedFilings.ts). Touching the
+    // database from here at app start also unsettled the work day's sheets
+    // (harness78) — so the pass stays behind this guard.
     if (localIds.size === 0) return;
     const pending = (await db.attachments.filter((a) => a.storageStatus === 'device').toArray())
       .filter((a) => localIds.has(a.id))

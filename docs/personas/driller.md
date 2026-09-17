@@ -257,3 +257,9 @@ report (solo submit) · My Records · jobs list
   gone. Mark complete lands on the day, where the log reads Signed
   complete; a checklist's Done lands on the day it belongs to, else the
   rig. Sheets say Close.
+
+## Round S20 — the field (Sep 17 2026, plan artifact LkRaNnTcd8JPxkVyMUNFd3)
+
+- **Sent back to you** is the first band on Drilling and on the home: the job, the shot, the holes, who sent it and the note, until the log is marked complete again (Driller Test: "I should see the drill plan that was sent back to me here — but I don't"; the old queue listed only logs with no holes yet).
+- **Mark complete needs a rig.** The sheet asks "Which rig drilled it?" when the log has none and the button waits ("Pick the rig first") — the hours, the checklist and the billing tie to it.
+- **Hours on the checklist, one paper** (push 2): Start hours and Stop hours in a Hours box at the top; the checklist is complete only with both and files at the end of the day; the walk-around is stamped when done. No "running" rig anywhere, no Stop-for-the-day button on the day's rig row — "stop hours missing" opens the checklist. The home card says "Enter R1021's stop hours" at the end of the day. The daily report reads the hours from the checklist; the blaster is never asked.

@@ -11,9 +11,8 @@ The **?** button — in the sidebar on a wide screen, in the top bar on a phone 
 ## What is in the ? menu
 
 - **About this screen** — three to five lines about the screen you are on and what to do next. It ends with a link to the guide page for that screen.
-- **Show me this screen** — a short guided look at the screen you are on, where one exists.
 - **Help guide** — this guide, opened at the page for the screen you are on.
-- **Walkthrough** — the tour of your screens that ran on your first day. Screen tours start on their own only on that first day; after that, run them from here as often as you like.
+- **Walkthrough** — the tour of your screens that ran on your first day; run it again from here whenever you like. (The older per-screen tours — "Show me your work day" — are gone: the work day's own Walkthrough tab does that job now.)
 - **Send feedback** — see below.
 
 ![The ? menu](help-menu.png)

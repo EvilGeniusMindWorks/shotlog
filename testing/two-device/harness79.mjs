@@ -196,6 +196,12 @@ async (page, lib) => {
     await PD.locator('[data-log-complete-bottom], [data-tour="log-complete"]').first().waitFor({ timeout: 10000 });
     await PD.locator('[data-log-complete-bottom]:visible, [data-tour="log-complete"]:visible').first().click();
     await PD.locator('[data-log-complete-confirm]').waitFor({ timeout: 10000 });
+    // S20: a log with no rig asks for it in the sheet — Complete waits until one is picked
+    if (await PD.locator('[data-log-complete-rig-select]').count()) {
+      const firstRig = await PD.locator('[data-log-complete-rig-select] option').nth(1).getAttribute('value');
+      await PD.locator('[data-log-complete-rig-select]').selectOption(firstRig);
+      await waitFor(async () => ((await PD.locator('[data-log-complete-confirm]').isDisabled()) ? null : 1), 10000);
+    }
     await PD.locator('[data-log-complete-confirm]').click();
     const landed = await waitFor(async () => (path(PD) === DAY ? 1 : null), 10000);
     R.ok('Mark complete lands on the day', landed === 1);

@@ -325,3 +325,10 @@ page · customer/site/job create (new) · contacts · My Records · reference
   blasting log → Check and sign → Mark the blasting log complete, one ring,
   Next: … The check screen needs seismo readings on every shot before
   Complete. File this day waits for the log complete and the report done.
+
+## Round S20 — the field (Sep 17 2026, plan artifact LkRaNnTcd8JPxkVyMUNFd3)
+
+- **Needs attention is one line.** Sent-back days and patterns ready for review stay as rows; the unfiled drafts fold into "6 unfiled days · oldest Tue, Sep 8", open on a tap. A draft counts once it is older than the company's setting (default two days) — today's and yesterday's work never nags (Matthew: "thresholds, office-triggered, real estate" → A with B's setting).
+- **The shot plan follows the drilling** (push 2). No Build-timing button: accepting the drilling makes the drilled pattern the plan's pattern, timing carried hole for hole; amber lines say where they disagree (a hole added with no delay, a depth that differs, a timed hole the log says was not drilled — red on Check and sign).
+- **Incidents are papers of the day** (push 3): a tile on the day and Report an incident under the home's +; the day's customer, site and job ride on it; Injury and Near miss are kinds; the Do now list at the top names the job's sheet contacts, and a tap on Call is the blaster's confirmation with the time (the phone dials; the app records the tap).
+- **Help loses "Show me your work day"**: the screen tours are gone; the walkthrough tab does that job; About this screen and the guide stay.

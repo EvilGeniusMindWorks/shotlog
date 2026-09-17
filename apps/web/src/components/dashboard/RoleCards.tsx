@@ -196,6 +196,8 @@ interface ProjectedLog {
   drillerName: string;
   assignedBy?: string;
   reopenNote?: string;
+  sentBackAt?: string;
+  sentBackByName?: string;
   drillPlanId?: string;
   jobId: string;
   blastDayId?: string;
@@ -212,6 +214,8 @@ async function projectDrillLogs(): Promise<ProjectedLog[]> {
     drillerName: 'drillerName',
     assignedBy: 'assignedBy',
     reopenNote: 'reopenNote',
+    sentBackAt: 'sentBackAt',
+    sentBackByName: 'sentBackByName',
     drillPlanId: 'drillPlanId',
     jobId: 'jobId',
     blastDayId: 'blastDayId',
@@ -228,6 +232,8 @@ async function projectDrillLogs(): Promise<ProjectedLog[]> {
     drillerName: r.drillerName ?? '',
     assignedBy: r.assignedBy ?? undefined,
     reopenNote: r.reopenNote ?? undefined,
+    sentBackAt: r.sentBackAt ?? undefined,
+    sentBackByName: r.sentBackByName ?? undefined,
     drillPlanId: r.drillPlanId ?? undefined,
     jobId: r.jobId ?? '',
     blastDayId: r.blastDayId ?? undefined,
@@ -242,9 +248,68 @@ async function projectDrillLogs(): Promise<ProjectedLog[]> {
  *  fresh dispatches · open plans · ready-to-drill shots. Rendered on the
  *  trio home AND as the thin /drilling page — same content, one tap from
  *  the rail without scrolling home. */
+interface SentBackRow {
+  log: ProjectedLog;
+  context: string;
+  holes: number;
+}
+
+/** S20 (Driller Test, Sep 16 2026: "I should see the drill plan that was
+ *  sent back to me here — but I don't"): a sent-back log has its holes, so
+ *  it never made the "no hole yet" list. It gets its own band, first on
+ *  Drilling and on the home, until the driller marks it complete again. */
+async function sentBackRows(meId: string | undefined): Promise<SentBackRow[]> {
+  const logs = (await projectDrillLogs()).filter(
+    (l) => l.status === 'open' && (l.sentBackAt || l.reopenNote) && (!meId || l.drillerUserId === meId || !l.drillerUserId),
+  );
+  const out: SentBackRow[] = [];
+  for (const log of logs) {
+    const job = await db.jobs.get(log.jobId);
+    const shot = log.shotId ? await db.shots.get(log.shotId) : undefined;
+    const plan = log.drillPlanId ? await db.drillPlans.get(log.drillPlanId) : undefined;
+    const holes = (await db.drillLogHoles.where('drillLogId').equals(log.id).toArray()).filter((h) => !h.skipped).length;
+    out.push({
+      log,
+      context: plan ? `${plan.name} · ${job?.name ?? '—'}` : `Shot ${shot?.shotNumber ?? '?'} · ${job?.name ?? '—'}`,
+      holes,
+    });
+  }
+  return out.sort((a, b) => (b.log.sentBackAt ?? '').localeCompare(a.log.sentBackAt ?? ''));
+}
+
+function SentBackBand({ rows }: { rows: SentBackRow[] }) {
+  const navigate = useNavigate();
+  if (rows.length === 0) return null;
+  return (
+    <div className="rounded-xl border-2 border-amber-400 bg-amber-50 p-3" data-sent-back-band>
+      <p className="text-[11px] font-semibold text-amber-800 uppercase tracking-wider mb-1">↩ Sent back to you · {rows.length}</p>
+      {rows.map(({ log, context, holes }) => (
+        <button
+          key={log.id}
+          type="button"
+          data-sent-back={log.id}
+          className="w-full flex items-center gap-2 py-2 text-left hover:bg-white/60 rounded-lg"
+          onClick={() => navigate(drillLogRoute(log))}
+        >
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold truncate">{context} · {holes} holes</p>
+            <p className="text-xs text-amber-900 truncate">
+              {log.sentBackByName || 'The blaster'}
+              {log.sentBackAt ? ` · ${formatDate(log.sentBackAt.slice(0, 10))}` : ''}: {log.reopenNote ? `“${log.reopenNote}”` : 'check it and mark it complete again'}
+            </p>
+          </div>
+          <span className="text-sm text-amber-900 font-semibold shrink-0">Open the log ›</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function DrillingWork() {
   const navigate = useNavigate();
   const me = getSessionUser();
+
+  const sentBack = useLiveQuery(() => sentBackRows(me?.id), [me?.id]);
 
   // Fresh dispatches: the blaster sent me a plan and I haven't started
   const assigned = useLiveQuery(async () => {
@@ -363,6 +428,7 @@ export function DrillingWork() {
 
   return (
     <>
+      <SentBackBand rows={sentBack ?? []} />
       {(assigned ?? []).length > 0 && (
         <div className="rounded-xl border-2 border-navy bg-navy-50 p-3">
           <p className="text-[11px] font-semibold text-navy uppercase tracking-wider mb-1">
@@ -447,7 +513,7 @@ export function DrillingWork() {
         </div>
       )}
 
-      {(assigned ?? []).length === 0 && (openPlans ?? []).length === 0 &&
+      {(assigned ?? []).length === 0 && (openPlans ?? []).length === 0 && (sentBack ?? []).length === 0 &&
         (readyToDrill ?? []).length === 0 && assigned !== undefined && (
         <div className="rounded-xl border border-gray-200 bg-white p-3">
           <p className="text-sm text-gray-400">
@@ -550,8 +616,10 @@ export function DrillerHome() {
     }
     return out;
   }, [me?.id, today]);
-  const assignedNew = (myLogs ?? []).filter((x) => x.log.assignedBy && x.holes === 0);
-  const priorLogs = (myLogs ?? []).filter((x) => x.isPrior && !(x.log.assignedBy && x.holes === 0));
+  const sentBack = useLiveQuery(() => sentBackRows(me?.id), [me?.id]);
+  const isSentBack = (l: ProjectedLog) => Boolean(l.sentBackAt || l.reopenNote);
+  const assignedNew = (myLogs ?? []).filter((x) => x.log.assignedBy && x.holes === 0 && !isSentBack(x.log));
+  const priorLogs = (myLogs ?? []).filter((x) => x.isPrior && !(x.log.assignedBy && x.holes === 0) && !isSentBack(x.log));
 
   // The rig with the shop — one line, when its ticket is open
   const lastRigId = myLogs?.find((r) => r.log.drillRigEquipmentId)?.log.drillRigEquipmentId;
@@ -579,6 +647,7 @@ export function DrillerHome() {
 
   return (
     <div className="p-4 max-w-2xl mx-auto space-y-3" data-tour="home" data-driller-home>
+      <SentBackBand rows={sentBack ?? []} />
       <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Today · {formatDate(today)}</p>
       {todays.map((c) => (
         <JobDay key={c.day.id} c={c} />

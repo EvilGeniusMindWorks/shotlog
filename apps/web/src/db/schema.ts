@@ -955,6 +955,11 @@ export interface DrillLog extends BaseRecord {
   // Handoff notes: driller → blaster at complete; blaster → driller at reopen
   completionNote?: string;
   reopenNote?: string;
+  /** S20: a log the blaster sent back keeps saying so (with or without a
+   *  note) until the driller marks it complete again — the "Sent back to
+   *  you" band on Drilling and the home reads these */
+  sentBackAt?: string;
+  sentBackByName?: string;
 }
 
 export interface DrillLogHole extends BaseRecord {
@@ -1092,6 +1097,9 @@ export interface CompanySettings extends BaseRecord {
   phone: string;
   /** Office routing (who to call for scope changes / equipment / incidents) */
   officeContacts?: { id: string; label: string; name: string; phone: string }[];
+  /** S20 (Matthew, Sep 16 2026): how old an unfiled draft day must be
+   *  before the home's Needs attention line counts it (default 2 days) */
+  homeStaleDraftDays?: number;
   /** Company-defined attachment types, merged into the built-in picker */
   attachmentTypes?: string[];
   /** Pre-blast ritual placeholder (Round 2): editable language, one item
@@ -1181,6 +1189,10 @@ export interface SubmissionAsset {
   /** SHA-256 of the frozen copy — content immutability proof */
   sha256?: string;
   size?: number;
+  /** S20 (Matthew, Sep 16 2026): what the office needs without opening it —
+   *  where the attachment hangs ("Shot 1 › Seismo reading 2 · pump house ·
+   *  410 ft · PPV 0.18"), its kind, who took it and when */
+  context?: { kind?: string; hangsOn?: string; capturedBy?: string; capturedAt?: string };
 }
 
 /**

@@ -7,6 +7,7 @@ import { authedFetch, getSessionUser } from '@/lib/session';
 import { generateId, nowISO } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DraftInput } from '@/components/ui/draft-input';
 import { Label } from '@/components/ui/label';
 
 const SINGLETON = 'companySettings-singleton';
@@ -74,6 +75,41 @@ function AttachmentTypesSection({
         >
           Add
         </Button>
+      </div>
+    </section>
+  );
+}
+
+/** S20 (Matthew, Sep 16 2026): the home's Needs attention line counts an
+ *  unfiled draft only once it is this many days old */
+function HomeSettingsSection({ settings, online }: { settings: { homeStaleDraftDays?: number } | undefined; online: boolean }) {
+  const value = settings?.homeStaleDraftDays ?? 2;
+  // no field until the record is here: a default shown for a beat could be "edited" into the record
+  if (!settings) return null;
+  return (
+    <section className="rounded-xl border border-gray-200 bg-white p-4 space-y-2" data-home-settings>
+      <p className="font-medium text-sm">The home screen</p>
+      <p className="text-xs text-gray-400">
+        A blaster's home folds unfiled days into one line under Needs attention. A draft counts once it is this many days old; today's and yesterday's work never nags.
+      </p>
+      <div className="flex items-center gap-2">
+        <Label className="text-xs">Count a draft as unfiled after</Label>
+        <DraftInput
+          type="number"
+          min={0}
+          max={60}
+          inputMode="numeric"
+          className="w-20"
+          data-home-stale-days
+          value={value}
+          disabled={!online}
+          onCommit={(text) => {
+            const n = Math.max(0, Math.min(60, parseInt(text, 10) || 0));
+            if (n === value) return;
+            void db.companySettings.update('companySettings-singleton', { homeStaleDraftDays: n, updatedAt: nowISO() });
+          }}
+        />
+        <span className="text-xs text-gray-500">days</span>
       </div>
     </section>
   );
@@ -263,6 +299,7 @@ export function AdminCompanyPage() {
       </section>
 
       <OfficeContactsSection settings={settings} online={online} />
+      <HomeSettingsSection settings={settings} online={online} />
       <AttachmentTypesSection settings={settings} />
       <PreBlastChecklistSection settings={settings} />
     </div>

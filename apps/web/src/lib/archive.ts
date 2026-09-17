@@ -137,9 +137,37 @@ async function freezeAttachments(
       continue;
     }
     const data = a.mimeType.startsWith('image/') ? await toArchivalImage(binary) : binary;
-    assets.push({ id: a.id, fileName: a.fileName, mimeType: a.mimeType, data });
+    assets.push({ id: a.id, fileName: a.fileName, mimeType: a.mimeType, data, context: await attachmentContext(a) });
   }
   return { assets, skippedVideos };
+}
+
+/** S20 (Office Test, Sep 16 2026: "I'd like the context of what was
+ *  attached, not just the file name"): the filed copy carries, per
+ *  attachment, where it hangs in the paper, its kind, who took it and when —
+ *  so the office reads "Shot 1 › Seismo reading 2 · pump house · PPV 0.18"
+ *  without opening the photo. A courtesy: a missing parent leaves it blank. */
+async function attachmentContext(a: Attachment): Promise<SubmissionAsset['context']> {
+  let hangsOn: string | undefined;
+  try {
+    if (a.parentType === 'seismo_reading') {
+      const r = await db.seismoReadings.get(a.parentId);
+      const shot = r ? await db.shots.get(r.shotId) : undefined;
+      const bits = [`Shot ${shot?.shotNumber ?? '?'} › Seismo reading${r?.graphNumber ? ` ${r.graphNumber}` : ''}`];
+      if (r?.location) bits.push(String(r.location));
+      if (r?.peakVectorSum != null && r.peakVectorSum !== ('' as unknown)) bits.push(`PPV ${r.peakVectorSum} in/s`);
+      if (r?.frequency != null && r.frequency !== ('' as unknown)) bits.push(`${r.frequency} Hz`);
+      hangsOn = bits.join(' · ');
+    } else if (a.parentType === 'shot') {
+      const shot = await db.shots.get(a.parentId);
+      hangsOn = `Shot ${shot?.shotNumber ?? '?'}`;
+    } else {
+      hangsOn = { blast_log: 'Blasting log', daily_report: 'Daily report', drill_log: 'Drill log', blast_day: 'Work day' }[a.parentType];
+    }
+  } catch {
+    /* context is a courtesy, never a reason not to file */
+  }
+  return { kind: a.kind, hangsOn, capturedBy: a.originName, capturedAt: a.createdAt };
 }
 
 async function sha256Hex(blob: Blob): Promise<string> {
@@ -311,6 +339,7 @@ export async function fileSubmission(opts: {
       data: null,
       sha256: await sha256Hex(data),
       size: data.size,
+      context: a.context,
     });
   }
   const jobCtx = await getJobContext(opts.jobId);
