@@ -150,6 +150,7 @@ export function parentOf(route: string): NavParent | null {
     return day ? { to: `/blast-day/${day}`, label: 'the work day' } : { to: '/', label: 'Dashboard' };
   }
   if ((m = pathname.match(/^\/incident\/([^/]+)\/(print|submit)/))) return { to: `/incident/${m[1]}`, label: 'Incident' };
+  if (/^\/records\/preview\//.test(pathname)) return { to: '/records', label: 'Records' };
   return { to: '/', label: 'Dashboard' };
 }
 

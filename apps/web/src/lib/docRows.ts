@@ -8,7 +8,9 @@
 // projections (db/projections) — reviving those blobs on every records
 // visit was a Safari tab-eviction pattern.
 import { db } from '@/db';
-import { holeCountsByLog, projectTable } from '@/db/projections';
+import { holeStatsByLog, projectTable } from '@/db/projections';
+import { INCIDENT_LABEL } from '@/lib/incidentDoNow';
+import type { IncidentType } from '@/db/schema';
 import { matchesPersonName, matchesWorkRow, workedRow } from '@/lib/personHistory';
 import { drillLogRoute } from '@/hooks/useDrillPlans';
 import type { CrewMember, DrillLog } from '@/db/schema';
@@ -45,7 +47,52 @@ export interface DocRow {
   siteId?: string;
   /** Draft day carrying an office send-back note (awaiting resubmit) */
   sentBack?: boolean;
+  /** S21 (Matthew: "columns say too little"): the short head after the kind
+   *  on the row's first line ("Shot 1", "R1021"), the grey particulars on
+   *  the second, and the facts behind the optional columns */
+  head?: string;
+  particulars?: string;
+  facts?: DocFacts;
+  customerName?: string;
+  dayId?: string;
 }
+
+export interface DocFacts {
+  shots?: number;
+  shotRange?: string;
+  lbs?: number;
+  holes?: number;
+  footage?: number;
+  rig?: string;
+  rigs?: string[];
+  startHours?: number | null;
+  stopHours?: number | null;
+  hours?: number;
+  inOut?: string;
+  crew?: number;
+  /** live attachments hanging on the paper (a filed copy carries its own count) */
+  clips?: number;
+  approvedBy?: string;
+  approvedAt?: string;
+  outOfService?: boolean;
+}
+
+const fmtN = (n: number, digits = 0) => n.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+const fmtMeter = (n: number | null | undefined) => (n == null ? undefined : fmtN(Number(n), 1));
+/** "07:00" → "7:00 am" */
+const fmt12 = (hhmm: string | null | undefined): string | undefined => {
+  if (!hhmm || !/^\d{1,2}:\d{2}/.test(hhmm)) return undefined;
+  const [h, m] = hhmm.split(':').map(Number);
+  const ap = h >= 12 ? 'pm' : 'am';
+  return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${ap}`;
+};
+const shotRangeOf = (nums: number[]): string | undefined => {
+  const s = [...new Set(nums.filter((n) => Number.isFinite(n)))].sort((a, b) => a - b);
+  if (s.length === 0) return undefined;
+  if (s.length === 1) return `Shot ${s[0]}`;
+  const contiguous = s.every((n, i) => i === 0 || n === s[i - 1] + 1);
+  return contiguous ? `Shots ${s[0]}–${s[s.length - 1]}` : `Shots ${s.join(', ')}`;
+};
 
 export const DOC_KIND_LABEL: Record<DocKind, string> = {
   blast_log: 'Blasting Log',
@@ -93,8 +140,58 @@ export async function buildDocRows(opts: {
     jobId: string;
     status: string;
     sendBackNote: string | null;
-  }>('blastDays', { name: 'name', date: 'date', jobId: 'jobId', status: 'status', sendBackNote: 'sendBackNote' });
+    approvedByName: string | null;
+    approvedAt: string | null;
+  }>('blastDays', { name: 'name', date: 'date', jobId: 'jobId', status: 'status', sendBackNote: 'sendBackNote', approvedByName: 'approvedByName', approvedAt: 'approvedAt' });
   const dayById = new Map(days.map((d) => [d.id, d]));
+
+  // ── S21: the particulars, from blob-free projections — one query per table, never per row ──
+  const customerNames = new Map(
+    (await projectTable<{ name: string | null }>('customers', { name: 'name' })).map((c) => [c.id, c.name ?? '']),
+  );
+  const customerOf = (jobId: string | null | undefined): string | undefined => {
+    const j = jobId ? jobRows.find((x) => x.id === jobId) : undefined;
+    return j?.customerId ? customerNames.get(j.customerId) : undefined;
+  };
+  const shotRows = await projectTable<{ blastLogId: string; shotNumber: number | null; numHoles: number | null }>('shots', {
+    blastLogId: 'blastLogId',
+    shotNumber: 'shotNumber',
+    numHoles: 'totals.numHoles',
+  });
+  const shotsByLog = new Map<string, typeof shotRows>();
+  for (const s of shotRows) shotsByLog.set(s.blastLogId, [...(shotsByLog.get(s.blastLogId) ?? []), s]);
+  const usageRows = await projectTable<{ blastLogId: string; totalPoundsShot: number | null; products: string | null }>('explosiveUsages', {
+    blastLogId: 'blastLogId',
+    totalPoundsShot: 'totalPoundsShot',
+    products: 'products',
+  });
+  const lbsByLog = new Map<string, number>();
+  for (const u of usageRows) {
+    let lbs = Number(u.totalPoundsShot ?? 0);
+    if (!lbs && u.products) {
+      try {
+        lbs = (JSON.parse(u.products) as { totalWeight?: number }[]).reduce((a, p) => a + (Number(p.totalWeight) || 0), 0);
+      } catch {
+        /* keep 0 */
+      }
+    }
+    lbsByLog.set(u.blastLogId, lbs);
+  }
+  const attRows = await projectTable<{ parentId: string }>('attachments', { parentId: 'parentId' });
+  const clipsByParent = new Map<string, number>();
+  for (const a of attRows) clipsByParent.set(a.parentId, (clipsByParent.get(a.parentId) ?? 0) + 1);
+  const readingRows = await projectTable<{ shotId: string }>('seismoReadings', { shotId: 'shotId' });
+  const readingsByShot = new Map<string, string[]>();
+  for (const r of readingRows) readingsByShot.set(r.shotId, [...(readingsByShot.get(r.shotId) ?? []), r.id]);
+  const clipsUnder = (ids: string[]) => ids.reduce((n, id) => n + (clipsByParent.get(id) ?? 0), 0);
+  const wfRows = await projectTable<{ dailyReportId: string; timeIn: string | null; timeOut: string | null; straightTime: number | null }>('workForceEntries', {
+    dailyReportId: 'dailyReportId',
+    timeIn: 'timeIn',
+    timeOut: 'timeOut',
+    straightTime: 'straightTime',
+  });
+  const crewByReport = new Map<string, number>();
+  for (const w of wfRows) if (w.timeIn || w.timeOut || Number(w.straightTime ?? 0) > 0) crewByReport.set(w.dailyReportId, (crewByReport.get(w.dailyReportId) ?? 0) + 1);
 
   // Drill logs — projected (signature blobs stay in the store)
   const allLogs = await projectTable<{
@@ -107,6 +204,7 @@ export async function buildDocRows(opts: {
     logDate: string | null;
     createdAt: string;
     status: string;
+    rigId: string | null;
   }>('drillLogs', {
     drillerUserId: 'drillerUserId',
     drillerName: 'drillerName',
@@ -117,6 +215,7 @@ export async function buildDocRows(opts: {
     logDate: 'date',
     createdAt: 'createdAt',
     status: 'status',
+    rigId: 'drillRigEquipmentId',
   });
   const shotNumbers = new Map(
     (await projectTable<{ n: number | null }>('shots', { n: 'shotNumber' })).map((s) => [s.id, s.n]),
@@ -127,7 +226,13 @@ export async function buildDocRows(opts: {
       p.name,
     ]),
   );
-  const holeCounts = await holeCountsByLog();
+  const holeStats = await holeStatsByLog();
+  const holeCounts = new Map([...holeStats].map(([k, v]) => [k, v.n]));
+  // Rig checklists — projected once here, used by the drill logs (the rig), the checklists
+  // themselves and the daily report's "2 rigs"
+  const assetNumbersEarly = new Map(
+    (await projectTable<{ assetNumber: string | null }>('equipment', { assetNumber: 'assetNumber' })).map((e) => [e.id, e.assetNumber]),
+  );
 
   const logs = allLogs
     .filter((l) => company || !meId || l.drillerUserId === meId)
@@ -144,12 +249,19 @@ export async function buildDocRows(opts: {
       ? (planNames.get(log.drillPlanId) ?? 'Plan')
       : `Shot ${log.shotId ? (shotNumbers.get(log.shotId) ?? '?') : '?'}`;
     const date = log.logDate ?? day?.date ?? log.createdAt.slice(0, 10);
+    const hs = holeStats.get(log.id);
+    const rig = log.rigId ? (assetNumbersEarly.get(log.rigId) ?? undefined) : undefined;
     out.push({
       key: `dl-${log.id}`,
       kind: 'drill_log',
       date,
       title: `${day?.name || jobs.get(log.jobId) || '—'} · ${context}${company ? ` · ${log.drillerName || 'unassigned'}` : ''}`,
       sub: `${holeCounts.get(log.id) ?? 0} holes`,
+      head: context,
+      particulars: [`${hs?.n ?? 0} holes`, hs?.ft ? `${fmtN(Math.round(hs.ft))}′` : null, rig ?? null].filter(Boolean).join(' · '),
+      facts: { holes: hs?.n ?? 0, footage: hs?.ft, rig, clips: clipsUnder([log.id]) },
+      customerName: customerOf(log.jobId),
+      dayId: log.blastDayId ?? undefined,
       status: log.status,
       statusVariant:
         log.status === 'accepted' ? 'approved' : log.status === 'complete' ? 'submitted' : 'draft',
@@ -168,7 +280,7 @@ export async function buildDocRows(opts: {
     ),
   );
   const seeAllChecklists = company || role === 'mechanic';
-  const checklists = (
+  const checklistsAll = (
     await projectTable<{
       equipmentId: string;
       jobId: string | null;
@@ -177,6 +289,8 @@ export async function buildDocRows(opts: {
       drillerName: string | null;
       outOfService: number | null;
       repairsNote: string | null;
+      startingHours: number | null;
+      stopHours: number | null;
     }>('drillChecklists', {
       equipmentId: 'equipmentId',
       jobId: 'jobId',
@@ -185,8 +299,19 @@ export async function buildDocRows(opts: {
       drillerName: 'drillerName',
       outOfService: 'outOfService',
       repairsNote: 'repairsNote',
+      startingHours: 'startingHours',
+      stopHours: 'stopHours',
     })
-  )
+  );
+  // the rigs on a job-day (for the daily report's "2 rigs")
+  const rigsByJobDay = new Map<string, string[]>();
+  for (const c of checklistsAll) {
+    if (!c.jobId) continue;
+    const k = `${c.jobId}|${c.date}`;
+    const asset = assetNumbers.get(c.equipmentId) ?? c.equipmentId;
+    if (!(rigsByJobDay.get(k) ?? []).includes(asset)) rigsByJobDay.set(k, [...(rigsByJobDay.get(k) ?? []), asset]);
+  }
+  const checklists = checklistsAll
     .filter((c) => seeAllChecklists || !meId || c.drillerUserId === meId)
     .filter((c) =>
       !person
@@ -196,12 +321,24 @@ export async function buildDocRows(opts: {
           : matchesPersonName(c.drillerName ?? '', person),
     );
   for (const c of checklists) {
+    const asset = assetNumbers.get(c.equipmentId) ?? c.equipmentId;
+    const start = c.startingHours == null ? null : Number(c.startingHours);
+    const stop = c.stopHours == null ? null : Number(c.stopHours);
+    const used = start != null && stop != null && stop >= start ? stop - start : undefined;
     out.push({
       key: `cl-${c.id}`,
       kind: 'drill_checklist',
       date: c.date,
-      title: `Rig checklist — ${assetNumbers.get(c.equipmentId) ?? c.equipmentId}${seeAllChecklists ? ` · ${c.drillerName ?? ''}` : ''}`,
+      title: `Rig checklist — ${asset}${seeAllChecklists ? ` · ${c.drillerName ?? ''}` : ''}`,
       sub: c.outOfService ? 'OUT OF SERVICE' : c.repairsNote ? 'repairs noted' : 'all good',
+      head: asset,
+      particulars: [
+        start != null ? `${fmtMeter(start)} → ${stop != null ? fmtMeter(stop) : 'stop hours missing'}` : 'no hours yet',
+        used != null ? `${fmtN(used, 1)} h` : null,
+        c.outOfService ? 'OUT OF SERVICE' : c.repairsNote ? 'repairs noted' : null,
+      ].filter(Boolean).join(' · '),
+      facts: { rig: asset, startHours: start, stopHours: stop, hours: used, outOfService: Boolean(c.outOfService) },
+      customerName: customerOf(c.jobId),
       status: 'filed',
       statusVariant: 'approved',
       to: `/drill-checklist-print/${c.id}`,
@@ -246,12 +383,17 @@ export async function buildDocRows(opts: {
           : matchesPersonName(i.reportedByName ?? '', person),
     );
   for (const i of incidents) {
+    const kindName = INCIDENT_LABEL[i.type as IncidentType] ?? i.type;
     out.push({
       key: `in-${i.id}`,
       kind: 'incident',
       date: i.date,
       title: `${i.type} incident — ${i.jobId ? (jobs.get(i.jobId) ?? '') : ''}`,
       sub: (i.description ?? '').slice(0, 60),
+      head: kindName,
+      particulars: (i.description ?? '').slice(0, 80) || 'no description yet',
+      facts: { clips: clipsUnder([i.id]) },
+      customerName: customerOf(i.jobId),
       status: i.status.replace('_', ' '),
       statusVariant:
         i.status === 'closed' ? 'approved' : i.status === 'office_review' ? 'submitted' : 'draft',
@@ -300,13 +442,30 @@ export async function buildDocRows(opts: {
           .toArray();
         reportMatches = crewRows.some((r) => matchesWorkRow(r, person) && workedRow(r));
       }
+      const shotsOnLog = log ? (shotsByLog.get(log.id) ?? []) : [];
+      const holesOnLog = shotsOnLog.reduce((a, s) => a + Number(s.numHoles ?? 0), 0);
+      const lbsOnLog = log ? (lbsByLog.get(log.id) ?? 0) : 0;
+      const dayFacts = { approvedBy: day.approvedByName ?? undefined, approvedAt: day.approvedAt ?? undefined };
       if (log && blastMatches) {
+        const shotRange = shotRangeOf(shotsOnLog.map((s) => Number(s.shotNumber)));
         out.push({
           key: `bl-${log.id}`,
           kind: 'blast_log',
           date: day.date,
           title: `Blast Log — ${label}`,
           sub: jobs.get(day.jobId) ?? '',
+          particulars: shotsOnLog.length === 0 ? 'no shots yet' : [shotRange, lbsOnLog ? `${fmtN(lbsOnLog, 1)} lbs` : null, holesOnLog ? `${fmtN(holesOnLog)} holes` : null].filter(Boolean).join(' · '),
+          facts: {
+            ...dayFacts,
+            shots: shotsOnLog.length,
+            shotRange,
+            lbs: lbsOnLog || undefined,
+            holes: holesOnLog || undefined,
+            rigs: rigsByJobDay.get(`${day.jobId}|${day.date}`),
+            clips: clipsUnder([log.id, ...shotsOnLog.map((s) => s.id), ...shotsOnLog.flatMap((s) => readingsByShot.get(s.id) ?? [])]),
+          },
+          customerName: customerOf(day.jobId),
+          dayId: day.id,
           status: day.status,
           statusVariant: DAY_STATUS_VARIANT[day.status] ?? 'draft',
           to: `/blast-day/${day.id}`,
@@ -318,12 +477,18 @@ export async function buildDocRows(opts: {
         });
       }
       if (reportMatches) {
+        const crew = report ? (crewByReport.get(report.id) ?? 0) : 0;
+        const rigs = rigsByJobDay.get(`${day.jobId}|${day.date}`) ?? [];
         out.push({
           key: `dr-${day.id}`,
           kind: 'daily_report',
           date: day.date,
           title: `Daily Report — ${label}`,
           sub: jobs.get(day.jobId) ?? '',
+          particulars: !report ? 'not started' : [crew ? `crew ${crew}` : 'no crew yet', rigs.length ? `${rigs.length} rig${rigs.length === 1 ? '' : 's'}` : null].filter(Boolean).join(' · '),
+          facts: { ...dayFacts, crew, rigs, rig: rigs.join(', ') || undefined, clips: clipsUnder([report?.id ?? '', day.id]) },
+          customerName: customerOf(day.jobId),
+          dayId: day.id,
           status: day.status,
           statusVariant: DAY_STATUS_VARIANT[day.status] ?? 'draft',
           to: `/blast-day/${day.id}`,
@@ -360,6 +525,10 @@ export async function buildDocRows(opts: {
     status: string;
     straightTime: number | null;
     overtime: number | null;
+    timeIn: string | null;
+    timeOut: string | null;
+    approvedByName: string | null;
+    approvedAt: string | null;
   }>('timeCards', {
     date: 'date',
     jobId: 'jobId',
@@ -370,16 +539,27 @@ export async function buildDocRows(opts: {
     status: 'status',
     straightTime: 'straightTime',
     overtime: 'overtime',
+    timeIn: 'timeIn',
+    timeOut: 'timeOut',
+    approvedByName: 'approvedByName',
+    approvedAt: 'approvedAt',
   });
   for (const c of cards) {
     if (!company && meId && c.userId !== meId && c.enteredByUserId !== meId) continue;
     if (!personMatch(c.userId, c.personName)) continue;
+    const tcHours = +(c.straightTime ?? 0) + +(c.overtime ?? 0);
+    const inOut = fmt12(c.timeIn) && fmt12(c.timeOut) ? `${fmt12(c.timeIn)} – ${fmt12(c.timeOut)}` : undefined;
     out.push({
       key: `tc-${c.id}`,
       kind: 'time_card',
       date: c.date,
       title: `Time Card — ${c.personName ?? '—'}`,
       sub: `${jobs.get(c.jobId) ?? ''} · ${(+(c.straightTime ?? 0)).toFixed(1)} ST / ${(+(c.overtime ?? 0)).toFixed(1)} OT`,
+      head: c.personName ?? undefined,
+      particulars: [inOut, `${fmtN(tcHours, 1)} h`, +(c.overtime ?? 0) > 0 ? `${fmtN(+(c.overtime ?? 0), 1)} OT` : null].filter(Boolean).join(' · '),
+      facts: { hours: tcHours, inOut, approvedBy: c.approvedByName ?? undefined, approvedAt: c.approvedAt ?? undefined },
+      customerName: customerOf(c.jobId),
+      dayId: c.blastDayId ?? undefined,
       status: c.status,
       statusVariant: c.status === 'approved' ? 'approved' : c.status === 'filed' ? 'submitted' : 'draft',
       to: c.blastDayId ? `/blast-day/${c.blastDayId}?view=daily-report` : `/jobs/${c.jobId}`,

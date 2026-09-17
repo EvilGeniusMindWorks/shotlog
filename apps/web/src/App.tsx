@@ -29,6 +29,7 @@ import { ResetPage } from '@/pages/ResetPage';
 import { DrillLogPage } from '@/pages/DrillLogPage';
 import { DrillPlanPage } from '@/pages/DrillPlanPage';
 import { MyRecordsPage } from '@/pages/MyRecordsPage';
+import { RecordPreviewWindowPage } from '@/pages/RecordPreviewWindowPage';
 import { CompanyRecordsPage } from '@/pages/CompanyRecordsPage';
 import { EquipmentPage } from '@/pages/EquipmentPage';
 import { RepairTicketPage } from '@/pages/RepairTicketPage';
@@ -142,6 +143,7 @@ export function App() {
           <Route path="/jobs/:jobId/drill-plan/:planId" element={<DrillPlanPage />} />
           <Route path="/jobs/:jobId/drill-plan/:planId/log/:logId" element={<DrillLogPage />} />
           <Route path="/records" element={<RecordsRouter />} />
+          <Route path="/records/preview/:id" element={<RecordPreviewWindowPage />} />
           <Route path="/drill-logs" element={<MyRecordsPage />} />
           <Route path="/equipment/:id" element={<EquipmentPage />} />
           <Route path="/tickets/:id" element={<RepairTicketPage />} />

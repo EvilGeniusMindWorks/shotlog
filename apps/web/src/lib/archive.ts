@@ -147,7 +147,7 @@ async function freezeAttachments(
  *  attachment, where it hangs in the paper, its kind, who took it and when —
  *  so the office reads "Shot 1 › Seismo reading 2 · pump house · PPV 0.18"
  *  without opening the photo. A courtesy: a missing parent leaves it blank. */
-async function attachmentContext(a: Attachment): Promise<SubmissionAsset['context']> {
+export async function attachmentContext(a: Pick<Attachment, 'parentType' | 'parentId' | 'kind' | 'originName' | 'createdAt'>): Promise<SubmissionAsset['context']> {
   let hangsOn: string | undefined;
   try {
     if (a.parentType === 'seismo_reading') {
@@ -383,6 +383,55 @@ export async function getSubmissionPdfBlob(id: string): Promise<Blob | null> {
     return blob;
   }
   return null;
+}
+
+/** S21 (the filmstrip): a filed copy's attachments with their context, WITHOUT
+ *  reviving the frozen binaries — the list is read through SQL and the
+ *  binaries are fetched one at a time by getSubmissionAssetBlob. */
+export interface FiledAsset {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  size?: number;
+  sha256?: string;
+  context?: SubmissionAsset['context'];
+  /** the frozen copy exists somewhere reachable (storage, or inline on a legacy row) */
+  reachable: boolean;
+}
+export async function listSubmissionAssets(
+  submissionId: string,
+): Promise<{ assets: FiledAsset[]; skippedVideos: string[]; storageStatus?: string } | null> {
+  const rows = await getPowerSync().getAll<{ assets: string | null; keys: string | null; sv: string | null; storageStatus: string | null }>(
+    `SELECT json_extract(payload,'$.assets') AS assets,
+            json_extract(payload,'$.assetKeys') AS keys,
+            json_extract(payload,'$.meta.skippedVideos') AS sv,
+            json_extract(payload,'$.storageStatus') AS storageStatus
+     FROM records WHERE table_name = 'submissions' AND id = ?`,
+    [submissionId],
+  );
+  const row = rows[0];
+  if (!row) return null;
+  const parse = <T,>(s: string | null, fallback: T): T => {
+    if (!s) return fallback;
+    try {
+      return JSON.parse(s) as T;
+    } catch {
+      return fallback;
+    }
+  };
+  const raw = parse<(Partial<SubmissionAsset> & { data?: unknown })[]>(row.assets, []);
+  const keys = parse<Record<string, string>>(row.keys, {});
+  const skippedVideos = parse<string[]>(row.sv, []);
+  const assets: FiledAsset[] = raw.map((a) => ({
+    id: String(a.id ?? ''),
+    fileName: String(a.fileName ?? ''),
+    mimeType: String(a.mimeType ?? ''),
+    size: typeof a.size === 'number' ? a.size : undefined,
+    sha256: typeof a.sha256 === 'string' ? a.sha256 : undefined,
+    context: a.context,
+    reachable: Boolean(keys[String(a.id ?? '')]) || Boolean(a.data && typeof a.data === 'object'),
+  }));
+  return { assets, skippedVideos, storageStatus: row.storageStatus ?? undefined };
 }
 
 /** Resolve one frozen asset copy the same way */

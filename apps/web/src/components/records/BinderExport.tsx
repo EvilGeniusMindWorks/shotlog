@@ -6,7 +6,8 @@ import { useState } from 'react';
 import JSZip from 'jszip';
 import { FolderDown, X } from 'lucide-react';
 import { db } from '@/db';
-import { getSubmissionPdfBlob, listSubmissionSummaries } from '@/lib/archive';
+import { getSubmissionPdfBlob, listSubmissionAssets, listSubmissionSummaries } from '@/lib/archive';
+import type { RecordsScope } from './RecordsManager';
 import { fetchAuditRange, describeEntry, tableLabel } from '@/lib/audit';
 import { toCsv } from '@/lib/csv';
 import { getSessionUser } from '@/lib/session';
@@ -50,10 +51,17 @@ async function buildExplosivesCsv(from: string, to: string): Promise<string> {
   return toCsv(rows);
 }
 
-export function BinderExport() {
+export function BinderExport({ scope }: { scope?: RecordsScope } = {}) {
   const [open, setOpen] = useState(false);
-  const [from, setFrom] = useState(`${todayISO().slice(0, 8)}01`);
-  const [to, setTo] = useState(todayISO());
+  // S21: the binder takes the node the office is on — a day's binder is that day
+  const [from, setFrom] = useState(scope?.date ?? `${todayISO().slice(0, 8)}01`);
+  const [to, setTo] = useState(scope?.date ?? todayISO());
+  const inScope = (s: { customerId?: string; siteId?: string; jobId?: string; date: string }) =>
+    !scope ||
+    ((!scope.customerId || s.customerId === scope.customerId) &&
+      (!scope.siteId || s.siteId === scope.siteId) &&
+      (!scope.jobId || s.jobId === scope.jobId) &&
+      (!scope.date || s.date === scope.date));
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -71,8 +79,11 @@ export function BinderExport() {
 
       // Filed PDFs — one at a time, memory-safe
       const summaries = (await listSubmissionSummaries()).filter(
-        (s) => s.date >= from && s.date <= to,
+        (s) => s.date >= from && s.date <= to && inScope(s),
       );
+      if (scope) manifest.splice(2, 0, `Scope: ${scope.label}`);
+      // S21: an index per paper listing each attachment with its context, and one CSV over all of them
+      const attIndex: unknown[][] = [['Document', 'Date', 'Version', 'Attachment', 'Kind', 'Hangs on', 'Taken by', 'Taken at', 'Size', 'SHA-256', 'Reachable']];
       setStatus(`Packing ${summaries.length} filed document${summaries.length === 1 ? '' : 's'}…`);
       let unavailable = 0;
       for (const [i, s] of summaries.entries()) {
@@ -88,8 +99,25 @@ export function BinderExport() {
         const name = `pdfs/${s.type}-${s.date}-v${s.version}-${s.id.slice(0, 8)}.pdf`;
         zip.file(name, pdf);
         manifest.push(`${name}  ${await sha256Hex(pdf)}`);
+        const listed = await listSubmissionAssets(s.id);
+        if (listed && (listed.assets.length > 0 || listed.skippedVideos.length > 0)) {
+          const lines = [`${s.title} · ${s.date} · v${s.version} · filed by ${s.submittedBy}`, `Attachments: ${listed.assets.length}${listed.skippedVideos.length ? ` · videos kept as clips: ${listed.skippedVideos.length}` : ''}`, ''];
+          for (const a of listed.assets) {
+            const c = a.context ?? {};
+            lines.push(`- ${a.fileName}${c.kind ? ` · ${c.kind}` : ''}${c.hangsOn ? ` · ${c.hangsOn}` : ''}${c.capturedBy ? ` · taken by ${c.capturedBy}` : ''}${c.capturedAt ? ` · ${c.capturedAt}` : ''}${a.sha256 ? ` · sha256 ${a.sha256}` : ''}${a.reachable ? '' : ' · NOT reachable from this device'}`);
+            attIndex.push([s.title, s.date, s.version, a.fileName, c.kind ?? '', c.hangsOn ?? '', c.capturedBy ?? '', c.capturedAt ?? '', a.size ?? '', a.sha256 ?? '', a.reachable ? 'yes' : 'no']);
+          }
+          for (const v of listed.skippedVideos) {
+            lines.push(`- video · ${v}`);
+            attIndex.push([s.title, s.date, s.version, v, 'shot_video', 'Shot video', '', '', '', '', 'clip only']);
+          }
+          zip.file(name.replace(/^pdfs\//, 'index/').replace(/\.pdf$/, '.txt'), lines.join('\n'));
+        }
       }
       if (unavailable > 0) setStatus(`${unavailable} PDF(s) unreachable — noted in manifest`);
+
+      if (attIndex.length > 1) zip.file('attachments-index.csv', toCsv(attIndex));
+      manifest.push(`Attachments indexed: ${attIndex.length - 1}`);
 
       setStatus('Building explosives summary…');
       zip.file('explosives-summary.csv', await buildExplosivesCsv(from, to));
@@ -126,8 +154,8 @@ export function BinderExport() {
 
   return (
     <>
-      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-        <FolderDown className="h-4 w-4 mr-1" /> Export binder
+      <Button variant="outline" size="sm" onClick={() => setOpen(true)} data-binder-export title={scope ? `Export binder · ${scope.label}` : 'Export binder'}>
+        <FolderDown className="h-4 w-4 mr-1" /> Export binder{scope ? <span className="hidden xl:inline text-gray-400 font-normal"> · {scope.label}</span> : null}
       </Button>
       {open && (
         <div
@@ -145,9 +173,10 @@ export function BinderExport() {
               </Button>
             </div>
             <p className="text-xs text-gray-400">
-              One ZIP: every filed PDF in the range, an explosives summary, the change log, and a
+              One ZIP: every filed PDF in the range{scope ? ` under ${scope.label}` : ''}, an index per paper listing each attachment with its context, an explosives summary, the change log, and a
               checksum manifest — hand it to the auditor as-is.
             </p>
+            {scope && <p className="text-xs text-navy" data-binder-scope>{scope.label}</p>}
             <div className="flex gap-2">
               <div className="flex-1">
                 <Label className="text-xs">From</Label>

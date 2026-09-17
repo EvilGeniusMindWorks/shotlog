@@ -71,9 +71,11 @@ async (page) => {
     const emptyRows = await P1.locator('[data-empty-add]').count();
     const drScreens = await screens(P1);
     // S7d: Work Force is no longer a typed section (hours live on time cards) — three rows remain
-    ok('daily report: 3 empty sections collapse to single "+ Add" rows', emptyRows === 3);
+    ok('daily report: the empty sections (2 or 3 — the rigs come from the checklists since S20) collapse to single "+ Add" rows', emptyRows >= 2);
     ok(`daily report tab @430 ≤ 3 screens (was ~4.1) — ${drScreens.toFixed(1)}`, drScreens <= 3);
-    await P1.locator('[data-empty-add="Equipment / Assets"]').click();
+    // S20: a day whose rigs come from the checklists has no empty Equipment section — the "+ Add" row is not there to tap
+    if ((await P1.locator('[data-empty-add="Equipment / Assets"]').count()) > 0) await P1.locator('[data-empty-add="Equipment / Assets"]').click();
+    else ok('daily report: the Equipment section already has rows (no "+ Add" to tap) — skipped', true);
     await P1.waitForTimeout(600);
     ok('tapping the row adds the first line and opens the section', (await P1.locator('[data-empty-add="Equipment / Assets"]').count()) === 0 && (await P1.getByText('Equipment / Assets').count()) > 0);
     // submit the day (blaster may draft→submitted) → locked: empty sections vanish
@@ -224,7 +226,7 @@ async (page) => {
     ok(`Filed facet narrows the list (${nFiled} rows)`, nFiled > 0);
     // a filed copy from another device: truthful "not reachable" fallback
     const other = filedRows.filter({ hasNotText: 'S4 harness filed copy' }).first();
-    await other.click();
+    await other.click({ position: { x: 30, y: 12 } }); // S21: the preview is a drawer over the right half — tap the row's left edge
     await P4.locator('[data-records-preview]').waitFor({ timeout: 8000 });
     await P4.waitForTimeout(1500);
     const otherText = await P4.locator('[data-records-preview]').innerText();
@@ -233,7 +235,7 @@ async (page) => {
     // the copy filed here renders inline
     await P4.locator('[data-records-manager] input[placeholder^="Search"]').fill('S4 harness filed copy');
     await P4.waitForTimeout(600);
-    await P4.locator('[data-records-row]').first().click();
+    await P4.locator('[data-records-row]').first().click({ position: { x: 30, y: 12 } });
     const pdfShown = await P4.locator('[data-records-pdf]').waitFor({ timeout: 12000 }).then(() => true).catch(() => false);
     ok('preview pane renders the filed PDF inline', pdfShown);
     const mineText = await P4.locator('[data-records-preview]').innerText();

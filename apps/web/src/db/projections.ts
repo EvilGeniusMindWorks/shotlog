@@ -44,3 +44,16 @@ export async function holeCountsByLog(): Promise<Map<string, number>> {
   );
   return new Map(rows.map((r) => [r.logId, r.n]));
 }
+
+/** S21: holes AND drilled footage per drill log in one grouped query (skipped
+ *  markers excluded, as above) — the Records row's "44 holes · 1,408′" */
+export async function holeStatsByLog(): Promise<Map<string, { n: number; ft: number }>> {
+  const rows = await getPowerSync().getAll<{ logId: string; n: number; ft: number | null }>(
+    `SELECT json_extract(payload,'$.drillLogId') AS logId, COUNT(*) AS n,
+            SUM(COALESCE(json_extract(payload,'$.actualDepth'), 0)) AS ft
+     FROM records WHERE table_name = 'drillLogHoles'
+       AND json_extract(payload,'$.skipped') IS NOT 1
+     GROUP BY logId`,
+  );
+  return new Map(rows.map((r) => [r.logId, { n: r.n, ft: Number(r.ft ?? 0) }]));
+}
