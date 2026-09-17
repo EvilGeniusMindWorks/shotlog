@@ -44,7 +44,7 @@ Its About cards come first — **Ground** (K factor, rock, overburden, water), *
 
 ## The day's ☎
 
-The day's ⋯ menu has **Jobsite contacts**: the job's contact sheet, offline — fire chief, police, fire, hospital, urgent care, the office's rows for a change in scope, an incident, an injury, equipment trouble — one tap to call, and the hospital, urgent care and the site open in your phone's maps. The office fills the sheet on the job page; you see the latest.
+The day's ⋯ menu has **Jobsite contacts**: the job's contact sheet, offline — fire chief, police, fire, hospital, urgent care, the office's rows for a change in scope, an incident, an injury, equipment trouble — one tap to call, and the hospital, urgent care and the site open in your phone's maps. The office fills the sheet on the job page; you see the latest. The printed sheet's back page has a code to scan: your phone's maps app opens turn-by-turn directions to the hospital or urgent care from where you stand.
 
 ## Related
 

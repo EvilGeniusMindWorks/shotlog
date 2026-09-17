@@ -11,6 +11,7 @@ import { filesRouter } from './files.js';
 import { auditRouter } from './audit.js';
 import { usersRouter } from './users.js';
 import { feedbackRouter } from './feedback.js';
+import { placesRouter } from './places.js';
 import { rehearsalRouter } from './rehearsal.js';
 import { companiesRouter } from './companies.js';
 import { emailEnabled } from './email.js';
@@ -104,6 +105,7 @@ app.use('/files', filesRouter);
 app.use('/audit', auditRouter);
 app.use('/users', usersRouter);
 app.use('/feedback', feedbackRouter);
+app.use('/places', placesRouter);
 // Platform-level (vendor) routes — gated by the platform-admin marker, not
 // by any company role. First occupant: rehearsal mode (Round S6).
 app.use('/platform/rehearsal', rehearsalRouter);

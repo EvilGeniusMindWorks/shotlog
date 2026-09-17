@@ -260,6 +260,58 @@ async (page, lib) => {
     }, newJobId));
   });
 
+  // ── push 3: nearest hospital and urgent care, the route on the back ──
+  await R.section('Nearest hospital with an ER from the federal list, urgent care from OpenStreetMap; Suggest fills the row', async () => {
+    // the site's map point (Lexington, MA) — the locator would geocode the address; the harness sets it
+    await PB.evaluate(async (siteId) => {
+      const { db } = await import('/src/db/index.ts');
+      const { nowISO } = await import('/src/lib/utils.ts');
+      await db.sites.update(siteId, { geo: { lat: 42.4473, lng: -71.2297 }, updatedAt: nowISO() });
+    }, newSiteId);
+    await PB.goto(WEB + '/jobs/' + newJobId + '?open=contact-sheet');
+    await PB.locator('[data-contact-sheet]').waitFor({ timeout: 20000 });
+    await PB.locator('[data-sheet-suggest="hospital"]').waitFor({ timeout: 10000 });
+    await PB.locator('[data-sheet-suggest="hospital"]').click();
+    await PB.locator('[data-suggest-list="hospital"] [data-suggest-option]').first().waitFor({ timeout: 15000 });
+    const options = await PB.locator('[data-suggest-list="hospital"] [data-suggest-option]').allInnerTexts();
+    R.ok('Suggest lists the nearest three with an emergency department, with miles and phones (' + options.map((o) => o.replace(/\s+/g, ' ').slice(0, 50)).join(' | ') + ')', options.length === 3 && options.every((o) => /ER yes/.test(o) && /\d mi/.test(o) && /\(\d{3}\)/.test(o)));
+    R.ok('Lahey or Winchester leads from Lexington', /Lahey|Winchester|Emerson/i.test(options[0]));
+    await PB.locator('[data-suggest-list="hospital"] [data-suggest-pick="0"]').click();
+    await waitFor(async () => ((await PB.locator('[data-sheet-row="hospital"]').getAttribute('data-sheet-source')) === 'job' ? 1 : null), 10000);
+    const row = (await PB.locator('[data-sheet-row="hospital"]').innerText()).replace(/\s+/g, ' ');
+    const saved = await PB.evaluate(async (id) => { const { db } = await import('/src/db/index.ts'); const r = (await db.jobs.get(id))?.contactSheet?.rows.find((x) => x.key === 'hospital'); return r ? { phone: r.phone, geo: Boolean(r.geo), notes: r.notes } : null; }, newJobId);
+    R.ok('a tap fills the row with its name, address and phone, and keeps its map point ("' + row.slice(0, 70) + '")', Boolean(saved?.phone) && saved?.geo === true && /,/.test(saved?.notes ?? ''));
+    // urgent care asks OpenStreetMap live — either the nearest, or the honest line when the map service is slow
+    await PB.locator('[data-sheet-suggest="urgent_care"]').click();
+    const urgent = await waitFor(async () => {
+      const n = await PB.locator('[data-suggest-list="urgent_care"] [data-suggest-option]').count();
+      const err = await PB.locator('[data-suggest-list="urgent_care"] [data-suggest-error]').count();
+      return n > 0 ? 'places' : err > 0 ? 'error' : null;
+    }, 30000);
+    const urgentText = urgent === 'places' ? (await PB.locator('[data-suggest-list="urgent_care"] [data-suggest-option]').first().innerText()).replace(/\s+/g, ' ') : ((await PB.locator('[data-suggest-error]').innerText().catch(() => '')) || '');
+    R.ok('urgent care comes from OpenStreetMap, or the sheet says the map service did not answer ("' + urgentText.slice(0, 70) + '")', urgent === 'places' || urgent === 'error');
+    if (urgent === 'places') R.ok('a clinic without a tagged phone offers Search the web, one with a phone shows it', (await PB.locator('[data-suggest-list="urgent_care"] [data-suggest-search]').count()) + (await PB.locator('[data-suggest-list="urgent_care"]').innerText()).split(/\(\d{3}\)|\d{3}-\d{3}-\d{4}/).length - 1 >= 1);
+    await PB.locator('[data-suggest-list="urgent_care"] button:has-text("close")').click().catch(() => undefined);
+  });
+
+  await R.section('The route on the back: our own router, one step per line in readable type, and the QR code', async () => {
+    await PB.goto(WEB + '/jobs/' + newJobId + '/contact-sheet');
+    await PB.locator('[data-print-back]').waitFor({ timeout: 15000 });
+    await PB.locator('[data-print-qr="hospital"]').waitFor({ timeout: 15000 });
+    const qrSrc = (await PB.locator('[data-print-qr="hospital"]').getAttribute('src')) || '';
+    R.ok('the back page carries a code to scan for live directions to the hospital', /^data:image\/png/.test(qrSrc));
+    const routerOn = (await PB.locator('[data-print-route="hospital"]').count()) === 1;
+    const offLine = (await PB.locator('[data-print-route-off="hospital"]').innerText().catch(() => '')) || '';
+    R.ok(routerOn ? 'the route prints one step per line (' + (await PB.locator('[data-print-route="hospital"] li').count()) + ' steps)' : 'without a router the page says the drive prints once the router is on ("' + offLine.slice(0, 60) + '")', routerOn || /router is on/.test(offLine));
+    // the crew's ☎ opens the hospital in the device's maps from its map point
+    await PB.goto(WEB + '/blast-day/' + dayId);
+    await PB.locator('[data-day-contacts], [data-day-more]').first().waitFor({ timeout: 20000 });
+    if (await PB.locator('[data-day-contacts]').isVisible().catch(() => false)) await PB.locator('[data-day-contacts]').click();
+    else { await PB.locator('[data-day-more]').click(); await PB.locator('[data-more-contacts]').click(); }
+    await PB.locator('[data-crew-maps="hospital"]').waitFor({ timeout: 10000 });
+    R.ok("the day's ☎ opens the hospital in the device's maps", /maps/.test((await PB.locator('[data-crew-maps="hospital"]').getAttribute('href')) || ''));
+  });
+
   await R.section('the error spy saw nothing during this run', async () => {
     const errs = browserErrors();
     R.ok(`no browser errors (${errs.length})${errs[0] ? ` — first: ${errs[0].text.slice(0, 120)}` : ''}`, errs.length === 0);

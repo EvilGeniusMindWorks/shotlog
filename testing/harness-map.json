@@ -536,5 +536,20 @@
   ],
   "apps/web/src/components/forms/JobContactsCard.tsx": [
     83
+  ],
+  "apps/server/src/places.ts": [
+    83
+  ],
+  "apps/web/src/lib/places.ts": [
+    83
+  ],
+  "scripts/build-places.mjs": [
+    83
+  ],
+  "apps/server/data/hospitals-ne.json": [
+    83
+  ],
+  "apps/web/src/lib/siteGeo.ts": [
+    83
   ]
 }

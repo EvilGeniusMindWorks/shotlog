@@ -5,7 +5,9 @@
 // a site row changes later, the row shows the offer: Use it, or keep ours.
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Phone, Printer } from 'lucide-react';
+import { MapPin, Phone, Printer, Search } from 'lucide-react';
+import { nearestPlaces, webSearchUrl, fmtMiles, type NearbyPlace } from '@/lib/places';
+import { ensureSiteGeo, jobPoint } from '@/lib/siteGeo';
 import { useLiveQuery, db } from '@/db';
 import { formatDate } from '@/lib/utils';
 import { can } from '@/lib/perms';
@@ -35,7 +37,32 @@ export function ContactSheetCard({ jobId }: { jobId: string }) {
   const canEdit = can('jobs', 'PATCH');
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState<RowValue>({ name: '', phone: '', notes: '' });
+  // S22 push 3: Suggest the nearest — hospitals with an emergency department from the federal
+  // list, urgent care from OpenStreetMap — from the job's point (its work spot, else the site's address)
+  const [suggest, setSuggest] = useState<{ key: string; places?: NearbyPlace[]; error?: string; from?: string; phonesFrom?: string } | null>(null);
   if (!job) return null;
+  const suggestFor = async (r: BuiltRow) => {
+    const kind = r.key === 'hospital' ? 'hospital' : 'urgent';
+    setSuggest({ key: r.key });
+    let at = jobPoint(job, site ?? undefined)?.point ?? null;
+    if (!at && site) at = await ensureSiteGeo(site.id).catch(() => null);
+    if (!at) {
+      setSuggest({ key: r.key, error: 'The site has no map point yet — open the site page and set its location, then try again.' });
+      return;
+    }
+    try {
+      const { places, phonesFrom } = await nearestPlaces(kind, at);
+      setSuggest({ key: r.key, places, from: site ? [site.address, site.city].filter(Boolean).join(', ') : job.name, phonesFrom });
+    } catch (err) {
+      setSuggest({ key: r.key, error: err instanceof Error ? err.message : 'the lookup did not answer' });
+    }
+  };
+  const pickPlace = async (r: BuiltRow, p: NearbyPlace) => {
+    const next = rows.map((x) => (x.key === r.key ? { ...x, name: p.name, phone: p.phone, notes: p.address, source: 'job' as const, takenFrom: undefined, siteChange: undefined, geo: { lat: p.lat, lng: p.lng } } : x));
+    await persist(next);
+    setSuggest(null);
+    setEditing(null);
+  };
 
   const persist = (next: BuiltRow[], accept = false) => saveSheet(job, next.map(({ def: _def, siteChange: _c, siteValue: _v, ...r }) => r), { accept });
   const startEdit = (r: BuiltRow) => {
@@ -125,6 +152,36 @@ export function ContactSheetCard({ jobId }: { jobId: string }) {
                         <Button size="sm" variant="outline" onClick={() => void useSite(r)} data-sheet-use-change>Use it</Button>
                         <Button size="sm" variant="ghost" onClick={() => void keepOurs(r)} data-sheet-keep-ours>Keep ours</Button>
                       </>
+                    )}
+                  </div>
+                )}
+                {r.def.suggest && canEdit && (
+                  <div className="px-3 pb-2" data-sheet-suggest-panel={r.key}>
+                    {suggest?.key !== r.key ? (
+                      <Button size="sm" variant="outline" onClick={() => void suggestFor(r)} data-sheet-suggest={r.key}>
+                        <MapPin className="h-4 w-4 mr-1" /> Suggest the nearest{r.key === 'hospital' ? ' with an ER' : ''}
+                      </Button>
+                    ) : (
+                      <div className="rounded-lg border border-gray-200 bg-white p-2 space-y-1 text-sm" data-suggest-list={r.key}>
+                        <p className="text-xs text-gray-500">
+                          {r.key === 'hospital' ? 'Nearest with an emergency department' : 'Nearest urgent care'}{suggest.from ? ` · from ${suggest.from}` : ''} · {r.key === 'hospital' ? 'the federal hospital list' : 'OpenStreetMap'}
+                          <button type="button" className="ml-2 underline" onClick={() => setSuggest(null)}>close</button>
+                        </p>
+                        {!suggest.places && !suggest.error && <p className="text-xs text-gray-400">Looking…</p>}
+                        {suggest.error && <p className="text-xs text-amber-800" data-suggest-error>{suggest.error}</p>}
+                        {suggest.places?.map((p, i) => (
+                          <div key={`${p.name}-${i}`} className="flex items-center gap-2" data-suggest-option={i}>
+                            <button type="button" className="flex-1 text-left rounded-md px-2 py-1.5 hover:bg-gray-50" onClick={() => void pickPlace(r, p)} data-suggest-pick={i}>
+                              <p className="font-medium">{p.name}</p>
+                              <p className="text-xs text-gray-500">{p.address || 'address not tagged'} · {fmtMiles(p.miles)}{p.minutes ? ` · ${p.minutes} min` : ''}{p.er ? ' · ER yes' : ''}{p.phone ? ` · ${p.phone}` : ' · phone missing'}</p>
+                            </button>
+                            {!p.phone && (
+                              <a href={webSearchUrl(p)} target="_blank" rel="noreferrer" className="text-xs text-navy underline whitespace-nowrap flex items-center gap-1" data-suggest-search={i}><Search className="h-3.5 w-3.5" /> Search the web</a>
+                            )}
+                          </div>
+                        ))}
+                        {suggest.places && suggest.places.length === 0 && <p className="text-xs text-gray-400">Nothing within 15 miles on the map — type it by hand.</p>}
+                      </div>
                     )}
                   </div>
                 )}

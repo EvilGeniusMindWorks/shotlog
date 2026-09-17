@@ -218,7 +218,7 @@ export async function saveSheet(job: Job, rows: ContactSheetRow[], opts: { accep
   const now = nowISO();
   const prev = job.contactSheet;
   const sheet: ContactSheet = {
-    rows: rows.map(({ key, name, phone, notes, source, takenFrom }) => ({ key, name, phone, notes, source, ...(takenFrom !== undefined ? { takenFrom } : {}) })),
+    rows: rows.map(({ key, name, phone, notes, source, takenFrom, geo }) => ({ key, name, phone, notes, source, ...(takenFrom !== undefined ? { takenFrom } : {}), ...(geo ? { geo } : {}) })),
     version: (prev?.version ?? 0) + 1,
     updatedAt: now,
     updatedByName: me?.name ?? '',

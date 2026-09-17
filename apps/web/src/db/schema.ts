@@ -273,6 +273,8 @@ export interface ContactSheetRow {
   /** the site's value this row was taken from ("name|phone|notes") — a later
    *  site change is noticed by comparing, and offered to this job */
   takenFrom?: string;
+  /** a hospital or urgent care picked from Suggest keeps its map point (the route, the QR code) */
+  geo?: { lat: number; lng: number };
 }
 export interface ContactSheet {
   rows: ContactSheetRow[];
