@@ -120,11 +120,19 @@ export function hasDrillPlan(d: ShotDiagram): boolean {
 }
 
 /**
- * Expand the sparse plan to the holes actually being drilled. Depth
- * resolution: override → plan default → fallback (the shot's design depth).
- * A hole whose resolved depth is zero/unset is an UNUSED grid position —
+ * Expand the sparse plan to the holes actually being drilled. A painted
+ * plan is the painted holes: a grid position the blaster never touched is
+ * a hole only when the plan carries a default depth. Depth resolution for a
+ * hole: its override → the plan default → the fallback (the shot's design
+ * depth) for a painted hole that has no depth of its own (an angle-only
+ * paint). A hole whose resolved depth is zero is an UNUSED grid position —
  * excluded entirely (irregular patterns on a rectangular grid). Returns []
  * when the diagram has no plan — callers fall back to unplanned behavior.
+ *
+ * Sep 17 2026 (Driller Test, Matthew — Beta, Lex Terrace): the blaster
+ * painted 12 holes on the default 5 × 10 grid; the shot's average drill
+ * depth then stood in for every unpainted cell and the drillers got a
+ * 50-hole plan. The shot's design depth no longer conjures holes.
  */
 export function materializeDrillPlan(d: ShotDiagram, fallbackDepth: number): PlanHole[] {
   if (!hasDrillPlan(d)) return [];
@@ -134,7 +142,7 @@ export function materializeDrillPlan(d: ShotDiagram, fallbackDepth: number): Pla
   let n = 0;
   for (let idx = 0; idx < count; idx++) {
     const o = plan.overrides[idx];
-    const depth = o?.depth ?? plan.defaultDepth ?? fallbackDepth;
+    const depth = o?.depth ?? plan.defaultDepth ?? (o ? fallbackDepth : 0);
     if (!(depth > 0)) continue; // no depth anywhere → not a hole to drill
     const angle = o?.kick ? deriveDrillAngle(depth, o.kick) : (o?.angle ?? 0);
     holes.push({

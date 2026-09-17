@@ -105,9 +105,15 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
 
   // ── Drill plan (per-hole depth/angle) ────────────────────────────────
   const plan: DrillPlan = diagram.plan ?? { overrides: {} };
-  const planDefault = plan.defaultDepth ?? designDepth ?? 0;
   const planMode = mode === 'plan';
-  const effDepth = (idx: number) => plan.overrides[idx]?.depth ?? planDefault;
+  // A painted plan is the painted holes (Sep 17 2026, Beta: 12 painted on the
+  // default 5 × 10 grid became 50 for the drillers because the shot's average
+  // depth stood in for every unpainted cell). An unpainted cell is a hole only
+  // when "All holes (ft)" is set; the design depth only fills a painted hole
+  // that has no depth of its own.
+  const effDepth = (idx: number) => plan.overrides[idx]?.depth ?? plan.defaultDepth ?? (plan.overrides[idx] ? (designDepth ?? 0) : 0);
+  const paintedCount = Object.values(plan.overrides).filter((o) => o.depth !== 0).length;
+  const paintedOnly = plan.defaultDepth === undefined && paintedCount > 0 && paintedCount < rows * cols;
   /** A grid position the plan leaves out ("⌀ No hole") — nothing to wire */
   const leftOut = (idx: number) => plan.overrides[idx]?.depth === 0;
   const effAngle = (idx: number) => plan.overrides[idx]?.angle ?? 0;
@@ -374,13 +380,13 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
               </label>
             ))}
             <label className="block">
-              <span className="block text-[10px] text-gray-500 mb-0.5">All holes (ft)</span>
+              <span className="block text-[10px] text-gray-500 mb-0.5">All holes (ft) <span className="text-gray-400">· blank: painted holes only</span></span>
               <DraftInput
                 type="number"
                 inputMode="decimal"
                 className="h-10 font-mono"
                 data-plan-depth
-                placeholder={designDepth ? String(designDepth) : '—'}
+                placeholder="—"
                 value={plan.defaultDepth ?? ''}
                 onCommit={(text) => {
                   const v = parseFloat(text);
@@ -433,10 +439,15 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
                 </Button>
               )}
             </span>
-            <span className="text-xs text-gray-600 ml-auto font-medium">
+            <span className="text-xs text-gray-600 ml-auto font-medium" data-plan-hole-count={materializeDrillPlan(diagram, designDepth ?? 0).length}>
               <b>{materializeDrillPlan(diagram, designDepth ?? 0).length}</b> holes to drill
             </span>
           </div>
+          {paintedOnly && (
+            <p className="text-xs text-amber-800" data-plan-painted-note>
+              Only the {paintedCount} painted hole{paintedCount === 1 ? '' : 's'} are the plan — the other {rows * cols - paintedCount} positions are not drilled. Set All holes (ft) to drill every position, or shrink the grid.
+            </p>
+          )}
           <p className="text-xs text-gray-600">
             {noHole
               ? 'Tap holes (or a row handle) to mark them NOT drilled — they leave the plan and the numbering. Tap again to restore.'

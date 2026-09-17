@@ -507,6 +507,43 @@ async (page, lib) => {
     await cO.close();
   });
 
+  await R.section('A plan painted on the big grid is the painted holes (Beta, Sep 17: 12 became 50)', async () => {
+    // a second shot on the drill day: 12 holes painted on the default 5 × 10 grid, no "All holes" depth,
+    // and the shot carries an average drill depth of 12 — exactly Mark's Lex Terrace plan
+    const shotId3 = await PB.evaluate(async ({ dayId }) => {
+      const { db } = await import('/src/db/index.ts');
+      const { addShot } = await import('/src/hooks/useBlastDay.ts');
+      const { serializeDiagram } = await import('/src/lib/shotDiagram.ts');
+      const { nowISO } = await import('/src/lib/utils.ts');
+      const log = await db.blastLogs.where('blastDayId').equals(dayId).first();
+      const id = await addShot(log.id);
+      const shot = await db.shots.get(id);
+      const overrides = {};
+      for (const idx of [0, 1, 2, 3, 10, 11, 12, 13, 20, 21, 22, 23]) overrides[idx] = { depth: 12 };
+      const diagram = { rows: 5, cols: 10, delays: {}, wires: [], interHoleMs: 25, plan: { overrides } };
+      await db.shots.update(id, { designPlan: { ...shot.designPlan, shotDiagramData: serializeDiagram(diagram) }, totals: { ...shot.totals, avgDrillDepth: 12 }, updatedAt: nowISO() });
+      return id;
+    }, { dayId: drillDayId });
+    await PB.goto(WEB + '/blast-day/' + drillDayId + '/design/' + shotId3 + '?mode=plan');
+    await PB.locator('[data-plan-hole-count]').waitFor({ timeout: 30000 });
+    const count = await PB.locator('[data-plan-hole-count]').getAttribute('data-plan-hole-count');
+    R.ok('the editor counts the painted holes, not the grid (' + count + ' holes to drill)', count === '12');
+    const leftOut = await PB.locator('[data-grid-hole][aria-label*="left out"]').count();
+    R.ok('the other 38 positions draw as unused (' + leftOut + ')', leftOut === 38);
+    R.ok('the plan says so in words', /Only the 12 painted holes are the plan/.test((await PB.locator('[data-plan-painted-note]').innerText().catch(() => '')) || ''));
+    const footer = ((await PB.locator('[data-plan-footer]').innerText().catch(() => '')) || '').replace(/\s+/g, ' ');
+    R.ok('the footer sends a 12-hole plan ("' + footer.slice(0, 40) + '")', /Plan ready · 12 holes/.test(footer));
+    // the driller's view of the same shot reads the same plan
+    const drillerSees = await PD.evaluate(async (id) => {
+      const { db } = await import('/src/db/index.ts');
+      const { getShotPlan } = await import('/src/hooks/useDrillLogs.ts');
+      const until = Date.now() + 20000;
+      while (Date.now() < until) { const s = await db.shots.get(id); if (s?.designPlan?.shotDiagramData?.includes('"rows":5')) return getShotPlan(s)?.length ?? 0; await new Promise((r) => setTimeout(r, 400)); }
+      return -1;
+    }, shotId3);
+    R.ok('the driller gets 12 holes, numbered 1–12 (' + drillerSees + ')', drillerSees === 12);
+  });
+
   await R.section('the error spy saw nothing during this run', async () => {
     const errs = browserErrors();
     R.ok(`no browser errors (${errs.length})${errs[0] ? ` — first: ${errs[0].text.slice(0, 120)}` : ''}`, errs.length === 0);

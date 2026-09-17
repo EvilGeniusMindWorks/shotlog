@@ -37,10 +37,22 @@ describe('materializeDrillPlan', () => {
     expect(holes[5]).toMatchObject({ n: 6, idx: 5, depth: 16, angle: 0 });
   });
 
-  it('falls back to the design depth when no default is set', () => {
+  it('a painted hole with no depth of its own takes the design depth; unpainted cells are not holes', () => {
     const holes = materializeDrillPlan(withPlan({ overrides: { 2: { angle: 10 } } }), 14);
-    expect(holes[0].depth).toBe(14);
-    expect(holes[2]).toMatchObject({ n: 3, idx: 2, depth: 14, angle: 10 });
+    expect(holes).toHaveLength(1);
+    expect(holes[0]).toMatchObject({ n: 1, idx: 2, depth: 14, angle: 10 });
+  });
+
+  it("Beta, Sep 17 2026: 12 holes painted on the default 5 × 10 grid stay 12 even when the shot has an average drill depth", () => {
+    // Driller Test: "it converted to a 5 x 10 grid of 50 holes — instead of the 12 in the plan"
+    const overrides: Record<number, { depth: number }> = {};
+    for (const idx of [0, 1, 2, 3, 10, 11, 12, 13, 20, 21, 22, 23]) overrides[idx] = { depth: 12 };
+    const holes = materializeDrillPlan(withPlan({ overrides }, 5, 10), 12);
+    expect(holes).toHaveLength(12);
+    expect(holes.map((h) => h.n)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    expect(holes.map((h) => h.idx)).toEqual([0, 1, 2, 3, 10, 11, 12, 13, 20, 21, 22, 23]);
+    // and a default depth is what fills a grid
+    expect(materializeDrillPlan(withPlan({ defaultDepth: 12, overrides }, 5, 10), 0)).toHaveLength(50);
   });
 
   it('an angle-only override keeps the inherited depth', () => {
