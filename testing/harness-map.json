@@ -55,7 +55,8 @@
     77
   ],
   "apps/web/src/components/day/ReminderCard.tsx": [
-    77
+    77,
+    81
   ],
   "apps/web/src/components/design/DrillGridEditor.tsx": [
     62,
@@ -161,7 +162,8 @@
   ],
   "apps/web/src/hooks/useMaintenance.ts": [
     75,
-    78
+    78,
+    81
   ],
   "apps/web/src/lib/blastMats.ts": [
     77
@@ -173,7 +175,8 @@
     69
   ],
   "apps/web/src/lib/dailyReportView.ts": [
-    75
+    75,
+    81
   ],
   "apps/web/src/lib/dayCard.ts": [
     71
@@ -294,7 +297,8 @@
   ],
   "apps/web/src/pages/PrintDrillChecklistPage.tsx": [
     74,
-    79
+    79,
+    81
   ],
   "apps/web/src/pages/RepairTicketPage.tsx": [
     60
@@ -312,7 +316,8 @@
     71,
     75,
     77,
-    80
+    80,
+    81
   ],
   "apps/web/src/pages/admin/AdminApprovalsPage.tsx": [
     61
@@ -404,6 +409,12 @@
     81
   ],
   "apps/web/src/pages/PrintIncidentPage.tsx": [
+    81
+  ],
+  "apps/web/src/lib/drillingDeviations.ts": [
+    81
+  ],
+  "apps/web/src/db/powersync/useLiveQuery.ts": [
     81
   ]
 }

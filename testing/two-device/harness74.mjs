@@ -175,7 +175,8 @@ async (page, lib) => {
       const { currentHours } = await buildHourLedger(rig);
       const start = Math.ceil(Math.max(currentHours ?? 0, rig.hourMeter ?? 0)) + 10;
       const chk = emptyChecklist(rig.id, day.jobId);
-      await fileChecklist({ ...chk, startingHours: start }); // saved, but no office copy (as after a failed filing)
+      // S20: a checklist is complete once its stop hours are in — completed here, but no office copy (as after a failed filing)
+      await fileChecklist({ ...chk, startingHours: start, stopHours: start + 5 });
       return { rigId: rig.id, checklistId: chk.id, jobId: day.jobId };
     }, dayId);
     checklistId = r.checklistId;

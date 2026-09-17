@@ -59,24 +59,18 @@ async (page, lib) => {
     rigId = r.rigId; logId = r.logId; ticketId = r.ticketId; checklistId = r.checklistId;
     R.ok(`the checklist opened ticket ${ticketId ? 'ok' : 'MISSING'} and took ${r.asset} out of service (${r.status})`, Boolean(ticketId) && r.status === 'in_shop');
 
-    await R.section('phone · the daily report\'s rig row is the second door for the end-of-day meter', async () => {
+    await R.section('phone · a rig out of service on its checklist is complete at once — the report reads its hours, no door (S20)', async () => {
       await PD.goto(`${WEB}/blast-day/${dayId}?view=daily-report`);
-      const enter = PD.locator(`[data-rig-meter-enter="${r.asset}"]`);
-      await enter.waitFor({ timeout: 10000 });
-      R.ok(`the rig row reads "→ — h · enter end-of-day meter" for the driller who owns the log`, /enter end-of-day meter/i.test(await enter.innerText()));
-      await enter.click();
-      await PD.locator(`[data-rig-meter-input="${r.asset}"]`).fill(String(r.start + 5));
-      await PD.locator(`[data-rig-meter-save="${r.asset}"]`).click();
-      await sleep(800);
-      const after = await PD.evaluate(async ({ logId, rigId }) => {
+      const row = PD.locator(`[data-derived-rig="${r.asset}"]`);
+      await row.waitFor({ timeout: 15000 });
+      R.ok(`the rig row reads the stop reading (its start, the rig went down at once) and offers no door or meter field ("${((await row.innerText()) || '').replace(/\s+/g, ' ').slice(0, 70)}")`, new RegExp(`→ ${r.start} h`).test(await row.innerText()) && (await PD.locator('[data-rig-stop-door], [data-rig-meter-enter], [data-rig-stop-waiting]').count()) === 0);
+      const after = await PD.evaluate(async ({ rigId }) => {
         const { db } = await import('/src/db/index.ts');
-        // S14: the reading belongs to the rig's checklist (its odometer), not the log
         const { todayISO } = await import('/src/lib/utils.ts');
         const chk = (await db.drillChecklists.filter((c) => c.equipmentId === rigId && c.date === todayISO()).toArray()).sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
-        return { end: chk?.stopHours ?? null, meter: (await db.equipment.get(rigId)).hourMeter };
-      }, { logId, rigId });
-      R.ok(`saving writes the checklist's stop reading (${after.end}) and moves the rig meter (${after.meter})`, after.end === r.start + 5 && after.meter === r.start + 5);
-      R.ok('the row now shows the number, not the door', (await PD.locator(`[data-rig-meter-enter]`).count()) === 0 && new RegExp(`→ ${r.start + 5} h`).test(await PD.locator(`[data-derived-rig="${r.asset}"]`).innerText()));
+        return { end: chk?.stopHours ?? null, filed: Boolean(chk?.filedAt), meter: (await db.equipment.get(rigId)).hourMeter };
+      }, { rigId });
+      R.ok(`the checklist carries its stop reading (${after.end}), is filed, and the rig meter moved (${after.meter})`, after.end === r.start && after.filed && after.meter === r.start);
     });
 
     await R.section('phone · the Mark complete sheet sits above the bottom nav — its buttons can be tapped', async () => {

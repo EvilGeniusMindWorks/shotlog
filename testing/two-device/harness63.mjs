@@ -63,7 +63,7 @@ async (page, lib) => {
       await PD.getByRole('button', { name: /Save Signature/ }).click().catch(() => undefined);
       await sleep(400);
     }
-    await PD.getByRole('button', { name: /File checklist/ }).click();
+    await PD.getByRole('button', { name: /Save checklist|Complete and file checklist/ }).click(); // S20: saved for the morning, the stop hours come later
     await sleep(1500);
     const stored = await PD.evaluate(async (rigId) => { const { db } = await import('/src/db/index.ts'); const c = (await db.drillChecklists.filter((x) => x.equipmentId === rigId).toArray()).sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]; return { id: c?.id, start: c?.startingHours }; }, rigId);
     checklistId = stored.id;

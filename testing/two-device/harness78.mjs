@@ -94,6 +94,7 @@ async (page, lib) => {
     const header = (await PD.locator('[data-chk-rig-selected]').textContent()) || '';
     R.ok('the header shows that day, not today', header.includes(fmt(yday)));
     await PD.locator('[data-chk-hours]').fill('1400');
+    await PD.locator('[data-chk-stop-hours]').fill('1405'); // S20: start AND stop → complete and file in one go
     await PD.locator('[data-chk-file]').click();
     await PD.waitForURL(/\/drill-checklist-file\//, { timeout: 15000 });
     const id = PD.url().match(/drill-checklist-file\/([^/?]+)/)?.[1];
@@ -103,8 +104,8 @@ async (page, lib) => {
     R.ok(`the filed checklist is dated ${filedOn}`, filedOn === yday);
     await waitForUpload(PD, 20000);
     await PD.goto(`${WEB}/blast-day/${dayId}`);
-    await PD.locator('[data-tile="rigs"][data-tile-state="running"]').waitFor({ timeout: 30000 });
-    R.ok('back on the day, the Rig checklists tile shows the rig running', (await PD.locator(`[data-rig-row="${rigs[0].asset}"]`).count()) === 1);
+    await PD.locator('[data-tile="rigs"][data-tile-state="complete"]').waitFor({ timeout: 30000 });
+    R.ok('back on the day, the Rig checklists tile shows the rig, complete', (await PD.locator(`[data-rig-row="${rigs[0].asset}"]`).count()) === 1);
   });
 
   await R.section("The checklist never guesses: from the rig it follows the day the driller is on at the job", async () => {

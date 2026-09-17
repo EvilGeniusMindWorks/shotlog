@@ -20,6 +20,7 @@ import { collectDayAttachments, fileSubmission } from '@/lib/archive';
 import { nowISO } from '@/lib/utils';
 import { fmtLbs } from '@/lib/format';
 import { workForceRows } from '@/lib/dailyReportView';
+import { dayChecklistsFor } from '@/lib/dayHub';
 import { Button } from '@/components/ui/button';
 
 type Phase = 'init' | 'preflight' | 'blast_log' | 'daily_report';
@@ -108,6 +109,15 @@ export async function preflightDay(dayId: string): Promise<PreflightItem[]> {
   if (logs.length > 0) {
     const accepted = logs.filter((l) => l.status === 'accepted').length;
     items.push({ key: 'drill', level: accepted === logs.length ? 'ok' : 'amber', text: accepted === logs.length ? `Drill log${logs.length > 1 ? 's' : ''} accepted` : `${logs.length - accepted} drill log${logs.length - accepted > 1 ? 's' : ''} not accepted yet`, to: accepted === logs.length ? undefined : `/blast-day/${dayId}?view=blast-log`, toLabel: 'Review drilling' });
+  }
+  // AMBER — S20 (Matthew): a rig on the day with no stop hours yet. The driller
+  // enters them on the checklist; the day can file over it with a note.
+  const dayRec = await db.blastDays.get(dayId);
+  if (dayRec) {
+    for (const c of await dayChecklistsFor(dayRec, logs)) {
+      if (c.checklist.stopHours == null && !c.checklist.outOfService)
+        items.push({ key: `rigstop-${c.checklist.id}`, level: 'amber', text: `${c.asset} has no stop hours yet · waiting on ${c.checklist.drillerName || 'the driller'}`, to: `/blast-day/${dayId}`, toLabel: 'Rig checklists' });
+    }
   }
   return items;
 }

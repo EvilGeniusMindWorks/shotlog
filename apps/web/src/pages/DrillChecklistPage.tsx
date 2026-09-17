@@ -14,7 +14,9 @@ import { useBack } from '@/lib/nav';
 import { BackButton } from '@/components/layout/ScreenHeader';
 import { Search, Wrench } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
-import { emptyChecklist, fileChecklist, useEarlierChecklistToday, useTodayChecklist } from '@/hooks/useMaintenance';
+import { completeChecklist, emptyChecklist, fileChecklist, useEarlierChecklistToday, useTodayChecklist } from '@/hooks/useMaintenance';
+import { can } from '@/lib/perms';
+import { hhmm } from '@/lib/dayCard';
 import { useJobs } from '@/hooks/useBlastDay';
 import { getSessionUser } from '@/lib/session';
 import { formatDate, todayISO } from '@/lib/utils';
@@ -352,7 +354,21 @@ export function DrillChecklistPage() {
     async () => (existing ? (await db.submissions.filter((s) => s.type === 'drill_checklist' && s.sourceId === existing.id).toArray()) : []),
     [existing?.id],
   );
+  // S20: a saved checklist without its stop hours is completed here, not refiled
+  const completing = Boolean(existing && !existing.filedAt);
   const readOnly = Boolean(existing) || Boolean(saved);
+  const canComplete = Boolean(existing && (me?.id === existing.drillerUserId || can('drillChecklists', 'PATCH')));
+  const [stopDraft, setStopDraft] = useState('');
+  const [stopError, setStopError] = useState<string | null>(null);
+  const complete = async () => {
+    if (!existing) return;
+    const v = parseFloat(stopDraft);
+    if (!Number.isFinite(v)) return setStopError('Enter the meter reading.');
+    if (existing.startingHours != null && v < existing.startingHours) return setStopError(`The stop reading can't be below the start reading (${existing.startingHours}).`);
+    await completeChecklist(existing, v);
+    // the archive route files the office copy and shows the outcome
+    navigate(`/drill-checklist-file/${existing.id}`, { replace: true });
+  };
   const carriedLine =
     carriedFrom && earlier
       ? `Answers carried from ${draft.date === todayISO() ? "this morning's" : 'the earlier'} checklist${earlierJob?.name ? ` at ${earlierJob.name}` : ''} — change what changed.`
@@ -361,13 +377,22 @@ export function DrillChecklistPage() {
 
   const submit = async () => {
     if (!rigId) return;
+    // S20: with the stop hours (or a rig out of service from the start) the paper is
+    // complete and files now; without them it is saved for the end of the day
+    const completeNow = draft.stopHours != null || draft.outOfService;
     const result = await fileChecklist({ ...draft, equipmentId: rigId, jobId });
     // Filing is what makes a rig "usual" — browsing never does
     void rememberUsualRig(rigId);
     setSaved(result);
-    // Auto-file the office copy: the archive route renders the paper form,
-    // stores the point-in-time PDF, and shows the outcome (incl. ticket)
-    navigate(`/drill-checklist-file/${draft.id}${result.ticketId ? '?ticket=1' : ''}`, { replace: true });
+    if (completeNow) {
+      // Auto-file the office copy: the archive route renders the paper form,
+      // stores the point-in-time PDF, and shows the outcome (incl. ticket)
+      navigate(`/drill-checklist-file/${draft.id}${result.ticketId ? '?ticket=1' : ''}`, { replace: true });
+      return;
+    }
+    // saved for the morning — lands where it was started (the day's tile reads "stop hours missing")
+    if (back) back.go();
+    else navigate(dayParam ? `/blast-day/${dayParam}` : routeRigId ? `/equipment/${routeRigId}` : '/', { replace: true });
   };
 
   return (
@@ -394,7 +419,40 @@ export function DrillChecklistPage() {
           </p>
         )}
 
-        {rigId && existing && (
+        {rigId && existing && completing && (
+          <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 space-y-3" data-chk-complete-panel>
+            <p className="text-sm">
+              <b>{rig?.assetNumber}</b> · walk-around saved {hhmm(existing.walkAroundAt ?? existing.createdAt)} by {existing.drillerName}
+              {existing.startingHours != null ? ` · start ${existing.startingHours}` : ''} —{' '}
+              <button type="button" className="underline" data-chk-open-checks onClick={() => navigate(`/drill-checklist-print/${existing.id}`)}>
+                open the checks
+              </button>
+            </p>
+            {canComplete ? (
+              <>
+                <div>
+                  <Label className="text-xs">Stop hours — the meter when you park it</Label>
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    className="max-w-[12rem] font-mono text-base"
+                    placeholder="read the gauge"
+                    value={stopDraft}
+                    onChange={(e) => { setStopDraft(e.target.value); setStopError(null); }}
+                    data-chk-stop-hours
+                  />
+                  {stopError && <p className="text-xs text-red-700 mt-1" data-chk-stop-error>{stopError}</p>}
+                </div>
+                <Button className="w-full" size="lg" data-chk-complete onClick={() => void complete()}>
+                  Complete and file checklist for {rig?.assetNumber}
+                </Button>
+              </>
+            ) : (
+              <p className="text-xs text-gray-600" data-chk-waiting-driller>Waiting on {existing.drillerName} for the stop hours.</p>
+            )}
+          </div>
+        )}
+        {rigId && existing && !completing && (
           <div className="text-sm text-green-800 border border-green-200 bg-green-50 rounded-lg px-3 py-2 space-y-1" data-chk-existing>
             <p>
               <b>{rig?.assetNumber}</b> already has {draft.date === todayISO() ? "today's checklist" : `a checklist for ${formatDate(draft.date)}`} at this job — filed by {existing.drillerName}
@@ -434,23 +492,41 @@ export function DrillChecklistPage() {
                 </p>
               )}
               {/* S19 (Matthew): the hours box had 70 px between two notes — its own row now */}
-              <div>
-                <Label className="text-xs">Starting hours</Label>
-                <Input
-                  type="number"
-                  inputMode="decimal"
-                  className="max-w-[12rem] font-mono text-base"
-                  placeholder="read the gauge"
-                  value={draft.startingHours ?? ''}
-                  onChange={(e) => set({ startingHours: e.target.value ? parseFloat(e.target.value) : null })}
-                  data-chk-hours
-                />
-                <p className="text-xs text-gray-400 mt-1" data-chk-hours-source>
-                  {suggestedHours != null && draft.startingHours === suggestedHours
-                    ? `From ${rig.assetNumber}'s meter · change it if the gauge reads differently · a number going backwards is ignored`
-                    : 'Updates the registry’s hour meter · a number going backwards is ignored'}
-                </p>
+              {/* S20 (Matthew): start AND stop hours on the checklist — one paper, filed at the end of the day */}
+              <div className="grid grid-cols-2 gap-3" data-chk-hours-box>
+                <div>
+                  <Label className="text-xs">Start hours</Label>
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    className="font-mono text-base"
+                    placeholder="read the gauge"
+                    value={draft.startingHours ?? ''}
+                    onChange={(e) => set({ startingHours: e.target.value ? parseFloat(e.target.value) : null })}
+                    data-chk-hours
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">
+                    Stop hours <span className="text-gray-400 font-normal">— at the end of the day</span>
+                  </Label>
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    className="font-mono text-base"
+                    placeholder="later"
+                    value={draft.stopHours ?? ''}
+                    onChange={(e) => set({ stopHours: e.target.value ? parseFloat(e.target.value) : null })}
+                    data-chk-stop-hours
+                  />
+                </div>
               </div>
+              <p className="text-xs text-gray-400" data-chk-hours-source>
+                {suggestedHours != null && draft.startingHours === suggestedHours
+                  ? `Start from ${rig.assetNumber}'s meter · change it if the gauge reads differently · a number going backwards is ignored`
+                  : 'The start updates the registry’s hour meter · a number going backwards is ignored'}
+                {' · '}Save now and enter the stop hours when you park it — that completes the checklist and files it.
+              </p>
               <div>
                 <Label className="text-xs">
                   Job <span className="text-gray-400 font-normal">— optional; the checklist files without one</span>
@@ -514,8 +590,8 @@ export function DrillChecklistPage() {
               </div>
             </div>
 
-            <Button className="w-full" size="lg" onClick={() => void submit()} data-chk-file>
-              File checklist for {rig.assetNumber}
+            <Button className="w-full" size="lg" onClick={() => void submit()} data-chk-file data-chk-file-mode={draft.stopHours != null || draft.outOfService ? 'complete' : 'save'}>
+              {draft.stopHours != null || draft.outOfService ? `Complete and file checklist for ${rig.assetNumber}` : `Save checklist for ${rig.assetNumber} · stop hours later`}
             </Button>
           </>
         )}

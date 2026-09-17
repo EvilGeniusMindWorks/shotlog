@@ -16,7 +16,7 @@ export function ReminderCard() {
       {rows.map(({ reminder: r, jobName }) => (
         <div key={r.id} className="rounded-xl border border-amber-300 bg-amber-50 p-3 flex items-start gap-3" data-reminder={r.id}>
           <div className="flex-1 min-w-0">
-            {r.what === 'moved' || r.what === 'sentback' ? (
+            {r.what === 'moved' || r.what === 'sentback' || r.what === 'rigstop' ? (
               <p className="font-bold text-amber-900" data-reminder-moved data-reminder-kind={r.what}>{r.fromName || 'Your blaster'} {r.text || (r.what === 'sentback' ? 'sent your drill log back' : 'moved this day to another date')}</p>
             ) : (
               <p className="font-bold text-amber-900">{r.fromName || 'Your blaster'} asked for your time card</p>

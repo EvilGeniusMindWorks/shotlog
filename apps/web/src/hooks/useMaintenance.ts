@@ -52,13 +52,42 @@ export function emptyChecklist(equipmentId: string, jobId?: string, date?: strin
 }
 
 /** File the checklist: save it, propagate hours, open a ticket if needed. */
-export async function fileChecklist(checklist: DrillChecklist): Promise<{ ticketId?: string }> {
+/** S20 (Matthew, Sep 16 2026): the checklist is ONE paper — the morning
+ *  walk-around saved with the start hours, completed with the stop hours at
+ *  the end of the day, and filed then. Nothing "runs" in between; the tile
+ *  just says the stop hours are missing. Save keeps the walk-around's time
+ *  and opens the shop's ticket at once when repairs were noted. */
+export async function saveChecklist(checklist: DrillChecklist): Promise<{ ticketId?: string }> {
   const now = nowISO();
-  await db.drillChecklists.put({ ...checklist, updatedAt: now });
+  await db.drillChecklists.put({ ...checklist, walkAroundAt: checklist.walkAroundAt ?? now, updatedAt: now });
   await propagateHourMeter(checklist.equipmentId, checklist.startingHours);
+  return openChecklistTicket({ ...checklist, walkAroundAt: checklist.walkAroundAt ?? now }, now);
+}
 
+/** The end of the day: the stop hours go on, the meter moves, the paper is
+ *  complete — the office copy is filed by the archive route right after */
+export async function completeChecklist(checklist: DrillChecklist, stopHours: number): Promise<void> {
+  const now = nowISO();
+  await db.drillChecklists.update(checklist.id, { stopHours, stoppedAt: now, filedAt: now, updatedAt: now });
+  await propagateHourMeter(checklist.equipmentId, stopHours);
+}
+
+/** File in one go: save, and complete when the stop hours are already known
+ *  (a driller filling the paper in at the end of the day, or a rig marked
+ *  out of service from the start — its stop reading is its start reading). */
+export async function fileChecklist(checklist: DrillChecklist): Promise<{ ticketId?: string }> {
+  const result = await saveChecklist(checklist);
+  const stop = checklist.stopHours ?? (checklist.outOfService ? checklist.startingHours : null);
+  if (stop != null) await completeChecklist(checklist, stop);
+  return result;
+}
+
+async function openChecklistTicket(checklist: DrillChecklist, now: string): Promise<{ ticketId?: string }> {
   const needsRepair = checklist.repairsNote.trim().length > 0 || checklist.outOfService;
   if (!needsRepair) return {};
+  // saved twice (a re-save after an edit) opens no second ticket
+  const already = await db.repairTickets.filter((t) => t.sourceId === checklist.id && t.status === 'open').first();
+  if (already) return { ticketId: already.id };
 
   const ticketId = generateId();
   const ticket: RepairTicket = {
@@ -94,6 +123,7 @@ export async function stopChecklist(
   await db.drillChecklists.update(checklist.id, {
     stopHours,
     stoppedAt: now,
+    filedAt: now, // S20: the stop reading completes the paper
     ...(opts.outOfService ? { stoppedOutOfService: true } : {}),
     updatedAt: now,
   });

@@ -29,12 +29,14 @@ export function rigLine(r: RigRow): string {
   const start = c.startingHours != null ? fmtH(c.startingHours) : '—';
   if (c.stopHours != null) {
     const used = c.startingHours != null ? ` · ${fmtH(c.stopHours - c.startingHours)} h` : '';
+    const at = c.filedAt ?? c.stoppedAt;
     return c.stoppedOutOfService
-      ? `${start} → ${fmtH(c.stopHours)}${used} · out of service${c.stoppedAt ? ` ${hhmm(c.stoppedAt)}` : ''}`
-      : `${start} → ${fmtH(c.stopHours)}${used} · stopped${c.stoppedAt ? ` ${hhmm(c.stoppedAt)}` : ''}`;
+      ? `${start} → ${fmtH(c.stopHours)}${used} · out of service${at ? ` ${hhmm(at)}` : ''}`
+      : `${start} → ${fmtH(c.stopHours)}${used} · filed${at ? ` ${hhmm(at)}` : ''}`;
   }
   if (c.outOfService) return `${start} · out of service on the checklist`;
-  return `started ${hhmm(c.createdAt)} · ${start} → running`;
+  // S20 (Matthew, Sep 16 2026): nothing "runs" — the paper is waiting for its stop hours
+  return `walk-around ${hhmm(c.walkAroundAt ?? c.createdAt)} · ${start} → stop hours missing`;
 }
 
 export function RigList({
@@ -52,8 +54,8 @@ export function RigList({
   const [reading, setReading] = useState('');
   const [error, setError] = useState<string | null>(null);
   const canAct = !readOnly && can('drillChecklists', 'PATCH');
-  const running = rows.filter((r) => r.checklist.stopHours == null && !r.checklist.outOfService).length;
-  const allStopped = rows.length > 0 && running === 0;
+  const waiting = rows.filter((r) => r.checklist.stopHours == null && !r.checklist.outOfService).length;
+  const allComplete = rows.length > 0 && waiting === 0;
   // S19 (Matthew): a day that is not today says which day it is counting
   const when = day.date === todayISO() ? 'today' : `on ${formatDate(day.date)}`;
 
@@ -64,24 +66,27 @@ export function RigList({
     if (!Number.isFinite(v)) return setError('Enter the meter reading.');
     if (v < floor) return setError(`The stop reading can't be below the start reading (${fmtH(floor)}).`);
     await stopChecklist(ask.row.checklist, v, { outOfService: ask.down });
+    const id = ask.row.checklist.id;
     setAsk(null);
     setOpen(null);
     setReading('');
     setError(null);
+    // S20: the reading completes the paper — file the office copy now
+    navigate(`/drill-checklist-file/${id}?ticket=1`);
   };
 
   return (
-    <div data-tile="rigs" data-tile-state={rows.length === 0 ? 'none' : allStopped ? 'stopped' : 'running'}>
+    <div data-tile="rigs" data-tile-state={rows.length === 0 ? 'none' : allComplete ? 'complete' : 'open'}>
       <div
         className={`rounded-t-xl border px-3 py-2.5 flex items-center gap-3 ${
-          rows.length === 0 ? 'border-gray-200 bg-white' : allStopped ? 'border-green-300 bg-green-50' : 'border-amber-300 bg-amber-50'
+          rows.length === 0 ? 'border-gray-200 bg-white' : allComplete ? 'border-green-300 bg-green-50' : 'border-amber-300 bg-amber-50'
         }`}
       >
         <Tractor className="h-5 w-5 text-gray-500 shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="font-bold text-sm">Rig checklists</p>
           <p className="text-xs text-gray-600">
-            {rows.length === 0 ? `None ${when} · the rig is the first question` : `${rows.length} ${when} · ${allStopped ? 'all stopped' : `${running} running`}`}
+            {rows.length === 0 ? `None ${when} · the rig is the first question` : `${rows.length} ${when} · ${allComplete ? 'all complete' : `${waiting} waiting for stop hours`}`}
           </p>
         </div>
       </div>
@@ -135,10 +140,11 @@ export function RigList({
                   type="button"
                   className="w-full text-left rounded-lg border border-gray-200 bg-white px-3 py-3 mb-2 min-h-[48px]"
                   data-rig-stop
-                  onClick={() => { setAsk({ row: open, down: false }); setReading(''); setError(null); }}
+                  // S20 (Matthew): the stop hours go on the checklist itself — one paper, filed then
+                  onClick={() => navigate(`/drill-checklist/${open.checklist.equipmentId}?job=${day.jobId}&date=${day.date}&day=${day.id}`)}
                 >
-                  <span className="font-semibold">Stop for the day</span>
-                  <span className="block text-xs text-gray-500">enter this rig's meter reading</span>
+                  <span className="font-semibold">Enter the stop hours</span>
+                  <span className="block text-xs text-gray-500">on the checklist · completes it and files the office copy</span>
                 </button>
                 <button
                   type="button"

@@ -14,7 +14,7 @@ Add each person who worked. Their hours become **time cards** the supervisor and
 
 ## Equipment
 
-The rigs, trucks and instruments used. A rig picked here is the one whose **checklist** and hours the day expects.
+The rigs, trucks and instruments used. A rig picked here is the one whose **checklist** and hours the day expects. A drill's hours come from its checklist — the driller's start and stop readings — and are never typed here: until the stop hours are in, the rig's row reads "stop hours not entered yet · waiting on Driller Test", and **Remind** puts a line on that driller's home. Only a drill with no checklist at all (nobody walked it around) takes its end-of-day meter from you.
 
 ## Weather, work performed, notes
 

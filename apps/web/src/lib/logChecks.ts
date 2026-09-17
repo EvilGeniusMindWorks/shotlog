@@ -7,6 +7,8 @@ import { db } from '@/db';
 import { fmtLbs } from '@/lib/format';
 import { hhmm } from '@/lib/dayCard';
 import { parseDiagram, computeFiringTimes } from '@/lib/shotDiagram';
+import { aggregateDrilling, getShotPlan } from '@/hooks/useDrillLogs';
+import { drillingDeviations } from '@/lib/drillingDeviations';
 
 export interface LogCheck {
   key: string;
@@ -51,6 +53,19 @@ export async function logChecks(dayId: string): Promise<LogCheck[]> {
     if (!timed) items.push({ key: `timing-${s.id}`, level: 'amber', text: `Timing not built on Shot ${s.shotNumber}`, to: `/blast-day/${dayId}/design/${s.id}?mode=timing`, toLabel: 'Design plan' });
   }
   if (!items.some((i) => i.key.startsWith('timing-'))) items.push({ key: 'timing-ok', level: 'ok', text: shots.length === 1 ? 'Timing built' : `Timing built on ${shots.length} shots` });
+  // S20 (Matthew): the timing against the accepted drilling — a timed hole the log
+  // says was not drilled is red; added holes, depths that differ and drilled holes
+  // with no delay yet are amber, each a door to the design plan
+  for (const s of shots) {
+    const logs = await db.drillLogs.where('shotId').equals(s.id).toArray();
+    if (logs.length === 0 || !logs.every((l) => l.status === 'accepted')) continue;
+    const plan = getShotPlan(s);
+    const devs = drillingDeviations(parseDiagram(s.designPlan.shotDiagramData), plan, await aggregateDrilling(logs, plan));
+    const to = `/blast-day/${dayId}/design/${s.id}?mode=timing`;
+    for (const d of devs.filter((x) => x.level === 'red')) items.push({ key: `devred-${s.id}-${d.key}`, level: 'red', text: `Shot ${s.shotNumber} · ${d.text}`, to, toLabel: 'Design plan' });
+    const ambers = devs.filter((x) => x.level === 'amber');
+    if (ambers.length) items.push({ key: `dev-${s.id}`, level: 'amber', text: `Shot ${s.shotNumber} · ${ambers.length === 1 ? ambers[0].text : `${ambers.length} drilling deviations to look at`}`, to, toLabel: 'Design plan' });
+  }
 
   // seismo readings — required (Matthew, Sep 16 2026)
   const readings = await db.seismoReadings.filter((r) => shots.some((s) => s.id === r.shotId)).toArray();

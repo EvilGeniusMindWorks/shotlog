@@ -383,7 +383,7 @@ export interface DayReminder extends BaseRecord {
   toName: string;
   fromUserId: string;
   fromName: string;
-  what: 'timecard' | 'moved' | 'sentback';
+  what: 'timecard' | 'moved' | 'sentback' | 'rigstop';
   /** S16 'moved' / S18 'sentback': the sentence after the sender's name */
   text?: string;
   at: string;
@@ -1012,6 +1012,12 @@ export interface DrillChecklist extends BaseRecord {
   stopHours?: number | null;
   stoppedAt?: string;
   stoppedOutOfService?: boolean;
+  /** S20 (Matthew, Sep 16 2026: no "running" rig, no timer — the driller
+   *  enters start AND stop hours on the checklist, one paper filed at the
+   *  end of the day): when the morning walk-around was saved, and when the
+   *  paper was completed with its stop hours and filed */
+  walkAroundAt?: string;
+  filedAt?: string;
   daily: Record<string, CheckState>;
   weeklyDone: boolean;
   weekly: Record<string, CheckState>;

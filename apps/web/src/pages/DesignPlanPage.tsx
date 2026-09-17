@@ -4,6 +4,8 @@ import { showToast } from '@/components/ui/undo-toast';
 import { can } from '@/lib/perms';
 import { AdvisoryTag } from '@/lib/complianceAdvisory';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { drillingDeviations } from '@/lib/drillingDeviations';
+import { hhmm } from '@/lib/dayCard';
 import { Check, Grid3x3, Layers3, Map as MapIcon, Ruler, Send } from 'lucide-react';
 import { ScreenHeader } from '@/components/layout/ScreenHeader';
 import { applyAsDrilled, drilledSince } from '@/lib/shotDiagram';
@@ -193,24 +195,22 @@ function DesignPlanInner({
     saveTimer.current = window.setTimeout(flush, 400);
   };
 
-  // Arriving from the readiness review with no timing yet: build it on the
-  // drilled pattern once (undrilled positions out, snapshot recorded)
-  const builtRef = useRef(false);
+  // S20 (Matthew, Sep 16 2026): the drillers' completed plan IS the shot's
+  // pattern. Once every log on the shot is accepted, the timing sits on the
+  // drilled pattern by itself — no button to press: undrilled positions drop
+  // out, timing on drilled holes is kept, and any later change to the
+  // drilling is laid on again. Before acceptance the plan's grid is used.
+  const allAccepted = Boolean(drilling && drilling.logs.length > 0 && drilling.logs.every((l) => l.status === 'accepted'));
+  const acceptedAt = allAccepted ? (drilling?.logs.map((l) => l.acceptedAt ?? '').sort().at(-1) ?? '') : '';
+  const undrilledKey = drilledOverlay?.undrilledIdx.join(',') ?? '';
   useEffect(() => {
-    if (!fromDrilling || builtRef.current || !drilledOverlay) return;
-    if (diagram.wires.length === 0 && !diagram.asDrilled) {
-      builtRef.current = true;
+    if (!allAccepted || !drilledOverlay) return;
+    if (!diagram.asDrilled || drilledSince(diagram, drilledOverlay.undrilledIdx, drilledOverlay.drilledCount)) {
       handleChange(applyAsDrilled(diagram, drilledOverlay.undrilledIdx, drilledOverlay.drilledCount));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fromDrilling, drilledOverlay?.undrilledIdx.length, drilledOverlay?.drilledCount]);
-  const asDrilledState: 'none' | 'current' | 'stale' = !drilledOverlay
-    ? 'none'
-    : !diagram.asDrilled
-      ? 'none'
-      : drilledSince(diagram, drilledOverlay.undrilledIdx, drilledOverlay.drilledCount)
-        ? 'stale'
-        : 'current';
+  }, [allAccepted, undrilledKey, drilledOverlay?.drilledCount, fromDrilling]);
+  const deviations = allAccepted ? drillingDeviations(diagram, planHoles, drilling) : [];
 
   const handleSiteChange = (next: SiteDiagram) => {
     setSiteDiagram(next);
@@ -370,25 +370,38 @@ function DesignPlanInner({
         </div>
       </div>
 
-      {/* S8: the drilled pattern under the timing — built from drilling */}
-      {editorMode === 'timing' && drilledOverlay && (
-        <div className="px-4 pt-3 max-w-6xl mx-auto">
-          {asDrilledState === 'current' ? (
-            <p className="text-xs font-medium text-green-800 bg-green-50 border border-green-200 rounded-lg px-3 py-2" data-as-drilled="current">
-              ✓ Built from drilling · {drilledOverlay.drilledCount} of {planHoles?.length ?? 0} planned holes drilled
+      {/* S20: the pattern line — the drilled pattern once the drilling is accepted,
+          the plan's grid before; then the places where the timing and the drilling
+          still disagree (Matthew: "a warning if the shot deviates from the plan or
+          doesn't use all the drilled holes") */}
+      {editorMode === 'timing' && planHoles && (
+        <div className="px-4 pt-3 max-w-6xl mx-auto space-y-2">
+          {drilledOverlay && allAccepted ? (
+            <p className="text-xs text-gray-600" data-as-drilled="current">
+              Pattern: as drilled · {drilledOverlay.drilledCount} of {planHoles.length} holes
               {drilledOverlay.undrilledIdx.length > 0 ? ` · ${drilledOverlay.undrilledIdx.length} not drilled (greyed)` : ''}
               {drilledOverlay.wet > 0 ? ` · ${drilledOverlay.wet} wet` : ''}
+              {acceptedAt ? ` · accepted ${hhmm(acceptedAt)}` : ''}
             </p>
           ) : (
-            <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-safety-orange bg-orange-50 border border-orange-200 rounded-lg px-3 py-2" data-as-drilled={asDrilledState}>
-              <span className="flex-1">
-                {asDrilledState === 'stale'
-                  ? 'Drilling changed since you wired — the pattern below differs from what you built on.'
-                  : `${drilledOverlay.drilledCount} holes drilled — build the timing on the drilled pattern.`}
-              </span>
-              <Button size="sm" variant="outline" data-use-drilled onClick={() => handleChange(applyAsDrilled(diagram, drilledOverlay.undrilledIdx, drilledOverlay.drilledCount))}>
-                {asDrilledState === 'stale' ? 'Use the drilled pattern' : 'Build timing from drilling'}
-              </Button>
+            <p className="text-xs text-gray-600" data-as-drilled={drilledOverlay ? 'pending' : 'plan'}>
+              Pattern: the drill plan's grid · {planHoles.length} holes
+              {drilledOverlay ? ' · drilling not accepted yet · ' : ''}
+              {drilledOverlay && (
+                <button type="button" className="underline text-navy" onClick={() => navigate(`/blast-day/${blastDayId}?view=drilling`)}>
+                  Review drilling
+                </button>
+              )}
+            </p>
+          )}
+          {deviations.length > 0 && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs space-y-0.5" data-drilling-deviations={deviations.length}>
+              <p className="font-semibold text-amber-900">{deviations.length === 1 ? '1 thing to look at' : `${deviations.length} things to look at`}</p>
+              {deviations.map((d) => (
+                <p key={d.key} className={d.level === 'red' ? 'text-red-800 font-medium' : 'text-amber-900'} data-drilling-deviation={d.key} data-deviation-level={d.level}>
+                  · {d.text}
+                </p>
+              ))}
             </div>
           )}
         </div>

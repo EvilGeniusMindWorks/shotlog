@@ -53,7 +53,12 @@ function ChecklistSheet({ checklistId }: { checklistId: string }) {
           </tr>
           <tr>
             <td><b>Job:</b> {job?.name ?? '—'}</td>
-            <td colSpan={2}><b>Operator:</b> {checklist.drillerName}</td>
+            <td><b>Operator:</b> {checklist.drillerName}</td>
+            <td>
+              <b>Stop hours:</b> {checklist.stopHours ?? '—'}
+              {checklist.stopHours != null && checklist.startingHours != null ? ` (${(checklist.stopHours - checklist.startingHours).toFixed(1)} h used)` : ''}
+              {checklist.stoppedOutOfService ? ' · out of service' : ''}
+            </td>
           </tr>
         </tbody>
       </table>

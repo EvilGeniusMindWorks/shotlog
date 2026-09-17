@@ -53,6 +53,9 @@ export interface DerivedRig {
   logId?: string;
   logOwnerId?: string;
   chkId?: string;
+  /** S20: the driller whose checklist it is — the only one asked for the stop hours */
+  chkOwnerId?: string;
+  chkFiled?: boolean;
 }
 
 /** The drills that worked the day, with the readings from their own
@@ -85,7 +88,9 @@ export async function derivedRigHours(day: BlastDay): Promise<DerivedRig[]> {
       start: chk?.startingHours ?? null,
       end: chk?.stopHours ?? ends[0] ?? null,
       chkId: chk?.id,
-      who: rigLogs[0]?.drillerName ?? chk?.drillerName,
+      chkOwnerId: chk?.drillerUserId || undefined,
+      chkFiled: Boolean(chk?.filedAt),
+      who: chk?.drillerName || rigLogs[0]?.drillerName,
       logId: rigLogs[0]?.id,
       logOwnerId: rigLogs[0]?.drillerUserId,
     });

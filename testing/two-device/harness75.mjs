@@ -185,8 +185,9 @@ async (page, lib) => {
     }, { jobA: jobs[1].id });
     chkA = m.chkId;
     await PD.goto(`${WEB}/drill-checklist/${m.rigId}?job=${jobs[1].id}`);
-    await PD.locator('[data-chk-existing]').waitFor({ timeout: 15000 });
-    R.ok('at the morning job the rig already has today’s checklist', /already has today's checklist at this job/.test(await PD.locator('[data-chk-existing]').innerText()));
+    // S20: saved with its start hours only, the morning checklist waits for its stop hours — the page opens on its Complete panel
+    await PD.locator('[data-chk-complete-panel]').waitFor({ timeout: 15000 });
+    R.ok('at the morning job the rig already has today’s checklist, waiting for its stop hours', /walk-around saved/.test(await PD.locator('[data-chk-complete-panel]').innerText()) && (await PD.locator('[data-chk-hours-box]').count()) === 0);
     await PD.goto(`${WEB}/drill-checklist/${m.rigId}?job=${jobs[2].id}`);
     await PD.locator('[data-chk-hours]').waitFor({ timeout: 15000 });
     await sleep(800);
@@ -210,7 +211,7 @@ async (page, lib) => {
     R.ok(`starting hours prefilled from the rig’s last reading (${await PD.locator('[data-chk-hours]').inputValue()} ≥ ${m.start})`, Number(await PD.locator('[data-chk-hours]').inputValue()) >= m.start);
     const sign = PD.getByRole('button', { name: /Tap to sign/ });
     if (await sign.count()) { await sign.click(); const canvas = PD.locator('canvas').first(); await canvas.waitFor({ timeout: 5000 }); const box = await canvas.boundingBox(); await PD.mouse.move(box.x + 30, box.y + 40); await PD.mouse.down(); for (let i = 1; i <= 20; i++) await PD.mouse.move(box.x + 30 + i * 8, box.y + 40 + Math.sin(i / 2) * 15); await PD.mouse.up(); await PD.getByRole('button', { name: /Save Signature/ }).click().catch(() => undefined); await sleep(400); }
-    await PD.getByRole('button', { name: /File checklist/ }).click();
+    await PD.getByRole('button', { name: /Save checklist|Complete and file checklist/ }).click(); // S20: saved for the morning
     await sleep(2500);
     const two = await PD.evaluate(async ({ rigId, jobB, firstKey }) => {
       const { db } = await import('/src/db/index.ts');

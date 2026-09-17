@@ -20,15 +20,19 @@ Start the checklist from a work day — the **Start a checklist** row on the day
 
 A checklist belongs to a rig **at a job, on a day** — not just to the day. Move a rig from one job to a second job the same day and it gets its own second checklist there, prefilled with the starting hours from the rig's last reading and the morning's walk-around answers carried over, marked "carried from this morning's checklist at <job>." **Stop for the day** always records its reading on the checklist for the job you're at — not the first one you filed.
 
-## Hour meter first
+## Start and stop hours — one paper
 
-The field starts with the machine's last reading, and says so underneath, on a row of its own. When a rig's answers carry over from an earlier checklist that day, the note about it sits at the top of the Daily checks, where the answers are. Read the gauge: if it matches, leave it; if not, type what you see. The starting hours drive the 50-hour service clock and the shop's ledger. A number going backwards is ignored, so a wrong one cannot roll a machine back. The drill log no longer asks for a meter reading — this checklist is the only place hours are entered; the log just names the rig.
+The hours box has two fields, **Start** and **Stop**. Start begins with the machine's last reading and says so underneath: read the gauge, leave it if it matches, type what you see if not. When a rig's answers carry over from an earlier checklist that day, the note about it sits at the top of the Daily checks, where the answers are. The start hours drive the 50-hour service clock and the shop's ledger; a number going backwards is ignored, so a wrong one cannot roll a machine back. The drill log never asks for a meter reading — this checklist is the only place hours are entered; the log just names the rig.
+
+In the morning, leave Stop empty and tap **Save checklist**. The walk-around is stamped with its time, the day's Rig checklists tile reads "walk-around 6:52 am · 1,400.0 → stop hours missing", and the shop gets its ticket at once if you noted repairs. Nothing "runs" in the app meanwhile — it does not pretend to know when the drill is working.
 
 ![The rig checklist](checklist.png)
 
-## Stop for the day
+## The stop hours, when you park it
 
-When you're done with a rig, open its checklist and tap **Stop for the day** to enter the meter reading now — that closes out its hours for the shop's ledger and the daily report's equipment hours. A rig with no stop reading shows as running until someone enters one, today or the next morning.
+At the end of the day, enter the stop hours and the checklist is complete: it files, with the office copy, and the hours used go to the shop's ledger and the daily report. Three doors take you there — the **Enter R1021's stop hours** button on your home card once your log is marked complete, the rig's row on the day's Rig checklists tile, and the rig's line on the daily report. Filling the paper in all at once at the end of the day works too: enter Start and Stop together and the button reads **Complete and file checklist**.
+
+A stop reading below the start is refused. Until the stop hours are in, the blaster's daily report reads "stop hours not entered yet · waiting on you" and can send you a reminder; the day can still file over it with a note.
 
 ## The walk-around
 
@@ -39,9 +43,9 @@ Every item starts ticked. Tap only what is **N/A** or **not done**. The 50-hour 
 - **Repairs needed** — write what you found. The shop sees it as a ticket the moment you file.
 - **Out of service** — tick it, enter the meter reading now, and the rig is pulled from the fleet until the shop clears it; a repair ticket opens for the shop. Use it when the machine should not run.
 
-## Sign and file
+## Sign and save
 
-Sign, then **File checklist**. The office copy is filed for you; the ticket, if any, is in the shop's queue. **Done** lands you on the day the checklist belongs to, with the rig on its tile — or on the rig's page when there is no day.
+Sign, then **Save checklist** (or **Complete and file checklist** when the stop hours are already in). Saving lands you back on the day the checklist belongs to, with the rig on its tile — or on the rig's page when there is no day. Completing files the office copy for you; the ticket, if any, is in the shop's queue, and **Done** lands you on the day.
 
 If the office copy fails (the screen says so and offers **Try again**), the checklist itself is still saved. Open the rig's checklist page later and tap **File the office copy** to send it.
 

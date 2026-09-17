@@ -108,28 +108,26 @@ async (page, lib) => {
     await P1.goto(`${WEB}/blast-day/${dayId}?view=hub`);
     await waitText(P1, '[data-day-continue]', /Next: review the drilling/, 15000);
     R.ok('Continue: Next: review the drilling', /Next: review the drilling/.test(await P1.locator('[data-day-continue]').innerText()));
-    // the readiness hand-off lands here (one line in BlastDayPage); go straight to it
+    // S20 (Matthew): the pattern follows the drilling once it is ACCEPTED — Mark accepts the log, then the timing opens on the drilled pattern by itself
+    await P1.evaluate(async (logId) => { const { db } = await import('/src/db/index.ts'); const { nowISO } = await import('/src/lib/utils.ts'); await db.drillLogs.update(logId, { status: 'accepted', acceptedAt: nowISO(), updatedAt: nowISO() }); }, logId);
     await P1.goto(`${WEB}/blast-day/${dayId}/design/${shotId}?mode=timing&from=drilling`);
     await P1.locator('[data-as-drilled]').waitFor({ timeout: 10000 });
     await P1.waitForFunction(() => document.querySelector('[data-as-drilled]')?.getAttribute('data-as-drilled') === 'current', null, { timeout: 8000 }).catch(() => undefined);
-    R.ok('timing mode, built from drilling', (await P1.locator('[data-diagram-mode]').getAttribute('data-diagram-mode')) === 'timing' && (await P1.locator('[data-as-drilled]').getAttribute('data-as-drilled')) === 'current');
+    R.ok('timing mode, laid on the drilled pattern with no button pressed', (await P1.locator('[data-diagram-mode]').getAttribute('data-diagram-mode')) === 'timing' && (await P1.locator('[data-as-drilled]').getAttribute('data-as-drilled')) === 'current' && (await P1.locator('[data-use-drilled]').count()) === 0);
     R.ok('the undrilled hole is greyed and the wet hole marked', (await P1.locator('[data-undrilled]').count()) === 1 && (await P1.locator('[data-hole-condition="W"]').count()) === 1);
-    R.ok('the banner counts 5 of 6 · 1 wet', /5 of 6/.test(await P1.locator('[data-as-drilled]').innerText()) && /1 wet/.test(await P1.locator('[data-as-drilled]').innerText()));
+    R.ok('the pattern line counts 5 of 6 · 1 wet', /5 of 6/.test(await P1.locator('[data-as-drilled]').innerText()) && /1 wet/.test(await P1.locator('[data-as-drilled]').innerText()));
     R.ok('the page is the full design (site map, compliance, column shown)', (await P1.locator('[data-show-rest]').count()) === 0);
   });
 
-  await R.section('drilling changes after wiring → flagged, one tap to rebuild', async () => {
+  await R.section('drilling changes after wiring → the pattern is laid on again by itself (S20)', async () => {
     await P1.evaluate(async (logId) => {
       const { db } = await import('/src/db/index.ts');
       const { generateId, nowISO, todayISO } = await import('/src/lib/utils.ts');
       const now = nowISO();
       await db.drillLogHoles.add({ id: generateId(), drillLogId: logId, date: todayISO(), holeNumber: '6', angle: 0, actualDepth: 20, subdrill: 1, conditions: [], comment: '', createdAt: now, updatedAt: now, syncStatus: 'local' });
     }, logId);
-    await P1.waitForFunction(() => document.querySelector('[data-as-drilled]')?.getAttribute('data-as-drilled') === 'stale', null, { timeout: 8000 }).catch(() => undefined);
-    R.ok('"drilling changed since you wired" appears', (await P1.locator('[data-as-drilled]').getAttribute('data-as-drilled')) === 'stale');
-    await P1.locator('[data-use-drilled]').click();
-    await P1.waitForFunction(() => document.querySelector('[data-as-drilled]')?.getAttribute('data-as-drilled') === 'current', null, { timeout: 8000 }).catch(() => undefined);
-    R.ok('one tap rebuilds on the drilled pattern — no hole greyed now', (await P1.locator('[data-as-drilled]').getAttribute('data-as-drilled')) === 'current' && (await P1.locator('[data-undrilled]').count()) === 0);
+    await P1.waitForFunction(() => document.querySelectorAll('[data-undrilled]').length === 0 && /6 of 6/.test(document.querySelector('[data-as-drilled]')?.textContent ?? ''), null, { timeout: 10000 }).catch(() => undefined);
+    R.ok('the sixth hole joins the pattern on its own — no hole greyed, the line counts 6 of 6, no button', (await P1.locator('[data-as-drilled]').getAttribute('data-as-drilled')) === 'current' && (await P1.locator('[data-undrilled]').count()) === 0 && /6 of 6/.test(await P1.locator('[data-as-drilled]').innerText()) && (await P1.locator('[data-use-drilled]').count()) === 0);
   });
 
   await R.section('the Start work dialog: Name first, one Job row, pinned Start', async () => {

@@ -16,7 +16,7 @@ async (page, lib) => {
   const stamp = lib.stamp();
   browserErrors({ clear: true });
   const today = daysAgo(0);
-  let dayId, shotId, blastLogId, readingId, attId, subId, drillLogId, oldDayId, ydayDayId, drillDayId, drillShotId;
+  let dayId, shotId, blastLogId, readingId, attId, subId, drillLogId, oldDayId, ydayDayId, drillDayId, drillShotId, chkId;
   let jobA, jobB, rigs;
 
   const cB = await mkCtx(browser, { viewport: { width: 1280, height: 900 } });
@@ -35,6 +35,7 @@ async (page, lib) => {
     // filed leftover from an earlier run would come back instead of a fresh draft
     const open = new Set((await db.blastDays.filter((d) => (d.status === 'draft' && !d.closed) || d.date === today).toArray()).map((d) => d.jobId));
     const logsToday = new Set((await db.drillLogs.filter((l) => (l.date ?? l.createdAt.slice(0, 10)) === today).toArray()).map((l) => l.jobId));
+    for (const c of await db.drillChecklists.filter((c) => c.date === today && Boolean(c.jobId)).toArray()) logsToday.add(c.jobId);
     const free = (await db.jobs.filter((j) => !j.archivedAt && j.isActive && !open.has(j.id) && !logsToday.has(j.id) && !/^S1[124]/.test(j.name)).toArray()).sort((a, b) => a.name.localeCompare(b.name));
     const drills = (await db.equipment.filter((e) => e.isActive && (e.category === 'rock_drill' || e.category === 'equip_drill')).toArray()).sort((a, b) =>
       a.assetNumber.localeCompare(b.assetNumber, undefined, { numeric: true }),
@@ -172,6 +173,8 @@ async (page, lib) => {
     await waitFor(async () => ((await btn.isDisabled()) ? null : 1), 10000);
     R.ok(`with the rig picked the button reads Complete`, !(await btn.isDisabled()) && /^Complete/.test(((await btn.textContent()) || '').trim()));
     await btn.click();
+    await sleep(800);
+    chkId = await PD.evaluate(async ({ rigId, date, jobId }) => { const { db } = await import('/src/db/index.ts'); return (await db.drillChecklists.filter((c) => c.equipmentId === rigId && c.date === date && c.jobId === jobId).toArray())[0]?.id; }, { rigId: rigs[0].id, date: today, jobId: jobB.id });
     await PD.waitForURL(new RegExp(`/blast-day/${drillDayId}(\\?|$)`), { timeout: 20000 });
     const log = await PD.evaluate(async (id) => { const l = await (await import('/src/db/index.ts')).db.drillLogs.get(id); return { status: l?.status, rig: l?.drillRigEquipmentId }; }, drillLogId);
     R.ok('the log is complete with its rig', log.status === 'complete' && log.rig === rigs[0].id);
@@ -274,16 +277,140 @@ async (page, lib) => {
     await PB.keyboard.press('Escape');
   });
 
-  await R.section('Checklist hours: start and stop, one paper', async () => {
-    R.note('push 2 — not built yet');
+  await R.section('Checklist hours: start and stop, one paper — saved in the morning, nothing "running"', async () => {
+    // leftovers: a checklist is one per rig per job-day, so earlier runs' checklists for this rig today go first
+    const stale = await PB.evaluate(async ({ rigId, date }) => (await (await import('/src/db/index.ts')).db.drillChecklists.filter((c) => c.equipmentId === rigId && c.date === date).toArray()).map((c) => c.id), { rigId: rigs[0].id, date: today });
+    if (stale.length) {
+      await lib.cleanupAsAdmin(browser, { checklists: stale, sweep: false });
+      await waitFor(() => PD.evaluate(async ({ rigId, date }) => ((await (await import('/src/db/index.ts')).db.drillChecklists.filter((c) => c.equipmentId === rigId && c.date === date).toArray()).length === 0 ? 1 : null), { rigId: rigs[0].id, date: today }), 30000);
+      R.note(`cleared ${stale.length} leftover checklist(s) for ${rigs[0].asset} today`);
+    }
+    // the driller starts the checklist from the drilling day's own tile (jobB, today) with only the start hours —
+    // through the door, as he does, so Save's "back" knows the day is behind it
+    await PD.goto(`${WEB}/blast-day/${drillDayId}`);
+    await PD.locator('[data-rig-start]').waitFor({ timeout: 30000 });
+    await PD.locator('[data-rig-start]').click();
+    await PD.waitForURL(/\/drill-checklist\?/, { timeout: 15000 });
+    await PD.locator('[data-rig-field]').waitFor({ timeout: 30000 });
+    const chip = PD.locator(`[data-rig-chip="${rigs[0].asset}"]`);
+    if (!(await chip.first().isVisible().catch(() => false))) { await PD.locator('[data-rig-all-toggle]').click(); await chip.first().waitFor({ timeout: 5000 }); }
+    await chip.first().click();
+    await PD.locator('[data-chk-hours-box]').waitFor({ timeout: 15000 });
+    R.ok('the hours box has Start and Stop side by side', (await PD.locator('[data-chk-hours]').count()) === 1 && (await PD.locator('[data-chk-stop-hours]').count()) === 1);
+    await PD.locator('[data-chk-hours]').fill('1500');
+    await sleep(300);
+    const btn = PD.locator('[data-chk-file]');
+    R.ok(`with no stop hours the button saves for later: "${((await btn.innerText()) || '').trim().slice(0, 50)}"`, (await btn.getAttribute('data-chk-file-mode')) === 'save' && /Save checklist/.test(await btn.innerText()));
+    await btn.click();
+    await PD.waitForURL(new RegExp(`/blast-day/${drillDayId}(\\?|$)`), { timeout: 20000 });
+    await waitForUpload(PD, 30000);
+    await PD.locator('[data-tile="rigs"][data-tile-state="open"]').waitFor({ timeout: 30000 });
+    const row = (await PD.locator(`[data-rig-row="${rigs[0].asset}"]`).innerText()) || '';
+    R.ok(`saving lands on the day; the rig row reads "stop hours missing", never "running" ("${row.replace(/\s+/g, ' ').slice(0, 70)}")`, /walk-around/.test(row) && /stop hours missing/.test(row) && !/running/i.test(row));
+    R.ok('the tile counts it as waiting', /waiting for stop hours/.test((await PD.locator('[data-tile="rigs"]').innerText()) || ''));
+    await PD.locator(`[data-rig-row="${rigs[0].asset}"]`).click();
+    await PD.locator('[data-rig-sheet]').waitFor({ timeout: 10000 });
+    R.ok('the rig sheet offers "Enter the stop hours", not Stop for the day', /Enter the stop hours/.test((await PD.locator('[data-rig-stop]').innerText()) || '') && !/Stop for the day/.test((await PD.locator('[data-rig-sheet]').innerText()) || ''));
+    await PD.keyboard.press('Escape');
+    // the driller's home: his log is complete, so the end-of-day prompt shows
+    await PD.goto(`${WEB}/`);
+    await PD.locator('[data-driller-home]').waitFor({ timeout: 30000 });
+    await waitForUpload(PD, 20000);
+    const prompt = PD.locator(`[data-rig-stop-prompt="${rigs[0].asset}"]`);
+    await prompt.waitFor({ timeout: 20000 });
+    R.ok(`the home card prompts "Enter ${rigs[0].asset}'s stop hours"`, new RegExp(`Enter ${rigs[0].asset}'s stop hours`).test((await prompt.innerText()) || ''));
+    await prompt.click();
+    await PD.locator('[data-chk-complete-panel]').waitFor({ timeout: 20000 });
+    R.ok('the prompt opens the checklist on its Complete panel', /walk-around saved/.test((await PD.locator('[data-chk-complete-panel]').innerText()) || ''));
   });
 
-  await R.section('The daily report reads rig hours from the checklist; File this day waits', async () => {
-    R.note('push 2 — not built yet');
+  await R.section('The daily report waits on the driller for the stop hours; Remind; File this day waits; then the row reads the hours', async () => {
+    await waitFor(() => PB.evaluate(async ({ rigId, date }) => { const { db } = await import('/src/db/index.ts'); return (await db.drillChecklists.filter((c) => c.equipmentId === rigId && c.date === date).toArray()).length ? 1 : null; }, { rigId: rigs[0].id, date: today }), 30000);
+    await PB.goto(`${WEB}/blast-day/${drillDayId}?view=daily-report`);
+    const waiting = PB.locator(`[data-rig-stop-waiting="${rigs[0].asset}"]`);
+    await waiting.waitFor({ timeout: 30000 });
+    R.ok(`the blaster's report row waits: "${((await waiting.innerText()) || '').replace(/\s+/g, ' ').slice(0, 70)}"`, /stop hours not entered yet/.test(await waiting.innerText()) && /waiting on/.test(await waiting.innerText()) && (await PB.locator('[data-rig-meter-enter]').count()) === 0);
+    await PB.locator(`[data-rig-stop-remind="${rigs[0].asset}"]`).click();
+    await PB.locator(`[data-rig-stop-reminded="${rigs[0].asset}"]`).waitFor({ timeout: 5000 });
+    await waitForUpload(PB, 20000);
+    await PB.goto(`${WEB}/blast-day/${drillDayId}/submit`);
+    await PB.locator('[data-preflight-item]').first().waitFor({ timeout: 30000 });
+    const amber = PB.locator('[data-preflight-item^="rigstop-"]');
+    R.ok(`File this day carries an amber line: "${((await amber.first().innerText().catch(() => '')) || '').replace(/\s+/g, ' ').slice(0, 60)}"`, (await amber.count()) === 1 && (await amber.first().getAttribute('data-preflight-level')) === 'amber');
+    // the driller hears the reminder and completes the paper through the report's own door
+    await PD.goto(`${WEB}/`);
+    await PD.locator('[data-reminder-kind="rigstop"]').waitFor({ timeout: 30000 });
+    R.ok('the reminder reads on the driller\'s home', new RegExp(`asked for ${rigs[0].asset}'s stop hours`).test((await PD.locator('[data-reminder-kind="rigstop"]').innerText()) || ''));
+    await PD.goto(`${WEB}/blast-day/${drillDayId}?view=daily-report`);
+    const door = PD.locator(`[data-rig-stop-door="${rigs[0].asset}"]`);
+    await door.waitFor({ timeout: 30000 });
+    await door.click();
+    await PD.locator('[data-chk-complete-panel]').waitFor({ timeout: 20000 });
+    await PD.locator('[data-chk-stop-hours]').fill('1499');
+    await PD.locator('[data-chk-complete]').click();
+    await PD.locator('[data-chk-stop-error]').waitFor({ timeout: 5000 });
+    R.ok('a stop below the start is refused', /can't be below/.test((await PD.locator('[data-chk-stop-error]').innerText()) || ''));
+    await PD.locator('[data-chk-stop-hours]').fill('1507.5');
+    await PD.locator('[data-chk-complete]').click();
+    await PD.waitForURL(/\/drill-checklist-file\//, { timeout: 20000 });
+    await PD.locator('button:has-text("Done")').first().waitFor({ timeout: 30000 });
+    await waitForUpload(PD, 30000);
+    await waitFor(() => PB.evaluate(async ({ rigId, date }) => { const { db } = await import('/src/db/index.ts'); const c = (await db.drillChecklists.filter((c) => c.equipmentId === rigId && c.date === date).toArray())[0]; return c?.stopHours === 1507.5 ? 1 : null; }, { rigId: rigs[0].id, date: today }), 40000);
+    await PB.goto(`${WEB}/blast-day/${drillDayId}?view=daily-report`);
+    const rowB = PB.locator(`[data-derived-rig="${rigs[0].asset}"]`);
+    await rowB.waitFor({ timeout: 30000 });
+    R.ok(`the blaster's row now reads the hours ("${((await rowB.innerText()) || '').replace(/\s+/g, ' ').slice(0, 60)}")`, /1500.*→.*1507\.5/.test(((await rowB.innerText()) || '').replace(/,/g, '')) && (await PB.locator('[data-rig-stop-waiting]').count()) === 0);
+    // the rig list lives on the driller's day (the blaster reads the hours on the report)
+    await PD.goto(`${WEB}/blast-day/${drillDayId}`);
+    await PD.locator('[data-tile="rigs"][data-tile-state="complete"]').waitFor({ timeout: 30000 });
+    R.ok('the driller\'s day tile reads complete with the hours used', /7\.5 h · filed/.test((await PD.locator(`[data-rig-row="${rigs[0].asset}"]`).innerText()) || ''));
   });
 
-  await R.section('The shot plan follows the accepted drilling', async () => {
-    R.note('push 2 — not built yet');
+  await R.section('The shot plan follows the accepted drilling; the deviations are named', async () => {
+    // the blaster lays a 2×3 plan with timing on holes 1–3; the driller drills 1–5 (3 short), skips 6, adds 7
+    const shotId2 = await PB.evaluate(async ({ dayId }) => {
+      const { db } = await import('/src/db/index.ts');
+      const { serializeDiagram } = await import('/src/lib/shotDiagram.ts');
+      const { nowISO } = await import('/src/lib/utils.ts');
+      const log = await db.blastLogs.where('blastDayId').equals(dayId).first();
+      const shot = await db.shots.where('blastLogId').equals(log.id).first();
+      const diagram = { rows: 2, cols: 3, delays: {}, wires: [{ from: 0, to: 1 }, { from: 1, to: 2 }], start: { hole: 0, leadMs: 0 }, interHoleMs: 25, plan: { defaultDepth: 20, overrides: {} } };
+      await db.shots.update(shot.id, { designPlan: { ...shot.designPlan, shotDiagramData: serializeDiagram(diagram) }, totals: { ...shot.totals, avgDrillDepth: 20 }, updatedAt: nowISO() });
+      return shot.id;
+    }, { dayId: drillDayId });
+    await waitForUpload(PB, 20000);
+    await waitFor(() => PD.evaluate(async (id) => { const s = await (await import('/src/db/index.ts')).db.shots.get(id); return s?.designPlan?.shotDiagramData?.includes('"rows":2') ? 1 : null; }, shotId2), 30000);
+    // the driller's log on this shot already exists from §3 (2 holes) — reshape it to the story
+    await PD.evaluate(async ({ logId, rigId }) => {
+      const { db } = await import('/src/db/index.ts');
+      const { generateId, nowISO, todayISO } = await import('/src/lib/utils.ts');
+      const now = nowISO();
+      for (const h of await db.drillLogHoles.where('drillLogId').equals(logId).toArray()) await db.drillLogHoles.delete(h.id);
+      const add = (n, depth, extra = {}) => db.drillLogHoles.add({ id: generateId(), drillLogId: logId, date: todayISO(), holeNumber: String(n), angle: 0, actualDepth: depth, plannedDepth: 20, plannedAngle: 0, subdrill: 1, conditions: [], comment: '', createdAt: now, updatedAt: now, syncStatus: 'local', ...extra });
+      await add(1, 20); await add(2, 20); await add(3, 18); await add(4, 20); await add(5, 20); await add(6, 0, { skipped: true }); await add(7, 20);
+      await db.drillLogs.update(logId, { drillRigEquipmentId: rigId, status: 'complete', completedAt: now, updatedAt: now });
+    }, { logId: drillLogId, rigId: rigs[0].id });
+    await waitForUpload(PD, 30000);
+    await waitFor(() => PB.evaluate(async (id) => ((await (await import('/src/db/index.ts')).db.drillLogHoles.where('drillLogId').equals(id).toArray()).length === 7 ? 1 : null), drillLogId), 40000);
+    // the blaster accepts the drilling
+    await PB.evaluate(async (id) => { const { db } = await import('/src/db/index.ts'); const { nowISO } = await import('/src/lib/utils.ts'); await db.drillLogs.update(id, { status: 'accepted', acceptedAt: nowISO(), updatedAt: nowISO() }); }, drillLogId);
+    await PB.goto(`${WEB}/blast-day/${drillDayId}/design/${shotId2}?mode=timing`);
+    const line = PB.locator('[data-as-drilled="current"]');
+    await line.waitFor({ timeout: 30000 });
+    R.ok(`the pattern line reads as drilled, with the count and the time ("${((await line.innerText()) || '').replace(/\s+/g, ' ').slice(0, 80)}")`, /as drilled/.test(await line.innerText()) && /of 6 holes/.test(await line.innerText()) && /accepted/.test(await line.innerText()));
+    R.ok('there is no "Build timing from drilling" button any more', (await PB.locator('[data-use-drilled]').count()) === 0 && !/Build timing from drilling/.test((await PB.textContent('body')) || ''));
+    await PB.locator('[data-drilling-deviations]').waitFor({ timeout: 15000 });
+    const dev = async (k) => ((await PB.locator(`[data-drilling-deviation="${k}"]`).innerText().catch(() => '')) || '').replace(/\s+/g, ' ');
+    R.ok(`the added hole is named ("${(await dev('added')).slice(0, 60)}")`, /Hole 7 was added/.test(await dev('added')));
+    R.ok(`the short hole is named with both depths ("${(await dev('depth-18|20')).slice(0, 60)}")`, /Hole 3 is drilled 18′, the plan says 20′/.test(await dev('depth-18|20')));
+    R.ok(`the drilled holes with no delay are named ("${(await dev('no-delay')).slice(0, 60)}")`, /2 drilled holes have no delay yet \(4, 5\)/.test(await dev('no-delay')));
+    R.ok('nothing is red: the timing kept its delays on drilled holes and dropped the skipped one', (await PB.locator('[data-deviation-level="red"]').count()) === 0);
+    await sleep(1500); // the auto-laid pattern flushes to the record
+    // Check and sign carries the same, amber
+    await PB.goto(`${WEB}/blast-day/${drillDayId}?view=check`);
+    const item = PB.locator(`[data-check-item="dev-${shotId2}"]`);
+    await item.waitFor({ timeout: 30000 });
+    R.ok(`Check and sign names the deviations, amber ("${((await item.innerText()) || '').replace(/\s+/g, ' ').slice(0, 70)}")`, (await item.getAttribute('data-check-level')) === 'amber' && /3 drilling deviations/.test(await item.innerText()));
   });
 
   await R.section('Incidents: the tile, the + door, Injury and Near miss, Do now and the call log', async () => {
@@ -300,7 +427,7 @@ async (page, lib) => {
   });
 
   await R.section('cleanup', async () => {
-    const removed = await lib.cleanupAsAdmin(browser, { days: [dayId, drillDayId, oldDayId, ydayDayId].filter(Boolean), drillLogs: [drillLogId].filter(Boolean) }).catch(() => -1);
+    const removed = await lib.cleanupAsAdmin(browser, { days: [dayId, drillDayId, oldDayId, ydayDayId].filter(Boolean), drillLogs: [drillLogId].filter(Boolean), checklists: [chkId].filter(Boolean) }).catch(() => -1);
     R.ok(`cleanup removed ${removed} day(s)`, removed >= 0);
   });
   await cB.close();

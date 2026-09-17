@@ -10,6 +10,25 @@ const psql = (sql) => execSync(`docker exec -i powersync-spike-pg-1 psql -U post
 const PATTERN = '^(hub|diagram|holes|other day|s15|s16|s17|s18|s19|s20|nav|walk|probe|S15|S8a plan day|S9a batch|S9a batch[0-9]) ';
 const ids = psql(`select id from records where table_name='blastDays' and payload::json->>'name' ~ '${PATTERN}'`).split('\n').filter(Boolean);
 console.log(`${ids.length} harness day(s) named like ${PATTERN}`);
+// a rig checklist dated today at a job with no work day today is a harness leftover (the day was
+// cleaned, the checklist outlived it) — the next run's driller would show as "already on" that day
+{
+  const d = new Date();
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const stray = psql(`select id from records where table_name='drillChecklists' and payload::json->>'date' = '${today}' and coalesce(payload::json->>'jobId','') <> '' and not exists (select 1 from records b where b.table_name='blastDays' and b.payload::json->>'jobId' = records.payload::json->>'jobId' and b.payload::json->>'date' = '${today}')`).split('\n').filter(Boolean);
+  console.log(`${stray.length} stray rig checklist(s) dated today at jobs with no day today`);
+  if (stray.length && !dry) {
+    const c = psql(`with d as (delete from records where table_name='drillChecklists' and id in (${stray.map((i) => `'${i}'`).join(',')}) returning 1) select count(*) from d`);
+    console.log(`deleted ${c} stray checklist(s)`);
+  }
+}
+// their rig checklists too: one per rig per job-day, so a leftover makes the next run's driller "already on" a day (harness76)
+const chkPairs = ids.length ? psql(`select payload::json->>'jobId' || '|' || (payload::json->>'date') from records where table_name='blastDays' and id in (${ids.map((i) => `'${i}'`).join(',')})`).split('\n').filter(Boolean) : [];
+if (chkPairs.length && !dry) {
+  const where = chkPairs.map((p) => { const [j, d] = p.split('|'); return `(payload::json->>'jobId' = '${j}' and payload::json->>'date' = '${d}')`; }).join(' or ');
+  const c = psql(`with d as (delete from records where table_name='drillChecklists' and (${where}) returning 1) select count(*) from d`);
+  console.log(`deleted ${c} rig checklist(s) of those days`);
+}
 // Orphaned drill logs: an accepted log outlives the day it was on (the server refuses the
 // client's delete), and day + shot ids are fixed by job + date — so the next run at that job
 // is handed the old accepted log instead of a fresh one (harness79/80, Sep 16 2026)

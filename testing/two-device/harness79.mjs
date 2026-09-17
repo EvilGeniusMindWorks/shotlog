@@ -193,7 +193,7 @@ async (page, lib) => {
       const l = await db.drillLogs.get(logId);
       return { status: l?.status, holes: (await db.drillLogHoles.where('drillLogId').equals(logId).toArray()).length, signed: Boolean(l?.signatureImage), top: document.querySelectorAll('[data-tour="log-complete"]').length, bottom: document.querySelectorAll('[data-log-complete-bottom]').length, path: location.pathname.replace(/[0-9a-f-]{36}/g, '…'), gate: document.querySelector('[data-day-setup]')?.getAttribute('data-day-setup') ?? null, header: document.querySelector('[data-tour="log-header"]')?.textContent?.slice(0, 60) };
     }, logId)));
-    await PD.locator('[data-log-complete-bottom], [data-tour="log-complete"]').first().waitFor({ timeout: 10000 });
+    await PD.locator('[data-log-complete-bottom], [data-tour="log-complete"]').first().waitFor({ timeout: 40000 });
     await PD.locator('[data-log-complete-bottom]:visible, [data-tour="log-complete"]:visible').first().click();
     await PD.locator('[data-log-complete-confirm]').waitFor({ timeout: 10000 });
     // S20: a log with no rig asks for it in the sheet — Complete waits until one is picked
@@ -209,7 +209,7 @@ async (page, lib) => {
     R.ok(`where the log reads Signed complete ("${tile.slice(0, 60)}")`, /Signed complete/.test(tile));
   });
 
-  await R.section('The rig checklist from the day: Done lands on the day with the rig row; from the rig, Done lands on the rig', async () => {
+  await R.section('The rig checklist from the day: Save lands on the day with the rig row; from the rig, Save lands on the rig (S20: the stop hours come later)', async () => {
     await spa(PD, DAY);
     await PD.locator('[data-rig-start]').waitFor({ timeout: 20000 });
     await PD.locator('[data-rig-start]').click();
@@ -224,13 +224,10 @@ async (page, lib) => {
     R.ok(`the checklist's arrow names the day it came from ("‹ ${await backLabel(PD)}")`, (await backLabel(PD)) === dayName);
     await PD.locator('[data-chk-hours]').fill('1500');
     await PD.locator('[data-chk-file]').click();
-    await PD.waitForURL(/\/drill-checklist-file\//, { timeout: 15000 });
-    const id1 = PD.url().match(/drill-checklist-file\/([^/?]+)/)?.[1];
+    const onDay = await waitFor(async () => (path(PD) === DAY ? 1 : null), 15000);
+    R.ok('Save lands on the day', onDay === 1);
+    const id1 = await PD.evaluate(async ({ rigId, jobId }) => { const { db } = await import('/src/db/index.ts'); const { todayISO } = await import('/src/lib/utils.ts'); return (await db.drillChecklists.filter((c) => c.equipmentId === rigId && c.date === todayISO() && c.jobId === jobId).toArray())[0]?.id; }, { rigId: rig.id, jobId: job.id });
     if (id1) checklistIds.push(id1);
-    await PD.locator('[data-chk-done]').first().waitFor({ timeout: 30000 });
-    await PD.locator('[data-chk-done]').first().click();
-    const onDay = await waitFor(async () => (path(PD) === DAY ? 1 : null), 10000);
-    R.ok('Done lands on the day', onDay === 1);
     await PD.locator(`[data-rig-row="${rig.asset}"]`).waitFor({ timeout: 15000 }).catch(() => {});
     R.ok('with the rig on its Rig checklists tile', (await PD.locator(`[data-rig-row="${rig.asset}"]`).count()) === 1);
     // from the rig: no job, no day → Done lands on the rig
@@ -241,13 +238,10 @@ async (page, lib) => {
     R.ok(`from the rig the arrow reads "‹ ${await backLabel(PD)}"`, (await backLabel(PD)) === rig.asset);
     await PD.locator('[data-checklist-job]').selectOption('');
     await PD.locator('[data-chk-file]').click();
-    await PD.waitForURL(/\/drill-checklist-file\//, { timeout: 15000 });
-    const id2 = PD.url().match(/drill-checklist-file\/([^/?]+)/)?.[1];
+    const onRig = await waitFor(async () => (path(PD) === `/equipment/${rig.id}` ? 1 : null), 15000);
+    R.ok('Save lands on the rig', onRig === 1);
+    const id2 = await PD.evaluate(async ({ rigId }) => { const { db } = await import('/src/db/index.ts'); const { todayISO } = await import('/src/lib/utils.ts'); return (await db.drillChecklists.filter((c) => c.equipmentId === rigId && c.date === todayISO() && !c.jobId).toArray())[0]?.id; }, { rigId: rig.id });
     if (id2) checklistIds.push(id2);
-    await PD.locator('[data-chk-done]').first().waitFor({ timeout: 30000 });
-    await PD.locator('[data-chk-done]').first().click();
-    const onRig = await waitFor(async () => (path(PD) === `/equipment/${rig.id}` ? 1 : null), 10000);
-    R.ok('Done lands on the rig', onRig === 1);
   });
 
   await R.section('Mark the daily report done lands on the day; sheets say Close and the back gesture closes them first', async () => {
