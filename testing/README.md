@@ -12,7 +12,7 @@ asked for: realistic timing, not clean paths.
 npm run e2e -- 49              # one harness, prints FAIL/ERROR/SKIP + a summary line
 npm run e2e -- 49 -v           # …and every PASS line
 npm run e2e -- 49 --only 2,5   # only §2 and §5 (harnesses written on lib.report sections)
-npm run e2e -- 37 45 46 -p     # several in parallel (own page each, shared browser)
+npm run e2e -- 37 62 64 -p     # several in parallel (own page each, shared browser)
 npm run e2e -- 49 --headed     # watch it
 ```
 
@@ -99,7 +99,8 @@ Lessons from the first run: tell agents explicitly never to run other scripts (o
 - `60` — the evaluation's blockers: ticket resolve from three doors; phone bottom sheets above the nav (Mark complete); the rig meter's two doors; filing pre-flight (red blocks, amber files with notes the office sees). Needs the local API (checklist → ticket, submit → PDFs).
 - `61` — the office: Send Back on the ask sheet with a required reason, `sendBackBy`/`At` stamped by the server (needs the local API), the day banner and home strip; the Approvals page gated for the office; customer cards truly read-only; a discarded write toasts; the ask sheet in place of native confirm().
 - `62` — fleet chips OR within "what's down?"; the design grid's names and keyboard; off-plan count in the drilling review; seismo reading Edit and the distance line. Picks a job with no day today (a stray day makes the harness day a "second copy" and hides the drilling view behind the merge strip).
-- Known stale: `45` §"Open that day" join step errors before and after S9a (pre-existing); `26` §"By customer" click predates the S8b Jobs drill-down (its PDF sections still pass).
+- Retired Sep 17 2026 (they failed on rounds that rewrote their screens, and later harnesses tell those stories now): `43` (S7b new-day dialog order and cascade — the dialog was rebuilt in S15/S16; harness73/75), `45` (S7d report ownership, derived rig hours and the join step — the day card gate, the one-paper checklist and the S20 stop hours changed all of it; harness71/72/78/81), `46` (the rig as the first question on the checklist and the old "File rig checklist" tile — S14/S19/S20; harness72/78/81). `30` and `54` were refreshed the same day (a Foreman left by an earlier run, the walkthrough's spine and its "Signed complete" chip, S11's site rule).
+- Known stale: `26` §"By customer" click predates the S8b Jobs drill-down (its PDF sections still pass).
 
 ### Running an evaluation unattended (S9a harness item)
 

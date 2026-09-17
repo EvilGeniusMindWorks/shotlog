@@ -364,7 +364,12 @@ export function DrillLogPage() {
   return (
     <div>
       <div className="bg-navy text-white px-4 py-3 sticky top-0 z-20">
-        <div className="max-w-3xl mx-auto flex items-center gap-3">
+        {/* S20 follow-up: on a phone the arrow's label, the status chip, the ⋯
+            menu, Mark Complete and Print left the title no width at all (the
+            title is the one thing in the row that may shrink) — harness79
+            waited 30 s for a title 0 px wide. The chip and the buttons wrap
+            onto their own row under the title on narrow screens. */}
+        <div className="max-w-3xl mx-auto flex flex-wrap items-center gap-2 sm:gap-3">
           <BackButton back={back} />
           <div className="flex-1 min-w-0" data-tour="log-header">
             <h2 className="font-bold text-lg truncate leading-tight">
@@ -382,7 +387,8 @@ export function DrillLogPage() {
               · {holes.length} holes · {footage.toFixed(0)} ft
             </p>
           </div>
-          <Badge variant={STATUS_BADGE[log.status]} data-log-status={log.status}>{DRILL_LOG_STATUS_LABEL[log.status]}</Badge>
+          <div className="basis-full flex items-center gap-2 sm:contents" data-log-header-actions>
+          <Badge variant={STATUS_BADGE[log.status]} data-log-status={log.status} className="mr-auto sm:mr-0">{DRILL_LOG_STATUS_LABEL[log.status]}</Badge>
           {/* S9b follow-up (Matthew, Sep 9): a log opened by mistake on a finished
               pattern could not be removed anywhere — the lifecycle menu, with an
               empty log always deletable by whoever may delete field records */}
@@ -442,6 +448,7 @@ export function DrillLogPage() {
           >
             <Printer className="h-5 w-5" />
           </button>
+          </div>
         </div>
       </div>
 

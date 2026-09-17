@@ -65,6 +65,11 @@ async (page) => {
     ok('admin role is protected', (await A.locator('body').innerText()).includes("can't be edited"));
 
     // ── (2) Create the custom Foreman role ────────────────────────────────
+    await A.evaluate(async () => {
+      const { db } = await import('/src/db/index.ts');
+      for (const r of await db.roleDefinitions.toArray()) if (r.key === 'foreman') await db.roleDefinitions.delete(r.id);
+    });
+    await A.waitForTimeout(1200);
     await A.getByRole('button', { name: 'New role' }).click();
     await A.locator('input[placeholder*="Role name"]').fill('Foreman');
     await A.getByRole('button', { name: 'Create', exact: true }).click();
@@ -239,6 +244,9 @@ async (page) => {
     // People page shows the custom role option
     await C.goto('http://localhost:5199/admin/people');
     await C.waitForTimeout(1500);
+    // the role picker lives in a person's tools row now — open the first person
+    await C.locator('[data-person-row] button[aria-expanded]').first().click();
+    await C.locator('[data-person-tools]').first().waitFor({ timeout: 5000 });
     const hasForemanOption = await C.evaluate(() =>
       [...document.querySelectorAll('option')].some((o) => o.textContent?.trim() === 'Foreman'),
     );

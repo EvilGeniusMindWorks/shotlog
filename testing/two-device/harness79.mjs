@@ -205,6 +205,7 @@ async (page, lib) => {
     await PD.locator('[data-log-complete-confirm]').click();
     const landed = await waitFor(async () => (path(PD) === DAY ? 1 : null), 10000);
     R.ok('Mark complete lands on the day', landed === 1);
+    await waitFor(async () => (/Signed complete/.test((await PD.locator('[data-tile="drill-log"]').textContent().catch(() => '')) || '') ? 1 : null), 10000);
     const tile = (await PD.locator('[data-tile="drill-log"]').textContent().catch(() => '')) || '';
     R.ok(`where the log reads Signed complete ("${tile.slice(0, 60)}")`, /Signed complete/.test(tile));
   });

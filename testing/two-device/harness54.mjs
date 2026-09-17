@@ -79,10 +79,10 @@ async (page, lib) => {
   });
 
   await R.section('the day spine says ready to review; the review grid is the pattern shape', async () => {
-    await P1.goto(`${WEB}/blast-day/${dayId}`);
+    await P1.goto(`${WEB}/blast-day/${dayId}?view=walkthrough`); // S14: the day opens on tiles; the spine lives on the walkthrough
     await P1.locator('[data-phase="drilling"]').waitFor({ timeout: 10000 });
-    await P1.waitForFunction(() => document.querySelector('[data-phase="drilling"]')?.getAttribute('data-phase-chip') === 'ready to review', null, { timeout: 8000 }).catch(() => undefined);
-    R.ok(`the drilling phase chip reads "ready to review" (${await P1.locator('[data-phase="drilling"]').getAttribute('data-phase-chip')})`, (await P1.locator('[data-phase="drilling"]').getAttribute('data-phase-chip')) === 'ready to review');
+    await P1.waitForFunction(() => document.querySelector('[data-phase="drilling"]')?.getAttribute('data-phase-chip') === 'Signed complete', null, { timeout: 8000 }).catch(() => undefined);
+    R.ok(`the drilling phase chip reads "Signed complete" (${await P1.locator('[data-phase="drilling"]').getAttribute('data-phase-chip')})`, (await P1.locator('[data-phase="drilling"]').getAttribute('data-phase-chip')) === 'Signed complete'); // S17/S18 wording: complete but not yet accepted
     await P1.goto(`${WEB}/blast-day/${dayId}?view=drilling`);
     const found = await P1.locator('[data-pattern-grid="review"]').waitFor({ timeout: 10000 }).then(() => true).catch(() => false);
     if (!found) {
