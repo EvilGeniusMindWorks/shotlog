@@ -20,6 +20,8 @@ import { BlastReportPage } from '@/pages/BlastReportPage';
 import { AdminLayout } from '@/pages/admin/AdminLayout';
 import { AdminPeoplePage } from '@/pages/admin/AdminPeoplePage';
 import { AdminApprovalsPage } from '@/pages/admin/AdminApprovalsPage';
+import { ApprovalReviewPage } from '@/pages/admin/ApprovalReviewPage';
+import { ApprovalPrintPackPage } from '@/pages/admin/ApprovalPrintPackPage';
 import { AdminCatalogPage } from '@/pages/admin/AdminCatalogPage';
 import { AdminCompanyPage } from '@/pages/admin/AdminCompanyPage';
 import { AdminEquipmentPage } from '@/pages/admin/AdminEquipmentPage';
@@ -158,6 +160,8 @@ export function App() {
             <Route path="people" element={<AdminPeoplePage />} />
             <Route path="users" element={<Navigate to="/admin/people" replace />} />
             <Route path="approvals" element={<AdminApprovalsPage />} />
+            <Route path="approvals/:dayId" element={<ApprovalReviewPage />} />
+            <Route path="approvals/:dayId/print-pack" element={<ApprovalPrintPackPage />} />
             <Route path="catalog" element={<AdminCatalogPage />} />
             <Route path="equipment" element={<AdminEquipmentPage />} />
             <Route path="incidents" element={<AdminIncidentsPage />} />

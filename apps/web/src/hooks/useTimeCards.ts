@@ -7,7 +7,7 @@
 // any ordering luck. The day id is kept as a convenience link.
 import { db, useLiveQuery } from '@/db';
 import type { BlastDay, CrewMember, TimeCard } from '@/db/schema';
-import { canEditApprovedDay } from '@/lib/perms';
+import { canEditApprovedDay, canApproveTimeCards } from '@/lib/perms';
 import { getSessionUser } from '@/lib/session';
 import { suggestHours } from '@/lib/timeSuggest';
 import { straightTime as calcST } from '@shotlog/shared';
@@ -38,7 +38,7 @@ export function myCard(cards: TimeCard[]): TimeCard | undefined {
  *  no-login roster person's, or I hold the approval capability. Approved
  *  cards freeze; filed cards must be pulled back first. */
 export function canEditCard(card: TimeCard, roster: CrewMember[]): boolean {
-  if (canEditApprovedDay()) return true;
+  if (canEditApprovedDay() || canApproveTimeCards()) return true;
   if (card.status !== 'draft') return false;
   const me = getSessionUser();
   if (!me) return false;

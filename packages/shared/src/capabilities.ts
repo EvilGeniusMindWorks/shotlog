@@ -147,6 +147,28 @@ export const CAPABILITIES: readonly CapabilityDef[] = [
       'Approve submitted days and filed time cards, send them back for fixes, reopen approved ones, and edit locked records.',
     group: 'workflow',
   },
+  // S21 (Matthew, Sep 16 2026 — the approval matrix): each kind of paper is
+  // approved by whoever holds its capability; the matrix in Admin › Company ›
+  // Approvals ticks these per role. Workflow-only: the review screen's
+  // decisions go through the server, which writes the records itself.
+  {
+    key: 'approve_time_cards',
+    label: 'Approve time cards',
+    description: 'Approve filed time cards from the review screen, or send one back to the person with a note.',
+    group: 'workflow',
+  },
+  {
+    key: 'approve_checklists',
+    label: 'Approve rig checklists',
+    description: 'Sign off a filed rig checklist on the review screen, or send it back with a note.',
+    group: 'workflow',
+  },
+  {
+    key: 'approve_drill_logs',
+    label: 'Approve drill logs',
+    description: 'The office sign-off on a drill log, or a send-back to the driller with a note. Accepting the pattern for loading stays with the blaster.',
+    group: 'workflow',
+  },
   {
     key: 'complete_drill_logs',
     label: 'Complete drill logs',
@@ -277,7 +299,7 @@ export const BUILT_IN_ROLES: readonly RoleDefinitionData[] = [
     capabilities: [
       'author_field_reports', 'author_blast_records', 'log_equipment', 'file_incidents',
       'file_time_cards', 'correct_hours', 'file_office_copies', 'delete_field_records',
-      'submit_days', 'approve_days',
+      'submit_days', 'approve_days', 'approve_time_cards', 'approve_checklists', 'approve_drill_logs',
       'complete_drill_logs', 'accept_drill_patterns', 'complete_drill_plans',
       'resolve_repairs', 'retire_equipment', 'manage_people', 'manage_equipment',
       'view_admin_area',
@@ -316,8 +338,10 @@ export const BUILT_IN_ROLES: readonly RoleDefinitionData[] = [
     key: 'office',
     name: 'Office',
     // S20 (Matthew, Sep 16 2026): the office files incidents too, not only
-    // processes them — Office Test's two attempts were refused silently
-    capabilities: ['file_incidents', 'process_incidents', 'view_admin_area'],
+    // processes them — Office Test's two attempts were refused silently.
+    // S21 (Matthew, Sep 16 2026): "set today so the office approves
+    // everything" — the matrix ticks Office on every paper
+    capabilities: ['file_incidents', 'process_incidents', 'view_admin_area', 'approve_days', 'approve_time_cards', 'approve_checklists', 'approve_drill_logs'],
     homeDashboard: 'office',
   },
 ] as const;
@@ -458,12 +482,12 @@ const SENSITIVE_TRANSITION_CAPS: Record<string, Record<string, Record<string, st
     open: { complete: 'complete_drill_plans' },
     complete: { open: 'complete_drill_plans' },
   },
-  // Approving a time card (or pulling an approved one back) is the same
-  // supervisory act as approving the day — one grant covers both
+  // S21: approving a time card (or pulling an approved one back) is its own
+  // row of the matrix
   timeCards: {
-    draft: { approved: 'approve_days' },
-    filed: { approved: 'approve_days' },
-    approved: { filed: 'approve_days', draft: 'approve_days' },
+    draft: { approved: 'approve_time_cards' },
+    filed: { approved: 'approve_time_cards' },
+    approved: { filed: 'approve_time_cards', draft: 'approve_time_cards' },
   },
 };
 
@@ -481,6 +505,11 @@ export function canTransitionRecordStatusAs(
 
 export function canEditApprovedAs(role: string, defs?: RoleDefsLookup): boolean {
   return hasCapability(role, 'approve_days', defs);
+}
+
+/** S21: who may fix and approve time cards (the matrix's Time cards row) */
+export function canApproveTimeCardsAs(role: string, defs?: RoleDefsLookup): boolean {
+  return hasCapability(role, 'approve_time_cards', defs);
 }
 
 export function canEditAcceptedDrillLogAs(role: string, defs?: RoleDefsLookup): boolean {

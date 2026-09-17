@@ -27,7 +27,7 @@ import {
   unapproveTimeCard,
   useDayTimeCards,
 } from '@/hooks/useTimeCards';
-import { canEditApprovedDay, hasCap } from '@/lib/perms';
+import { canEditApprovedDay, hasCap, canApproveTimeCards } from '@/lib/perms';
 import { getSessionUser } from '@/lib/session';
 import { dataUrlToBlob, nowISO } from '@/lib/utils';
 
@@ -36,7 +36,7 @@ export function TimeCardsCard({ blastDay }: { blastDay: BlastDay }) {
   const roster = useLiveQuery(() => db.crewMembers.filter((m) => m.isActive).toArray()) ?? [];
   const me = getSessionUser();
   const mine = myCard(cards);
-  const supervisory = canEditApprovedDay();
+  const supervisory = canApproveTimeCards() || (canEditApprovedDay());
   const [addingOther, setAddingOther] = useState(false);
   // S7d roll-up: who WORKED this day by their own records (drill log,
   // rig checklist, blast-log signature) but has no card yet — the author
@@ -324,6 +324,11 @@ export function TimeCardRow({ card, editable }: { card: TimeCard; editable: bool
           >
             File card
           </Button>
+        )}
+        {card.sendBackNote && (
+          <p className="w-full text-xs text-red-700" data-time-card-sent-back>
+            ↩ Sent back{card.sendBackBy ? ` by ${card.sendBackBy}` : ''}: “{card.sendBackNote}” — fix it and file again
+          </p>
         )}
         {card.status === 'filed' && (isMine || supervisory) && (
           <Button size="sm" variant="outline" onClick={() => void pullBackTimeCard(card)}>

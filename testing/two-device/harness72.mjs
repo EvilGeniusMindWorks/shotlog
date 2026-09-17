@@ -95,7 +95,8 @@ async (page, lib) => {
     await sleep(600);
     const ready = await waitFor(() => PA.locator('[data-file-row]').getAttribute('data-file-row').then((k) => (k === 'ready' ? k : null)));
     R.ok('with the log signed and marked complete, File this day appears', ready === 'ready' && (await PA.locator('[data-file-day]').count()) === 1);
-    R.ok('the Blasting log tile reads Ready to file', (await tileState(PA, 'blast-log')) === 'Ready to file');
+    // navigation round: a log marked complete reads "Complete h:mm" (it read "Ready to file" in S14)
+    R.ok(`the Blasting log tile reads Complete (${await tileState(PA, 'blast-log')})`, /^(Ready to file|Complete)/.test((await tileState(PA, 'blast-log')) ?? ''));
     await PA.locator('[data-tile="time-card"] [data-tile-action]').click();
     await PA.locator('[data-time-card-sheet]').waitFor({ timeout: 8000 });
     R.ok('My time card opens the cards sheet', (await PA.locator('[data-time-card-sheet]').count()) === 1);
@@ -129,6 +130,11 @@ async (page, lib) => {
     await PB.locator('[data-tour="log-complete"]').click();
     await PB.locator('[data-log-complete-confirm]').waitFor({ timeout: 8000 });
     R.ok('Mark complete no longer asks for a meter reading', (await PB.locator('[data-log-end-meter]').count()) === 0);
+    // S20: Mark complete asks which rig drilled it — pick the first
+    if (await PB.locator('[data-log-complete-rig-select]').count()) {
+      const firstRig = await PB.locator('[data-log-complete-rig-select] option').nth(1).getAttribute('value');
+      await PB.locator('[data-log-complete-rig-select]').selectOption(firstRig);
+    }
     await PB.locator('[data-log-complete-confirm]').click();
     await waitFor(() => PB.evaluate(async (id) => (await (await import('/src/db/index.ts')).db.drillLogs.get(id))?.status === 'complete', logId).then((x) => (x ? 1 : 0)));
     await waitForUpload(PB, 30000);

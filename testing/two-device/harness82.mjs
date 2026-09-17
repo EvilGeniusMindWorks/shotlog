@@ -276,12 +276,141 @@ async (page, lib) => {
     await PO.mouse.click(20, 400);
   });
 
+  // ── push 2: the approval process ──
+  let cardId, blasterOverrideExisted;
+  await R.section('Admin › Company › Approvals: the matrix, office approves everything', async () => {
+    // a filed time card on the day, for the review screen
+    cardId = await PB.evaluate(async ({ dayId, jobId, today }) => {
+      const { db } = await import('/src/db/index.ts');
+      const { generateId, nowISO } = await import('/src/lib/utils.ts');
+      const { getSessionUser } = await import('/src/lib/session.ts');
+      const me = getSessionUser();
+      const now = nowISO();
+      const id = generateId();
+      await db.timeCards.add({ id, date: today, jobId, blastDayId: dayId, personName: 'Lisa Vital', timeIn: '07:00', timeOut: '15:30', straightTime: 8, overtime: 0.5, notes: '', signatureImage: null, status: 'filed', filedAt: now, enteredByUserId: me?.id ?? '', enteredByName: me?.name ?? '', createdAt: now, updatedAt: now, syncStatus: 'local' });
+      return id;
+    }, { dayId, jobId: jobA.id, today });
+    await waitForUpload(PB, 30000);
+    await PO.goto(WEB + '/admin/company');
+    await PO.locator('[data-approvals-matrix]').waitFor({ timeout: 20000 });
+    const cell = (k) => PO.locator('[data-matrix-cell="' + k + '"]');
+    const officeTicked = (await cell('time_card:office').isChecked()) && (await cell('blast_log:office').isChecked()) && (await cell('drill_log:office').isChecked());
+    const adminLocked = (await cell('blast_log:admin').isChecked()) && (await cell('blast_log:admin').isDisabled());
+    const blasterOff = !(await cell('time_card:blaster').isChecked());
+    R.ok('the matrix ships with the office ticked on every paper, admin locked, the blaster in charge off', officeTicked && adminLocked && blasterOff);
+    R.ok('a day is approved as one by default', (await PO.locator('[data-approvals-matrix] [data-approvals-day-as-one]').getAttribute('data-approvals-day-as-one')) === 'yes');
+    R.ok('the office reads the grid; only an admin changes it', await cell('time_card:office').isDisabled());
+    // the admin ticks Blaster in charge × Time cards, then unticks it
+    const cA = await mkCtx(browser, { viewport: { width: 1280, height: 900 } });
+    const PA = await cA.newPage();
+    await signIn(PA, 'mark');
+    await skipTours(PA);
+    blasterOverrideExisted = await PA.evaluate(async () => { const { db } = await import('/src/db/index.ts'); return Boolean((await db.roleDefinitions.toArray()).find((r) => r.key === 'blaster')); });
+    await PA.goto(WEB + '/admin/company');
+    await PA.locator('[data-matrix-cell="time_card:blaster"]').waitFor({ timeout: 20000 });
+    await PA.locator('[data-matrix-cell="time_card:blaster"]').click();
+    const granted = await waitFor(() => PA.evaluate(async () => { const { db } = await import('/src/db/index.ts'); const r = (await db.roleDefinitions.toArray()).find((x) => x.key === 'blaster'); return r?.capabilities.includes('approve_time_cards') ? 1 : null; }), 10000);
+    R.ok("a tick grants the role the paper's capability (Blaster in charge × Time cards → approve_time_cards)", granted === 1);
+    await PA.locator('[data-matrix-cell="time_card:blaster"]').click();
+    await waitFor(() => PA.evaluate(async () => { const { db } = await import('/src/db/index.ts'); const r = (await db.roleDefinitions.toArray()).find((x) => x.key === 'blaster'); return r && !r.capabilities.includes('approve_time_cards') ? 1 : null; }), 10000);
+    await waitForUpload(PA, 20000).catch(() => undefined);
+    await cA.close();
+  });
+
+  await R.section('The review screen: papers left, PDF and attachments right, Approve and Send back with a note', async () => {
+    await PO.goto(WEB + '/admin/approvals');
+    const row = PO.locator('[data-approval-row="' + dayId + '"]');
+    await row.waitFor({ timeout: 30000 });
+    await waitFor(async () => (Number(await row.locator('[data-approval-papers]').getAttribute('data-approval-papers')) >= 3 ? 1 : null), 20000);
+    const papersText = (await row.locator('[data-approval-papers]').innerText()).replace(/\s+/g, ' ');
+    R.ok('the queue row has real columns: job, date, filed by, papers ("' + papersText + '"), waiting', Number(await row.locator('[data-approval-papers]').getAttribute('data-approval-papers')) >= 3 && /waiting|filed/.test(papersText) && (await row.locator('[data-approval-waiting]').count()) === 1);
+    R.ok('Mine / All sits on the queue', (await PO.locator('[data-approvals-mine="on"]').count()) === 1 && (await PO.locator('[data-approvals-mine="off"]').count()) === 1);
+    await row.locator('[data-approval-review]').click();
+    await PO.waitForURL(new RegExp('/admin/approvals/' + dayId + '$'), { timeout: 10000 });
+    await PO.locator('[data-review-papers]').waitFor({ timeout: 20000 });
+    const cardSel = '[data-review-paper="time_card:' + cardId + '"]';
+    await PO.locator(cardSel).waitFor({ timeout: 20000 });
+    R.ok('the papers are down the left: blasting log, daily report, the time card — each waiting', (await PO.locator('[data-review-paper="blast_log"][data-review-state="waiting"]').count()) === 1 && (await PO.locator('[data-review-paper="daily_report"][data-review-state="waiting"]').count()) === 1 && (await PO.locator(cardSel + '[data-review-state="waiting"]').count()) === 1);
+    const pdf = await PO.locator('[data-review-preview] [data-records-pdf]').waitFor({ timeout: 20000 }).then(() => true).catch(() => false);
+    R.ok("the selected paper's PDF and its attachments are on the right", pdf && (await PO.locator('[data-review-preview] [data-records-strip]').count()) === 1);
+    const header = (await PO.textContent('[data-screen-header]')) || '';
+    R.ok('the header names who filed it', /filed by/.test(header));
+    await PO.locator('[data-review-send-back="time_card:' + cardId + '"]').click();
+    await PO.locator('[data-ask-sheet]').waitFor({ timeout: 5000 });
+    await PO.locator('[data-ask-text]').fill('IN at 7:00 but the crew list has you arriving at 8:15 — which is it?');
+    await PO.locator('[data-ask-confirm]').click();
+    await waitFor(async () => ((await PO.locator(cardSel + '[data-review-state="sent_back"]').count()) === 1 ? 1 : null), 15000);
+    const st = (await PO.locator(cardSel + ' [data-review-paper-state]').innerText()).replace(/\s+/g, ' ');
+    R.ok('Send back records the note on the paper ("' + st.slice(0, 70) + '")', /sent back by/.test(st) && /8:15/.test(st));
+    R.ok('Approve the day waits while a paper is sent back', await PO.locator('[data-review-approve-day]').isDisabled());
+  });
+
+  await R.section("The filer's home shows the note and Approved by; only an approver sends back; the queue's columns, Mine and Print pack", async () => {
+    const card = await waitFor(() => PB.evaluate(async (id) => { const { db } = await import('/src/db/index.ts'); const c = await db.timeCards.get(id); return c?.status === 'draft' && c.sendBackNote ? { note: c.sendBackNote, by: c.sendBackBy } : null; }, cardId), 30000);
+    R.ok("the time card went back to a draft with the office's note" + (card ? ' (by ' + card.by + ')' : ''), Boolean(card) && /8:15/.test(card?.note ?? ''));
+    await PB.goto(WEB + '/');
+    const homeRow = PB.locator('[data-attention-row="pb-' + dayId + '-time_card:' + cardId + '"]');
+    const onHome = await homeRow.waitFor({ timeout: 30000 }).then(() => true).catch(() => false);
+    R.ok("the note lands on the blaster's home" + (onHome ? ' ("' + (await homeRow.innerText()).replace(/\s+/g, ' ').slice(0, 80) + '")' : ' (missing)'), onHome && /Time card/i.test(await homeRow.innerText()));
+    await PB.goto(WEB + '/blast-day/' + dayId);
+    const fileNote = await PB.locator('[data-file-sent-back-papers]').waitFor({ timeout: 20000 }).then(() => PB.locator('[data-file-sent-back-papers]').innerText()).catch(() => '');
+    R.ok("the day's File row reads \"" + fileNote.replace(/\s+/g, ' ').trim() + '"', /1 paper sent back/.test(fileNote) && /Time card/i.test(fileNote));
+    await PB.evaluate(async (id) => { const { db } = await import('/src/db/index.ts'); const { nowISO } = await import('/src/lib/utils.ts'); await db.timeCards.update(id, { status: 'filed', filedAt: nowISO(), updatedAt: nowISO() }); }, cardId);
+    await waitForUpload(PB, 30000);
+    const cardSel = '[data-review-paper="time_card:' + cardId + '"]';
+    await waitFor(async () => (/refiled/.test(await PO.locator(cardSel + ' [data-review-paper-state]').innerText()) ? 1 : null), 30000);
+    R.ok('once refiled, the review screen reads "refiled · waiting"', /refiled/.test(await PO.locator(cardSel + ' [data-review-paper-state]').innerText()));
+    await PO.locator('[data-review-approve="time_card:' + cardId + '"]').click();
+    await waitFor(async () => ((await PO.locator(cardSel + '[data-review-state="approved"]').count()) === 1 ? 1 : null), 15000);
+    R.ok('Approve stamps the time card', (await PO.locator(cardSel + '[data-review-state="approved"]').count()) === 1);
+    await waitFor(async () => ((await PO.locator('[data-review-approve-day]').isDisabled()) ? null : 1), 10000);
+    await PO.locator('[data-review-approve-day]').click();
+    await PO.locator('[data-review-approved]').waitFor({ timeout: 15000 });
+    const approvedLine = (await PO.locator('[data-review-approved]').innerText()).replace(/\s+/g, ' ');
+    R.ok('Approve the day: "' + approvedLine.slice(0, 60) + '"', /Approved .* by /.test(approvedLine));
+    const banner = await PB.locator('[data-approved-banner]').waitFor({ timeout: 30000 }).then(() => PB.locator('[data-approved-banner]').innerText()).catch(() => '');
+    R.ok("the blaster's day reads \"" + banner.replace(/\s+/g, ' ').trim() + '"', /Approved .* by /.test(banner));
+    const approver = (approvedLine.match(/by ([^·]+)/) || [])[1]?.trim() ?? '';
+    await PO.goto(WEB + '/records');
+    await PO.locator(rowSel).waitFor({ timeout: 30000 });
+    await PO.locator('[data-records-columns]').click();
+    await PO.locator('[data-column-toggle="approvedBy"]').check();
+    await PO.mouse.click(600, 60);
+    await waitFor(async () => ((await PO.locator(rowSel).innerText()).includes(approver) ? 1 : null), 20000);
+    R.ok('Records shows Approved by (' + approver + ')', Boolean(approver) && (await PO.locator(rowSel).innerText()).includes(approver));
+    await PO.locator('[data-records-columns]').click();
+    await PO.locator('[data-column-toggle="approvedBy"]').uncheck();
+    await PO.mouse.click(600, 60);
+    const { token, api } = await lib.apiLogin(PB, 'blaster');
+    const refused = await api('/admin/blast-days/' + dayId + '/papers', { method: 'POST', body: JSON.stringify({ paper: 'time_card', recordId: cardId, to: 'sent_back', note: 'nope', label: 'Time card' }) }, token);
+    R.ok('only an approver sends back (the blaster gets ' + refused.status + ')', refused.status === 403);
+    await PO.goto(WEB + '/admin/approvals/' + dayId + '/print-pack');
+    await PO.locator('[data-print-pack]').waitFor({ timeout: 20000 });
+    await waitFor(async () => ((await PO.locator('[data-print-pack-photos]').getAttribute('data-print-pack-photos')) === '1' ? 1 : null), 20000);
+    R.ok('Print pack lists the papers and the photos, captioned', (await PO.locator('[data-print-pack-paper]').count()) >= 3 && (await PO.locator('[data-print-pack-photo]').count()) === 1 && /Seismo reading 2/.test(await PO.locator('[data-print-pack-photo]').innerText()));
+    await PO.goto(WEB + '/admin/approvals');
+    await PO.locator('[data-approved-row="' + dayId + '"]').waitFor({ timeout: 20000 });
+    R.ok('Recently approved names who approved it', /approved .* by /.test(await PO.locator('[data-approved-row="' + dayId + '"]').innerText()));
+  });
+
   await R.section('the error spy saw nothing during this run', async () => {
     const errs = browserErrors();
     R.ok(`no browser errors (${errs.length})${errs[0] ? ` — first: ${errs[0].text.slice(0, 120)}` : ''}`, errs.length === 0);
   });
 
   await R.section('cleanup', async () => {
+    const cA2 = await mkCtx(browser);
+    const PA2 = await cA2.newPage();
+    await signIn(PA2, 'mark');
+    await PA2.evaluate(async ({ cardId, dropBlaster }) => {
+      const { db, deleteWithTombstone } = await import('/src/db/index.ts');
+      if (cardId && (await db.timeCards.get(cardId))) await deleteWithTombstone('timeCards', cardId);
+      if (dropBlaster) for (const r of (await db.roleDefinitions.toArray()).filter((x) => x.key === 'blaster')) await deleteWithTombstone('roleDefinitions', r.id);
+    }, { cardId, dropBlaster: blasterOverrideExisted === false }).catch(() => undefined);
+    await waitForUpload(PA2, 20000).catch(() => undefined);
+    const { token: adminToken, api: adminApi } = await lib.apiLogin(PA2, 'mark');
+    for (const to of ['submitted', 'draft']) await adminApi('/admin/blast-days/' + dayId + '/status', { method: 'POST', body: JSON.stringify({ to, note: to === 'draft' ? 'harness cleanup' : undefined }) }, adminToken).catch(() => undefined);
+    await cA2.close();
     const removed = await lib.cleanupAsAdmin(browser, { days: [dayId].filter(Boolean) }).catch(() => -1);
     R.ok(`cleanup removed ${removed} day(s)`, removed >= 0);
   });

@@ -122,6 +122,10 @@ function normalize(route: string): string {
 /** The parent in the map — static labels; a page passes a better one (the job's name) */
 export function parentOf(route: string): NavParent | null {
   const { pathname, q } = split(route);
+  // S21: the review screen and its print pack sit under Approvals
+  let mm: RegExpMatchArray | null;
+  if ((mm = pathname.match(/^\/admin\/approvals\/([^/]+)\/print-pack/))) return { to: `/admin/approvals/${mm[1]}`, label: 'Review' };
+  if (/^\/admin\/approvals\/[^/]+/.test(pathname)) return { to: '/admin/approvals', label: 'Approvals' };
   if (ROOTS.some((re) => re.test(pathname))) return null;
   let m: RegExpMatchArray | null;
   if ((m = pathname.match(/^\/blast-day\/([^/]+)\/(design|seismo)\//))) return { to: `/blast-day/${m[1]}?view=blast-log`, label: 'Blasting log' };

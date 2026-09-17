@@ -1,6 +1,7 @@
 // Company settings (synced single doc): details, office routing contacts,
 // and attachment types. People (roster + logins) live on Admin › People.
 import { useEffect, useState } from 'react';
+import { ApprovalsMatrix } from '@/components/admin/ApprovalsMatrix';
 import { useOutletContext } from 'react-router-dom';
 import { useLiveQuery, db } from '@/db';
 import { authedFetch, getSessionUser } from '@/lib/session';
@@ -298,6 +299,7 @@ export function AdminCompanyPage() {
         {message && <p className="text-sm text-gray-500">{message}</p>}
       </section>
 
+      <ApprovalsMatrix settings={settings} online={online} />
       <OfficeContactsSection settings={settings} online={online} />
       <HomeSettingsSection settings={settings} online={online} />
       <AttachmentTypesSection settings={settings} />

@@ -48,6 +48,25 @@ function useNeedsAttention(): AttentionRow[] | undefined {
     cutoffDate.setDate(cutoffDate.getDate() - Math.max(0, staleDays));
     const cutoff = `${cutoffDate.getFullYear()}-${String(cutoffDate.getMonth() + 1).padStart(2, '0')}-${String(cutoffDate.getDate()).padStart(2, '0')}`;
 
+    // S21: a paper the office sent back from its review screen (a time card, a
+    // drill log, a checklist) — the day itself may still be filed
+    for (const day of days) {
+      const backs = Object.entries(day.paperReviews ?? {}).filter(([, r]) => r.status === 'sent_back');
+      if (backs.length === 0 || (mine && !mine.has(day.id))) continue;
+      const jobName = jobs.get(day.jobId)?.name ?? 'Unknown job';
+      for (const [key, r] of backs) {
+        rows.push({
+          key: `pb-${day.id}-${key}`,
+          chip: 'sent back',
+          chipVariant: 'violation',
+          title: `${formatDate(day.date)} · ${jobName} · ${r.label}`,
+          sub: `${r.byName}: “${r.note ?? ''}”`,
+          to: `/blast-day/${day.id}`,
+          rank: 0,
+          date: day.date,
+        });
+      }
+    }
     for (const day of days) {
       if (day.status !== 'draft') continue;
       if (mine && !mine.has(day.id)) continue;

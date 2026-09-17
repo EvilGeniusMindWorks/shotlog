@@ -86,15 +86,17 @@ async (page, lib) => {
     R.ok('the home strip quotes the office', (await PB.getByText(/Office: .seismo distance missing/).count()) >= 1);
   });
 
-  await R.section('the office · reads the queue and is told who approves; customer fields are truly read-only; a discarded write is told', async () => {
+  await R.section('the office · approves from the queue (S21); customer fields are truly read-only; a discarded write is told', async () => {
     const cO = await mkCtx(browser, { viewport: { width: 1280, height: 800 } });
     const PO = await cO.newPage();
     await signIn(PO, 'office');
     await skipTours(PO);
     await PO.goto(`${WEB}/admin/approvals`);
-    await PO.locator('[data-approvals-readonly]').waitFor({ timeout: 15000 });
-    const line = await PO.locator('[data-approvals-readonly]').innerText();
-    R.ok(`the Approvals page says "${line.slice(0, 60)}…" and shows no Approve / Send Back`, /approve days/i.test(line) && (await PO.getByRole('button', { name: /^Approve$|Send Back/ }).count()) === 0);
+    // S21: the matrix ships with the office ticked on every paper — the office approves now, so the
+    // queue shows Approve / Send Back and no "who approves" line (that line is for a role the matrix leaves out)
+    await PO.locator('[data-approvals-queue]').waitFor({ timeout: 15000 });
+    await PO.locator('[data-approval-row]').first().waitFor({ timeout: 15000 }).catch(() => undefined);
+    R.ok('the Approvals page shows the office Approve / Send Back (S21: the office approves everything) and no "who approves" line', (await PO.locator('[data-approvals-readonly]').count()) === 0 && (await PO.getByRole('button', { name: /^Approve$|Send Back/ }).count()) >= 1);
     await PO.getByText(/Sent back, waiting/).first().waitFor({ timeout: 15000 }).catch(() => undefined);
     R.ok('the office home counts the day under "Sent back, waiting"', (await PO.goto(`${WEB}/`), await sleep(1500), (await PO.getByText(/Sent back, waiting/).count()) >= 1));
 

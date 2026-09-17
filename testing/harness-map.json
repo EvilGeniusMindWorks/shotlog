@@ -1,6 +1,7 @@
 {
   "apps/server/src/admin.ts": [
-    61
+    61,
+    82
   ],
   "apps/server/src/auth.ts": [
     68
@@ -124,7 +125,8 @@
   "apps/web/src/components/forms/TimeCardsCard.tsx": [
     65,
     77,
-    78
+    78,
+    82
   ],
   "apps/web/src/components/guidance/FirstWeekCard.tsx": [
     69
@@ -184,11 +186,13 @@
     71
   ],
   "apps/web/src/lib/dayHub.ts": [
+    72,
     75,
     77,
     78,
     80,
-    81
+    81,
+    82
   ],
   "apps/web/src/lib/docRows.ts": [
     40,
@@ -345,12 +349,14 @@
   ],
   "packages/shared/src/capabilities.ts": [
     30,
-    81
+    81,
+    82
   ],
   "packages/shared/src/permissions.ts": [
     30,
     71,
-    81
+    81,
+    82
   ],
   "packages/shared/src/timing.ts": [
     74
@@ -450,6 +456,7 @@
     82
   ],
   "apps/web/src/pages/admin/AdminCompanyPage.tsx": [
+    81,
     82
   ],
   "apps/web/src/components/records/BinderExport.tsx": [
@@ -481,6 +488,25 @@
   ],
   "apps/web/src/db/projections.ts": [
     68,
+    82
+  ],
+  "apps/web/src/lib/approvals.ts": [
+    82
+  ],
+  "apps/web/src/components/admin/ApprovalsMatrix.tsx": [
+    82
+  ],
+  "apps/web/src/pages/admin/ApprovalReviewPage.tsx": [
+    82
+  ],
+  "apps/web/src/pages/admin/ApprovalPrintPackPage.tsx": [
+    82
+  ],
+  "apps/web/src/components/dashboard/BlasterHome.tsx": [
+    81,
+    82
+  ],
+  "apps/web/src/hooks/useTimeCards.ts": [
     82
   ]
 }

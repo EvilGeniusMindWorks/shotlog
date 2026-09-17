@@ -5,7 +5,8 @@
 import { randomUUID } from 'node:crypto';
 import { Router, type Response } from 'express';
 import { z } from 'zod';
-import { canTransitionStatus, slugify, type Role } from '@shotlog/shared';
+import { buildRoleDefsLookup, canTransitionStatusAs, hasCapability, slugify, type Role, type RoleDefsLookup } from '@shotlog/shared';
+import type { Prisma } from '@prisma/client';
 import { prisma } from './db.js';
 import { requireAuth, requireRole, type AuthedRequest } from './auth.js';
 import { getRecord, upsertRecord } from './records.js';
@@ -18,6 +19,43 @@ const statusSchema = z.object({
   to: z.enum(['draft', 'submitted', 'approved']),
   /** Send-back reason — shown inline on the field home's needs-attention strip */
   note: z.string().max(500).optional(),
+});
+
+// S21 (the approval process): the company's role definitions, so a role the
+// matrix ticked (Office × Time cards) is honoured here the way the sync
+// choke point honours it
+async function loadRoleDefs(tx: Prisma.TransactionClient, cid: string): Promise<RoleDefsLookup> {
+  const rows = await tx.record.findMany({ where: { companyId: cid, tableName: 'roleDefinitions' }, select: { payload: true } });
+  return buildRoleDefsLookup(
+    rows.map((r) => {
+      try {
+        return JSON.parse(r.payload) as { key?: unknown; name?: unknown; capabilities?: unknown; homeDashboard?: unknown };
+      } catch {
+        return {};
+      }
+    }),
+  );
+}
+
+/** paper → the capability that approves it (mirrors the web's lib/approvals.ts) */
+const PAPER_CAP: Record<string, string> = {
+  blast_log: 'approve_days',
+  daily_report: 'approve_days',
+  drill_log: 'approve_drill_logs',
+  drill_checklist: 'approve_checklists',
+  time_card: 'approve_time_cards',
+};
+const PAPER_TABLE: Record<string, string> = {
+  drill_log: 'drillLogs',
+  drill_checklist: 'drillChecklists',
+  time_card: 'timeCards',
+};
+const paperSchema = z.object({
+  paper: z.enum(['blast_log', 'daily_report', 'drill_log', 'drill_checklist', 'time_card']),
+  recordId: z.string().optional(),
+  to: z.enum(['approved', 'sent_back']),
+  note: z.string().max(500).optional(),
+  label: z.string().max(120).optional(),
 });
 
 const productSchema = z.object({
@@ -334,7 +372,6 @@ adminRouter.put('/catalog/:id', requireRole('admin'), async (req: AuthedRequest,
  */
 adminRouter.post(
   '/blast-days/:id/status',
-  requireRole('admin', 'supervisor'),
   async (req: AuthedRequest, res: Response) => {
     const parsed = statusSchema.safeParse(req.body);
     const id = req.params.id;
@@ -356,8 +393,11 @@ adminRouter.post(
         if (from === to) {
           return { code: 200 as const, status: to };
         }
-        if (!canTransitionStatus(from, to, role)) {
-          return { code: 409 as const, error: `can't go from ${from} to ${to}` };
+        // S21: the matrix decides who approves — a role the office ticked
+        // holds approve_days through its role definition
+        const roleDefs = await loadRoleDefs(tx, cid);
+        if (!canTransitionStatusAs(from, to, role, roleDefs)) {
+          return { code: 403 as const, error: `your role does not approve work days (can't go from ${from} to ${to})` };
         }
         // Send-back carries the reason to the field home; any other
         // transition clears it (the day is moving forward again)
@@ -365,13 +405,27 @@ adminRouter.post(
           to === 'draft' && parsed.data.note?.trim() ? parsed.data.note.trim() : undefined;
         // S9a: the day page shows who sent it back and when, not just the note
         const actor = await resolveActor(req.userId, role);
+        const nowIso = new Date().toISOString();
+        // S21: "Approved 9:12 am by Evette" on the day, the File row and Records
+        const approvedStamp =
+          to === 'approved'
+            ? { approvedAt: nowIso, approvedByUserId: actor.actorId, approvedByName: actor.actorName }
+            : { approvedAt: undefined, approvedByUserId: undefined, approvedByName: undefined };
+        // a day sent back as a whole clears its per-paper send-backs on the day's own papers
+        const reviews = { ...((stored.payload.paperReviews as Record<string, unknown> | undefined) ?? {}) };
+        if (to === 'draft') {
+          delete reviews.blast_log;
+          delete reviews.daily_report;
+        }
         const payload = JSON.stringify({
           ...stored.payload,
           status: to,
           sendBackNote,
           sendBackBy: sendBackNote ? actor.actorName : undefined,
-          sendBackAt: sendBackNote ? new Date().toISOString() : undefined,
-          updatedAt: new Date().toISOString(),
+          sendBackAt: sendBackNote ? nowIso : undefined,
+          ...approvedStamp,
+          paperReviews: reviews,
+          updatedAt: nowIso,
         });
         await upsertRecord(tx, cid, id, 'blastDays', payload, new Date().toISOString());
         // OFFICE approvals must be in the change log the ATF binder exports
@@ -384,6 +438,7 @@ adminRouter.post(
           changes: [
             { field: 'status', old: from, new: to },
             ...(sendBackNote ? [{ field: 'sendBackNote', old: null, new: sendBackNote }] : []),
+            ...(to === 'approved' ? [{ field: 'approvedByName', old: null, new: actor.actorName }] : []),
           ],
           reason: 'office status change',
         });
@@ -400,6 +455,109 @@ adminRouter.post(
     }
   },
 );
+
+/**
+ * S21 — one paper of a day, approved or sent back from the review screen.
+ * The decision is written on the day (paperReviews) and, where the paper is
+ * its own record, on that record: a time card goes back to draft with the
+ * note (or is approved and stamped), a drill log reopens to its driller
+ * with the note (S20's Sent back to you band picks it up), a checklist
+ * carries the note. Every decision is in the audit trail.
+ */
+adminRouter.post('/blast-days/:id/papers', async (req: AuthedRequest, res: Response) => {
+  const parsed = paperSchema.safeParse(req.body);
+  const id = req.params.id;
+  if (!parsed.success || typeof id !== 'string') {
+    res.status(400).json({ error: 'paper, to and (for a record) recordId are required' });
+    return;
+  }
+  const cid = req.companyId as string;
+  const role = req.role as Role;
+  const { paper, recordId, to, note, label } = parsed.data;
+  if (to === 'sent_back' && !note?.trim()) {
+    res.status(400).json({ error: 'a send-back needs the note the filer will read' });
+    return;
+  }
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const day = await getRecord(tx, cid, id);
+      if (!day || day.tableName !== 'blastDays') return { code: 404 as const, error: 'blast day not found' };
+      const roleDefs = await loadRoleDefs(tx, cid);
+      if (!hasCapability(role, PAPER_CAP[paper], roleDefs)) {
+        return { code: 403 as const, error: `your role does not approve this paper (${paper.replace('_', ' ')})` };
+      }
+      const actor = await resolveActor(req.userId, role);
+      const nowIso = new Date().toISOString();
+      const key = paper === 'blast_log' || paper === 'daily_report' ? paper : `${paper}:${recordId ?? ''}`;
+      let paperLabel = label?.trim() || paper.replace('_', ' ');
+      // the paper's own record, when it has one
+      if (PAPER_TABLE[paper]) {
+        if (!recordId) return { code: 400 as const, error: 'recordId required for this paper' };
+        const rec = await getRecord(tx, cid, recordId);
+        if (!rec || rec.tableName !== PAPER_TABLE[paper]) return { code: 404 as const, error: 'paper not found' };
+        const p = rec.payload as Record<string, unknown>;
+        const onDay =
+          p.blastDayId === id || (p.jobId === day.payload.jobId && p.date === day.payload.date);
+        if (!onDay) return { code: 409 as const, error: 'that paper is not on this day' };
+        const from = (p.status as string | undefined) ?? '';
+        let next: Record<string, unknown> = {};
+        if (paper === 'time_card') {
+          paperLabel = label?.trim() || `Time card · ${String(p.personName ?? '')}`;
+          next =
+            to === 'approved'
+              ? { status: 'approved', approvedAt: nowIso, approvedByUserId: actor.actorId, approvedByName: actor.actorName, sendBackNote: undefined, sendBackBy: undefined, sendBackAt: undefined }
+              : { status: 'draft', filedAt: undefined, approvedAt: undefined, approvedByUserId: undefined, approvedByName: undefined, sendBackNote: note?.trim(), sendBackBy: actor.actorName, sendBackAt: nowIso };
+        } else if (paper === 'drill_log') {
+          paperLabel = label?.trim() || `Drill log · ${String(p.drillerName ?? '')}`;
+          // approving records the sign-off; the pattern's acceptance stays the blaster's
+          next =
+            to === 'approved'
+              ? {}
+              : { status: 'open', sentBackAt: nowIso, sentBackByName: actor.actorName, reopenNote: note?.trim(), completedAt: undefined };
+        } else {
+          paperLabel = label?.trim() || `Rig checklist · ${String(p.drillerName ?? '')}`;
+          next = to === 'approved' ? { sendBackNote: undefined, sendBackBy: undefined, sendBackAt: undefined } : { sendBackNote: note?.trim(), sendBackBy: actor.actorName, sendBackAt: nowIso };
+        }
+        if (Object.keys(next).length > 0) {
+          await upsertRecord(tx, cid, recordId, rec.tableName, JSON.stringify({ ...p, ...next, updatedAt: nowIso }), nowIso);
+          await writeAudit(tx, {
+            companyId: cid,
+            tableName: rec.tableName,
+            recordId,
+            op: 'PATCH',
+            actor,
+            changes: [
+              ...(typeof next.status === 'string' ? [{ field: 'status', old: from, new: next.status }] : []),
+              { field: 'review', old: null, new: to === 'approved' ? 'approved' : `sent back: ${note?.trim() ?? ''}` },
+            ],
+            reason: 'office review of a paper',
+          });
+        }
+      }
+      const reviews = { ...((day.payload.paperReviews as Record<string, unknown> | undefined) ?? {}) };
+      reviews[key] = { status: to, byUserId: actor.actorId, byName: actor.actorName, at: nowIso, note: to === 'sent_back' ? note?.trim() : undefined, label: paperLabel };
+      await upsertRecord(tx, cid, id, 'blastDays', JSON.stringify({ ...day.payload, paperReviews: reviews, updatedAt: nowIso }), nowIso);
+      await writeAudit(tx, {
+        companyId: cid,
+        tableName: 'blastDays',
+        recordId: id,
+        op: 'PATCH',
+        actor,
+        changes: [{ field: `paperReviews.${key}`, old: null, new: to === 'approved' ? `approved · ${paperLabel}` : `sent back · ${paperLabel} · ${note?.trim() ?? ''}` }],
+        reason: 'office review of a paper',
+      });
+      return { code: 200 as const, key };
+    });
+    if (result.code !== 200) {
+      res.status(result.code).json({ error: result.error });
+      return;
+    }
+    res.json({ ok: true, key: result.key });
+  } catch (err) {
+    console.error('paper review failed:', err);
+    res.status(500).json({ error: 'the review did not save' });
+  }
+});
 
 // ── Customer → Site → Job backfill ─────────────────────────────────────────
 // Idempotent: every job lacking a siteId gets its legacy customer string

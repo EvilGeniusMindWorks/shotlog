@@ -162,11 +162,11 @@ describe('approval lock metadata', () => {
     }
   });
 
-  it('only supervisor and admin may edit approved records', () => {
+  it('only approvers may edit approved records (supervisor, admin, and the office since S21)', () => {
     expect(canEditApproved('admin')).toBe(true);
     expect(canEditApproved('supervisor')).toBe(true);
     expect(canEditApproved('blaster')).toBe(false);
     expect(canEditApproved('driller')).toBe(false);
-    expect(canEditApproved('office')).toBe(false);
+    expect(canEditApproved('office')).toBe(true);
   });
 });

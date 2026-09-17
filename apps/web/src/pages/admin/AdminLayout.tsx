@@ -13,9 +13,10 @@ import { cn } from '@/lib/utils';
 // exactly the areas its bundle grants. Roles itself is admin-only.
 // Feedback is PLATFORM-admin only (the vendor's marker, not a company
 // capability — docs/personas/platform-admin.md).
-const TABS: { to: string; label: string; cap: string | null; platform?: boolean }[] = [
+const TABS: { to: string; label: string; cap: string | null; anyOf?: string[]; platform?: boolean }[] = [
   { to: '/admin/people', label: 'People', cap: 'manage_people' },
-  { to: '/admin/approvals', label: 'Approvals', cap: 'approve_days' },
+  // S21: whoever the matrix lets approve anything sees the queue
+  { to: '/admin/approvals', label: 'Approvals', cap: 'approve_days', anyOf: ['approve_days', 'approve_time_cards', 'approve_checklists', 'approve_drill_logs'] },
   { to: '/admin/catalog', label: 'Catalog', cap: 'manage_company' },
   { to: '/admin/equipment', label: 'Equipment', cap: 'manage_equipment' },
   { to: '/admin/incidents', label: 'Incidents', cap: 'process_incidents' },
@@ -39,7 +40,7 @@ export function AdminLayout() {
   }
   const platformAdmin = Boolean(getRealSessionUser()?.platformAdmin);
   const tabs = TABS.filter((t) =>
-    t.platform ? platformAdmin : t.cap === null ? role === 'admin' : hasCap(t.cap),
+    t.platform ? platformAdmin : t.cap === null ? role === 'admin' : (t.anyOf ? t.anyOf.some((c) => hasCap(c)) : hasCap(t.cap)),
   );
 
   return (

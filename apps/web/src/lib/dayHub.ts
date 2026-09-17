@@ -112,8 +112,12 @@ export interface FileState {
 
 export function fileState(day: BlastDay, log: BlastLog | undefined, shots: Shot[], report: DailyReport | undefined, drillLogs: number): FileState {
   if (day.closed) return { kind: 'closed', label: `Closed · ${day.closed.reason || 'nothing to file'}`, note: `${day.closed.byName} · ${hhmm(day.closed.at)}` };
-  if (day.status === 'submitted') return { kind: 'filed', label: 'Filed with the office' };
-  if (day.status === 'approved') return { kind: 'filed', label: 'Approved' };
+  // S21: a paper the office sent back from its review screen is named here
+  // ("1 paper sent back · Time card · Lisa Vital") until it is refiled
+  const backs = Object.values(day.paperReviews ?? {}).filter((r) => r.status === 'sent_back');
+  const backNote = backs.length ? `${backs.length} paper${backs.length === 1 ? '' : 's'} sent back · ${backs.map((b) => b.label).join(' · ')}` : undefined;
+  if (day.status === 'submitted') return { kind: 'filed', label: 'Filed with the office', note: backNote };
+  if (day.status === 'approved') return { kind: 'filed', label: day.approvedByName ? `Approved ${hhmm(day.approvedAt ?? '')} by ${day.approvedByName}` : 'Approved' };
   const blasting = isBlastingWork(day.typeOfWork) || Boolean(log);
   if (blasting) {
     if (!log) return { kind: 'none', label: '' };

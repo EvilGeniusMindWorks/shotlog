@@ -4,6 +4,7 @@
 // their shape. The SERVER is authoritative — these only hide controls.
 import {
   buildRoleDefsLookup,
+  canApproveTimeCardsAs,
   canEditAcceptedDrillLogAs,
   canEditApprovedAs,
   canPerformOpAs,
@@ -67,6 +68,11 @@ export function canEditApprovedDay(): boolean {
 
 export function canEditAcceptedLog(): boolean {
   return canEditAcceptedDrillLogAs(myRole(), cache);
+}
+
+/** S21: the matrix's Time cards row — fix and approve cards, send one back */
+export function canApproveTimeCards(): boolean {
+  return canApproveTimeCardsAs(myRole(), cache);
 }
 
 // ── S9a: say who CAN, when the signed-in role can't ──────────────────────

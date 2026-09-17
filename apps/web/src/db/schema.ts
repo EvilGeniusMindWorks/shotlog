@@ -321,6 +321,15 @@ export interface BlastDay extends BaseRecord {
   /** S9a: who sent it back, and when (server-stamped) */
   sendBackBy?: string;
   sendBackAt?: string;
+  /** S21 (the approval process): stamped by the server when the day is approved */
+  approvedAt?: string;
+  approvedByUserId?: string;
+  approvedByName?: string;
+  /** S21: the office's decision per paper on the review screen, keyed by
+   *  paperKey ("blast_log", "daily_report", "time_card:<id>", "drill_log:<id>",
+   *  "drill_checklist:<id>") — written by the server, read by the File row,
+   *  the filer's home and Records */
+  paperReviews?: Record<string, PaperReview>;
   /** S9a: what the filing pre-flight let through as amber ("no crew on the
    *  daily report", …) — the office sees "filed with N notes"; replaced on refile */
   filedNotes?: string[];
@@ -717,6 +726,11 @@ export interface TimeCard extends BaseRecord {
   approvedAt?: string;
   approvedByUserId?: string;
   approvedByName?: string;
+  /** S21: sent back from the office's review screen — the note lands on
+   *  the card and the filer's home; the card is a draft again */
+  sendBackNote?: string;
+  sendBackBy?: string;
+  sendBackAt?: string;
   // ── Attribution: who actually typed it (self vs entered-for) ──
   enteredByUserId: string;
   enteredByName: string;
@@ -1018,6 +1032,10 @@ export interface DrillChecklist extends BaseRecord {
    *  paper was completed with its stop hours and filed */
   walkAroundAt?: string;
   filedAt?: string;
+  /** S21: sent back from the office's review screen */
+  sendBackNote?: string;
+  sendBackBy?: string;
+  sendBackAt?: string;
   daily: Record<string, CheckState>;
   weeklyDone: boolean;
   weekly: Record<string, CheckState>;
@@ -1123,6 +1141,17 @@ export interface Incident extends BaseRecord {
 }
 
 /** Single doc per company (id: companySettings-singleton), admin-managed */
+/** S21: one decision on one paper of a day */
+export interface PaperReview {
+  status: 'approved' | 'sent_back';
+  byUserId: string;
+  byName: string;
+  at: string;
+  note?: string;
+  /** "Time card · Lisa Vital" — for the File row and the homes */
+  label: string;
+}
+
 export interface CompanySettings extends BaseRecord {
   companyName: string;
   dealerNumber: string;
@@ -1135,6 +1164,10 @@ export interface CompanySettings extends BaseRecord {
   /** S20 (Matthew, Sep 16 2026): how old an unfiled draft day must be
    *  before the home's Needs attention line counts it (default 2 days) */
   homeStaleDraftDays?: number;
+  /** S21: a day is approved as one (Approve the day covers every paper not
+   *  sent back) or paper by paper (Approve the day waits until each paper
+   *  is approved). Default true. */
+  approvalsDayAsOne?: boolean;
   /** Company-defined attachment types, merged into the built-in picker */
   attachmentTypes?: string[];
   /** Pre-blast ritual placeholder (Round 2): editable language, one item

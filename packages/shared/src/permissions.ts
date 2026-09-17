@@ -25,6 +25,8 @@ interface TableRule {
 
 const ADMIN_ONLY: readonly Role[] = ['admin'];
 const REGISTRY: readonly Role[] = ['admin', 'supervisor'];
+/** S21 (Matthew, Sep 16 2026): the approval matrix is set so the office approves everything */
+const APPROVERS: readonly Role[] = ['admin', 'supervisor', 'office'];
 const EQUIPMENT_REGISTRY: readonly Role[] = ['admin', 'supervisor', 'mechanic'];
 const BLAST_FAMILY: readonly Role[] = ['admin', 'supervisor', 'blaster'];
 const REPORT_FAMILY: readonly Role[] = ['admin', 'supervisor', 'blaster', 'driller'];
@@ -155,11 +157,11 @@ export const BLAST_DAY_STATUS_TRANSITIONS: Record<string, Record<string, readonl
   submitted: {
     // Submitting FILES the office copy, so unlocking is supervisory —
     // field roles fix-and-resubmit as a new version after an unlock
-    draft: ['admin', 'supervisor'],
-    approved: ['admin', 'supervisor'],
+    draft: APPROVERS,
+    approved: APPROVERS,
   },
   approved: {
-    submitted: ['admin', 'supervisor'], // reopen
+    submitted: APPROVERS, // reopen
   },
 };
 
@@ -238,9 +240,9 @@ const SENSITIVE_STATUS_TRANSITIONS: Record<
   // filed→draft stays open so a person can pull their own card back before
   // approval (ownership still applies at the choke point).
   timeCards: {
-    draft: { approved: REGISTRY as Role[] },
-    filed: { approved: REGISTRY as Role[] },
-    approved: { filed: REGISTRY as Role[], draft: REGISTRY as Role[] },
+    draft: { approved: APPROVERS as Role[] },
+    filed: { approved: APPROVERS as Role[] },
+    approved: { filed: APPROVERS as Role[], draft: APPROVERS as Role[] },
   },
 };
 
@@ -337,5 +339,5 @@ export const APPROVAL_LOCKED_TABLES: ReadonlySet<string> = new Set(Object.keys(P
 
 /** Roles that may edit records under an APPROVED blast day. */
 export function canEditApproved(role: Role): boolean {
-  return role === 'admin' || role === 'supervisor';
+  return APPROVERS.includes(role);
 }

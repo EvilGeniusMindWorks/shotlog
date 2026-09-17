@@ -89,6 +89,7 @@ export {
   canTransitionDrillLogAs,
   canTransitionRecordStatusAs,
   canEditApprovedAs,
+  canApproveTimeCardsAs,
   canEditAcceptedDrillLogAs,
   isValidRoleKey,
 } from './capabilities.js';

@@ -308,7 +308,7 @@ export function DayHub({ day, job, blastLog, shots, dailyReport, locked, owner, 
             </>
           )}
           {file.kind === 'blocked' && <p className="text-sm text-amber-800 border border-amber-300 bg-amber-50 rounded-lg px-3 py-2">{file.label}</p>}
-          {file.kind === 'filed' && <p className="text-sm text-green-800 border border-green-200 bg-green-50 rounded-lg px-3 py-2">{file.label}</p>}
+          {file.kind === 'filed' && <p className="text-sm text-green-800 border border-green-200 bg-green-50 rounded-lg px-3 py-2" data-file-filed>{file.label}{file.note ? <span className="block text-red-700" data-file-sent-back-papers>{file.note}</span> : null}</p>}
           {file.kind === 'none' && (
             <div className="flex items-center justify-between gap-3">
               <p className="text-xs text-gray-400">File this day appears once a paper exists to file.</p>

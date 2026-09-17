@@ -12,6 +12,7 @@ import {
   buildRoleDefsLookup,
   canEditAcceptedDrillLogAs,
   canEditApprovedAs,
+  canApproveTimeCardsAs,
   canPerformOpAs,
   canTransitionDrillLogAs,
   canTransitionRecordStatusAs,
@@ -666,7 +667,7 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
         // people are the attributed exception. Approvers (approve_days)
         // bypass — they fix and approve cards. Approved cards freeze;
         // delete is draft-only ("created in error").
-        if (tableName === 'timeCards' && !canEditApprovedAs(role, roleDefs)) {
+        if (tableName === 'timeCards' && !canEditApprovedAs(role, roleDefs) && !canApproveTimeCardsAs(role, roleDefs)) {
           const from = (stored?.payload.status as string | undefined) ?? 'draft';
           const to =
             op.op === 'DELETE' ? from : ((effective.status as string | undefined) ?? from);

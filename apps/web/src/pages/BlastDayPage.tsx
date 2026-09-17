@@ -493,6 +493,14 @@ export function BlastDayPage() {
         </div>
       </div>
 
+      {/* S21: the filer sees who approved the day, and when */}
+      {status === 'approved' && blastDay.approvedByName && (
+        <div className="px-4 pt-3">
+          <div className="max-w-5xl mx-auto rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800" data-approved-banner>
+            ✓ Approved {new Date(blastDay.approvedAt ?? '').toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })} by {blastDay.approvedByName}
+          </div>
+        </div>
+      )}
       {/* S9a: the office sent this day back — the reason lives on the day, not only the home strip */}
       {status === 'draft' && blastDay.sendBackNote && (
         <div className="px-4 pt-3">
