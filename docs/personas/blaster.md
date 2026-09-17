@@ -332,3 +332,8 @@ page · customer/site/job create (new) · contacts · My Records · reference
 - **The shot plan follows the drilling** (push 2). No Build-timing button: accepting the drilling makes the drilled pattern the plan's pattern, timing carried hole for hole; amber lines say where they disagree (a hole added with no delay, a depth that differs, a timed hole the log says was not drilled — red on Check and sign).
 - **Incidents are papers of the day** (push 3): a tile on the day and Report an incident under the home's +; the day's customer, site and job ride on it; Injury and Near miss are kinds; the Do now list at the top names the job's sheet contacts, and a tap on Call is the blaster's confirmation with the time (the phone dials; the app records the tap).
 - **Help loses "Show me your work day"**: the screen tours are gone; the walkthrough tab does that job; About this screen and the guide stay.
+
+## Round S22 — a job in a minute (Sep 17 2026)
+
+- **New job is one sheet in three steps** on the Jobs page, a customer's page or a site's page: the customer (type a few letters; a new one is made from the name alone), the site (the customer's address, one of its sites, or a typed address), the job (the name filled from the site, the number automatic). The job opens with "Still to set: contacts · permits · work spot", each a door.
+- **The job page holds its facts** in the header and shows the last five days, the drill plans and the recent activity on the Overview; the Jobs page's customer row expands in place to its sites and jobs.

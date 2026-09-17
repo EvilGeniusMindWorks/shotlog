@@ -292,7 +292,8 @@
     68
   ],
   "apps/web/src/pages/JobDetailPage.tsx": [
-    69
+    69,
+    83
   ],
   "apps/web/src/pages/PrintBlastLogPage.tsx": [
     64,
@@ -390,7 +391,8 @@
     79
   ],
   "apps/web/src/components/layout/RecordShell.tsx": [
-    79
+    79,
+    83
   ],
   "apps/web/src/lib/logChecks.ts": [
     80,
@@ -457,7 +459,8 @@
   ],
   "apps/web/src/pages/admin/AdminCompanyPage.tsx": [
     81,
-    82
+    82,
+    83
   ],
   "apps/web/src/components/records/BinderExport.tsx": [
     82
@@ -508,5 +511,14 @@
   ],
   "apps/web/src/hooks/useTimeCards.ts": [
     82
+  ],
+  "apps/web/src/pages/CustomerPage.tsx": [
+    83
+  ],
+  "apps/web/src/pages/SitePage.tsx": [
+    83
+  ],
+  "apps/web/src/pages/JobsPage.tsx": [
+    83
   ]
 }

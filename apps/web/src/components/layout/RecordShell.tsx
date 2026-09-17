@@ -75,6 +75,12 @@ interface Props {
   title: string;
   badge?: ReactNode;
   subline?: string;
+  /** S22 (Matthew, Sep 16 2026: "the job page shows its facts"): the facts under the
+   *  title, one glance — "Acme · Ludlow, MA · K 180 · permit LUD-26-114 to Dec 31 ·
+   *  6 contacts · 10 days · 12 shots"; wraps on a phone, never truncates */
+  facts?: ReactNode[];
+  /** S22: a line under the header — the job's setup line ("Still to set: contacts · permits") */
+  notice?: ReactNode;
   stats?: { label: string; value: string }[];
   actions?: ReactNode;
   sections: RecordSection[];
@@ -87,7 +93,7 @@ interface Props {
   list?: ReactNode;
 }
 
-export function RecordShell({ breadcrumb, title, badge, subline, stats, actions, sections, aboutCards, list }: Props) {
+export function RecordShell({ breadcrumb, title, badge, subline, facts, notice, stats, actions, sections, aboutCards, list }: Props) {
   const navigate = useNavigate();
   const mode = useLayoutMode();
   const [tab, setTab] = useState('overview');
@@ -126,7 +132,7 @@ export function RecordShell({ breadcrumb, title, badge, subline, stats, actions,
 
   const header = (
     <div className="bg-navy text-white px-4 pt-3 pb-0">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <div className="flex items-center gap-2">
           <BackButton back={back} />
           <p className="text-[11px] text-navy-200 truncate">
@@ -150,6 +156,16 @@ export function RecordShell({ breadcrumb, title, badge, subline, stats, actions,
           {actions}
         </div>
         {subline && <p className="text-xs text-navy-200 truncate mt-0.5">{subline}</p>}
+        {facts && facts.filter(Boolean).length > 0 && (
+          <p className="text-xs text-navy-100 mt-1 leading-relaxed" data-record-facts>
+            {facts.filter(Boolean).map((f, i) => (
+              <span key={i} className="inline-block whitespace-nowrap">
+                {i > 0 && <span className="mx-1.5 text-navy-300">·</span>}
+                {f}
+              </span>
+            ))}
+          </p>
+        )}
         {mode === 'tabs' && stats && stats.length > 0 ? (
           <div className="flex gap-2 mt-2.5">
             {stats.map((s) => (
@@ -171,6 +187,7 @@ export function RecordShell({ breadcrumb, title, badge, subline, stats, actions,
                     : 'px-3 py-2 text-sm font-medium text-navy-200 border-b-2 border-transparent hover:text-white whitespace-nowrap'
                 }
                 onClick={() => setTab(t.id)}
+                data-open-section={t.id}
               >
                 {t.label}
                 {'count' in t && t.count !== undefined ? (
@@ -189,16 +206,17 @@ export function RecordShell({ breadcrumb, title, badge, subline, stats, actions,
   if (mode === 'tabs') {
     const active = sections.find((s) => s.id === tab);
     return (
-      <div>
+      <div data-record-shell={mode}>
         {header}
-        <div className="p-4 max-w-4xl mx-auto">
+        {notice}
+        <div className="p-4 max-w-6xl mx-auto">
           {tab === 'overview' && aboutCards ? (
             <div className="space-y-4">
               {aboutGrid(setTab)}
               {list}
             </div>
           ) : tab === 'overview' ? (
-            <div className="grid gap-4 md:grid-cols-2 items-start">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 items-start">
               {sections.map((s) => (
                 <div key={s.id} className="rounded-xl border border-gray-200 bg-white p-4">
                   <button
@@ -216,7 +234,7 @@ export function RecordShell({ breadcrumb, title, badge, subline, stats, actions,
               ))}
             </div>
           ) : active ? (
-            <div className="rounded-xl border border-gray-200 bg-white p-4 max-w-2xl">
+            <div className="rounded-xl border border-gray-200 bg-white p-4">
               {active.render()}
             </div>
           ) : null}
@@ -227,8 +245,9 @@ export function RecordShell({ breadcrumb, title, badge, subline, stats, actions,
 
   // COMPACT: one scroll, collapsible cards with summary headers
   return (
-    <div>
+    <div data-record-shell={mode}>
       {header}
+      {notice}
       <div className="p-4 max-w-2xl mx-auto space-y-3">
         {stats && stats.length > 0 && (
           <div className="grid grid-cols-4 gap-2">
@@ -252,6 +271,7 @@ export function RecordShell({ breadcrumb, title, badge, subline, stats, actions,
               <button
                 className="w-full flex items-center gap-2 px-4 py-3 text-left"
                 onClick={() => setOpen({ ...open, [s.id]: !isOpen })}
+                data-open-section={s.id}
               >
                 {isOpen ? (
                   <ChevronDown className="h-4 w-4 text-gray-400 shrink-0" />

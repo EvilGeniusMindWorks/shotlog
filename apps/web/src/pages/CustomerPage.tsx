@@ -129,6 +129,15 @@ export function CustomerPage() {
       ]
         .filter(Boolean)
         .join(' · ')}
+      facts={[
+        `${sites.length} site${sites.length === 1 ? '' : 's'}`,
+        `${jobs.length} job${jobs.length === 1 ? '' : 's'}${openJobs ? ` · ${openJobs} open` : ''}`,
+        (() => { const a = rollUp(activity, jobs.map((j) => j.id)); return a.lastWorked ? `last worked ${relativeDay(a.lastWorked)}` : 'never worked'; })(),
+        coiText,
+        customer.paymentTerms,
+        customer.poRequired ? 'PO required' : undefined,
+        primary ? `${primary.name}${primary.phone ? ` ${primary.phone}` : ''}` : 'no contact yet',
+      ]}
       stats={[
         { label: 'Sites', value: String(sites.length) },
         { label: 'Jobs', value: String(jobs.length) },

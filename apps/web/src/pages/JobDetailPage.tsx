@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery, db } from '@/db';
 import { getPowerSync } from '@/db/powersync/client';
-import { formatDate } from '@/lib/utils';
+import { formatDate, todayISO } from '@/lib/utils';
 import { fmtLbs } from '@/lib/format';
+import { DOC_KIND_LABEL } from '@/lib/docRows';
+import { permitStatus } from '@/lib/siteFacts';
 import { RecordShell } from '@/components/layout/RecordShell';
 import { useDraftRecord } from '@/hooks/useDraftRecord';
 import { getSessionUser } from '@/lib/session';
@@ -47,12 +49,14 @@ export function JobDetailPage() {
     useLiveQuery(() => (id ? db.drillPlans.where('jobId').equals(id).count() : 0), [id]) ?? 0;
 
   // Aggregate shots + explosives across the job's history for the stats bar
+  // and, per day, for the Overview's work-days card (S22: real content)
   const stats = useLiveQuery(async () => {
-    if (!id) return { shots: 0, totalLbs: 0, totalYards: 0 };
+    if (!id) return { shots: 0, totalLbs: 0, totalYards: 0, byDay: new Map<string, { shots: number; lbs: number }>() };
     const days = await db.blastDays.where('jobId').equals(id).toArray();
     let shots = 0;
     let totalLbs = 0;
     let totalYards = 0;
+    const byDay = new Map<string, { shots: number; lbs: number }>();
     for (const day of days) {
       const log = await db.blastLogs.where('blastDayId').equals(day.id).first();
       if (!log) continue;
@@ -61,9 +65,23 @@ export function JobDetailPage() {
       totalYards += dayShots.reduce((s, sh) => s + sh.totals.totalYardsShot, 0);
       const usage = await db.explosiveUsages.where('blastLogId').equals(log.id).first();
       totalLbs += usage?.totalPoundsShot ?? 0;
+      byDay.set(day.id, { shots: dayShots.length, lbs: usage?.totalPoundsShot ?? 0 });
     }
-    return { shots, totalLbs, totalYards };
-  }, [id]) ?? { shots: 0, totalLbs: 0, totalYards: 0 };
+    return { shots, totalLbs, totalYards, byDay };
+  }, [id]) ?? { shots: 0, totalLbs: 0, totalYards: 0, byDay: new Map<string, { shots: number; lbs: number }>() };
+  // S22: the activity card — the last few things that happened on this job
+  const recentDocs = useLiveQuery(async () => {
+    if (!id) return [];
+    const rows = await buildDocRows({ scope: 'company', role: getSessionUser()?.role ?? 'admin' });
+    return rows.filter((r) => r.jobId === id).slice(0, 4);
+  }, [id]) ?? [];
+  const planRows = useLiveQuery(async () => {
+    if (!id) return [];
+    const plans = (await db.drillPlans.where('jobId').equals(id).toArray()).filter((p) => !p.archivedAt).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 4);
+    const out: { id: string; name: string; holes: number; status: string }[] = [];
+    for (const p of plans) out.push({ id: p.id, name: p.name, holes: getPlanHoles(p)?.length ?? 0, status: p.status });
+    return out;
+  }, [id]) ?? [];
 
   if (!job) {
     return <div className="p-4 text-center text-gray-500">Loading...</div>;
@@ -73,6 +91,29 @@ export function JobDetailPage() {
   // Blasters set up customers/sites/jobs too (2026-08-17)
   const isAdmin = can('jobs', 'PATCH');
   const status = job.jobStatus ?? (job.isActive ? 'active' : 'complete');
+  // S22: the facts, one glance
+  const today = todayISO();
+  const nextDay = [...blastDays].filter((d) => d.date > today).sort((a, b) => a.date.localeCompare(b.date))[0];
+  const permits = ctx?.site?.permits ?? [];
+  const permitLine = ctx?.site ? permitStatus(ctx.site) : undefined;
+  const contactCount = ctx?.contacts.length ?? 0;
+  const unfiled = blastDays.filter((d) => d.status === 'draft' && !d.closed).length;
+  const facts = [
+    ctx?.customerName,
+    ctx?.site ? `${ctx.siteName}${ctx.city ? ` · ${ctx.city}${ctx.state ? `, ${ctx.state}` : ''}` : ''}` : [ctx?.address, ctx?.city, ctx?.state].filter(Boolean).join(', '),
+    `K ${ctx?.kFactor ?? job.kFactor ?? '—'}`,
+    permits.length ? `${permits.length === 1 ? `permit ${permits[0].number || permits[0].name}` : `${permits.length} permits`}${permitLine?.text ? ` · ${permitLine.text}` : ''}` : 'no permits on file',
+    `${contactCount} contact${contactCount === 1 ? '' : 's'}`,
+    `${blastDays.length} day${blastDays.length === 1 ? '' : 's'}${unfiled ? ` · ${unfiled} unfiled` : ''}`,
+    `${stats.shots} shot${stats.shots === 1 ? '' : 's'}`,
+    stats.totalLbs ? `${fmtLbs(stats.totalLbs)} lbs` : undefined,
+    nextDay ? `next: ${formatDate(nextDay.date)}` : 'next: none scheduled',
+  ];
+  // S22: the setup line — what is still to set, each a door, gone when done
+  const setupItems: { key: string; label: string; go: () => void }[] = [];
+  if (contactCount === 0) setupItems.push({ key: 'contacts', label: 'contacts', go: () => document.querySelector<HTMLButtonElement>('[data-open-section="contacts"]')?.click() });
+  if (ctx?.site && permits.length === 0) setupItems.push({ key: 'permits', label: 'permits', go: () => navigate(`/sites/${ctx.site!.id}`) });
+  if (!job.workSpot) setupItems.push({ key: 'work-spot', label: 'work spot', go: () => document.querySelector<HTMLButtonElement>('[data-open-section="setup"]')?.click() });
 
   return (
     <RecordShell
@@ -102,6 +143,19 @@ export function JobDetailPage() {
       subline={
         [ctx?.address, ctx?.city, ctx?.state].filter(Boolean).join(', ') || 'No address'
       }
+      facts={facts}
+      notice={
+        setupItems.length > 0 && isAdmin ? (
+          <div className="px-4 pt-3">
+            <div className="max-w-6xl mx-auto rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 flex items-center gap-2 flex-wrap" data-job-setup-line>
+              <span className="font-medium">Still to set:</span>
+              {setupItems.map((it) => (
+                <button key={it.key} type="button" className="underline underline-offset-2" onClick={it.go} data-setup-item={it.key}>{it.label}</button>
+              ))}
+            </div>
+          </div>
+        ) : null
+      }
       stats={[
         { label: 'Work days', value: String(blastDays.length) },
         { label: 'Total Shots', value: String(stats.shots) },
@@ -128,6 +182,14 @@ export function JobDetailPage() {
           summary: ctx?.contacts[0]
             ? `${ctx.contacts[0].name}${ctx.contacts[0].phone ? ` · ${ctx.contacts[0].phone}` : ''}`
             : 'none yet',
+          preview: () => (
+            <div className="text-sm space-y-1" data-job-overview-contacts>
+              {(ctx?.contacts ?? []).slice(0, 4).map((c) => (
+                <p key={c.id} className="truncate"><span className="text-gray-500">{c.label || c.role}</span> · {c.name}{c.phone ? <> · <a className="text-navy underline" href={`tel:${c.phone}`}>{c.phone}</a></> : null}</p>
+              ))}
+              {(ctx?.contacts ?? []).length === 0 && <p className="text-gray-400">No contacts yet — the site's rows carry to every job here.</p>}
+            </div>
+          ),
           render: () => (
             <JobContactsCard
               job={ctx?.site ? { ...job, contacts: ctx.contacts, contactNotes: ctx.contactNotes } : job}
@@ -154,13 +216,39 @@ export function JobDetailPage() {
           label: 'Drill plans',
           count: planCount || undefined,
           summary: planCount ? `${planCount} plan${planCount === 1 ? '' : 's'}` : 'none yet',
+          preview: () => (
+            <div className="text-sm space-y-1" data-job-overview-plans>
+              {planRows.map((p) => (
+                <button key={p.id} type="button" className="w-full text-left flex items-center gap-2 hover:bg-gray-50 rounded px-1 -mx-1" onClick={() => navigate(`/jobs/${job.id}/drill-plan/${p.id}`)}>
+                  <span className="flex-1 truncate">{p.name} · {p.holes} holes</span>
+                  <Badge variant={p.status === 'complete' ? 'approved' : 'draft'}>{p.status}</Badge>
+                </button>
+              ))}
+              {planRows.length === 0 && <p className="text-gray-400">No drill plans yet.</p>}
+            </div>
+          ),
           render: () => <DrillPlansCard jobId={job.id} />,
         },
         {
           id: 'work-days',
           label: 'Work days',
           count: blastDays.length,
-          summary: blastDays[0] ? `latest ${formatDate(blastDays[0].date)}` : 'none yet',
+          summary: blastDays[0] ? `latest ${formatDate(blastDays[0].date)}${unfiled ? ` · ${unfiled} unfiled` : ''}` : 'none yet',
+          preview: () => (
+            <div className="text-sm space-y-1" data-job-overview-days>
+              {blastDays.slice(0, 5).map((day) => {
+                const d = stats.byDay.get(day.id);
+                return (
+                  <button key={day.id} type="button" className="w-full text-left flex items-center gap-2 hover:bg-gray-50 rounded px-1 -mx-1" onClick={() => navigate(`/blast-day/${day.id}`)} data-job-overview-day={day.id}>
+                    <span className="flex-1 truncate">{formatDate(day.date)}{d ? ` · ${d.shots} shot${d.shots === 1 ? '' : 's'}${d.lbs ? ` · ${fmtLbs(d.lbs)} lbs` : ''}` : ''}</span>
+                    <span className="text-xs text-gray-500">{day.closed ? 'closed' : day.status === 'submitted' ? 'awaiting approval' : day.status === 'approved' ? 'approved' : day.sendBackNote ? 'sent back' : 'draft'}</span>
+                  </button>
+                );
+              })}
+              {blastDays.length > 5 && <p className="text-xs text-gray-400">{blastDays.length - 5} more ›</p>}
+              {blastDays.length === 0 && <p className="text-gray-400">No work days yet — tap + on the Dashboard and pick this job.</p>}
+            </div>
+          ),
           render: () => (
             <div className="space-y-2">
               {blastDays.length === 0 && (
@@ -199,10 +287,14 @@ export function JobDetailPage() {
           summary: 'crew, equipment, documents',
           defaultOpen: false,
           preview: () => (
-            <p className="text-sm text-gray-500">
-              Who worked this job, the equipment used, and every document — open for the full
-              rollup.
-            </p>
+            <div className="text-sm space-y-1" data-job-overview-activity>
+              {recentDocs.map((r) => (
+                <button key={r.key} type="button" className="w-full text-left truncate hover:bg-gray-50 rounded px-1 -mx-1" onClick={() => navigate(r.to)}>
+                  {formatDate(r.date)} · {r.person ? `${r.person} · ` : ''}{DOC_KIND_LABEL[r.kind]}{r.head ? ` ${r.head}` : ''} · <span className="text-gray-500">{r.status.replace(/_/g, ' ')}</span>
+                </button>
+              ))}
+              {recentDocs.length === 0 && <p className="text-gray-400">Nothing filed on this job yet.</p>}
+            </div>
           ),
           render: () => <JobActivity jobId={job.id} lbs={stats.totalLbs} />,
         },
@@ -643,32 +735,31 @@ function JobConfigCard({ job }: { job: Job }) {
       <CardContent
         className={
           readOnly
-            ? 'pointer-events-none select-none opacity-70 grid grid-cols-1 sm:grid-cols-2 gap-3'
-            : 'grid grid-cols-1 sm:grid-cols-2 gap-3'
+            ? 'pointer-events-none select-none opacity-70 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3'
+            : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3'
         }
+        data-job-config
       >
-        <div>
+        <div className="sm:col-span-2">
           <Label className="text-xs">Job Name</Label>
           <Input value={draft.name} onChange={(e) => setField('name', e.target.value)} />
         </div>
-        <div className="flex gap-2">
-          <div className="flex-1">
-            <Label className="text-xs">
-              Job #<span className="text-gray-400 font-normal"> — auto, editable</span>
-            </Label>
-            <Input
-              value={draft.jobNumber ?? ''}
-              placeholder="26-041"
-              onChange={(e) => setField('jobNumber', e.target.value)}
-            />
-          </div>
-          <div className="flex-1">
-            <Label className="text-xs">Customer PO</Label>
-            <Input
-              value={draft.customerPO ?? ''}
-              onChange={(e) => setField('customerPO', e.target.value)}
-            />
-          </div>
+        <div>
+          <Label className="text-xs">
+            Job #<span className="text-gray-400 font-normal"> — auto, editable</span>
+          </Label>
+          <Input
+            value={draft.jobNumber ?? ''}
+            placeholder="26-041"
+            onChange={(e) => setField('jobNumber', e.target.value)}
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Customer PO</Label>
+          <Input
+            value={draft.customerPO ?? ''}
+            onChange={(e) => setField('customerPO', e.target.value)}
+          />
         </div>
         <div>
           <Label className="text-xs">Status</Label>
@@ -683,23 +774,21 @@ function JobConfigCard({ job }: { job: Job }) {
             options={JOB_STATUS_OPTIONS}
           />
         </div>
-        <div className="flex gap-2">
-          <div className="flex-1">
-            <Label className="text-xs">Start</Label>
-            <Input
-              type="date"
-              value={draft.startDate ?? ''}
-              onChange={(e) => setField('startDate', e.target.value || undefined)}
-            />
-          </div>
-          <div className="flex-1">
-            <Label className="text-xs">Target end</Label>
-            <Input
-              type="date"
-              value={draft.targetDate ?? ''}
-              onChange={(e) => setField('targetDate', e.target.value || undefined)}
-            />
-          </div>
+        <div>
+          <Label className="text-xs">Start</Label>
+          <Input
+            type="date"
+            value={draft.startDate ?? ''}
+            onChange={(e) => setField('startDate', e.target.value || undefined)}
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Target end</Label>
+          <Input
+            type="date"
+            value={draft.targetDate ?? ''}
+            onChange={(e) => setField('targetDate', e.target.value || undefined)}
+          />
         </div>
         <div>
           <Label className="text-xs">Quote ref</Label>
@@ -721,9 +810,10 @@ function JobConfigCard({ job }: { job: Job }) {
             value={draft.defaultTypeOfWork ?? ''}
             onChange={(e) => setField('defaultTypeOfWork', (e.target.value || undefined) as WorkType | undefined)}
             options={[
-              { value: '', label: 'Follow the last day (else the role default)' },
+              { value: '', label: 'Follow the last day' },
               ...WORK_TYPES.map((t) => ({ value: t, label: WORK_TYPE_LABEL[t] })),
             ]}
+            title="Blank: a new day follows the last day's type, else the role default"
             data-job-default-work
           />
         </div>

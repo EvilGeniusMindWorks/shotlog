@@ -86,6 +86,16 @@ export function SitePage() {
       subline={[customer?.name, [site.city, site.state].filter(Boolean).join(', ')]
         .filter(Boolean)
         .join(' · ')}
+      facts={[
+        [site.address, site.city].filter(Boolean).join(', ') || undefined,
+        `K ${site.kFactor}`,
+        site.rockType,
+        site.jurisdiction,
+        permits.length ? permitStatus(site).text : 'no permits on file',
+        site.localPPVLimit ? `${site.localRegName ? `${site.localRegName} ` : ''}${site.localPPVLimit} in/s` : undefined,
+        `${jobs.length} job${jobs.length === 1 ? '' : 's'}`,
+        `${contacts.length} contact${contacts.length === 1 ? '' : 's'}`,
+      ]}
       stats={[
         { label: 'Site K', value: String(site.kFactor) },
         { label: 'Jobs', value: String(jobs.length) },

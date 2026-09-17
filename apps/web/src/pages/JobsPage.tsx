@@ -19,6 +19,7 @@ import {
   type LifecycleFilterValue,
 } from '@/components/records/LifecycleFilter';
 import { ListRow, dayCount } from '@/components/jobs/ListRow';
+import { NewJobForm } from '@/components/forms/NewJobForm';
 import { WINDOW } from '@/components/jobs/WindowedList';
 import { townOf } from '@/lib/siteFacts';
 import { Button } from '@/components/ui/button';
@@ -27,7 +28,7 @@ import { Label } from '@/components/ui/label';
 import { ListSkeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus } from 'lucide-react';
+import { ChevronDown, Plus } from 'lucide-react';
 import type { Customer, Job, Site } from '@/db/schema';
 
 const RECENT_DAYS = 14;
@@ -56,6 +57,9 @@ export function JobsPage() {
   const [search, setSearch] = useState('');
   const [showAll, setShowAll] = useState(false);
   const [adding, setAdding] = useState(false);
+  // S22: New job is one sheet in three steps, right here; a customer row expands in place
+  const [addingJob, setAddingJob] = useState(false);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [cust, setCust] = useState({ name: '', phone: '', billing: emptyAddress(), notes: '' });
   const [peek, setPeek] = useState<Customer | undefined>();
   const activity = useJobActivity();
@@ -152,11 +156,24 @@ export function JobsPage() {
           <p className="text-xs text-gray-400">Customers › sites › jobs. Tap a customer to see its sites.</p>
         </div>
         {isAdmin && (
-          <Button onClick={() => setAdding(!adding)} data-new-customer>
-            <Plus className="h-4 w-4 mr-1" /> New customer
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={() => { setAddingJob(!addingJob); setAdding(false); }} data-jobs-new-job>
+              <Plus className="h-4 w-4 mr-1" /> New job
+            </Button>
+            <Button variant="outline" onClick={() => { setAdding(!adding); setAddingJob(false); }} data-new-customer>
+              New customer
+            </Button>
+          </div>
         )}
       </div>
+
+      {addingJob && (
+        <Card className="mb-4">
+          <CardContent className="pt-4">
+            <NewJobForm onCancel={() => setAddingJob(false)} onCreated={(id) => { setAddingJob(false); navigate(`/jobs/${id}`); }} />
+          </CardContent>
+        </Card>
+      )}
 
       <div className="flex items-center gap-2 mb-3 flex-wrap">
         <Input
@@ -249,18 +266,57 @@ export function JobsPage() {
               const nJobs = index.jobIdsOf.get(c.id)?.length ?? 0;
               const open = openJobs(c.id);
               const town = index.sitesOf.get(c.id)?.map(townOf).find(Boolean) ?? townOf(c.billing ?? {});
+              const isOpen = expanded.has(c.id);
+              const custSites = (index.sitesOf.get(c.id) ?? []).filter((s) => !s.archivedAt);
               return (
-                <ListRow
-                  key={c.id}
-                  testId={c.id}
-                  title={c.name}
-                  sub={[town, `${nSites} site${nSites === 1 ? '' : 's'} · ${nJobs} job${nJobs === 1 ? '' : 's'}`].filter(Boolean).join(' · ')}
-                  chips={status !== 'active' ? <Badge variant="draft">{status}</Badge> : undefined}
-                  right={relativeDay(a.lastWorked)}
-                  rightSub={open > 0 ? `${open} open` : dayCount(a.days)}
-                  onTap={() => navigate(`/customers/${c.id}`)}
-                  onLong={() => setPeek(c)}
-                />
+                <div key={c.id} data-customer-tree={c.id} data-customer-open={isOpen ? 'yes' : 'no'}>
+                  <ListRow
+                    testId={c.id}
+                    title={c.name}
+                    sub={[town, `${nSites} site${nSites === 1 ? '' : 's'} · ${nJobs} job${nJobs === 1 ? '' : 's'}`].filter(Boolean).join(' · ')}
+                    chips={status !== 'active' ? <Badge variant="draft">{status}</Badge> : undefined}
+                    right={relativeDay(a.lastWorked)}
+                    rightSub={open > 0 ? `${open} open` : dayCount(a.days)}
+                    onTap={() => setExpanded((e) => { const n = new Set(e); n.has(c.id) ? n.delete(c.id) : n.add(c.id); return n; })}
+                    onLong={() => setPeek(c)}
+                  />
+                  {/* S22 (Matthew: "too many clicks to get to the information"): the row expands in
+                      place to its sites and jobs — no page per level; the customer page is one tap more */}
+                  {isOpen && (
+                    <div className="bg-gray-50 border-t border-gray-100 px-3 py-2 space-y-1" data-customer-expanded={c.id}>
+                      {custSites.map((s) => {
+                        const siteJobs = (index.jobIdsAtSite.get(s.id) ?? []).map((jid) => jobs.find((j) => j.id === jid)).filter((j): j is Job => Boolean(j));
+                        return (
+                          <div key={s.id} data-tree-site={s.id}>
+                            <button type="button" className="w-full text-left flex items-center gap-2 py-1.5 text-sm hover:bg-white rounded-md px-1" onClick={() => navigate(`/sites/${s.id}`)}>
+                              <ChevronDown className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                              <span className="font-medium truncate">{s.name}</span>
+                              <span className="text-xs text-gray-400 truncate">{[townOf(s), `K ${s.kFactor}`, `${siteJobs.length} job${siteJobs.length === 1 ? '' : 's'}`].filter(Boolean).join(' · ')}</span>
+                              <span className="ml-auto text-xs text-gray-400">site ›</span>
+                            </button>
+                            {siteJobs.map((j) => {
+                              const ja = activity?.get(j.id);
+                              const jStatus = j.jobStatus ?? (j.isActive ? 'active' : 'complete');
+                              return (
+                                <button key={j.id} type="button" className="w-full text-left flex items-center gap-2 py-1.5 pl-7 pr-1 text-sm hover:bg-white rounded-md" onClick={() => navigate(`/jobs/${j.id}`)} data-tree-job={j.id}>
+                                  {j.jobNumber && <span className="font-mono text-xs text-gray-500">{j.jobNumber}</span>}
+                                  <span className="truncate">{j.name}</span>
+                                  {jStatus !== 'active' && <Badge variant="draft">{jStatus}</Badge>}
+                                  <span className="ml-auto text-xs text-gray-400 whitespace-nowrap">{ja?.lastWorked ? relativeDay(ja.lastWorked) : 'no days'}</span>
+                                </button>
+                              );
+                            })}
+                            {siteJobs.length === 0 && <p className="pl-7 text-xs text-gray-400 py-1">no jobs at this site</p>}
+                          </div>
+                        );
+                      })}
+                      {custSites.length === 0 && <p className="text-xs text-gray-400 py-1">no sites yet</p>}
+                      <button type="button" className="text-xs text-navy underline underline-offset-2 pt-1" onClick={() => navigate(`/customers/${c.id}`)} data-tree-open-customer={c.id}>
+                        Customer page ›
+                      </button>
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>

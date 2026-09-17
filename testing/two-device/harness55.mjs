@@ -8,6 +8,13 @@ async (page, lib) => {
   // (repair open · out of service · due), the repair queue gone from here.
   const { mkCtx, signIn, skipTours, waitForUpload, sleep, WEB } = lib;
   const browser = page.context().browser();
+  // S15: the equipment filter is a fact row that opens a chooser (one pick at a time)
+  const pickFilter = async (P, key) => {
+    await P.locator('[data-fact-row="equipFilter"]').click();
+    await P.locator('[data-chooser="equipFilter"]').waitFor({ timeout: 5000 });
+    await P.locator(`[data-chooser="equipFilter"] [data-option="${key}"]`).click();
+    await sleep(300);
+  };
   const R = lib.report();
   const stamp = lib.stamp();
   const made = { customerId: '', siteId: '', jobIds: [], equipIds: [], ticketId: '' };
@@ -169,18 +176,18 @@ async (page, lib) => {
     await sleep(200);
     R.ok('a type chip leaves only that type', (await P3.locator('[data-equip-row]').evaluateAll((els) => els.map((e) => e.getAttribute('data-equip-cat')))).every((c) => c === 'rock_drill'));
     await P3.locator('[data-equip-tab="all"]').click();
-    await P3.locator('[data-equip-filter="repair"]').click();
+    await pickFilter(P3, 'repair');
     await sleep(200);
     const repairRows = await P3.locator('[data-equip-row]').count();
     R.ok(`Repair open drops the list to ticketed assets, header reads "N of M" (${repairRows} rows · ${await P3.locator('[data-equipment-count]').innerText()})`, repairRows >= 1 && (await P3.locator('[data-equip-row] [data-equip-repair]').count()) === repairRows && / of /.test(await P3.locator('[data-equipment-count]').innerText()));
-    await P3.locator('[data-equip-filter="oos"]').click();
+    await pickFilter(P3, 'oos');
     await sleep(200);
-    R.ok('Out of service stacks on it: the S8b drill is there, marked out of service', /out of service/.test(await P3.locator(`[data-equip-row="S8B-R1-${stamp}"]`).innerText()));
+    R.ok('Out of service (one pick at a time since S15): the S8b drill is there, marked out of service', /out of service/.test(await P3.locator(`[data-equip-row="S8B-R1-${stamp}"]`).innerText()));
     R.ok('the tab counts follow the filters', (await P3.locator('[data-equip-tab="trucks"]').getAttribute('data-count')) === '0');
     await P3.locator('[data-equip-clear]').click();
     await sleep(200);
     R.ok('Clear resets the header to the plain total', !/ of /.test(await P3.locator('[data-equipment-count]').innerText()));
-    await P3.locator('[data-equip-filter="due"]').click();
+    await pickFilter(P3, 'due');
     await sleep(200);
     R.ok('Due ≤30 d finds the pickup with DOT due in 5 days', (await P3.locator(`[data-equip-row="S8B-P1-${stamp}"]`).count()) === 1);
     await P3.locator('[data-equip-clear]').click();
@@ -210,7 +217,7 @@ async (page, lib) => {
       return main ? main.scrollWidth <= main.clientWidth + 1 : false;
     });
     R.ok('the page does not scroll sideways on a phone', fits);
-    await P4.locator('[data-equip-filter="oos"]').click();
+    await pickFilter(P4, 'oos');
     await sleep(200);
     R.ok('Out of service is one tap for the mechanic too', (await P4.locator(`[data-equip-row="S8B-R1-${stamp}"]`).count()) === 1);
     await c4.close();
