@@ -344,7 +344,8 @@
   ],
   "packages/shared/src/permissions.ts": [
     30,
-    71
+    71,
+    81
   ],
   "packages/shared/src/timing.ts": [
     74
@@ -391,7 +392,8 @@
     80
   ],
   "apps/web/src/components/day/DayHub.tsx": [
-    80
+    80,
+    81
   ],
   "apps/web/src/lib/fileUploader.ts": [
     81
@@ -415,6 +417,27 @@
     81
   ],
   "apps/web/src/db/powersync/useLiveQuery.ts": [
+    81
+  ],
+  "apps/web/src/lib/incidentDoNow.ts": [
+    81
+  ],
+  "apps/web/src/hooks/useIncidents.ts": [
+    81
+  ],
+  "apps/web/src/components/incident/DoNowStrip.tsx": [
+    81
+  ],
+  "apps/web/src/components/incident/ReportIncidentSheet.tsx": [
+    81
+  ],
+  "apps/web/src/pdfdocs/incident.tsx": [
+    81
+  ],
+  "apps/web/src/pages/admin/AdminIncidentsPage.tsx": [
+    81
+  ],
+  "apps/web/src/pages/Dashboard.tsx": [
     81
   ]
 }

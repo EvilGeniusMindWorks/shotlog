@@ -134,6 +134,7 @@ async (page, lib) => {
     await P1.goto(WEB);
     await P1.locator('[data-tour="fab"]').waitFor({ timeout: 10000 });
     await P1.locator('[data-tour="fab"]').click();
+    await P1.locator('[data-fab-start-day]').click(); // S20: the + is a two-row menu (Start a day · Report an incident)
     await P1.locator('[data-new-day-dialog]').waitFor({ timeout: 5000 });
     const m = await P1.evaluate(() => {
       const dlg = document.querySelector('[data-new-day-dialog]');

@@ -6,11 +6,9 @@ import { formatDate } from '@/lib/utils';
 import type { Incident, Job } from '@/db/schema';
 import { Document, Footer, HeaderBar, K, Page, T, TD, TR, Text } from './kit';
 
-export const INCIDENT_TITLE = {
-  blasting: 'Blasting Incident Report',
-  utility: 'Utility Strike Report',
-  asset: 'Company Asset Incident Report',
-} as const;
+import { INCIDENT_TITLE } from '@/lib/incidentDoNow';
+import { hhmm } from '@/lib/dayCard';
+export { INCIDENT_TITLE };
 
 function Row({ label, value }: { label: string; value: string | number | null | undefined }) {
   return (
@@ -67,6 +65,38 @@ function IncidentDoc({
             <Row label="Dig Safe #" value={incident.digsafeNumber} />
             <Row label="Marking" value={incident.utilityMarked} />
             <Row label="Utility type" value={incident.utilityKind?.replace(/_/g, ' ')} />
+          </T>
+        ) : null}
+        {incident.type === 'injury' ? (
+          <T style={{ marginBottom: 6 }}>
+            <SectionHead title="Injury" />
+            <Row label="Injured person" value={[incident.injuredName, incident.injuredJobTitle].filter(Boolean).join(' · ')} />
+            <Row label="Employer" value={incident.injuredEmployer === 'company' ? companyName : incident.injuredEmployer} />
+            <Row label="Where on the site" value={incident.whereOnSite} />
+            <Row label="What they were doing" value={incident.activity} />
+            <Row label="Injury and body part" value={incident.injuryBodyPart} />
+            <Row label="Cause" value={incident.injuryCause} />
+            <Row label="Treatment" value={[incident.treatment?.replace(/_/g, ' '), incident.treatmentFacility, incident.ambulance ? 'by ambulance' : ''].filter(Boolean).join(' · ')} />
+            <Row label="Witnesses" value={incident.witnesses} />
+            <Row label="Supervisor" value={incident.supervisorName} />
+            <Row label="Lost time" value={incident.lostTime === 'unknown' ? 'not known yet' : incident.lostTime} />
+          </T>
+        ) : null}
+        {incident.type === 'near_miss' ? (
+          <T style={{ marginBottom: 6 }}>
+            <SectionHead title="Near miss" />
+            <Row label="What stopped it" value={incident.whatStoppedIt} />
+            <Row label="The hazard" value={incident.hazard} />
+            <Row label="What should change" value={incident.correctiveAction} />
+            <Row label="Who was told" value={incident.whoWasTold} />
+          </T>
+        ) : null}
+        {(incident.callLog ?? []).length > 0 ? (
+          <T style={{ marginBottom: 6 }}>
+            <SectionHead title="Who was told, and when" />
+            {(incident.callLog ?? []).map((e) => (
+              <Row key={e.key + e.at} label={`${hhmm(e.at)}${e.byName ? ` · ${e.byName}` : ''}`} value={e.label} />
+            ))}
           </T>
         ) : null}
         {incident.type === 'asset' ? (

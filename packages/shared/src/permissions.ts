@@ -111,7 +111,8 @@ export const TABLE_PERMISSIONS: Record<string, TableRule> = {
   // come from the blaster in charge); OFFICE processes claims — its first
   // and only write grant
   incidents: {
-    PUT: EQUIPMENT_ENTRIES,
+    // S20 (Matthew): the office files incidents too, not only processes them
+    PUT: [...EQUIPMENT_ENTRIES, 'office'],
     PATCH: [...EQUIPMENT_ENTRIES, 'office'],
     DELETE: REGISTRY,
   },

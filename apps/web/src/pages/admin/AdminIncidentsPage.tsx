@@ -1,45 +1,25 @@
 // Office incident processing: open reports, claims in review, closed
 // history — the office role's home turf.
+import { useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
-import { getSessionUser } from '@/lib/session';
-import { generateId, nowISO, todayISO, formatDate } from '@/lib/utils';
-import type { Incident, IncidentType } from '@/db/schema';
+import { formatDate } from '@/lib/utils';
+import type { IncidentType } from '@/db/schema';
+import { createIncident } from '@/hooks/useIncidents';
+import { ReportIncidentSheet } from '@/components/incident/ReportIncidentSheet';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
-const TYPE_LABEL = { blasting: 'Blasting', utility: 'Utility', asset: 'Asset' };
+const TYPE_LABEL: Record<IncidentType, string> = { blasting: 'Blasting', utility: 'Utility', asset: 'Asset', injury: 'Injury', near_miss: 'Near miss', other: 'Other' };
 const STATUS_BADGE = { open: 'draft', office_review: 'submitted', closed: 'approved' } as const;
 
-export async function createIncident(
-  type: IncidentType,
-  links: Partial<Incident> = {},
-): Promise<string> {
-  const session = getSessionUser();
-  const now = nowISO();
-  const id = generateId();
-  const incident: Incident = {
-    id,
-    type,
-    status: 'open',
-    date: todayISO(),
-    time: '',
-    description: '',
-    reportedByName: session?.name ?? '',
-    reportedByUserId: session?.id ?? '',
-    ...links,
-    createdAt: now,
-    updatedAt: now,
-    syncStatus: 'local',
-  };
-  await db.incidents.add(incident);
-  return id;
-}
+export { createIncident };
 
 export function AdminIncidentsPage() {
   useOutletContext<{ online: boolean }>();
   const navigate = useNavigate();
+  const [report, setReport] = useState(false);
   const incidents =
     useLiveQuery(() =>
       db.incidents.toArray().then((xs) => [...xs].sort((a, b) => b.date.localeCompare(a.date))),
@@ -60,10 +40,10 @@ export function AdminIncidentsPage() {
           Blasting complaints, utility strikes, and asset incidents — filed in the field,
           claims processed here.
         </p>
-        <Button variant="outline" size="sm"
-          onClick={() => void createIncident('asset').then((id) => navigate(`/incident/${id}`))}>
-          <Plus className="h-4 w-4 mr-1" /> New (office-filed)
+        <Button variant="outline" size="sm" data-admin-new-incident onClick={() => setReport(true)}>
+          <Plus className="h-4 w-4 mr-1" /> New incident
         </Button>
+        {report && <ReportIncidentSheet onClose={() => setReport(false)} />}
       </div>
       {groups.map((g) => (
         <section key={g.title}>

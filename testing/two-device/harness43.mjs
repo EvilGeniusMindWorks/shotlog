@@ -37,6 +37,7 @@ async (page) => {
     await P.goto(WEB);
     await P.locator('[data-tour="fab"]').waitFor({ timeout: 10000 });
     await P.locator('[data-tour="fab"]').click();
+    await P.locator('[data-fab-start-day]').click(); // S20: the + is a two-row menu (Start a day · Report an incident)
     await P.locator('[data-new-day-dialog]').waitFor({ timeout: 5000 });
     await P.waitForTimeout(600);
   };

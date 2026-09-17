@@ -315,7 +315,9 @@ export const BUILT_IN_ROLES: readonly RoleDefinitionData[] = [
   {
     key: 'office',
     name: 'Office',
-    capabilities: ['process_incidents', 'view_admin_area'],
+    // S20 (Matthew, Sep 16 2026): the office files incidents too, not only
+    // processes them — Office Test's two attempts were refused silently
+    capabilities: ['file_incidents', 'process_incidents', 'view_admin_area'],
     homeDashboard: 'office',
   },
 ] as const;

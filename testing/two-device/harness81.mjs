@@ -17,6 +17,7 @@ async (page, lib) => {
   browserErrors({ clear: true });
   const today = daysAgo(0);
   let dayId, shotId, blastLogId, readingId, attId, subId, drillLogId, oldDayId, ydayDayId, drillDayId, drillShotId, chkId;
+  let PA, cA2, seeded, injuryId, nearMissId;
   let jobA, jobB, rigs;
 
   const cB = await mkCtx(browser, { viewport: { width: 1280, height: 900 } });
@@ -414,11 +415,103 @@ async (page, lib) => {
   });
 
   await R.section('Incidents: the tile, the + door, Injury and Near miss, Do now and the call log', async () => {
-    R.note('push 3 — not built yet');
+    // the office's rows and the site's town rows the Do now list reads (an admin writes both)
+    cA2 = await mkCtx(browser, { viewport: { width: 1280, height: 900 } });
+    PA = await cA2.newPage();
+    await signIn(PA, 'mark');
+    await skipTours(PA);
+    seeded = await PA.evaluate(async ({ jobId }) => {
+      const { db } = await import('/src/db/index.ts');
+      const { nowISO, generateId } = await import('/src/lib/utils.ts');
+      const cs = await db.companySettings.get('companySettings-singleton');
+      const prevOffice = cs?.officeContacts ?? [];
+      await db.companySettings.update('companySettings-singleton', { officeContacts: [{ id: generateId(), label: 'Injury (s20)', name: 'Evette', phone: '413-583-4440' }, { id: generateId(), label: 'Incident (s20)', name: 'Evette', phone: '413-583-4440' }, ...prevOffice.filter((c) => !/\(s20\)$/.test(c.label))], updatedAt: nowISO() });
+      const job = await db.jobs.get(jobId);
+      const site = job?.siteId ? await db.sites.get(job.siteId) : null;
+      const prevSite = site?.contacts ?? [];
+      if (site) await db.sites.update(site.id, { contacts: [{ id: generateId(), role: 'hospital', label: 'Hospital (911)', name: 'Lahey Hospital', phone: '781-372-7000' }, { id: generateId(), role: 'urgent_care', label: 'Urgent Care Facility', name: 'CareWell Lexington', phone: '781-590-3329' }, ...prevSite.filter((c) => !/Lahey|CareWell/.test(c.name))], updatedAt: nowISO() });
+      return { siteId: site?.id ?? null, prevOffice, prevSite };
+    }, { jobId: jobB.id });
+    await waitForUpload(PA, 30000);
+    await waitFor(() => PB.evaluate(async () => ((await (await import('/src/db/index.ts')).db.companySettings.get('companySettings-singleton'))?.officeContacts?.some((c) => c.label === 'Injury (s20)') ? 1 : null)), 40000);
+    // the day's tile
+    await PB.goto(`${WEB}/blast-day/${drillDayId}`);
+    const tile = PB.locator('[data-tile="incidents"]');
+    await tile.waitFor({ timeout: 30000 });
+    R.ok(`the day has an Incidents tile: "${((await tile.innerText()) || '').replace(/\s+/g, ' ').slice(0, 60)}"`, /None today/.test(await tile.innerText()) && /Report an incident/.test(await tile.innerText()));
+    await tile.locator('[data-tile-action]').click();
+    await PB.locator('[data-report-incident]').waitFor({ timeout: 10000 });
+    R.ok('the sheet knows the day and asks the kind — Injury and Near miss are among them', (await PB.locator('[data-report-incident-days]').count()) === 0 && (await PB.locator('[data-report-incident-kind="injury"]').count()) === 1 && (await PB.locator('[data-report-incident-kind="near_miss"]').count()) === 1);
+    await PB.locator('[data-report-incident-kind="injury"]').click();
+    await PB.waitForURL(/\/incident\/[0-9a-f-]+$/, { timeout: 15000 });
+    injuryId = PB.url().match(/\/incident\/([0-9a-f-]+)$/)?.[1];
+    const rec = await PB.evaluate(async (id) => { const i = await (await import('/src/db/index.ts')).db.incidents.get(id); return { type: i?.type, day: i?.blastDayId, job: i?.jobId, customer: i?.customerId, site: i?.siteId }; }, injuryId);
+    R.ok('the incident carries the day, its job, customer and site', rec.type === 'injury' && rec.day === drillDayId && rec.job === jobB.id && Boolean(rec.customer) && Boolean(rec.site));
+    await PB.locator('[data-do-now="injury"]').waitFor({ timeout: 15000 });
+    // the job, its site and the company's rows are live queries — the names arrive a beat after the strip
+    await waitFor(async () => (/Evette/.test((await PB.locator('[data-do-now-step="injury"]').innerText().catch(() => '')) || '') ? 1 : null), 20000);
+    await waitFor(async () => (/Lahey/.test((await PB.locator('[data-do-now-step="hospital"]').innerText().catch(() => '')) || '') ? 1 : null), 20000);
+    const injuryStep = (await PB.locator('[data-do-now-step="injury"]').innerText()) || '';
+    R.ok(`Do now names the office's Injury contact from the sheet ("${injuryStep.replace(/\s+/g, ' ').slice(0, 60)}")`, /Call Evette 413-583-4440/.test(injuryStep));
+    const hospStep = (await PB.locator('[data-do-now-step="hospital"]').innerText()) || '';
+    R.ok(`…and the site's hospital ("${hospStep.replace(/\s+/g, ' ').slice(0, 60)}")`, /Lahey Hospital 781-372-7000/.test(hospStep));
+    // Call: the phone would dial; here the tap is what we can see — it records the confirmation with the time
+    await PB.evaluate(() => { const a = document.querySelector('[data-do-now-call="injury"]'); a.addEventListener('click', (e) => e.preventDefault(), { once: true }); a.click(); });
+    await PB.locator('[data-do-now-when="injury"]').waitFor({ timeout: 10000 });
+    R.ok(`the tap is logged as called, with the time ("${((await PB.locator('[data-do-now-when="injury"]').innerText()) || '').trim()}")`, /called \d{1,2}:\d{2}/.test((await PB.locator('[data-do-now-when="injury"]').innerText()) || ''));
+    await PB.locator('[data-do-now-confirm="scene"]').click();
+    await PB.locator('[data-do-now-when="scene"]').waitFor({ timeout: 10000 });
+    R.ok('Done logs a plain confirmation', /done \d{1,2}:\d{2}/.test((await PB.locator('[data-do-now-when="scene"]').innerText()) || ''));
+    await PB.locator('[data-injury-name]').fill('Lisa Vital');
+    await PB.locator('[data-injury-body-part]').fill('left wrist');
+    await PB.locator('textarea').first().fill(`s20 ${stamp}: slipped on the mat pile at 10:40, landed on the left wrist`);
+    await sleep(800);
+    await PB.getByRole('button', { name: /Send to Office/ }).click();
+    await PB.waitForURL(new RegExp(`/incident/${injuryId}$`), { timeout: 40000 });
+    await waitFor(() => PB.evaluate(async (id) => ((await (await import('/src/db/index.ts')).db.incidents.get(id))?.status === 'office_review' ? 1 : null), injuryId), 30000);
+    const filed = await PB.evaluate(async (id) => { const { db } = await import('/src/db/index.ts'); const s = (await db.submissions.filter((x) => x.type === 'incident' && x.sourceId === id).toArray())[0]; return s ? { day: s.blastDayId, job: s.jobId, title: s.title } : null; }, injuryId);
+    R.ok(`Send to Office files the report as a paper of the day ("${filed?.title ?? ''}")`, filed?.day === drillDayId && filed?.job === jobB.id && /Injury Report/.test(filed?.title ?? ''));
+    await PB.goto(`${WEB}/incident/${injuryId}/print`);
+    await PB.locator('[data-print-call-log]').waitFor({ timeout: 20000 });
+    R.ok('the printed report carries "Who was told, and when"', /Evette/.test(await PB.locator('[data-print-call-log]').innerText()) && /Call Evette/.test(await PB.locator('[data-print-call-log]').innerText()));
+    await PB.goto(`${WEB}/blast-day/${drillDayId}`);
+    await tile.waitFor({ timeout: 30000 });
+    R.ok(`the day's tile counts it ("${((await tile.innerText()) || '').replace(/\s+/g, ' ').slice(0, 70)}")`, /1 · Injury/.test(await tile.innerText()) && /sent to the office/.test(await tile.innerText()));
+    // the home's + offers Report an incident, and asks which day
+    await PB.goto(`${WEB}/`);
+    await PB.locator('[data-tour="fab"]').waitFor({ timeout: 20000 });
+    await PB.locator('[data-tour="fab"]').click();
+    await PB.locator('[data-fab-menu]').waitFor({ timeout: 10000 });
+    R.ok('the + offers Start a day and Report an incident', (await PB.locator('[data-fab-start-day]').count()) === 1 && (await PB.locator('[data-fab-report-incident]').count()) === 1);
+    await PB.locator('[data-fab-report-incident]').click();
+    await PB.locator('[data-report-incident-days]').waitFor({ timeout: 10000 });
+    await PB.locator(`[data-report-incident-day="${drillDayId}"]`).waitFor({ timeout: 10000 }).catch(() => undefined); // the day list is a live query
+    R.ok('it asks which day, with today\'s and "Not tied to a work day"', (await PB.locator(`[data-report-incident-day="${drillDayId}"]`).count()) === 1 && (await PB.locator('[data-report-incident-day="none"]').count()) === 1);
+    await PB.locator('[data-report-incident] button:has-text("Close")').click();
   });
 
-  await R.section('The office may file an incident; a refused write says so', async () => {
-    R.note('push 3 — not built yet');
+  await R.section('The office may file an incident, and sees the field\'s in review', async () => {
+    const cO = await mkCtx(browser, { viewport: { width: 1280, height: 900 } });
+    const PO = await cO.newPage();
+    await signIn(PO, 'office');
+    await skipTours(PO);
+    await PO.goto(`${WEB}/admin/incidents`);
+    await PO.locator('[data-admin-new-incident]').waitFor({ timeout: 30000 });
+    await waitFor(async () => (/Injury/.test((await PO.locator('main').innerText().catch(() => '')) || '') ? 1 : null), 30000);
+    R.ok('the office list shows the blaster\'s injury in review', /Injury/.test((await PO.locator('main').innerText()) || '') && /office review|In office review/.test((await PO.locator('main').innerText()) || ''));
+    await PO.locator('[data-admin-new-incident]').click();
+    await PO.locator('[data-report-incident-days]').waitFor({ timeout: 10000 });
+    await PO.locator('[data-report-incident-day="none"]').click();
+    await PO.locator('[data-report-incident-kind="near_miss"]').click();
+    await PO.waitForURL(/\/incident\/[0-9a-f-]+$/, { timeout: 15000 });
+    nearMissId = PO.url().match(/\/incident\/([0-9a-f-]+)$/)?.[1];
+    await PO.locator('[data-incident-near-miss]').waitFor({ timeout: 15000 });
+    await PO.locator('textarea').first().fill(`s20 ${stamp}: office-filed near miss`);
+    await waitForUpload(PO, 30000);
+    // the server accepted it: the blaster's device receives it (Sep 16: the office's creates were refused by role)
+    const arrived = await waitFor(() => PB.evaluate(async (id) => ((await (await import('/src/db/index.ts')).db.incidents.get(id)) ? 1 : null), nearMissId), 40000);
+    R.ok('the office\'s incident is accepted by the server and reaches the field', arrived === 1);
+    await cO.close();
   });
 
   await R.section('the error spy saw nothing during this run', async () => {
@@ -427,6 +520,17 @@ async (page, lib) => {
   });
 
   await R.section('cleanup', async () => {
+    if (PA && seeded) {
+      await PA.evaluate(async ({ seeded, ids }) => {
+        const { db, deleteWithTombstone } = await import('/src/db/index.ts');
+        const { nowISO } = await import('/src/lib/utils.ts');
+        await db.companySettings.update('companySettings-singleton', { officeContacts: seeded.prevOffice, updatedAt: nowISO() });
+        if (seeded.siteId) await db.sites.update(seeded.siteId, { contacts: seeded.prevSite, updatedAt: nowISO() });
+        for (const id of ids.filter(Boolean)) if (await db.incidents.get(id)) await deleteWithTombstone('incidents', id);
+      }, { seeded, ids: [injuryId, nearMissId] }).catch(() => undefined);
+      await waitForUpload(PA, 30000).catch(() => undefined);
+      await cA2.close();
+    }
     const removed = await lib.cleanupAsAdmin(browser, { days: [dayId, drillDayId, oldDayId, ydayDayId].filter(Boolean), drillLogs: [drillLogId].filter(Boolean), checklists: [chkId].filter(Boolean) }).catch(() => -1);
     R.ok(`cleanup removed ${removed} day(s)`, removed >= 0);
   });

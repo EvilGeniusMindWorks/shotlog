@@ -18,8 +18,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { ChipSelect } from '@/components/ui/chip-select';
-
-const TYPE_LABEL = { blasting: 'Blasting Incident', utility: 'Utility Strike', asset: 'Asset Incident' };
+import { DoNowStrip } from '@/components/incident/DoNowStrip';
+import { INCIDENT_LABEL as TYPE_LABEL } from '@/lib/incidentDoNow';
 const STATUS_BADGE = { open: 'draft', office_review: 'submitted', closed: 'approved' } as const;
 
 export function IncidentPage() {
@@ -30,7 +30,8 @@ export function IncidentPage() {
     () => (incidentId ? db.incidents.get(incidentId) : undefined),
     [incidentId],
   );
-  const back = useBack({ to: '/', label: 'Dashboard' }, 'Incident');
+  // the navigation round: an incident of a work day goes up to the day
+  const back = useBack(incident?.blastDayId ? { to: `/blast-day/${incident.blastDayId}`, label: 'Work day' } : { to: '/', label: 'Dashboard' }, 'Incident');
   if (!incident) return <div className="p-4 text-center text-gray-500">Loading…</div>;
   return <IncidentForm incident={incident} role={role} onBack={() => (back ? back.go() : navigate('/'))} backLabel={back?.label ?? 'Dashboard'} />;
 }
@@ -81,6 +82,8 @@ function IncidentForm({
       </div>
 
       <div className="p-4 max-w-2xl mx-auto space-y-4">
+        {/* S20 (Matthew): the Do now list first — who to call, from the job's sheet, each tap logged with its time */}
+        <DoNowStrip incident={incident} readOnly={draft.status !== 'open'} />
         <div className="rounded-xl border border-gray-200 bg-white p-4 grid gap-3 sm:grid-cols-2">
           <div><Label className="text-xs">Date</Label>
             <Input type="date" value={draft.date} onChange={(e) => set('date', e.target.value)} /></div>
@@ -181,6 +184,64 @@ function IncidentForm({
                   { value: 'unmarked', label: 'Not marked' },
                 ]} />
             </div>
+          </div>
+        )}
+
+        {draft.type === 'injury' && (
+          <div className="rounded-xl border border-gray-200 bg-white p-4 grid gap-3 sm:grid-cols-2" data-incident-injury>
+            <p className="sm:col-span-2 text-sm font-semibold">Who was hurt</p>
+            <div><Label className="text-xs">Name</Label>
+              <Input value={draft.injuredName ?? ''} onChange={(e) => set('injuredName', e.target.value)} data-injury-name /></div>
+            <div><Label className="text-xs">Job title</Label>
+              <Input value={draft.injuredJobTitle ?? ''} onChange={(e) => set('injuredJobTitle', e.target.value)} /></div>
+            <div className="sm:col-span-2">
+              <Label className="text-xs">Employer</Label>
+              <ChipSelect value={draft.injuredEmployer ?? 'company'} onChange={(v) => set('injuredEmployer', v)}
+                options={[{ value: 'company', label: 'Ours' }, { value: 'subcontractor', label: 'Subcontractor' }, { value: 'other', label: 'Other' }]} />
+            </div>
+            <p className="sm:col-span-2 text-sm font-semibold">What happened</p>
+            <div><Label className="text-xs">Where on the site</Label>
+              <Input value={draft.whereOnSite ?? ''} onChange={(e) => set('whereOnSite', e.target.value)} /></div>
+            <div><Label className="text-xs">What they were doing</Label>
+              <Input value={draft.activity ?? ''} onChange={(e) => set('activity', e.target.value)} /></div>
+            <div><Label className="text-xs">Injury and body part</Label>
+              <Input value={draft.injuryBodyPart ?? ''} onChange={(e) => set('injuryBodyPart', e.target.value)} data-injury-body-part /></div>
+            <div><Label className="text-xs">What caused it (object, substance, fall…)</Label>
+              <Input value={draft.injuryCause ?? ''} onChange={(e) => set('injuryCause', e.target.value)} /></div>
+            <p className="sm:col-span-2 text-sm font-semibold">Treatment</p>
+            <div className="sm:col-span-2">
+              <ChipSelect value={draft.treatment ?? 'none'} onChange={(v) => set('treatment', v)}
+                options={[{ value: 'none', label: 'None' }, { value: 'first_aid', label: 'First aid' }, { value: 'urgent_care', label: 'Urgent care' }, { value: 'hospital', label: 'Hospital' }]} />
+            </div>
+            <div><Label className="text-xs">Facility</Label>
+              <Input value={draft.treatmentFacility ?? ''} onChange={(e) => set('treatmentFacility', e.target.value)} /></div>
+            <label className="flex items-center gap-2 text-sm self-end pb-2 cursor-pointer">
+              <input type="checkbox" checked={draft.ambulance ?? false} onChange={(e) => set('ambulance', e.target.checked)} />
+              Taken by ambulance
+            </label>
+            <div><Label className="text-xs">Witnesses</Label>
+              <Input value={draft.witnesses ?? ''} onChange={(e) => set('witnesses', e.target.value)} /></div>
+            <div><Label className="text-xs">Supervisor</Label>
+              <Input value={draft.supervisorName ?? ''} onChange={(e) => set('supervisorName', e.target.value)} /></div>
+            <div className="sm:col-span-2">
+              <Label className="text-xs">Lost time?</Label>
+              <ChipSelect value={draft.lostTime ?? 'unknown'} onChange={(v) => set('lostTime', v)}
+                options={[{ value: 'no', label: 'No' }, { value: 'yes', label: 'Yes' }, { value: 'unknown', label: 'Not known yet' }]} />
+            </div>
+          </div>
+        )}
+
+        {draft.type === 'near_miss' && (
+          <div className="rounded-xl border border-gray-200 bg-white p-4 grid gap-3 sm:grid-cols-2" data-incident-near-miss>
+            <p className="sm:col-span-2 text-sm font-semibold">Near miss</p>
+            <div className="sm:col-span-2"><Label className="text-xs">What stopped it</Label>
+              <Input value={draft.whatStoppedIt ?? ''} onChange={(e) => set('whatStoppedIt', e.target.value)} /></div>
+            <div><Label className="text-xs">The hazard</Label>
+              <Input value={draft.hazard ?? ''} onChange={(e) => set('hazard', e.target.value)} /></div>
+            <div><Label className="text-xs">Who was told</Label>
+              <Input value={draft.whoWasTold ?? ''} onChange={(e) => set('whoWasTold', e.target.value)} /></div>
+            <div className="sm:col-span-2"><Label className="text-xs">What should change</Label>
+              <Input value={draft.correctiveAction ?? ''} onChange={(e) => set('correctiveAction', e.target.value)} /></div>
           </div>
         )}
 

@@ -5,7 +5,9 @@
 // rigs. File this day sits at the bottom when a paper exists to file.
 import { useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ClipboardList, FileText, Timer, Drill } from 'lucide-react';
+import { AlertTriangle, ClipboardList, FileText, Timer, Drill } from 'lucide-react';
+import { ReportIncidentSheet } from '@/components/incident/ReportIncidentSheet';
+import { INCIDENT_LABEL } from '@/lib/incidentDoNow';
 import type { BlastDay, BlastLog, DailyReport, DrillLog, Job, Shot } from '@/db/schema';
 import { isBlastingWork } from '@/db/schema';
 import { db, useLiveQuery } from '@/db';
@@ -115,6 +117,9 @@ export function DayHub({ day, job, blastLog, shots, dailyReport, locked, owner, 
   const closed = Boolean(day.closed);
   const readOnly = locked || isOffice || closed;
   const [cardSheet, setCardSheet] = useState(false);
+  // S20 (Matthew): incidents are papers of the day
+  const [incidentSheet, setIncidentSheet] = useState(false);
+  const [incidentList, setIncidentList] = useState(false);
   const [closeSheet, setCloseSheet] = useState(false);
   const [closeReason, setCloseReason] = useState('');
   const [closeOther, setCloseOther] = useState('');
@@ -133,6 +138,7 @@ export function DayHub({ day, job, blastLog, shots, dailyReport, locked, owner, 
       return out;
     }, [myLogs.map((l) => l.id).join(',')]) ?? new Map<string, number>();
   const rigRows = useLiveQuery(() => dayChecklistsFor(day, dayLogs), [day.id, day.date, dayLogs.map((l) => l.id).join(',')]) ?? [];
+  const incidents = useLiveQuery(() => db.incidents.filter((i) => i.blastDayId === day.id).toArray().then((xs) => xs.sort((a, b) => a.createdAt.localeCompare(b.createdAt))), [day.id]) ?? [];
   const crew = useCrew(!isDriller ? day : undefined);
 
   const blasting = isBlastingWork(day.typeOfWork) || Boolean(blastLog);
@@ -209,6 +215,32 @@ export function DayHub({ day, job, blastLog, shots, dailyReport, locked, owner, 
       onAction: () => setView('daily-report'),
     });
   }
+  // S20 (Matthew): an Incidents tile on every day — "None today · Report" or the count, the kind and the time
+  {
+    const canReport = !readOnly && can('incidents', 'PUT');
+    const sent = incidents.filter((i) => i.status !== 'open').length;
+    const first = incidents[0];
+    const state: TileState =
+      incidents.length === 0
+        ? { title: 'None today', sub: canReport ? 'Report an incident' : '', action: canReport ? 'Start' : 'None', tone: 'plain' }
+        : {
+            title: `${incidents.length} · ${INCIDENT_LABEL[first.type]}${first.time ? ` ${first.time}` : ''}`,
+            sub: sent === incidents.length ? (incidents.length === 1 ? 'sent to the office' : 'all sent to the office') : `${incidents.length - sent} not sent yet`,
+            action: 'Open',
+            tone: 'bad',
+          };
+    tiles.push({
+      id: 'incidents',
+      icon: <AlertTriangle className="h-5 w-5" />,
+      name: 'Incidents',
+      state,
+      onAction: () => {
+        if (incidents.length === 0) setIncidentSheet(true);
+        else if (incidents.length === 1) navigate(`/incident/${incidents[0].id}`);
+        else setIncidentList(true);
+      },
+    });
+  }
   const upNextIndex = readOnly ? -1 : tiles.findIndex((t) => t.state.tone !== 'done' && (t.state.action === 'Start' || t.state.action === 'Open'));
 
   const file = fileState(day, blastLog, shots, dailyReport, dayLogs.length);
@@ -235,6 +267,26 @@ export function DayHub({ day, job, blastLog, shots, dailyReport, locked, owner, 
         <p className="text-xs text-gray-600 border border-gray-200 bg-white rounded-lg px-3 py-2" data-day-moved>
           Moved from {formatDate(day.movedFrom.date)} by {day.movedFrom.byName || 'someone'} · {hhmm(day.movedFrom.at)}
         </p>
+      )}
+      {incidentSheet && <ReportIncidentSheet day={day} onClose={() => setIncidentSheet(false)} />}
+      {incidentList && (
+        <ConsequenceSheet onClose={() => setIncidentList(false)}>
+          <div data-incident-list>
+            <h3 className="font-bold text-lg">Incidents · {formatDate(day.date)}</h3>
+            {incidents.map((i) => (
+              <button key={i.id} type="button" className="w-full text-left rounded-lg border border-gray-200 bg-white px-3 py-3 mb-2 min-h-[48px]" data-incident-row={i.id} onClick={() => navigate(`/incident/${i.id}`)}>
+                <span className="font-semibold">{INCIDENT_LABEL[i.type]}{i.time ? ` · ${i.time}` : ''}</span>
+                <span className="block text-xs text-gray-500">{i.description || 'no description yet'} · {i.status === 'open' ? 'not sent yet' : i.status.replace('_', ' ')}</span>
+              </button>
+            ))}
+            {!readOnly && can('incidents', 'PUT') && (
+              <Button variant="outline" className="w-full mt-1" data-incident-report-another onClick={() => { setIncidentList(false); setIncidentSheet(true); }}>
+                Report another
+              </Button>
+            )}
+            <Button variant="outline" className="w-full mt-2" onClick={() => setIncidentList(false)}>Close</Button>
+          </div>
+        </ConsequenceSheet>
       )}
       {isDriller && <RigList day={day} rows={rigRows} readOnly={readOnly} />}
       {tiles.map((t, i) => (

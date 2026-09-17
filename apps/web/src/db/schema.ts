@@ -1049,7 +1049,9 @@ export interface RepairTicket extends BaseRecord {
 // Filed in the field (offline-capable); office processes the claim.
 // ══════════════════════════════════════════════════════
 
-export type IncidentType = 'blasting' | 'utility' | 'asset';
+/** S20 (Matthew, Sep 16 2026): Injury and Near miss join the three — a
+ *  licensed company records both; Other for what fits nowhere */
+export type IncidentType = 'blasting' | 'utility' | 'asset' | 'injury' | 'near_miss' | 'other';
 export type IncidentStatus = 'open' | 'office_review' | 'closed';
 
 export interface Incident extends BaseRecord {
@@ -1091,6 +1093,33 @@ export interface Incident extends BaseRecord {
   insuranceSubmittedAt?: string;
   responseSentAt?: string;
   officeNotes?: string;
+  /** S20: an incident is a paper of the work day — the day's customer and
+   *  site ride on it like on every other paper */
+  customerId?: string;
+  siteId?: string;
+  /** S20 (Matthew): the Do now list — each tap is the reporter's own
+   *  confirmation with the time; the phone dials, the app never records
+   *  the call itself. Printed on the report. */
+  callLog?: { key: string; label: string; at: string; byName: string }[];
+  // ── Injury (S20) — lined up with what the regulators ask for ──
+  injuredName?: string;
+  injuredEmployer?: 'company' | 'subcontractor' | 'other';
+  injuredJobTitle?: string;
+  whereOnSite?: string;
+  activity?: string;
+  injuryBodyPart?: string;
+  injuryCause?: string;
+  treatment?: 'none' | 'first_aid' | 'urgent_care' | 'hospital';
+  treatmentFacility?: string;
+  ambulance?: boolean;
+  witnesses?: string;
+  lostTime?: 'no' | 'yes' | 'unknown';
+  supervisorName?: string;
+  // ── Near miss (S20) ──
+  whatStoppedIt?: string;
+  hazard?: string;
+  correctiveAction?: string;
+  whoWasTold?: string;
 }
 
 /** Single doc per company (id: companySettings-singleton), admin-managed */

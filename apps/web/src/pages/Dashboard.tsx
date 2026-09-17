@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowDown, ArrowUp, LayoutGrid, Plus, Search, Table2 } from 'lucide-react';
+import { AlertTriangle, ArrowDown, ArrowUp, LayoutGrid, Plus, Search, Table2 } from 'lucide-react';
+import { ConsequenceSheet } from '@/components/records/LifecycleMenu';
+import { ReportIncidentSheet } from '@/components/incident/ReportIncidentSheet';
+import { can } from '@/lib/perms';
 import { getDaysScope, homeIsMineFirst, myDayIds, onlyMine, setDaysScope, type DaysScope } from '@/lib/mine';
 import { useLiveQuery, db } from '@/db';
 import { getPowerSync } from '@/db/powersync/client';
@@ -248,16 +251,49 @@ export function Dashboard() {
 function NewWorkDayFab({ defaultTypeOfWork }: { defaultTypeOfWork?: WorkType }) {
   const navigate = useNavigate();
   const [showNewDialog, setShowNewDialog] = useState(false);
+  // S20 (Matthew): the + offers two things — Start a day · Report an incident
+  const [menu, setMenu] = useState(false);
+  const [report, setReport] = useState(false);
+  const canReport = can('incidents', 'PUT');
   return (
     <>
       <button
         data-tour="fab"
         className="fixed bottom-[calc(6rem+var(--sab))] right-[calc(1rem+var(--sar))] sm:bottom-8 sm:right-8 h-14 w-14 rounded-full bg-safety-orange text-white shadow-lg flex items-center justify-center active:scale-95 transition-transform z-20"
-        title="Start a day at a job"
-        onClick={() => setShowNewDialog(true)}
+        title="Start a day · Report an incident"
+        onClick={() => (canReport ? setMenu(true) : setShowNewDialog(true))}
       >
         <Plus className="h-7 w-7" />
       </button>
+      {menu && (
+        <ConsequenceSheet onClose={() => setMenu(false)}>
+          <div data-fab-menu>
+            <button
+              type="button"
+              className="w-full text-left rounded-lg border border-gray-200 bg-white px-3 py-3 mb-2 min-h-[48px]"
+              data-fab-start-day
+              onClick={() => { setMenu(false); setShowNewDialog(true); }}
+            >
+              <span className="font-semibold">Start a day at a job</span>
+              <span className="block text-xs text-gray-500">a work day with its papers</span>
+            </button>
+            <button
+              type="button"
+              className="w-full text-left rounded-lg border border-red-200 bg-red-50 px-3 py-3 mb-2 min-h-[48px] flex items-center gap-2"
+              data-fab-report-incident
+              onClick={() => { setMenu(false); setReport(true); }}
+            >
+              <AlertTriangle className="h-4 w-4 text-red-700 shrink-0" />
+              <span>
+                <span className="font-semibold text-red-900">Report an incident</span>
+                <span className="block text-xs text-red-800/80">injury, near miss, utility strike, damage, equipment</span>
+              </span>
+            </button>
+            <Button variant="outline" className="w-full mt-1" onClick={() => setMenu(false)}>Close</Button>
+          </div>
+        </ConsequenceSheet>
+      )}
+      {report && <ReportIncidentSheet onClose={() => setReport(false)} />}
       {showNewDialog && (
         <NewBlastDayDialog
           defaultTypeOfWork={defaultTypeOfWork}

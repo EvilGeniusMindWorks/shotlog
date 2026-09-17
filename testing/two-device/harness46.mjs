@@ -140,6 +140,7 @@ async (page) => {
 
     // ── 2. driller: the new-day dialog never prefills a blasting type; copy blank ─
     await P1.locator('[data-tour="fab"]').click();
+    await P1.locator('[data-fab-start-day]').click(); // S20: the + is a two-row menu (Start a day · Report an incident)
     await P1.locator('[data-new-day-dialog]').waitFor({ timeout: 5000 });
     // S8 Option B: the Job row opens a picker; search finds the job by id
     await P1.locator('[data-day-job]').click();
