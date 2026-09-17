@@ -334,3 +334,36 @@ export async function finishPapers(P, dayId) {
     return { log: Boolean(log), report: Boolean(report) };
   }, dayId);
 }
+
+// ── The local storage stand-in ─────────────────────────────────────────────
+/** The dev API runs with files:false (no object storage). A harness that
+ *  needs an office copy's PDF and photos to count as "in storage" answers the
+ *  app's own storage calls from the test: the presign hands out a key, the
+ *  upload is accepted, and — when `bins` (base64 pdf/jpeg) are given — a
+ *  download serves those bytes. Nothing outside the local stack is touched.
+ *  Returns a function that removes the stand-in again. */
+export async function storageStandIn(P, { tag = 'standin', bins } = {}) {
+  const cors = { 'access-control-allow-origin': WEB, 'access-control-allow-credentials': 'true', 'access-control-allow-methods': 'GET, PUT, POST, OPTIONS', 'access-control-allow-headers': 'content-type, authorization, x-company-id' };
+  const preflight = (route) => (route.request().method() === 'OPTIONS' ? route.fulfill({ status: 204, headers: cors, body: '' }) : null);
+  await P.route('**/files/presign-upload', async (route) => {
+    if (await preflight(route)) return;
+    const body = JSON.parse(route.request().postData() || '{}');
+    await route.fulfill({ status: 200, headers: { ...cors, 'content-type': 'application/json' }, body: JSON.stringify({ url: `${API}/__${tag}_put`, key: `c/test/a/${body.attachmentId}/${body.fileName}` }) });
+  });
+  await P.route(`**/__${tag}_put`, (route) => route.fulfill({ status: 200, headers: cors, body: '' }));
+  if (bins) {
+    await P.route('**/files/presign-download', async (route) => {
+      if (await preflight(route)) return;
+      const body = JSON.parse(route.request().postData() || '{}');
+      await route.fulfill({ status: 200, headers: { ...cors, 'content-type': 'application/json' }, body: JSON.stringify({ url: `${API}/__${tag}/${encodeURIComponent(body.key)}` }) });
+    });
+    await P.route(`**/__${tag}/**`, async (route) => {
+      const key = decodeURIComponent(route.request().url().split(`/__${tag}/`)[1] || '');
+      const isPdf = key.includes('sub-pdf');
+      await route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*', 'content-type': isPdf ? 'application/pdf' : 'image/jpeg' }, body: Buffer.from((isPdf ? bins.pdf : bins.jpeg) || '', 'base64') });
+    });
+  }
+  return async () => {
+    for (const pattern of ['**/files/presign-upload', `**/__${tag}_put`, ...(bins ? ['**/files/presign-download', `**/__${tag}/**`] : [])]) await P.unroute(pattern).catch(() => undefined);
+  };
+}

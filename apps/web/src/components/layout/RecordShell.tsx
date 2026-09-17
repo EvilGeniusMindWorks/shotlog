@@ -91,14 +91,16 @@ interface Props {
    *  the Overview tab; the tab bar still opens any section in full. */
   aboutCards?: boolean;
   list?: ReactNode;
+  /** S22: open on this section (a link with ?open=…) */
+  initialTab?: string;
 }
 
-export function RecordShell({ breadcrumb, title, badge, subline, facts, notice, stats, actions, sections, aboutCards, list }: Props) {
+export function RecordShell({ breadcrumb, title, badge, subline, facts, notice, stats, actions, sections, aboutCards, list, initialTab }: Props) {
   const navigate = useNavigate();
   const mode = useLayoutMode();
-  const [tab, setTab] = useState('overview');
+  const [tab, setTab] = useState(initialTab && sections.some((s) => s.id === initialTab) ? initialTab : 'overview');
   const [open, setOpen] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(sections.map((s) => [s.id, s.defaultOpen ?? !aboutCards])),
+    Object.fromEntries(sections.map((s) => [s.id, s.id === initialTab ? true : (s.defaultOpen ?? !aboutCards)])),
   );
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   /** Compact: an About card opens its section and scrolls to it */

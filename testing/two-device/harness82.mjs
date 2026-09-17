@@ -35,12 +35,10 @@ async (page, lib) => {
   if (picked.length < 1) throw new Error('need a job with a site and no open day');
   [jobA] = picked;
   R.note(`job: ${jobA.name}`);
-  const sigBlob = `(async () => { const c = document.createElement('canvas'); c.width = 200; c.height = 80; const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, 200, 80); g.strokeStyle = '#000'; g.lineWidth = 2; g.beginPath(); g.moveTo(10, 40); g.lineTo(190, 40); g.stroke(); return await new Promise((r) => c.toBlob(r, 'image/png')); })()`;
-  const cors = { 'access-control-allow-origin': 'http://localhost:5199', 'access-control-allow-credentials': 'true', 'access-control-allow-methods': 'GET, PUT, POST, OPTIONS', 'access-control-allow-headers': 'content-type, authorization, x-company-id' };
 
   // ── the fixture: a filed blasting log with a seismo printout that reached storage ──
   const made = await PB.evaluate(
-    async ({ jobId, stamp, sigBlob }) => {
+    async ({ jobId, stamp }) => {
       const { db } = await import('/src/db/index.ts');
       const { createBlastDayWithPapers } = await import('/src/hooks/useBlastDay.ts');
       const { addAttachmentFiles } = await import('/src/lib/attachments.ts');
@@ -56,11 +54,12 @@ async (page, lib) => {
       const jpeg = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.8));
       const [attId] = await addAttachmentFiles(readingId, 'seismo_reading', [new File([jpeg], 'IMG_3911.jpeg', { type: 'image/jpeg' })], 'seismo_printout');
       await db.attachments.update(attId, { storageStatus: 'stored', storageKey: `c/test/a/${attId}/IMG_3911.jpeg`, updatedAt: nowISO() });
-      const sig = await eval(sigBlob);
+      const sc = document.createElement('canvas'); sc.width = 200; sc.height = 80; const sg = sc.getContext('2d'); sg.fillStyle = '#fff'; sg.fillRect(0, 0, 200, 80); sg.strokeStyle = '#000'; sg.lineWidth = 2; sg.beginPath(); sg.moveTo(10, 40); sg.lineTo(190, 40); sg.stroke();
+      const sig = await new Promise((r) => sc.toBlob(r, 'image/png'));
       await db.blastLogs.update(log.id, { signatureImage: sig, signedAt: nowISO(), updatedAt: nowISO() });
       return { dayId, blastLogId: log.id, attId };
     },
-    { jobId: jobA.id, stamp, sigBlob },
+    { jobId: jobA.id, stamp },
   );
   ({ dayId, blastLogId, attId } = made);
   await waitForUpload(PB, 30000);
@@ -77,13 +76,8 @@ async (page, lib) => {
   }, dayId), 30000);
   subId = sub?.id;
   if (!subId) throw new Error('the blasting log did not file');
-  // storage is not configured locally: stand in for it on the filing device so the copy reads "stored"
-  await PB.route('**/files/presign-upload', async (route) => {
-    if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors, body: '' });
-    const body = JSON.parse(route.request().postData() || '{}');
-    await route.fulfill({ status: 200, headers: { ...cors, 'content-type': 'application/json' }, body: JSON.stringify({ url: `${API}/__s21_put`, key: `c/test/a/${body.attachmentId}/${body.fileName}` }) });
-  });
-  await PB.route('**/__s21_put', (route) => route.fulfill({ status: 200, headers: cors, body: '' }));
+  // the local storage stand-in (lib) on the filing device, so the copy reads "stored"
+  const stopUpload = await lib.storageStandIn(PB, { tag: 's21' });
   const stored = await waitFor(() => PB.evaluate(async (subId) => {
     const { runFileUploader } = await import('/src/lib/fileUploader.ts');
     await runFileUploader();
@@ -91,8 +85,7 @@ async (page, lib) => {
     const s = await db.submissions.get(subId);
     return s?.storageStatus === 'stored' ? { pdfKey: s.pdfKey, assetKeys: s.assetKeys ?? {} } : null;
   }, subId), 30000, 700);
-  await PB.unroute('**/files/presign-upload');
-  await PB.unroute('**/__s21_put');
+  await stopUpload();
   if (!stored) throw new Error('the copy never read stored');
   // the bytes the office will fetch "from storage"
   bins = await PB.evaluate(async ({ subId, attId }) => {
@@ -109,19 +102,8 @@ async (page, lib) => {
   // ── the office ──
   const cO = await mkCtx(browser, { viewport: { width: 1280, height: 900 } });
   const PO = await cO.newPage();
-  const mockStorage = async (P) => {
-    await P.route('**/files/presign-download', async (route) => {
-      if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors, body: '' });
-      const body = JSON.parse(route.request().postData() || '{}');
-      await route.fulfill({ status: 200, headers: { ...cors, 'content-type': 'application/json' }, body: JSON.stringify({ url: `${API}/__s21/${encodeURIComponent(body.key)}` }) });
-    });
-    await P.route('**/__s21/**', async (route) => {
-      const key = decodeURIComponent(route.request().url().split('/__s21/')[1] || '');
-      const isPdf = key.includes('sub-pdf');
-      const b64 = isPdf ? bins.pdf : bins.jpeg;
-      await route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*', 'content-type': isPdf ? 'application/pdf' : 'image/jpeg' }, body: Buffer.from(b64 || '', 'base64') });
-    });
-  };
+  // the office reads the copy through the same stand-in, which now also serves the bytes
+  const mockStorage = (P) => lib.storageStandIn(P, { tag: 's21', bins });
   await mockStorage(PO);
   await signIn(PO, 'office');
   await skipTours(PO);
@@ -305,14 +287,22 @@ async (page, lib) => {
     const PA = await cA.newPage();
     await signIn(PA, 'mark');
     await skipTours(PA);
-    blasterOverrideExisted = await PA.evaluate(async () => { const { db } = await import('/src/db/index.ts'); return Boolean((await db.roleDefinitions.toArray()).find((r) => r.key === 'blaster')); });
+    blasterOverrideExisted = await PA.evaluate(async () => {
+      const { db, deleteWithTombstone } = await import('/src/db/index.ts');
+      // an override left by an earlier run (with the cap) would make the blaster an approver — start clean
+      for (const r of (await db.roleDefinitions.toArray()).filter((x) => x.key === 'blaster')) await deleteWithTombstone('roleDefinitions', r.id);
+      return false;
+    });
+    await waitForUpload(PA, 20000).catch(() => undefined);
     await PA.goto(WEB + '/admin/company');
     await PA.locator('[data-matrix-cell="time_card:blaster"]').waitFor({ timeout: 20000 });
     await PA.locator('[data-matrix-cell="time_card:blaster"]').click();
     const granted = await waitFor(() => PA.evaluate(async () => { const { db } = await import('/src/db/index.ts'); const r = (await db.roleDefinitions.toArray()).find((x) => x.key === 'blaster'); return r?.capabilities.includes('approve_time_cards') ? 1 : null; }), 10000);
     R.ok("a tick grants the role the paper's capability (Blaster in charge × Time cards → approve_time_cards)", granted === 1);
+    await waitFor(async () => ((await PA.locator('[data-matrix-cell="time_card:blaster"]').isChecked()) ? 1 : null), 10000);
     await PA.locator('[data-matrix-cell="time_card:blaster"]').click();
-    await waitFor(() => PA.evaluate(async () => { const { db } = await import('/src/db/index.ts'); const r = (await db.roleDefinitions.toArray()).find((x) => x.key === 'blaster'); return r && !r.capabilities.includes('approve_time_cards') ? 1 : null; }), 10000);
+    const revoked = await waitFor(() => PA.evaluate(async () => { const { db } = await import('/src/db/index.ts'); const r = (await db.roleDefinitions.toArray()).find((x) => x.key === 'blaster'); return r && !r.capabilities.includes('approve_time_cards') ? 1 : null; }), 10000);
+    R.ok('a second tap takes the right away again', revoked === 1);
     await waitForUpload(PA, 20000).catch(() => undefined);
     await cA.close();
   });
@@ -381,9 +371,9 @@ async (page, lib) => {
     await PO.locator('[data-records-columns]').click();
     await PO.locator('[data-column-toggle="approvedBy"]').uncheck();
     await PO.mouse.click(600, 60);
-    const { token, api } = await lib.apiLogin(PB, 'blaster');
+    const { token, api, user: blasterUser } = await lib.apiLogin(PB, 'blaster');
     const refused = await api('/admin/blast-days/' + dayId + '/papers', { method: 'POST', body: JSON.stringify({ paper: 'time_card', recordId: cardId, to: 'sent_back', note: 'nope', label: 'Time card' }) }, token);
-    R.ok('only an approver sends back (the blaster gets ' + refused.status + ')', refused.status === 403);
+    R.ok('only an approver sends back (the ' + (blasterUser?.role ?? '?') + ' gets ' + refused.status + (refused.status === 200 ? ' · ' + JSON.stringify(refused.body).slice(0, 80) : '') + ')', refused.status === 403);
     await PO.goto(WEB + '/admin/approvals/' + dayId + '/print-pack');
     await PO.locator('[data-print-pack]').waitFor({ timeout: 20000 });
     await waitFor(async () => ((await PO.locator('[data-print-pack-photos]').getAttribute('data-print-pack-photos')) === '1' ? 1 : null), 20000);

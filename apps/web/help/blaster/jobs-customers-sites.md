@@ -42,6 +42,10 @@ The office can add contacts, permits and terms afterwards.
 
 Its About cards come first — **Ground** (K factor, rock, overburden, water), **Jurisdiction & permits** (with expiry countdowns), **Access & safety** (gate codes, haul road, hazards), **Contacts** (jobsite, fire, police — they work offline) — then the jobs at that site.
 
+## The day's ☎
+
+The day's ⋯ menu has **Jobsite contacts**: the job's contact sheet, offline — fire chief, police, fire, hospital, urgent care, the office's rows for a change in scope, an incident, an injury, equipment trouble — one tap to call, and the hospital, urgent care and the site open in your phone's maps. The office fills the sheet on the job page; you see the latest.
+
 ## Related
 
 [Start work at a job](/help/blaster/start-work)

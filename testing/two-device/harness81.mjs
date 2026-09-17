@@ -96,14 +96,8 @@ async (page, lib) => {
       const { subAssetKey } = await import('/src/lib/archive.ts');
       await deleteLocalMedia(subAssetKey(subId, attId));
     }, { subId, attId });
-    // storage is not configured locally: stand in for it — presign hands out a key, the PUT is accepted
-    const cors = { 'access-control-allow-origin': 'http://localhost:5199', 'access-control-allow-credentials': 'true', 'access-control-allow-methods': 'PUT, POST, OPTIONS', 'access-control-allow-headers': 'content-type, authorization' };
-    await PB.route('**/files/presign-upload', async (route) => {
-      if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors, body: '' });
-      const body = JSON.parse(route.request().postData() || '{}');
-      await route.fulfill({ status: 200, headers: { ...cors, 'content-type': 'application/json' }, body: JSON.stringify({ url: `${API}/__s20_put`, key: `c/test/a/${body.attachmentId}/${body.fileName}` }) });
-    });
-    await PB.route('**/__s20_put', (route) => route.fulfill({ status: 200, headers: cors, body: '' }));
+    // the local storage stand-in (lib): the PDF is accepted, the photo already sits in storage
+    const stopStandIn = await lib.storageStandIn(PB, { tag: 's20' });
     const after = await waitFor(async () => {
       const r = await PB.evaluate(async (subId) => {
         const { runFileUploader } = await import('/src/lib/fileUploader.ts');
@@ -114,8 +108,7 @@ async (page, lib) => {
       }, subId);
       return r;
     }, 30000, 700);
-    await PB.unroute('**/files/presign-upload');
-    await PB.unroute('**/__s20_put');
+    await stopStandIn();
     R.ok('the copy reads "stored" with its PDF pointer once the PDF is up', after?.status === 'stored' && typeof after?.pdfKey === 'string' && after.pdfKey.includes('sub-pdf-'));
     R.ok('the photo was not waited for: it points at the attachment already in storage', after?.assetKeys?.[attId] === `c/test/a/${attId}/IMG_3911.jpeg`);
   });

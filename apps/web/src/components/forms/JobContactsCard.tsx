@@ -15,6 +15,7 @@ import { Select } from '@/components/ui/select';
 
 export const CONTACT_ROLES: { value: JobContactRole; label: string }[] = [
   { value: 'onsite', label: 'Onsite Contact' },
+  { value: 'town_hall', label: 'Town Hall (Bldg Insp.)' },
   { value: 'fire_chief', label: 'Fire Chief (Blasting)' },
   { value: 'detail_dispatch', label: 'Detail Scheduling' },
   { value: 'police', label: 'Police Department' },

@@ -144,6 +144,7 @@ export function parentOf(route: string): NavParent | null {
     if (v && v !== 'tiles') return { to: `/blast-day/${m[1]}`, label: 'the work day' };
     return { to: '/days', label: 'Work days' };
   }
+  if ((m = pathname.match(/^\/jobs\/([^/]+)\/contact-sheet/))) return { to: `/jobs/${m[1]}`, label: 'the job' };
   if (/^\/(jobs|customers|sites)\//.test(pathname)) return { to: '/jobs', label: 'Jobs' };
   if ((m = pathname.match(/^\/drill-checklist\/([^/?]+)/))) {
     const day = q.get('day');

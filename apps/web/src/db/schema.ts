@@ -227,10 +227,13 @@ export interface Job extends BaseRecord, Archivable {
   localPPVLimit?: number;
   contacts?: JobContact[];
   contactNotes?: string;
+  /** S22: the job's own complete contact sheet (see ContactSheet) */
+  contactSheet?: ContactSheet;
 }
 
 export type JobContactRole =
   | 'onsite'
+  | 'town_hall'
   | 'fire_chief'
   | 'detail_dispatch'
   | 'police'
@@ -246,6 +249,40 @@ export interface JobContact {
   name: string;
   phone: string;
   notes?: string;
+}
+
+// ── S22: the Jobsite Contact Sheet — a paper of every job (Matthew, Sep 16
+// 2026: "anything you store on the site or the customer would need to pop up
+// when filling out a grab and go for a new job, so the office can accept the
+// pre-filled contacts or override them. All of this data would need to ride
+// on the job as well."). Every job carries its own complete sheet: every row
+// with a name, a number, notes, and where the value came from. The company,
+// the site and the customer only supply the starting values. ──
+export type SheetRowKey =
+  | 'project_name' | 'location' | 'owner' | 'onsite'
+  | 'fire_chief' | 'town_hall' | 'detail' | 'police' | 'fire' | 'hospital' | 'urgent_care'
+  | 'change_scope' | 'incident' | 'injury' | 'equipment' | 'direct_contractor'
+  | 'additional';
+export type SheetSource = 'job' | 'site' | 'customer' | 'company' | 'blank';
+export interface ContactSheetRow {
+  key: SheetRowKey;
+  name: string;
+  phone: string;
+  notes: string;
+  source: SheetSource;
+  /** the site's value this row was taken from ("name|phone|notes") — a later
+   *  site change is noticed by comparing, and offered to this job */
+  takenFrom?: string;
+}
+export interface ContactSheet {
+  rows: ContactSheetRow[];
+  /** bumps on every save; each print stamps "Sheet v3 · Sep 16 · Evette" */
+  version: number;
+  updatedAt: string;
+  updatedByName: string;
+  acceptedAt?: string;
+  acceptedByName?: string;
+  prints?: { version: number; at: string; byName: string }[];
 }
 
 // ══════════════════════════════════════════════════════
@@ -1160,7 +1197,10 @@ export interface CompanySettings extends BaseRecord {
   state: string;
   phone: string;
   /** Office routing (who to call for scope changes / equipment / incidents) */
-  officeContacts?: { id: string; label: string; name: string; phone: string }[];
+  /** S22: a row with a `key` is one of the sheet's fixed BBI Office rows
+   *  (change_scope · incident · injury · equipment · direct_contractor); the
+   *  rest are free-form routing */
+  officeContacts?: { id: string; label: string; name: string; phone: string; key?: string }[];
   /** S20 (Matthew, Sep 16 2026): how old an unfiled draft day must be
    *  before the home's Needs attention line counts it (default 2 days) */
   homeStaleDraftDays?: number;

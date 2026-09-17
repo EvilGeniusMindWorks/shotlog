@@ -38,7 +38,7 @@ import { AttachmentsCard } from '@/components/forms/AttachmentsCard';
 import { DayHistorySheet } from '@/components/forms/DayHistorySheet';
 import { DayHub } from '@/components/day/DayHub';
 import { ChangeDateSheet } from '@/components/day/ChangeDateSheet';
-import { ContactList } from '@/components/forms/JobContactsCard';
+import { CrewContactSheet } from '@/components/forms/ContactSheetCard';
 import { createIncident } from '@/pages/admin/AdminIncidentsPage';
 
 type Tab = 'blast-log' | 'daily-report';
@@ -304,6 +304,7 @@ export function BlastDayPage() {
           <button
             className="h-10 w-10 rounded-lg bg-white/10 hidden sm:flex items-center justify-center hover:bg-white/20"
             title="Jobsite contacts"
+            data-day-contacts
             onClick={() => setShowContacts(!showContacts)}
           >
             <PhoneCall className="h-5 w-5" />
@@ -621,7 +622,7 @@ export function BlastDayPage() {
       )}
       {showContacts && (
         <div className="max-w-5xl mx-auto px-4 pt-3">
-          <ContactList contacts={job?.contacts ?? []} notes={job?.contactNotes} />
+          <CrewContactSheet jobId={job?.id} />
         </div>
       )}
 

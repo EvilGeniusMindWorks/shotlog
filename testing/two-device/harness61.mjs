@@ -104,13 +104,13 @@ async (page, lib) => {
     await PO.goto(`${WEB}/customers/${customerId}`);
     await PO.locator('main').waitFor({ timeout: 15000 });
     await PO.getByText(/Company & billing/).first().click().catch(() => undefined);
-    await PO.locator('[data-read-only="customers"]').first().waitFor({ timeout: 15000 });
-    const roLine = await PO.locator('[data-read-only-line]').first().innerText();
-    const disabled = await PO.locator('[data-read-only="customers"] fieldset[disabled] input').first().isDisabled().catch(() => false);
-    R.ok(`the customer card says "${roLine}" and its fields are disabled`, /can read this/.test(roLine) && /can change it/.test(roLine) && disabled);
+    // S22: the office sets up customers, sites and jobs (setup_jobs) — the card is editable for it now
+    await PO.locator('main').waitFor({ timeout: 15000 });
+    await sleep(800);
+    R.ok('S22: the customer card is editable for the office (no read-only wrap)', (await PO.locator('[data-read-only="customers"]').count()) === 0);
 
-    // a write the office may not make — forced past the UI — is discarded by the server and TOLD
-    await PO.evaluate(async (id) => { const { db } = await import('/src/db/index.ts'); const { nowISO } = await import('/src/lib/utils.ts'); await db.customers.update(id, { phone: '(413) 555-0000', updatedAt: nowISO() }); }, customerId);
+    // a write the office may not make (the company settings are admin-only) — forced past the UI — is discarded by the server and TOLD
+    await PO.evaluate(async (id) => { const { db } = await import('/src/db/index.ts'); const { nowISO } = await import('/src/lib/utils.ts'); await db.companySettings.update('companySettings-singleton', { phone: '(413) 555-0000', updatedAt: nowISO() }); }, customerId);
     await PO.getByText(/Not saved — .*your role can't make/).first().waitFor({ timeout: 20000 }).catch(() => undefined);
     R.ok('a toast says the change was not saved and why', (await PO.getByText(/Not saved — .*your role can't make/).count()) >= 1);
     await cO.close();

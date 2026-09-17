@@ -19,10 +19,12 @@ describe('table permissions', () => {
     }
   });
 
-  it('office is read-only everywhere except incidents (files and processes them, S20)', () => {
+  it('office is read-only everywhere except incidents (S20) and the customer/site/job setup (S22)', () => {
     for (const table of Object.keys(TABLE_PERMISSIONS)) {
       for (const op of ['PUT', 'PATCH', 'DELETE'] as const) {
-        const expected = table === 'incidents' && (op === 'PATCH' || op === 'PUT');
+        const expected =
+          (table === 'incidents' && (op === 'PATCH' || op === 'PUT')) ||
+          (['jobs', 'customers', 'sites'].includes(table) && (op === 'PUT' || op === 'PATCH'));
         expect(canPerformOp(table, op, 'office'), `${table} ${op}`).toBe(expected);
       }
     }

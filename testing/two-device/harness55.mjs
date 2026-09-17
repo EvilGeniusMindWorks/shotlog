@@ -108,8 +108,8 @@ async (page, lib) => {
     R.ok(`+ New job opens the one New job form with the customer already set (${pickedCustomer === made.customerId ? 'yes' : pickedCustomer || 'blank'})`, pickedCustomer === made.customerId);
     await P1.locator('[data-new-job-name]').fill(`S8b Job C ${stamp}`);
     await P1.locator('[data-new-job-create]').click();
-    await P1.waitForURL(/\/jobs\/[a-z0-9-]+$/, { timeout: 8000 });
-    made.jobIds.push(P1.url().split('/jobs/')[1]);
+    await P1.waitForURL(/\/jobs\/[a-z0-9-]+(\?|$)/, { timeout: 8000 }); // S22: a new job lands on its contact sheet
+    made.jobIds.push(P1.url().split('/jobs/')[1].split('?')[0]); // S22: the job lands on its contact sheet
     await lib.waitText(P1, `S8b Co ${stamp}`, 8000).catch(() => undefined);
     R.ok('the new job opens with its breadcrumb through the customer and site', new RegExp(`S8b Co ${stamp}`).test(await P1.locator('body').innerText()) && /\/jobs\//.test(P1.url()));
     const newJob = await P1.evaluate(async (id) => { const { db } = await import('/src/db/index.ts'); const j = await db.jobs.get(id); return { customer: j?.customer, city: j?.city, k: j?.kFactor }; }, made.jobIds[2]);

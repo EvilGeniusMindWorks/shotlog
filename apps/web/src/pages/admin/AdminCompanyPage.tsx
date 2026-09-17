@@ -2,6 +2,7 @@
 // and attachment types. People (roster + logins) live on Admin › People.
 import { useEffect, useState } from 'react';
 import { ApprovalsMatrix } from '@/components/admin/ApprovalsMatrix';
+import { SHEET_ROWS } from '@/lib/contactSheet';
 import { useOutletContext } from 'react-router-dom';
 import { useLiveQuery, db } from '@/db';
 import { authedFetch, getSessionUser } from '@/lib/session';
@@ -116,12 +117,14 @@ function HomeSettingsSection({ settings, online }: { settings: { homeStaleDraftD
   );
 }
 
+let officeSaveQueue: Promise<void> = Promise.resolve();
+
 /** Office routing (Tony/Bob/Evette style): who the field calls for what */
 function OfficeContactsSection({
   settings,
   online,
 }: {
-  settings: { officeContacts?: { id: string; label: string; name: string; phone: string }[] } | undefined;
+  settings: { officeContacts?: { id: string; label: string; name: string; phone: string; key?: string }[] } | undefined;
   online: boolean;
 }) {
   const contacts = settings?.officeContacts ?? [];
@@ -132,14 +135,43 @@ function OfficeContactsSection({
       updatedAt: nowISO(),
     });
   };
+  // S22: the sheet's fixed BBI Office rows — every job's contact sheet starts from these
+  const officeRows = SHEET_ROWS.filter((r) => r.group === 'office');
+  const saveKeyed = (key: string, label: string, patch: { name?: string; phone?: string }) => {
+    // one save at a time, each reading the record as it is then — a name blur and a phone blur
+    // a beat apart must land on the same keyed row, never make a twin
+    officeSaveQueue = officeSaveQueue.then(async () => {
+      const fresh = (await db.companySettings.get('companySettings-singleton'))?.officeContacts ?? contacts;
+      const cur = fresh.find((c) => c.key === key);
+      const next = cur ? fresh.map((c) => (c.key === key ? { ...c, ...patch } : c)) : [...fresh, { id: generateId(), key, label, name: '', phone: '', ...patch }];
+      await save(next);
+    }).catch(() => undefined);
+    return officeSaveQueue;
+  };
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-4 space-y-3">
       <p className="font-medium text-sm">Office routing</p>
       <p className="text-xs text-gray-400">
-        Shown to every crew under the job's Contacts button — "change in scope → Tony" style.
+        The BBI Office rows of every job's contact sheet, and any other routing shown to the crew under the day's ☎ — "change in scope → Tony" style.
       </p>
+      {settings && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2" data-office-rows>
+          {officeRows.map((row) => {
+            const cur = contacts.find((c) => c.key === row.key);
+            return (
+              <div key={row.key} className="rounded-lg border border-gray-200 px-3 py-2" data-office-row={row.key}>
+                <p className="text-xs text-gray-400 uppercase tracking-wide">{row.label}</p>
+                <div className="flex gap-2 mt-1">
+                  <Input placeholder="Name" defaultValue={cur?.name ?? ''} disabled={!online} data-office-row-name onBlur={(e) => { if ((cur?.name ?? '') !== e.target.value) void saveKeyed(row.key, row.label, { name: e.target.value }); }} />
+                  <Input placeholder="Phone" inputMode="tel" defaultValue={cur?.phone ?? ''} disabled={!online} data-office-row-phone onBlur={(e) => { if ((cur?.phone ?? '') !== e.target.value) void saveKeyed(row.key, row.label, { phone: e.target.value }); }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
       <div className="space-y-1">
-        {contacts.map((c) => (
+        {contacts.filter((c) => !c.key).map((c) => (
           <div key={c.id} className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2">
             <div className="flex-1 min-w-0">
               <p className="text-xs text-gray-400 uppercase tracking-wide">{c.label}</p>

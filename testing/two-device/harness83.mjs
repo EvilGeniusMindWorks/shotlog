@@ -18,6 +18,7 @@ async (page, lib) => {
   const stamp = lib.stamp();
   browserErrors({ clear: true });
   let newJobId, newSiteId, newCustomerId;
+  let dayId, prevOffice;
 
   const cB = await mkCtx(browser, { viewport: { width: 1280, height: 900 } });
   const PB = await cB.newPage();
@@ -89,8 +90,9 @@ async (page, lib) => {
     R.ok(`step 3: the name is filled from the site ("${prefilled}") and the number is automatic (${number})`, prefilled === '287 Waltham Street' && /^\d\d-\d{3}$/.test(number));
     await PB.locator('[data-new-job-name]').fill(`S22 garage ${stamp}`);
     await PB.locator('[data-new-job-create]').click();
-    await PB.waitForURL(/\/jobs\/[0-9a-f-]{36}$/, { timeout: 20000 });
-    newJobId = PB.url().match(/\/jobs\/([0-9a-f-]{36})$/)?.[1];
+    await PB.waitForURL(/\/jobs\/[0-9a-f-]{36}(\?|$)/, { timeout: 20000 });
+    newJobId = PB.url().match(/\/jobs\/([0-9a-f-]{36})(\?|$)/)?.[1];
+    R.ok('the new job lands on its contact sheet', /open=contact-sheet/.test(PB.url()));
     const made = await PB.evaluate(async (id) => { const { db } = await import('/src/db/index.ts'); const j = await db.jobs.get(id); return j ? { siteId: j.siteId, customerId: j.customerId, number: j.jobNumber } : null; }, newJobId);
     newSiteId = made?.siteId;
     newCustomerId = made?.customerId;
@@ -125,15 +127,147 @@ async (page, lib) => {
     R.ok('from a site, New job opens on the job step with the customer and site already set', (await PB.locator('[data-new-job-form]').getAttribute('data-new-job-step')) === '3' && (await PB.locator('[data-new-job-form] [data-pick-customer]').inputValue()) === newCustomerId);
   });
 
+  // ── push 2: the Jobsite Contact Sheet ──
+  const cA = await mkCtx(browser, { viewport: { width: 1280, height: 900 } });
+  const PA = await cA.newPage();
+  await signIn(PA, 'mark');
+  await skipTours(PA);
+
+  await R.section("The Jobsite Contact Sheet is a paper of the job: prefilled rows with source chips, override on the job only, Use the site's again", async () => {
+    // Baystate's office rows, from Admin › Company (the admin types them; the blur saves)
+    await PA.goto(WEB + '/admin/company');
+    await PA.locator('[data-office-rows]').waitFor({ timeout: 20000 });
+    prevOffice = await PA.evaluate(async () => { const { db } = await import('/src/db/index.ts'); return (await db.companySettings.get('companySettings-singleton'))?.officeContacts ?? []; });
+    for (const [key, name, phone] of [['incident', 'Evette', '413-583-4440'], ['injury', 'Evette', '413-583-4440'], ['change_scope', 'Tony', '413-315-0371']]) {
+      await PA.locator('[data-office-row="' + key + '"] [data-office-row-name]').fill(name);
+      await PA.locator('[data-office-row="' + key + '"] [data-office-row-phone]').fill(phone);
+      await PA.locator('[data-office-row="' + key + '"] [data-office-row-phone]').blur();
+      await sleep(300);
+    }
+    const officeSaved = await waitFor(() => PA.evaluate(async () => { const { db } = await import('/src/db/index.ts'); const rows = (await db.companySettings.get('companySettings-singleton'))?.officeContacts ?? []; return rows.find((r) => r.key === 'incident')?.phone === '413-583-4440' && rows.find((r) => r.key === 'change_scope')?.name === 'Tony' ? 1 : null; }), 10000);
+    R.ok('Admin › Company holds the BBI Office rows (Incident, Injury, Change in Job Scope…)', officeSaved === 1);
+    await waitForUpload(PA, 20000).catch(() => undefined);
+    // the site's town rows (the blaster sets them up — setup_jobs)
+    await PB.evaluate(async (siteId) => {
+      const { db } = await import('/src/db/index.ts');
+      const { generateId, nowISO } = await import('/src/lib/utils.ts');
+      await db.sites.update(siteId, {
+        contacts: [
+          { id: generateId(), role: 'fire_chief', label: 'Fire Chief (Blasting)', name: 'Chief Smith', phone: '781-555-0100', notes: '' },
+          { id: generateId(), role: 'police', label: 'Police (911)', name: 'Lexington Police', phone: '781-862-1212', notes: '' },
+        ],
+        notificationRules: 'Notifications day prior · 300′ notice',
+        updatedAt: nowISO(),
+      });
+    }, newSiteId);
+    await waitForUpload(PB, 20000).catch(() => undefined);
+    await PB.goto(WEB + '/jobs/' + newJobId + '?open=contact-sheet');
+    await PB.locator('[data-contact-sheet]').waitFor({ timeout: 20000 });
+    const src = async (key) => PB.locator('[data-sheet-row="' + key + '"]').getAttribute('data-sheet-source');
+    await waitFor(async () => ((await src('incident')) === 'company' && (await src('fire_chief')) === 'site' ? 1 : null), 15000);
+    const sources = { project: await src('project_name'), owner: await src('owner'), chief: await src('fire_chief'), police: await src('police'), incident: await src('incident'), additional: await src('additional'), hospital: await src('hospital') };
+    R.ok('the rows come prefilled with a source chip: the job, the customer, the site, Baystate — and a blank where nobody has it (' + JSON.stringify(sources) + ')', sources.project === 'job' && sources.owner === 'customer' && sources.chief === 'site' && sources.police === 'site' && sources.incident === 'company' && sources.additional === 'site' && sources.hospital === 'blank');
+    const stats = (await PB.locator('[data-sheet-stats]').innerText()).replace(/\s+/g, ' ');
+    R.ok('the header counts the rows by where they came from and what the print still needs ("' + stats + '")', /from the site/.test(stats) && /from Baystate/.test(stats) && /from the customer/.test(stats) && /Print needs/.test(stats) && /Hospital/.test(stats));
+    // override the police row on the job only
+    await PB.locator('[data-sheet-edit="police"]').click();
+    await PB.locator('[data-sheet-editor="police"]').waitFor({ timeout: 5000 });
+    await PB.locator('[data-sheet-editor="police"] [data-sheet-name]').fill('Sgt. Pike · detail desk');
+    await PB.locator('[data-sheet-editor="police"] [data-sheet-phone]').fill('781-555-0177');
+    await PB.locator('[data-sheet-editor="police"] [data-sheet-save]').click();
+    await waitFor(async () => ((await src('police')) === 'job' ? 1 : null), 10000);
+    const siteKept = await PB.evaluate(async (siteId) => { const { db } = await import('/src/db/index.ts'); return (await db.sites.get(siteId))?.contacts?.find((c) => c.role === 'police')?.name; }, newSiteId);
+    R.ok("a changed row becomes the job's own; the site keeps its value (" + siteKept + ')', (await src('police')) === 'job' && /Sgt\. Pike/.test(await PB.locator('[data-sheet-row="police"]').innerText()) && siteKept === 'Lexington Police' && (await PB.locator('[data-contact-sheet]').getAttribute('data-sheet-version')) === '1');
+    await PB.locator('[data-sheet-edit="police"]').click();
+    await PB.locator('[data-sheet-editor="police"] [data-sheet-use-site]').click();
+    await waitFor(async () => ((await src('police')) === 'site' ? 1 : null), 10000);
+    R.ok("Use the site's again puts it back", (await src('police')) === 'site' && /Lexington Police/.test(await PB.locator('[data-sheet-row="police"]').innerText()));
+  });
+
+  await R.section("When a site row changes later, the jobs using it are asked; Make this the site's too; dated versions and the print", async () => {
+    await PB.evaluate(async (siteId) => {
+      const { db } = await import('/src/db/index.ts');
+      const { nowISO } = await import('/src/lib/utils.ts');
+      const site = await db.sites.get(siteId);
+      await db.sites.update(siteId, { contacts: site.contacts.map((c) => (c.role === 'fire_chief' ? { ...c, name: 'Chief Jones' } : c)), updatedAt: nowISO() });
+    }, newSiteId);
+    await PB.locator('[data-sheet-change="fire_chief"]').waitFor({ timeout: 15000 });
+    const offer = (await PB.locator('[data-sheet-change="fire_chief"]').innerText()).replace(/\s+/g, ' ');
+    R.ok('a later site change is offered to the job, not applied ("' + offer.slice(0, 80) + '")', /Chief Jones/.test(offer) && /Chief Smith/.test(await PB.locator('[data-sheet-row="fire_chief"]').innerText()));
+    R.ok('the job page names it in the setup line', (await PB.locator('[data-setup-item="site-changes"]').count()) === 1);
+    await PB.locator('[data-sheet-change="fire_chief"] [data-sheet-use-change]').click();
+    await waitFor(async () => (/Chief Jones/.test(await PB.locator('[data-sheet-row="fire_chief"]').innerText()) ? 1 : null), 10000);
+    await sleep(500);
+    const lingering = await PB.locator('[data-sheet-change]').evaluateAll((els) => els.map((e) => e.getAttribute('data-sheet-change') + ':' + (e.textContent || '').replace(/\s+/g, ' ').slice(0, 60)));
+    R.ok('Use it takes the new value and the offer goes' + (lingering.length ? ' (still: ' + JSON.stringify(lingering) + ')' : ''), /Chief Jones/.test(await PB.locator('[data-sheet-row="fire_chief"]').innerText()) && lingering.length === 0);
+    // Make this the site's too
+    await PB.locator('[data-sheet-edit="town_hall"]').click();
+    await PB.locator('[data-sheet-editor="town_hall"] [data-sheet-name]').fill('Bldg Insp. Ortiz');
+    await PB.locator('[data-sheet-editor="town_hall"] [data-sheet-phone]').fill('781-698-4500');
+    await PB.locator('[data-sheet-editor="town_hall"] [data-sheet-make-site]').click();
+    const siteHall = await waitFor(() => PB.evaluate(async (siteId) => { const { db } = await import('/src/db/index.ts'); const c = (await db.sites.get(siteId))?.contacts?.find((x) => x.role === 'town_hall'); return c?.phone === '781-698-4500' ? c.name : null; }, newSiteId), 10000);
+    R.ok("Make this the site's too writes the row to the site for every job here (" + siteHall + ')', siteHall === 'Bldg Insp. Ortiz' && (await PB.locator('[data-sheet-row="town_hall"]').getAttribute('data-sheet-source')) === 'site');
+    await PB.locator('[data-sheet-accept]').click();
+    await waitFor(async () => (/accepted/.test(await PB.locator('[data-sheet-version-line]').innerText()) ? 1 : null), 10000);
+    const versionLine = (await PB.locator('[data-sheet-version-line]').innerText()).replace(/\s+/g, ' ');
+    R.ok('every save is a dated version; Accept all confirms it ("' + versionLine + '")', /Sheet v\d+/.test(versionLine) && /accepted/.test(versionLine));
+    R.ok('the setup line no longer asks for the contact sheet', (await PB.locator('[data-setup-item="contacts"]').count()) === 0);
+    await PB.locator('[data-sheet-print]').click();
+    await PB.waitForURL(new RegExp('/jobs/' + newJobId + '/contact-sheet'), { timeout: 10000 });
+    await PB.locator('[data-print-contact-sheet]').waitFor({ timeout: 15000 });
+    const stampText = await PB.locator('[data-print-stamp]').innerText();
+    R.ok('the print carries the stamp ("' + stampText + '") and the rows', /Sheet v\d+ · /.test(stampText) && /Chief Jones/.test(await PB.locator('[data-print-row="fire_chief"]').innerText()) && /Evette/.test(await PB.locator('[data-print-row="incident"]').innerText()));
+    R.ok('a blank row prints blank and the print says what it still needs', (await PB.locator('[data-print-missing]').count()) === 1 && /Hospital/.test(await PB.locator('[data-print-missing]').innerText()));
+    R.ok('the back page carries the way to the hospital and urgent care (the route arrives with push 3)', (await PB.locator('[data-print-back]').count()) === 1);
+  });
+
+  await R.section("The crew's phone: the day's ☎ shows the sheet offline, one tap to call, a tap opens the device's maps", async () => {
+    dayId = await PB.evaluate(async ({ jobId, stamp }) => {
+      const { createBlastDayWithPapers } = await import('/src/hooks/useBlastDay.ts');
+      return createBlastDayWithPapers(jobId, undefined, undefined, { typeOfWork: 'drill_to_blast', name: 's22 ' + stamp });
+    }, { jobId: newJobId, stamp });
+    await waitForUpload(PB, 20000).catch(() => undefined);
+    await PB.goto(WEB + '/blast-day/' + dayId);
+    // on a wide screen the ☎ sits in the header; on a phone it is under ⋯
+    await PB.locator('[data-day-contacts], [data-day-more]').first().waitFor({ timeout: 20000 });
+    if (await PB.locator('[data-day-contacts]').isVisible().catch(() => false)) {
+      await PB.locator('[data-day-contacts]').click();
+    } else {
+      await PB.locator('[data-day-more]').click();
+      await PB.locator('[data-more-contacts]').waitFor({ timeout: 5000 });
+      await PB.locator('[data-more-contacts]').click();
+    }
+    await PB.locator('[data-crew-sheet]').waitFor({ timeout: 10000 });
+    await waitFor(async () => (Number(await PB.locator('[data-crew-sheet]').getAttribute('data-crew-rows')) >= 4 ? 1 : null), 10000);
+    const rows = Number(await PB.locator('[data-crew-sheet]').getAttribute('data-crew-rows'));
+    R.ok('the day\'s ☎ shows the sheet\'s rows (' + rows + '): the fire chief, the police, town hall, the office rows', rows >= 4 && (await PB.locator('[data-crew-call="fire_chief"]').count()) === 1 && (await PB.locator('[data-crew-call="incident"]').count()) === 1);
+    R.ok('a number is one tap to call', /^tel:\+?\d+$/.test((await PB.locator('[data-crew-call="fire_chief"]').getAttribute('href')) || ''));
+    R.ok("the location opens the device's maps", /maps\.apple\.com|google\.com\/maps/.test((await PB.locator('[data-crew-maps="location"]').getAttribute('href')) || ''));
+  });
+
+  await R.section("Admin › Company: the BBI Office rows and Direct Contractor prefill every sheet", async () => {
+    await PA.goto(WEB + '/admin/company');
+    await PA.locator('[data-office-rows]').waitFor({ timeout: 20000 });
+    R.ok('the five fixed rows sit on the company page', (await PA.locator('[data-office-row]').count()) === 5 && (await PA.locator('[data-office-row="direct_contractor"]').count()) === 1);
+    R.ok('an incident on this job would call the sheet\'s Incident row', await PB.evaluate(async (jobId) => {
+      const { db } = await import('/src/db/index.ts');
+      const { resolveIncidentContacts } = await import('/src/lib/incidentDoNow.ts');
+      const job = await db.jobs.get(jobId);
+      const site = job?.siteId ? await db.sites.get(job.siteId) : null;
+      const company = await db.companySettings.get('companySettings-singleton');
+      const c = resolveIncidentContacts({ job, site, company });
+      return c.incident?.phone === '413-583-4440' && c.firechief?.name === 'Chief Jones';
+    }, newJobId));
+  });
+
   await R.section('the error spy saw nothing during this run', async () => {
     const errs = browserErrors();
     R.ok(`no browser errors (${errs.length})${errs[0] ? ` — first: ${errs[0].text.slice(0, 120)}` : ''}`, errs.length === 0);
   });
 
   await R.section('cleanup', async () => {
-    const cA = await mkCtx(browser);
-    const PA = await cA.newPage();
-    await signIn(PA, 'mark');
+    if (dayId) await lib.cleanupAsAdmin(browser, { days: [dayId] }).catch(() => undefined);
+    if (prevOffice) await PA.evaluate(async (prev) => { const { db } = await import('/src/db/index.ts'); const { nowISO } = await import('/src/lib/utils.ts'); await db.companySettings.update('companySettings-singleton', { officeContacts: prev, updatedAt: nowISO() }); }, prevOffice).catch(() => undefined);
     const removed = await PA.evaluate(async ({ newJobId, newSiteId, newCustomerId }) => {
       const { db, deleteWithTombstone } = await import('/src/db/index.ts');
       let n = 0;

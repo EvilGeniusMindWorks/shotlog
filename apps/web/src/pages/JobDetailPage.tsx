@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useLiveQuery, db } from '@/db';
 import { getPowerSync } from '@/db/powersync/client';
 import { formatDate, todayISO } from '@/lib/utils';
@@ -9,7 +9,8 @@ import { permitStatus } from '@/lib/siteFacts';
 import { RecordShell } from '@/components/layout/RecordShell';
 import { useDraftRecord } from '@/hooks/useDraftRecord';
 import { getSessionUser } from '@/lib/session';
-import { JobContactsCard } from '@/components/forms/JobContactsCard';
+import { ContactSheetCard, useContactSheet } from '@/components/forms/ContactSheetCard';
+import { callableRows, sheetLine } from '@/lib/contactSheet';
 import { matchesWorkRow, workedRow } from '@/lib/personHistory';
 import { matchesAsset } from '@/lib/equipmentHistory';
 import { buildDocRows } from '@/lib/docRows';
@@ -37,6 +38,9 @@ export function JobDetailPage() {
   const [showAllDays, setShowAllDays] = useState(false);
   const job = useLiveQuery(() => (id ? db.jobs.get(id) : undefined), [id]);
   const ctx = useJobContext(id);
+  const sheet = useContactSheet(id);
+  const [params] = useSearchParams();
+  const openSection = params.get('open') ?? undefined;
 
   const blastDays =
     useLiveQuery(async () => {
@@ -96,7 +100,7 @@ export function JobDetailPage() {
   const nextDay = [...blastDays].filter((d) => d.date > today).sort((a, b) => a.date.localeCompare(b.date))[0];
   const permits = ctx?.site?.permits ?? [];
   const permitLine = ctx?.site ? permitStatus(ctx.site) : undefined;
-  const contactCount = ctx?.contacts.length ?? 0;
+  const contactCount = sheet.stats.filled;
   const unfiled = blastDays.filter((d) => d.status === 'draft' && !d.closed).length;
   const facts = [
     ctx?.customerName,
@@ -111,7 +115,8 @@ export function JobDetailPage() {
   ];
   // S22: the setup line — what is still to set, each a door, gone when done
   const setupItems: { key: string; label: string; go: () => void }[] = [];
-  if (contactCount === 0) setupItems.push({ key: 'contacts', label: 'contacts', go: () => document.querySelector<HTMLButtonElement>('[data-open-section="contacts"]')?.click() });
+  if (!job.contactSheet?.acceptedAt && sheet.stats.printNeeds.length > 0) setupItems.push({ key: 'contacts', label: `contact sheet · ${sheet.stats.filled} of ${sheet.stats.total} rows`, go: () => document.querySelector<HTMLButtonElement>('[data-open-section="contact-sheet"]')?.click() });
+  if (sheet.stats.changes > 0) setupItems.push({ key: 'site-changes', label: `the site changed ${sheet.stats.changes} row${sheet.stats.changes === 1 ? '' : 's'} · review`, go: () => document.querySelector<HTMLButtonElement>('[data-open-section="contact-sheet"]')?.click() });
   if (ctx?.site && permits.length === 0) setupItems.push({ key: 'permits', label: 'permits', go: () => navigate(`/sites/${ctx.site!.id}`) });
   if (!job.workSpot) setupItems.push({ key: 'work-spot', label: 'work spot', go: () => document.querySelector<HTMLButtonElement>('[data-open-section="setup"]')?.click() });
 
@@ -144,6 +149,7 @@ export function JobDetailPage() {
         [ctx?.address, ctx?.city, ctx?.state].filter(Boolean).join(', ') || 'No address'
       }
       facts={facts}
+      initialTab={openSection}
       notice={
         setupItems.length > 0 && isAdmin ? (
           <div className="px-4 pt-3">
@@ -176,27 +182,20 @@ export function JobDetailPage() {
           ),
         },
         {
-          id: 'contacts',
-          label: 'Contacts',
-          count: ctx?.contacts.length || undefined,
-          summary: ctx?.contacts[0]
-            ? `${ctx.contacts[0].name}${ctx.contacts[0].phone ? ` · ${ctx.contacts[0].phone}` : ''}`
-            : 'none yet',
+          id: 'contact-sheet',
+          label: 'Contact sheet',
+          count: sheet.stats.filled || undefined,
+          summary: sheetLine(sheet.stats),
           preview: () => (
             <div className="text-sm space-y-1" data-job-overview-contacts>
-              {(ctx?.contacts ?? []).slice(0, 4).map((c) => (
-                <p key={c.id} className="truncate"><span className="text-gray-500">{c.label || c.role}</span> · {c.name}{c.phone ? <> · <a className="text-navy underline" href={`tel:${c.phone}`}>{c.phone}</a></> : null}</p>
+              {callableRows(sheet.rows).filter((r) => r.phone).slice(0, 4).map((r) => (
+                <p key={r.key} className="truncate"><span className="text-gray-500">{r.def.label.replace(' (911)', '')}</span> · {r.name}{r.phone ? <> · <a className="text-navy underline" href={`tel:${r.phone.replace(/[^+\d]/g, '')}`}>{r.phone}</a></> : null}</p>
               ))}
-              {(ctx?.contacts ?? []).length === 0 && <p className="text-gray-400">No contacts yet — the site's rows carry to every job here.</p>}
+              {callableRows(sheet.rows).filter((r) => r.phone).length === 0 && <p className="text-gray-400">No numbers on the sheet yet — the site's rows and Baystate's fill it in.</p>}
+              <button type="button" className="text-xs text-navy underline" onClick={() => navigate(`/jobs/${job.id}/contact-sheet`)}>Grab and Go sheet ›</button>
             </div>
           ),
-          render: () => (
-            <JobContactsCard
-              job={ctx?.site ? { ...job, contacts: ctx.contacts, contactNotes: ctx.contactNotes } : job}
-              siteId={job.siteId}
-              readOnly={!isAdmin}
-            />
-          ),
+          render: () => <ContactSheetCard jobId={job.id} />,
         },
         {
           id: 'site-k',

@@ -170,7 +170,7 @@ export function JobsPage() {
       {addingJob && (
         <Card className="mb-4">
           <CardContent className="pt-4">
-            <NewJobForm onCancel={() => setAddingJob(false)} onCreated={(id) => { setAddingJob(false); navigate(`/jobs/${id}`); }} />
+            <NewJobForm onCancel={() => setAddingJob(false)} onCreated={(id) => { setAddingJob(false); navigate(`/jobs/${id}?open=contact-sheet`); }} />
           </CardContent>
         </Card>
       )}

@@ -46,9 +46,12 @@ export function ApprovalsMatrix({ settings, online }: { settings: { approvalsDay
   // tick before the live query has delivered it must update THAT record, not
   // add a twin (two records for one key = whichever the server reads last wins)
   const materialized = useRef(new Map<string, { id: string; capabilities: string[] }>());
-  const toggle = (col: RoleCol, cap: string, on: boolean) => {
+  const toggle = (col: RoleCol, cap: string) => {
     const pending = !col.record ? materialized.current.get(col.key) : undefined;
     const base = pending?.capabilities ?? col.capabilities;
+    // the state as of the last write, not the checkbox's — a second tap before the live
+    // query has come back undoes the first instead of repeating it
+    const on = !base.includes(cap);
     const caps = on ? [...new Set([...base, cap])] : base.filter((c) => c !== cap);
     const recordId = col.record?.id ?? pending?.id;
     if (recordId) {
@@ -110,7 +113,7 @@ export function ApprovalsMatrix({ settings, online }: { settings: { approvalsDay
                           className="h-4 w-4"
                           checked={on}
                           disabled={c.locked || !editable}
-                          onChange={(e) => toggle(c, cap, e.target.checked)}
+                          onChange={() => toggle(c, cap)}
                           aria-label={`${row.label} · ${c.name}`}
                           data-matrix-cell={`${row.kind}:${c.key}`}
                         />

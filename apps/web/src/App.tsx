@@ -40,6 +40,7 @@ import { SubmitDayPage } from '@/pages/SubmitDayPage';
 import { SubmitDrillLogPage } from '@/pages/SubmitDrillLogPage';
 import { PrintDrillChecklistPage, FileDrillChecklistPage } from '@/pages/PrintDrillChecklistPage';
 import { PrintIncidentPage, SubmitIncidentPage } from '@/pages/PrintIncidentPage';
+import { PrintContactSheetPage } from '@/pages/PrintContactSheetPage';
 import { PrintDrillLogPage } from '@/pages/PrintDrillLogPage';
 import { DrillChecklistPage } from '@/pages/DrillChecklistPage';
 import { IncidentPage } from '@/pages/IncidentPage';
@@ -180,6 +181,7 @@ export function App() {
         <Route path="/drill-checklist-print/:checklistId" element={<PrintDrillChecklistPage />} />
         <Route path="/drill-checklist-file/:checklistId" element={<FileDrillChecklistPage />} />
         <Route path="/incident/:incidentId/print" element={<PrintIncidentPage />} />
+        <Route path="/jobs/:id/contact-sheet" element={<PrintContactSheetPage />} />
         <Route path="/incident/:incidentId/submit" element={<SubmitIncidentPage />} />
         <Route path="/blast-day/:id/print" element={<PrintBlastLogPage />} />
         <Route path="/blast-day/:id/drill-log/:logId/print" element={<PrintDrillLogPage />} />

@@ -220,7 +220,7 @@ function JobsAtSite({ site, customerName, jobs, activity }: { site: Site; custom
               <NewJobForm
                 title={`New job at ${site.name}`}
                 initial={{ customerId: site.customerId, siteId: site.id, customerName, siteName: site.name, address: site.address, city: site.city, state: site.state, kFactor: site.kFactor }}
-                onCreated={(jid) => navigate(`/jobs/${jid}`)}
+                onCreated={(jid) => navigate(`/jobs/${jid}?open=contact-sheet`)}
                 onCancel={() => setAdding(false)}
               />
             </div>

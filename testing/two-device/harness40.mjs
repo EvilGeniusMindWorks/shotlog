@@ -235,7 +235,8 @@ async (page) => {
     // the copy filed here renders inline
     await P4.locator('[data-records-manager] input[placeholder^="Search"]').fill('S4 harness filed copy');
     await P4.waitForTimeout(600);
-    await P4.locator('[data-records-row]').first().click({ position: { x: 30, y: 12 } });
+    // copies with the same title from earlier runs may sit here too — open the one filed in this run
+    await P4.locator(`[data-records-row="sub-${subId}"]`).first().click({ position: { x: 30, y: 12 } });
     const pdfShown = await P4.locator('[data-records-pdf]').waitFor({ timeout: 12000 }).then(() => true).catch(() => false);
     ok('preview pane renders the filed PDF inline', pdfShown);
     const mineText = await P4.locator('[data-records-preview]').innerText();

@@ -341,7 +341,9 @@ export const BUILT_IN_ROLES: readonly RoleDefinitionData[] = [
     // processes them — Office Test's two attempts were refused silently.
     // S21 (Matthew, Sep 16 2026): "set today so the office approves
     // everything" — the matrix ticks Office on every paper
-    capabilities: ['file_incidents', 'process_incidents', 'view_admin_area', 'approve_days', 'approve_time_cards', 'approve_checklists', 'approve_drill_logs'],
+    // S22 (Matthew, Sep 16 2026): the office fills every job's contact sheet and
+    // sets up customers, sites and jobs in a minute — setup_jobs
+    capabilities: ['file_incidents', 'process_incidents', 'view_admin_area', 'approve_days', 'approve_time_cards', 'approve_checklists', 'approve_drill_logs', 'setup_jobs'],
     homeDashboard: 'office',
   },
 ] as const;

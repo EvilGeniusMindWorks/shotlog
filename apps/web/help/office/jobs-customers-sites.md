@@ -26,6 +26,10 @@ The job page opens with a short setup line — **Still to set: contacts · permi
 
 The header holds the facts: customer, site and address, K, permits, contacts, days and shots to date, lbs, the next scheduled day. The Overview shows the last five work days with their status and lbs, the drill plans, the recent activity and the contacts; each card opens its tab for the rest. The configuration form uses the window: three or four columns on a desktop, one on a phone. Customer and site pages show their facts the same way.
 
+## The contact sheet
+
+Every job carries its own **Jobsite Contact Sheet** (the Grab and Go), on the job page's Contact sheet tab: Project (name, location, owner, onsite contact), Town (fire chief for blasting, town hall, detail, police, fire, hospital, urgent care), BBI Office Info (change in job scope, incident, injury, equipment/vehicle issues, direct contractor) and Additional Information. The rows come prefilled with a source chip — the town rows, the location and the notifications from the site, the office rows from Admin › Company, the owner from the customer, the project name from the job. Tap a row to change it and it becomes the job's own; **Use the site's again** puts it back; **Make this the site's too** writes it to the site for every job there. When a site row changes later, each job that took it is offered the change: use it, or keep yours. **Accept all prefilled rows** confirms the sheet; **Print the sheet** stamps "Sheet v3 · Sep 16 · Evette" so an old paper copy can be told from a new one. A blank row prints blank; the print says what it still needs (fire chief, hospital, urgent care). The crew's phones carry the same rows offline under the day's ☎.
+
 ## Fewer clicks
 
 **Jobs** lands on customers. Tap a customer row and it expands in place to its sites and jobs — no page per level; **Customer page ›** is one tap more. Recent jobs stay at the top, and one search finds customers, sites and jobs. Job numbers are assigned automatically per year and can be edited on the job page.

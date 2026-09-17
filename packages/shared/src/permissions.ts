@@ -42,7 +42,8 @@ const uniform = (roles: readonly Role[]): TableRule => ({ PUT: roles, PATCH: rol
 /** Blasters set up their own customers/sites/jobs on small jobs (Mark's
  *  validated workflow, 2026-08-17). Archive/delete stays supervisory —
  *  DELETE is also the archive gate (see docs/deletion-pattern.md). */
-const HIERARCHY_SETUP: readonly Role[] = ['admin', 'blaster'];
+// S22: the office sets up customers, sites and jobs too (setup_jobs)
+const HIERARCHY_SETUP: readonly Role[] = ['admin', 'blaster', 'office'];
 const HIERARCHY_RULE: TableRule = { PUT: HIERARCHY_SETUP, PATCH: HIERARCHY_SETUP, DELETE: ADMIN_ONLY };
 
 export const TABLE_PERMISSIONS: Record<string, TableRule> = {

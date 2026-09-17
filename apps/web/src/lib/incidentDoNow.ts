@@ -7,6 +7,7 @@
 // rows, the site's town rows, the job's own. Edited by the company later
 // (S22, Admin › Company); these are the defaults Baystate starts from.
 import type { CompanySettings, IncidentType, Job, JobContact, Site } from '@/db/schema';
+import { sheetContacts } from '@/lib/contactSheet';
 
 export const INCIDENT_KINDS: { value: IncidentType; label: string; hint: string }[] = [
   { value: 'blasting', label: 'Blasting complaint or damage claim', hint: 'a neighbor, a structure, a reading' },
@@ -139,6 +140,8 @@ export function resolveIncidentContacts(input: {
         return undefined;
     }
   };
+  // S22: the job's own contact sheet first — the paper the office filled for this job
+  for (const [k, v] of Object.entries(sheetContacts(input.job?.contactSheet?.rows))) if (v) put(k as ContactKey, v);
   for (const c of input.job?.contacts ?? []) fromJobContact(c);
   for (const c of input.site?.contacts ?? []) fromJobContact(c);
   for (const c of input.company?.officeContacts ?? []) {

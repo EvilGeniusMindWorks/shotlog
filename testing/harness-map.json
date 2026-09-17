@@ -116,7 +116,9 @@
     75
   ],
   "apps/web/src/components/forms/NewJobForm.tsx": [
-    69
+    55,
+    69,
+    83
   ],
   "apps/web/src/components/forms/ShotForm.tsx": [
     77,
@@ -246,7 +248,8 @@
     71,
     75,
     79,
-    80
+    80,
+    83
   ],
   "apps/web/src/pages/BlastDayPage.tsx apps/web/src/components/day/DayHub.tsx apps/web/src/components/day/CrewList.tsx apps/web/src/components/day/RigList.tsx apps/web/src/components/dashboard/OfficeHome.tsx apps/web/src/components/dashboard/RoleCards.tsx apps/web/src/pages/DrillChecklistPage.tsx apps/web/src/pages/DrillLogPage.tsx apps/web/src/hooks/useMaintenance.ts apps/web/src/lib/hourLedger.ts apps/web/src/pages/SitePage.tsx apps/web/src/components/forms/CustomerSitePicker.tsx apps/web/src/components/forms/NewJobForm.tsx": [
     72
@@ -434,7 +437,8 @@
     81
   ],
   "apps/web/src/lib/incidentDoNow.ts": [
-    81
+    81,
+    83
   ],
   "apps/web/src/hooks/useIncidents.ts": [
     81
@@ -519,6 +523,18 @@
     83
   ],
   "apps/web/src/pages/JobsPage.tsx": [
+    83
+  ],
+  "apps/web/src/lib/contactSheet.ts": [
+    83
+  ],
+  "apps/web/src/components/forms/ContactSheetCard.tsx": [
+    83
+  ],
+  "apps/web/src/pages/PrintContactSheetPage.tsx": [
+    83
+  ],
+  "apps/web/src/components/forms/JobContactsCard.tsx": [
     83
   ]
 }

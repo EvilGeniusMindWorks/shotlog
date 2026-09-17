@@ -20,6 +20,7 @@ import { formatDate, generateId, nowISO } from '@/lib/utils';
 import type { Customer, CustomerContact, CustomerStatus, Job, Site } from '@/db/schema';
 import { AddressFields, emptyAddress } from '@/components/forms/AddressFields';
 import { RecordShell } from '@/components/layout/RecordShell';
+import { NewJobForm } from '@/components/forms/NewJobForm';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -73,6 +74,8 @@ export function CustomerPage() {
   // capability, not the admin role
   const isAdmin = can('customers', 'PATCH');
   const customer = useLiveQuery(() => (id ? db.customers.get(id) : undefined), [id]);
+  // S22: New job from here opens the sheet on the site step
+  const [addingJob, setAddingJob] = useState(false);
   const sites =
     useLiveQuery(
       async () => (id ? db.sites.where('customerId').equals(id).sortBy('name') : []),
@@ -114,13 +117,18 @@ export function CustomerPage() {
         )
       }
       actions={
-        <LifecycleMenu
-          table="customers"
-          record={customer}
-          label={customer.name}
-          kind="customer"
-          onDeleted={() => navigate('/jobs')}
-        />
+        <span className="flex items-center gap-2">
+          {isAdmin && (
+            <Button size="sm" variant="secondary" onClick={() => setAddingJob((v) => !v)} data-customer-new-job>New job</Button>
+          )}
+          <LifecycleMenu
+            table="customers"
+            record={customer}
+            label={customer.name}
+            kind="customer"
+            onDeleted={() => navigate('/jobs')}
+          />
+        </span>
       }
       subline={[
         TYPE_OPTIONS.find((t) => t.value === customer.customerType)?.label,
@@ -146,6 +154,17 @@ export function CustomerPage() {
       ]}
       aboutCards
       list={
+        <>
+          {addingJob && (
+            <div className="rounded-xl border border-gray-200 bg-white p-3">
+              <NewJobForm
+                title={`New job for ${customer.name}`}
+                initial={{ customerId: customer.id, customerName: customer.name }}
+                onCreated={(jid) => navigate(`/jobs/${jid}?open=contact-sheet`)}
+                onCancel={() => setAddingJob(false)}
+              />
+            </div>
+          )}
         <SitesList
           customer={customer}
           sites={sites}
@@ -155,6 +174,7 @@ export function CustomerPage() {
           onOpenSite={(sid) => navigate(`/sites/${sid}`)}
           onOpenJob={(jid) => navigate(`/jobs/${jid}`)}
         />
+        </>
       }
       sections={[
         {
