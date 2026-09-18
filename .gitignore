@@ -6,3 +6,7 @@ dist/
 .DS_Store
 .claude/
 .playwright-mcp/
+
+# Vercel CLI link (a deploy from the repo root)
+.vercel
+.env*
