@@ -25,3 +25,7 @@ A day filed twice shows both versions. The latest is the record; the earlier one
 ## Related
 
 [Sign-off and filing the day](/help/blaster/filing-the-day) · [A day sent back](/help/blaster/a-day-sent-back)
+
+## Patterns in the tree
+
+A drill plan is its own dated line in Records — dated when it was sent — and the tree shows a **Pattern** node under the job beside its days, holding the plan and every part of its drill log. The office copy of the drill log is one sheet per pattern: every hole with its driller and rig, a signature per driller, filed when the blaster accepts.

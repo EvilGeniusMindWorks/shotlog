@@ -188,6 +188,9 @@ export async function dayDrillLogsFor(day: BlastDay): Promise<DrillLog[]> {
 export interface PlanTileModel {
   planId?: string;
   word?: string;
+  name?: string;
+  /** S23 push 2: drilled, every part accepted, no shot yet — the tile offers the shot */
+  readyForShot?: boolean;
   state: TileState;
 }
 
@@ -228,7 +231,8 @@ export async function dayDrillPlanTile(day: BlastDay, canDraw: boolean, isDrille
           : word === 'Drilled'
             ? { title: `${plan.name} · Drilled${plan.drilledAt ? ` ${formatDateShort(plan.drilledAt)}` : ''}`, sub: `${count}${pick.waiting ? ` · ${pick.waiting} part${pick.waiting === 1 ? '' : 's'} to accept` : ' · accepted'}`, action: 'Open', tone: pick.waiting ? 'warn' : 'done' }
             : { title: `${plan.name} · Shot`, sub: count, action: 'View', tone: 'done' };
-  return { planId: plan.id, word, state };
+  const readyForShot = word === 'Drilled' && pick.waiting === 0 && pick.parts.length > 0 && pick.parts.every((p) => p.log.status === 'accepted') && pick.shotCount === 0;
+  return { planId: plan.id, word, name: plan.name, readyForShot, state };
 }
 
 function formatDateShort(iso: string): string {

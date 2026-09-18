@@ -35,7 +35,7 @@ type SortKey = 'date' | 'title' | 'job' | 'customer' | 'person' | 'status' | 'fi
 const WINDOW = 25;
 
 const KIND_ORDER: DocKind[] = [
-  'blast_log', 'daily_report', 'drill_log', 'drill_checklist', 'incident',
+  'blast_log', 'daily_report', 'drill_plan', 'drill_log', 'drill_checklist', 'incident',
   'time_card', 'repair_ticket', 'service', 'hour_correction',
 ];
 
@@ -46,9 +46,9 @@ const KIND_ORDER: DocKind[] = [
 function bucketKinds(): DocKind[] {
   switch (tourBucket()) {
     case 'field':
-      return ['blast_log', 'daily_report', 'drill_log', 'incident'];
+      return ['blast_log', 'daily_report', 'drill_plan', 'drill_log', 'incident'];
     case 'driller':
-      return ['drill_log', 'drill_checklist', 'time_card'];
+      return ['drill_plan', 'drill_log', 'drill_checklist', 'time_card'];
     case 'mechanic':
       return ['drill_checklist', 'repair_ticket', 'service', 'hour_correction'];
     default:

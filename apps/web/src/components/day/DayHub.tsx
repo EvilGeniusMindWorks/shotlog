@@ -6,7 +6,8 @@
 import { useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, ClipboardList, FileText, Timer, Drill, Grid3x3 } from 'lucide-react';
-import { continuePart, createDrillPlan } from '@/hooks/useDrillPlans';
+import { continuePart, createDrillPlan, makeShotFromPlan } from '@/hooks/useDrillPlans';
+import { useJobContext } from '@/lib/jobContext';
 import { ReportIncidentSheet } from '@/components/incident/ReportIncidentSheet';
 import { INCIDENT_LABEL } from '@/lib/incidentDoNow';
 import type { BlastDay, BlastLog, DailyReport, DrillLog, Job, Shot } from '@/db/schema';
@@ -147,7 +148,8 @@ export function DayHub({ day, job, blastLog, shots, dailyReport, locked, owner, 
   const planned = plannedHoles(shots);
   // S23: the Drill plan tile — the pattern as a paper of the job, its state all week
   const canDraw = !readOnly && can('drillPlans', 'PUT');
-  const planTile = useLiveQuery(() => dayDrillPlanTile(day, canDraw, isDriller), [day.id, day.jobId, canDraw, isDriller]);
+  const planTile = useLiveQuery(() => dayDrillPlanTile(day, canDraw, isDriller), [day.id, day.jobId, canDraw, isDriller, shots.length]);
+  const jobCtx = useJobContext(day.jobId);
   const myOpenPart = myLogs.find((l) => l.drillPlanId && l.status === 'open');
 
   // ── the tiles, in role order ──
@@ -325,7 +327,26 @@ export function DayHub({ day, job, blastLog, shots, dailyReport, locked, owner, 
       )}
       {isDriller && <RigList day={day} rows={rigRows} readOnly={readOnly} />}
       {tiles.map((t, i) => (
-        <Tile key={`${t.id}-${i}`} id={t.id} icon={t.icon} name={t.name} state={t.state} upNext={i === upNextIndex} onAction={t.onAction} />
+        <div key={`${t.id}-${i}`}>
+          <Tile id={t.id} icon={t.icon} name={t.name} state={t.state} upNext={i === upNextIndex} onAction={t.onAction} />
+          {/* S23 push 2 (door A): a drilled, accepted pattern on a blasting day offers the shot from the tile */}
+          {t.id === 'drill-plan' && planTile?.readyForShot && !isDriller && !readOnly && blasting && can('shots', 'PUT') && (
+            <button
+              type="button"
+              className="w-full mt-1 rounded-xl bg-safety-orange text-white py-2.5 font-bold text-sm hover:bg-orange-600 min-h-[44px]"
+              data-plan-make-shot={planTile.planId}
+              onClick={() => {
+                void (async () => {
+                  const logId = await addBlastLogToDay(day.id);
+                  await makeShotFromPlan(logId, planTile.planId!, jobCtx?.kFactor ?? 180);
+                  setView('blast-log');
+                })();
+              }}
+            >
+              Make Shot {shots.length + 1} from {planTile.name} ›
+            </button>
+          )}
+        </div>
       ))}
       {!isDriller && crew && <CrewList day={day} model={crew} canAct={!readOnly} />}
       {showFile && (

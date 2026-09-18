@@ -19,6 +19,8 @@ export type DocKind =
   | 'blast_log'
   | 'daily_report'
   | 'drill_log'
+  /** S23 push 2: the pattern as a paper of the job — its own dated line */
+  | 'drill_plan'
   | 'drill_checklist'
   | 'incident'
   // S7b: the rest of the paper — so each home bucket's default set is
@@ -55,6 +57,9 @@ export interface DocRow {
   facts?: DocFacts;
   customerName?: string;
   dayId?: string;
+  /** S23 push 2: the pattern a drill log part or a plan row belongs to (the Records tree's pattern node) */
+  planId?: string;
+  planName?: string;
 }
 
 export interface DocFacts {
@@ -98,6 +103,7 @@ export const DOC_KIND_LABEL: Record<DocKind, string> = {
   blast_log: 'Blasting Log',
   daily_report: 'Daily Report',
   drill_log: 'Drill Log',
+  drill_plan: 'Drill Plan',
   drill_checklist: 'Rig Checklist',
   incident: 'Incident',
   time_card: 'Time Card',
@@ -220,12 +226,28 @@ export async function buildDocRows(opts: {
   const shotNumbers = new Map(
     (await projectTable<{ n: number | null }>('shots', { n: 'shotNumber' })).map((s) => [s.id, s.n]),
   );
-  const planNames = new Map(
-    (await projectTable<{ name: string | null }>('drillPlans', { name: 'name' })).map((p) => [
-      p.id,
-      p.name,
-    ]),
-  );
+  const planRows = await projectTable<{
+    name: string | null;
+    jobId: string;
+    status: string | null;
+    sentAt: string | null;
+    drilledAt: string | null;
+    createdAt: string;
+    createdBy: string | null;
+    archivedAt: string | null;
+    version: number | null;
+  }>('drillPlans', {
+    name: 'name',
+    jobId: 'jobId',
+    status: 'status',
+    sentAt: 'sentAt',
+    drilledAt: 'drilledAt',
+    createdAt: 'createdAt',
+    createdBy: 'createdBy',
+    archivedAt: 'archivedAt',
+    version: 'version',
+  });
+  const planNames = new Map(planRows.map((p) => [p.id, p.name]));
   const holeStats = await holeStatsByLog();
   const holeCounts = new Map([...holeStats].map(([k, v]) => [k, v.n]));
   // Rig checklists — projected once here, used by the drill logs (the rig), the checklists
@@ -234,8 +256,10 @@ export async function buildDocRows(opts: {
     (await projectTable<{ assetNumber: string | null }>('equipment', { assetNumber: 'assetNumber' })).map((e) => [e.id, e.assetNumber]),
   );
 
+  // S23 push 2: a blaster's own records include the parts of the patterns he laid
+  const planOwner = new Map(planRows.map((p) => [p.id, p.createdBy]));
   const logs = allLogs
-    .filter((l) => company || !meId || l.drillerUserId === meId)
+    .filter((l) => company || !meId || l.drillerUserId === meId || (l.drillPlanId && planOwner.get(l.drillPlanId) === meId))
     .filter((l) =>
       !person
         ? true
@@ -269,7 +293,55 @@ export async function buildDocRows(opts: {
       sourceId: log.id,
       jobId: log.jobId,
       person: log.drillerName ?? undefined,
+      planId: log.drillPlanId ?? undefined,
+      planName: log.drillPlanId ? (planNames.get(log.drillPlanId) ?? undefined) : undefined,
       ...scopeOf(log.jobId),
+    });
+  }
+
+  // S23 push 2 (Matthew's v3 item 9: the plan and the log must not share a
+  // line): the pattern is a paper of the job with its own dated row — dated
+  // when drawn, or when sent — under the job's pattern node
+  const shotByPlan = new Map<string, number>();
+  for (const s of await projectTable<{ drillPlanId: string | null }>('shots', { drillPlanId: 'drillPlanId' })) {
+    if (s.drillPlanId) shotByPlan.set(s.drillPlanId, (shotByPlan.get(s.drillPlanId) ?? 0) + 1);
+  }
+  const partsByPlan = new Map<string, typeof allLogs>();
+  for (const l of allLogs) if (l.drillPlanId) partsByPlan.set(l.drillPlanId, [...(partsByPlan.get(l.drillPlanId) ?? []), l]);
+  for (const p of planRows) {
+    if (p.archivedAt) continue;
+    if (!company && meId && p.createdBy !== meId && !(partsByPlan.get(p.id) ?? []).some((l) => l.drillerUserId === meId)) continue;
+    if (person) continue;
+    const parts = partsByPlan.get(p.id) ?? [];
+    let holes = 0;
+    let ft = 0;
+    for (const l of parts) {
+      const hs = holeStats.get(l.id);
+      holes += hs?.n ?? 0;
+      ft += hs?.ft ?? 0;
+    }
+    const word = shotByPlan.has(p.id) ? 'Shot' : p.status === 'complete' ? 'Drilled' : holes > 0 ? 'Drilling' : p.sentAt || parts.length > 0 ? 'Sent' : 'Draft';
+    const drillers = [...new Set(parts.map((l) => l.drillerName).filter(Boolean))] as string[];
+    const date = (p.sentAt ?? p.createdAt).slice(0, 10);
+    out.push({
+      key: `dp-${p.id}`,
+      kind: 'drill_plan',
+      date,
+      title: `${jobs.get(p.jobId) || '—'} · ${p.name ?? 'Drill plan'}`,
+      sub: `${word} · ${holes} holes`,
+      head: p.name ?? 'Drill plan',
+      particulars: [word, `${holes} holes`, ft ? `${fmtN(Math.round(ft))}′` : null, drillers.length ? drillers.join(', ') : null, p.version && p.version > 1 ? `v${p.version}` : null].filter(Boolean).join(' · '),
+      facts: { holes, footage: ft || undefined },
+      customerName: customerOf(p.jobId),
+      status: word.toLowerCase(),
+      statusVariant: word === 'Shot' || word === 'Drilled' ? 'approved' : word === 'Drilling' || word === 'Sent' ? 'submitted' : 'draft',
+      to: `/jobs/${p.jobId}/drill-plan/${p.id}`,
+      sourceId: p.id,
+      jobId: p.jobId,
+      person: drillers[0],
+      planId: p.id,
+      planName: p.name ?? undefined,
+      ...scopeOf(p.jobId),
     });
   }
 

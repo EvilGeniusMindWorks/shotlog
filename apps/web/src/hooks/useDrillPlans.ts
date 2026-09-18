@@ -5,7 +5,7 @@ import { useLiveQuery, db } from '@/db';
 import { getSessionUser } from '@/lib/session';
 import { formatDate, generateId, nowISO, todayISO } from '@/lib/utils';
 import { materializeDrillPlan, type PlanHole, type ShotDiagram } from '@/lib/shotDiagram';
-import type { DrillLog, DrillLogHole, DrillPlanRecord } from '@/db/schema';
+import type { DrillLog, DrillLogHole, DrillPlanRecord, Shot } from '@/db/schema';
 import { aggregateDrilling, type FlaggedHole, type ShotDrilling } from './useDrillLogs';
 import { findDayByDate } from '@/lib/dayCard';
 import { createBlastDay } from './useBlastDay';
@@ -231,7 +231,8 @@ export async function planProgress(planId: string): Promise<PlanProgress | undef
     const holes = (await db.drillLogHoles.where('drillLogId').equals(log.id).toArray()).filter((h) => !h.skipped);
     const footage = holes.reduce((s, h) => s + h.actualDepth, 0);
     const dates = holes.map((h) => h.date).sort();
-    const rigIds = [...new Set([log.drillRigEquipmentId, ...holes.map((h) => h.rigEquipmentId)].filter((x): x is string => Boolean(x)))];
+    // the rigs in the order they were used: the holes' rigs first (drilled order), then the current one
+    const rigIds = [...new Set([...[...holes].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).map((h) => h.rigEquipmentId), log.drillRigEquipmentId].filter((x): x is string => Boolean(x)))];
     const rigs: string[] = [];
     for (const id of rigIds) {
       if (!rigNames.has(id)) rigNames.set(id, (await db.equipment.get(id))?.assetNumber ?? '');
@@ -407,11 +408,10 @@ export async function acceptPart(log: DrillLog): Promise<void> {
   await db.drillLogs.update(log.id, { status: 'accepted', acceptedBy: getSessionUser()?.name ?? '', acceptedAt: now, updatedAt: now });
 }
 
-/** Accept the drill log: every part signed complete, in one tap */
+/** Accept the drill log: every part signed complete, in one tap — one office
+ *  copy per pattern (push 2; push 1 filed a copy per part) */
 export async function acceptPlanDrilling(planId: string): Promise<number> {
-  const parts = await db.drillLogs.filter((l) => l.drillPlanId === planId && l.status === 'complete').toArray();
-  for (const p of parts) await acceptPart(p);
-  return parts.length;
+  return acceptPatternLog(planId);
 }
 
 /** Plan parts that were on a job-day: a hole dated that day, or (today) an open part */
@@ -434,4 +434,209 @@ export async function partHoles(logId: string): Promise<DrillLogHole[]> {
   return (await db.drillLogHoles.where('drillLogId').equals(logId).toArray()).sort((a, b) =>
     a.holeNumber.localeCompare(b.holeNumber, undefined, { numeric: true }),
   );
+}
+
+// ── S23 push 2 — the shot from the drilled pattern ─────────────────────────
+
+export interface ShotCandidate {
+  plan: DrillPlanRecord;
+  progress: PlanProgress;
+  /** drilled and every part accepted — one pattern, one shot */
+  ready: boolean;
+  why: string;
+}
+
+/** The job's patterns a shot could be made from, ready ones first. A pattern
+ *  already shot is not listed (one pattern, one shot — Matthew's d5). */
+export async function shotCandidates(jobId: string): Promise<ShotCandidate[]> {
+  const plans = (await db.drillPlans.where('jobId').equals(jobId).toArray()).filter((p) => !p.archivedAt);
+  const out: ShotCandidate[] = [];
+  for (const plan of plans) {
+    const progress = await planProgress(plan.id);
+    if (!progress || progress.word === 'Shot') continue;
+    const parts = progress.parts;
+    const allAccepted = parts.length > 0 && parts.every((p) => p.log.status === 'accepted');
+    const ready = progress.word === 'Drilled' && allAccepted;
+    const why =
+      progress.word === 'Drilled'
+        ? allAccepted
+          ? `accepted · ${progress.drilling.totalHoles} holes · ${Math.round(progress.drilling.totalFootage)} ft`
+          : `drilled · accept the drill log first (${progress.waiting} part${progress.waiting === 1 ? '' : 's'} signed)`
+        : progress.word === 'Drilling'
+          ? `still drilling · ${progress.drilling.totalHoles} of ${progress.planned}`
+          : progress.word === 'Sent'
+            ? 'sent · not drilled yet'
+            : 'draft · not sent';
+    out.push({ plan, progress, ready, why });
+  }
+  return out.sort((a, b) => Number(b.ready) - Number(a.ready) || b.plan.updatedAt.localeCompare(a.plan.updatedAt));
+}
+
+/** Lay the drilled pattern onto a shot: the pattern's layout as the shot's
+ *  diagram (timing cleared), the header numbers from the plan, the totals
+ *  from the accepted drilling. */
+export async function applyPlanToShot(shotId: string, planId: string): Promise<void> {
+  const [shot, plan] = await Promise.all([db.shots.get(shotId), db.drillPlans.get(planId)]);
+  if (!shot || !plan) throw new Error('shot or pattern not found');
+  const parts = (await db.drillLogs.filter((l) => l.drillPlanId === planId).toArray()).filter((l) => l.status === 'accepted');
+  const agg = await aggregateDrilling(parts, getPlanHoles(plan));
+  const { seedDiagramFromPlan } = await import('@/lib/shotDiagram');
+  const { recalcShotTotals } = await import('@/lib/shotTotals');
+  const drillParams = {
+    ...shot.drillParams,
+    holeDiameter: plan.holeDiameter || shot.drillParams.holeDiameter,
+    burden: plan.burden || shot.drillParams.burden,
+    spacing: plan.spacing || shot.drillParams.spacing,
+  };
+  const figures = { numHoles: agg.totalHoles, totalDrillFootage: +agg.totalFootage.toFixed(1), avgDrillDepth: agg.totalHoles > 0 ? +(agg.totalFootage / agg.totalHoles).toFixed(1) : 0 };
+  const totals = recalcShotTotals(drillParams, { ...shot.totals, ...figures });
+  await db.shots.update(shotId, {
+    drillPlanId: planId,
+    drillParams,
+    totals,
+    totalsSource: 'drilling',
+    designPlan: { ...shot.designPlan, shotDiagramData: seedDiagramFromPlan(plan) },
+    updatedAt: nowISO(),
+  });
+}
+
+/** A shot on the blasting log from a drilled pattern — an empty first shot
+ *  (the one a new blasting log starts with) is used rather than left blank
+ *  beside the pattern's; otherwise a new shot is added */
+export async function makeShotFromPlan(blastLogId: string, planId: string, kFactor = 180): Promise<string> {
+  const { addShot } = await import('./useBlastDay');
+  const { hasDrillPlan, parseDiagram } = await import('@/lib/shotDiagram');
+  const shots = (await db.shots.where('blastLogId').equals(blastLogId).toArray()).sort((a, b) => a.shotNumber - b.shotNumber);
+  const empty = shots.find((s) => !s.drillPlanId && !(s.totals.numHoles > 0) && !s.signatureImage && !hasDrillPlan(parseDiagram(s.designPlan.shotDiagramData)) && !(s.designPlan.shotDiagramData ?? '').includes('"start"'));
+  const id = empty?.id ?? (await addShot(blastLogId, kFactor));
+  await applyPlanToShot(id, planId);
+  return id;
+}
+
+export interface PatternFacts {
+  planId: string;
+  name: string;
+  version: number;
+  word: PlanWord;
+  planned: number;
+  holes: number;
+  footage: number;
+  from?: string;
+  to?: string;
+  parts: { name: string; rigs: string[]; signedAt?: string; status: DrillLog['status'] }[];
+  offPlan: number;
+  wet: number;
+  voids: number;
+  notDrilled: number;
+  acceptedBy?: string;
+  acceptedAt?: string;
+}
+
+/** What the shot's drilling card and the printed blasting log say about the pattern */
+export async function patternFacts(planId: string): Promise<PatternFacts | undefined> {
+  const p = await planProgress(planId);
+  if (!p) return undefined;
+  const accepted = p.parts.filter((x) => x.log.status === 'accepted').map((x) => x.log);
+  const last = accepted.sort((a, b) => (b.acceptedAt ?? '').localeCompare(a.acceptedAt ?? ''))[0];
+  const dates = p.days.map((d) => d.date);
+  return {
+    planId,
+    name: p.plan.name,
+    version: p.plan.version ?? 1,
+    word: p.word,
+    planned: p.planned,
+    holes: p.drilling.totalHoles,
+    footage: p.drilling.totalFootage,
+    from: dates[0],
+    to: dates[dates.length - 1],
+    parts: p.parts.map((x) => ({ name: x.log.drillerName || 'unassigned', rigs: x.rigs, signedAt: x.log.completedAt, status: x.log.status })),
+    offPlan: p.offPlan,
+    wet: p.wet,
+    voids: p.drilling.voidHoles,
+    notDrilled: p.notDrilled,
+    acceptedBy: last?.acceptedBy,
+    acceptedAt: last?.acceptedAt,
+  };
+}
+
+export function usePatternFacts(planId: string | undefined): PatternFacts | undefined {
+  return useLiveQuery(async () => (planId ? patternFacts(planId) : undefined), [planId]);
+}
+
+/** The blasting log's printed drilling lines, one value per shot — a shot
+ *  made from a pattern names it; an older shot prints a dash */
+export interface PatternLine {
+  label: string;
+  values: Record<string, string>;
+}
+
+export async function patternLinesForShots(shots: Pick<Shot, 'id' | 'drillPlanId'>[]): Promise<PatternLine[]> {
+  const facts = new Map<string, PatternFacts>();
+  for (const s of shots) {
+    if (!s.drillPlanId) continue;
+    const f = await patternFacts(s.drillPlanId);
+    if (f) facts.set(s.id, f);
+  }
+  if (facts.size === 0) return [];
+  const line = (label: string, get: (f: PatternFacts) => string): PatternLine => ({
+    label,
+    values: Object.fromEntries(shots.map((s) => [s.id, facts.has(s.id) ? get(facts.get(s.id)!) : '—'])),
+  });
+  const short = (iso?: string) => (iso ? formatDate(iso.slice(0, 10)) : '—');
+  return [
+    line('Drill plan:', (f) => `${f.name}${f.version > 1 ? ` v${f.version}` : ''}`),
+    line('Drilled:', (f) => (f.from ? (f.to && f.to !== f.from ? `${short(f.from)} – ${short(f.to)}` : short(f.from)) : '—')),
+    line('Drill log:', (f) => f.parts.map((x) => `${x.name}${x.rigs.length ? ` (${x.rigs.join(', ')})` : ''}${x.signedAt ? ` signed ${short(x.signedAt)}` : ''}`).join(' · ') || '—'),
+    line('Holes drilled:', (f) => `${f.holes} of ${f.planned} · ${Math.round(f.footage)}'`),
+    line('Off-plan / water:', (f) => `${f.offPlan} off-plan · ${f.wet} wet${f.voids ? ` · ${f.voids} void` : ''}${f.notDrilled ? ` · ${f.notDrilled} not drilled` : ''}`),
+    line('Drilling accepted:', (f) => (f.acceptedBy ? `${f.acceptedBy} ${short(f.acceptedAt)}` : '—')),
+  ];
+}
+
+/** Accept the drill log: every part signed complete is accepted, and ONE
+ *  office copy — the pattern's sheet, every part's holes and signatures —
+ *  files under the pattern's first part (Q2/Q3: the log files with the
+ *  pattern when the blaster accepts; one sheet per pattern). */
+export async function acceptPatternLog(planId: string): Promise<number> {
+  const all = (await db.drillLogs.filter((l) => l.drillPlanId === planId).toArray()).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  const signed = all.filter((l) => l.status === 'complete');
+  if (signed.length === 0) return 0;
+  const me = getSessionUser();
+  const now = nowISO();
+  for (const p of signed) await db.drillLogs.update(p.id, { status: 'accepted', acceptedBy: me?.name ?? '', acceptedAt: now, updatedAt: now });
+  const primary = all[0];
+  const { buildDrillLogPdf } = await import('@/pdfdocs');
+  const { fileSubmission } = await import('@/lib/archive');
+  const plan = await db.drillPlans.get(planId);
+  const job = await db.jobs.get(primary.jobId);
+  const pdf = await buildDrillLogPdf(primary.id);
+  await fileSubmission({
+    type: 'drill_log',
+    sourceId: primary.id,
+    jobId: primary.jobId,
+    title: `Drill Log — ${job?.name ?? ''} · ${plan?.name ?? 'pattern'}`,
+    date: plan?.drilledAt?.slice(0, 10) ?? todayISO(),
+    pdf,
+    meta: { jobName: job?.name, pattern: plan?.name, planVersion: plan?.version ?? 1, drillers: all.map((l) => l.drillerName).filter(Boolean), parts: all.length },
+  });
+  return signed.length;
+}
+
+/** The pattern's whole drill log for the sheet: every part with its holes,
+ *  in hole order, the rigs, and each part's signature */
+export async function patternSheet(planId: string): Promise<{ plan: DrillPlanRecord; parts: DrillLog[]; holes: (DrillLogHole & { partId: string })[]; rigs: Map<string, string> } | undefined> {
+  const plan = await db.drillPlans.get(planId);
+  if (!plan) return undefined;
+  const parts = (await db.drillLogs.filter((l) => l.drillPlanId === planId).toArray()).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  const holes: (DrillLogHole & { partId: string })[] = [];
+  const rigs = new Map<string, string>();
+  for (const p of parts) {
+    for (const h of await db.drillLogHoles.where('drillLogId').equals(p.id).toArray()) holes.push({ ...h, partId: p.id });
+    for (const id of [p.drillRigEquipmentId, ...(p.rigChanges ?? []).map((c) => c.toRigId)]) {
+      if (id && !rigs.has(id)) rigs.set(id, (await db.equipment.get(id))?.assetNumber ?? '');
+    }
+  }
+  for (const h of holes) if (h.rigEquipmentId && !rigs.has(h.rigEquipmentId)) rigs.set(h.rigEquipmentId, h.rigAsset ?? (await db.equipment.get(h.rigEquipmentId))?.assetNumber ?? '');
+  holes.sort((a, b) => a.holeNumber.localeCompare(b.holeNumber, undefined, { numeric: true }));
+  return { plan, parts, holes, rigs };
 }

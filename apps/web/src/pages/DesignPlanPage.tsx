@@ -110,6 +110,11 @@ function DesignPlanInner({
   // Hole conditions from every log on this shot, keyed by hole number
   const conditionsByNumber = useLiveQuery(async () => {
     const logs = await db.drillLogs.where('shotId').equals(shot.id).toArray();
+    // S23 push 2: a shot made from a drilled pattern reads the pattern's parts
+    if (shot.drillPlanId) {
+      const seen = new Set(logs.map((l) => l.id));
+      for (const p of await db.drillLogs.filter((l) => l.drillPlanId === shot.drillPlanId).toArray()) if (!seen.has(p.id)) logs.push(p);
+    }
     const out = new Map<string, string[]>();
     for (const log of logs) {
       for (const h of await db.drillLogHoles.where('drillLogId').equals(log.id).toArray()) {
@@ -117,7 +122,7 @@ function DesignPlanInner({
       }
     }
     return out;
-  }, [shot.id]);
+  }, [shot.id, shot.drillPlanId]);
   // The drilled pattern as the timing editor sees it (grid positions)
   const drilledOverlay: (DrilledOverlay & { undrilledIdx: number[]; drilledCount: number; wet: number }) | undefined =
     drilling && drilling.logs.length > 0 && planHoles

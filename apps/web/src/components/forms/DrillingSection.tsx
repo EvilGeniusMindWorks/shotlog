@@ -8,12 +8,55 @@ import { Drill, Plus, Send, X } from 'lucide-react';
 import { type Role } from '@shotlog/shared';
 import { can } from '@/lib/perms';
 import { createDrillLog, getShotPlan, useShotDrilling } from '@/hooks/useDrillLogs';
+import { applyPlanToShot, shotCandidates, usePatternFacts } from '@/hooks/useDrillPlans';
+import { PatternPickSheet } from './PatternPickSheet';
 import { materializeDrillPlan, parseDiagram } from '@/lib/shotDiagram';
 import { getSessionUser } from '@/lib/session';
+import { formatDate } from '@/lib/utils';
+import { hhmm } from '@/lib/dayCard';
 import { useLiveQuery, db } from '@/db';
 import type { ExplosiveUsage, Shot } from '@/db/schema';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+
+/** S23 push 2 (Matthew's v3 item 6: "messy"; the drill log must be per hole):
+ *  a shot made from a drilled pattern shows the drilling as label/value facts —
+ *  the pattern, the drill log's parts with rigs and signed dates, the drilled
+ *  dates, the count and footage, off-plan and water holes, who accepted. */
+function PatternFactsCard({ shot }: { shot: Shot }) {
+  const navigate = useNavigate();
+  const facts = usePatternFacts(shot.drillPlanId);
+  const jobId = useLiveQuery(async () => {
+    const log = await db.blastLogs.get(shot.blastLogId);
+    const day = log ? await db.blastDays.get(log.blastDayId) : undefined;
+    return day?.jobId;
+  }, [shot.blastLogId]);
+  if (!facts) return <p className="text-xs text-gray-400">Loading the pattern…</p>;
+  const Row = ({ k, v, test }: { k: string; v: string; test: string }) => (
+    <div className="flex gap-2 text-sm py-1 border-t border-gray-100 first:border-t-0" data-shot-fact={test}>
+      <span className="w-28 shrink-0 text-xs text-gray-500 uppercase tracking-wide pt-0.5">{k}</span>
+      <span className="flex-1 min-w-0">{v}</span>
+    </div>
+  );
+  const short = (iso?: string) => (iso ? formatDate(iso.slice(0, 10)) : '—');
+  return (
+    <div className="rounded-lg border border-gray-200 p-3" data-shot-pattern-facts={facts.planId}>
+      <div className="flex items-center gap-2 mb-1">
+        <Drill className="h-4 w-4 text-gray-400" />
+        <p className="text-sm font-semibold flex-1">Drilling — from the pattern</p>
+        <button type="button" className="text-xs text-navy underline" data-shot-open-pattern onClick={() => jobId && navigate(`/jobs/${jobId}/drill-plan/${facts.planId}`)}>
+          Open the pattern ›
+        </button>
+      </div>
+      <Row k="Drill plan" v={`${facts.name}${facts.version > 1 ? ` · v${facts.version}` : ''} · ${facts.word}`} test="plan" />
+      <Row k="Drill log" v={facts.parts.length ? facts.parts.map((p) => `${p.name}${p.rigs.length ? ` (${p.rigs.join(', ')})` : ''}${p.signedAt ? ` · signed ${short(p.signedAt)}` : ` · ${p.status}`}`).join(' · ') : '—'} test="log" />
+      <Row k="Drilled" v={facts.from ? (facts.to && facts.to !== facts.from ? `${short(facts.from)} – ${short(facts.to)}` : short(facts.from)) : '—'} test="dates" />
+      <Row k="Holes" v={`${facts.holes} of ${facts.planned} · ${Math.round(facts.footage)} ft${facts.notDrilled ? ` · ${facts.notDrilled} not drilled` : ''}`} test="holes" />
+      <Row k="Off-plan · water" v={`${facts.offPlan} off-plan · ${facts.wet} wet${facts.voids ? ` · ${facts.voids} void` : ''}`} test="flags" />
+      <Row k="Accepted" v={facts.acceptedBy ? `${facts.acceptedBy} · ${facts.acceptedAt ? `${short(facts.acceptedAt)} ${hhmm(facts.acceptedAt)}` : ''}` : 'not yet'} test="accepted" />
+    </div>
+  );
+}
 
 /** Product categories that don't belong in wet holes */
 const NON_WATER_RESISTANT = new Set(['anfo', 'bulk']);
@@ -190,15 +233,22 @@ export function DrillingSection({
   const drilling = useShotDrilling(shot.id);
   const canRequest = can('drillLogs', 'PUT');
   // S18 (Matthew: "I'm not able to do a second drill plan for it"): the door
-  // to build this shot's plan sits here, where he looked, until a plan exists
+  // to build this shot's plan sits here, where he looked, until a plan exists.
+  // S23 push 2: that door is gone — the pattern is a paper of the job; a shot
+  // with no pattern is laid onto one from the job ("From a drilled pattern…")
+  // or is drilled by others and filled by hand.
   const plan = getShotPlan(shot);
   const [showSend, setShowSend] = useState(false);
+  const [pickPattern, setPickPattern] = useState(false);
+  const hasPatterns = useLiveQuery(async () => (await shotCandidates(jobId)).length > 0, [jobId]) ?? false;
   const assignedUserIds = new Set((drilling?.logs ?? []).map((l) => l.drillerUserId).filter(Boolean));
 
   const start = async () => {
     const logId = await createDrillLog(shot, blastDayId, jobId);
     navigate(`/blast-day/${blastDayId}/drill-log/${logId}`);
   };
+
+  if (shot.drillPlanId) return <PatternFactsCard shot={shot} />;
 
   return (
     <div className="rounded-lg border border-gray-200 p-3 space-y-2">
@@ -231,24 +281,41 @@ export function DrillingSection({
                 <Send className="h-4 w-4 mr-1" />
                 {drilling?.logs.length ? 'Send to more' : 'Send to drillers'}
               </Button>
-            ) : (
+            ) : hasPatterns && can('shots', 'PATCH') ? (
               <Button
                 size="sm"
-                data-build-plan-shot={shot.id}
-                onClick={() => navigate(`/blast-day/${blastDayId}/design/${shot.id}?mode=plan`)}
-                title="Lay out this shot's pattern for the drillers"
+                data-shot-from-pattern={shot.id}
+                onClick={() => setPickPattern(true)}
+                title="Lay one of the job's drilled patterns onto this shot"
               >
                 <Drill className="h-4 w-4 mr-1" />
-                Build the drill plan ›
+                From a drilled pattern…
+              </Button>
+            ) : null}
+            {plan && (
+              <Button size="sm" variant="outline" onClick={() => void start()} title="Start a drill log yourself">
+                <Plus className="h-4 w-4 mr-1" />
+                Log
               </Button>
             )}
-            <Button size="sm" variant="outline" onClick={() => void start()} title="Start a drill log yourself">
-              <Plus className="h-4 w-4 mr-1" />
-              Log
-            </Button>
           </>
         )}
       </div>
+      {!plan && !hasPatterns && (drilling?.logs.length ?? 0) === 0 && (
+        <p className="text-xs text-gray-500" data-shot-drilled-by-others>
+          Drilled by others — no pattern on this job. Fill the shot's holes and footage by hand, or plan the drilling from the + for next time.
+        </p>
+      )}
+      {pickPattern && (
+        <PatternPickSheet
+          jobId={jobId}
+          many={false}
+          allowBlank={false}
+          title={`Shot ${shot.shotNumber} — from which pattern?`}
+          onPick={async (ids) => { if (ids[0]) await applyPlanToShot(shot.id, ids[0]); }}
+          onClose={() => setPickPattern(false)}
+        />
+      )}
       {drilling && drilling.wetHoles > 0 && (
         <p className="text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded px-2 py-1">
           💧 {drilling.wetHoles} wet hole{drilling.wetHoles === 1 ? '' : 's'} logged — check
@@ -302,11 +369,11 @@ export function DrillingSection({
           <Badge variant={STATUS_BADGE[log.status]}>{log.status}</Badge>
         </button>
       ))}
-      {(!drilling || drilling.logs.length === 0) && (
+      {(!drilling || drilling.logs.length === 0) && (plan || hasPatterns) && (
         <p className="text-xs text-gray-400">
           {drilling?.planned
             ? '⚠ Plan ready but not sent to a driller yet.'
-            : 'No drill logs yet for this shot — send the plan to a driller, or log the holes yourself.'}
+            : 'No drilling on this shot yet — lay a drilled pattern onto it, or fill it by hand.'}
         </p>
       )}
 

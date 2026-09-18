@@ -112,6 +112,9 @@ async (page, lib) => {
   await R.section('Records fills the window: two-line rows, the Columns menu and density', async () => {
     await PO.evaluate(() => localStorage.removeItem('shotlog-records-view'));
     await PO.goto(`${WEB}/records`);
+    // S23 push 2: today's rows outgrow the list's first window — narrow to this run's day first
+    await PO.locator('input[placeholder^="Search title"]').waitFor({ timeout: 30000 });
+    await PO.locator('input[placeholder^="Search title"]').fill(`s21 ${stamp}`);
     await PO.locator(rowSel).waitFor({ timeout: 40000 });
     const layout = await PO.evaluate(() => {
       const page = document.querySelector('[data-records-page]');
@@ -142,6 +145,8 @@ async (page, lib) => {
     R.ok('Density: Compact drops the second line', (await PO.locator('[data-records-particulars]').count()) === 0 && (await PO.locator('[data-records-manager]').getAttribute('data-records-density')) === 'compact');
     await PO.keyboard.press('Escape');
     await PO.reload();
+    await PO.locator('input[placeholder^="Search title"]').waitFor({ timeout: 30000 });
+    await PO.locator('input[placeholder^="Search title"]').fill(`s21 ${stamp}`);
     await PO.locator(rowSel).waitFor({ timeout: 40000 });
     R.ok('both are remembered after a reload', (await PO.locator('[data-records-manager]').getAttribute('data-records-density')) === 'compact' && (await PO.locator('[data-sort="shots"]').count()) === 1);
     await PO.locator('[data-records-columns]').click();
@@ -187,6 +192,9 @@ async (page, lib) => {
   });
 
   await R.section('The drawer preview sticks, Open in a window, paper-clip counts', async () => {
+    // Clear emptied the search — narrow to this run's day again so the row sits in the first window
+    await PO.locator('input[placeholder^="Search title"]').fill(`s21 ${stamp}`);
+    await PO.locator(rowSel).waitFor({ timeout: 20000 });
     await PO.locator(rowSel).click();
     await PO.locator('[data-records-drawer]').waitFor({ timeout: 8000 });
     R.ok('a tap opens the preview as a drawer over the right half', (await PO.locator(`[data-records-drawer] [data-records-preview-for="bl-${blastLogId}"]`).count()) === 1 && /open=bl-/.test(PO.url()));
@@ -362,6 +370,8 @@ async (page, lib) => {
     R.ok("the blaster's day reads \"" + banner.replace(/\s+/g, ' ').trim() + '"', /Approved .* by /.test(banner));
     const approver = (approvedLine.match(/by ([^·]+)/) || [])[1]?.trim() ?? '';
     await PO.goto(WEB + '/records');
+    await PO.locator('input[placeholder^="Search title"]').waitFor({ timeout: 30000 });
+    await PO.locator('input[placeholder^="Search title"]').fill(`s21 ${stamp}`);
     await PO.locator(rowSel).waitFor({ timeout: 30000 });
     await PO.locator('[data-records-columns]').click();
     await PO.locator('[data-column-toggle="approvedBy"]').check();

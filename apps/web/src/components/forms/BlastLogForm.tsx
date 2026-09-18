@@ -4,6 +4,8 @@ import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { db } from '@/db';
 import { useJobContext } from '@/lib/jobContext';
 import { addShot, deleteShot } from '@/hooks/useBlastDay';
+import { makeShotFromPlan, shotCandidates } from '@/hooks/useDrillPlans';
+import { PatternPickSheet } from './PatternPickSheet';
 import { useDraftRecord } from '@/hooks/useDraftRecord';
 import type { BlastDay, BlastLog, Shot, ExplosiveUsage, Job } from '@/db/schema';
 import { Button } from '@/components/ui/button';
@@ -31,9 +33,10 @@ import { getShotPlan } from '@/hooks/useDrillLogs';
 /** Dispatch nudge on the collapsed shot header: plan authored, nobody sent */
 function PlanNotSentChip({ shot }: { shot: Shot }) {
   const unsent = useLiveQuery(async () => {
-    if (!getShotPlan(shot)) return false;
+    // S23 push 2: a shot made from a drilled pattern was drilled before it existed
+    if (shot.drillPlanId || !getShotPlan(shot)) return false;
     return (await db.drillLogs.where('shotId').equals(shot.id).count()) === 0;
-  }, [shot.id, shot.designPlan.shotDiagramData]);
+  }, [shot.id, shot.drillPlanId, shot.designPlan.shotDiagramData]);
   if (!unsent) return null;
   return (
     <span className="text-[11px] font-medium text-safety-orange bg-orange-50 border border-orange-200 rounded-full px-2 py-0.5 shrink-0">
@@ -108,9 +111,29 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
   const { draft, setField } = useDraftRecord(db.blastLogs, blastLog);
   const [sheet, setSheet] = useState<'operation' | 'hazards' | 'precautions' | null>(null);
 
+  // S23 push 2 (door B): Add shot offers the job's drilled patterns first — a
+  // blank shot ("drilled by others") stays one tap away; with no pattern on
+  // the job it is the plain Add shot it always was
+  const [pickPattern, setPickPattern] = useState(false);
   const handleAddShot = async () => {
+    const cands = await shotCandidates(blastDay.jobId);
+    if (cands.length > 0) {
+      setPickPattern(true);
+      return;
+    }
     const id = await addShot(blastLog.id, jobCtx?.kFactor ?? 180);
     setExpandedShots((prev) => new Set(prev).add(id));
+  };
+  const addFromPatterns = async (planIds: string[]) => {
+    if (planIds.length === 0) {
+      const id = await addShot(blastLog.id, jobCtx?.kFactor ?? 180);
+      setExpandedShots((prev) => new Set(prev).add(id));
+      return;
+    }
+    for (const planId of planIds) {
+      const id = await makeShotFromPlan(blastLog.id, planId, jobCtx?.kFactor ?? 180);
+      setExpandedShots((prev) => new Set(prev).add(id));
+    }
   };
 
   const handleDeleteShot = async (shotId: string) => {
@@ -248,6 +271,8 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
             className="w-full flex items-center gap-3 px-4 py-3 text-left cursor-pointer bg-gray-50/70 min-h-[52px]"
             onClick={() => toggleShot(shot.id)}
             onKeyDown={(e) => e.key === 'Enter' && toggleShot(shot.id)}
+            data-shot-toggle={shot.id}
+            data-shot-expanded={expandedShots.has(shot.id) ? '1' : '0'}
           >
             <span className="font-bold">Shot #{shot.shotNumber}</span>
             {/* S18: the time the shot was fired sits with the shot's number (Matthew: "why is there a time field on the drill parameters?") */}
@@ -323,10 +348,21 @@ export function BlastLogForm({ blastDay, blastLog, shots, explosiveUsage, job }:
       {/* Add Shot — dashed full-width (wireframe) */}
       <button
         className="w-full min-h-[48px] border-2 border-dashed border-gray-300 rounded-xl text-sm font-semibold text-gray-500 hover:border-navy hover:text-navy transition-colors"
+        data-add-shot
         onClick={handleAddShot}
       >
         + Add Shot
       </button>
+      {pickPattern && (
+        <PatternPickSheet
+          jobId={blastDay.jobId}
+          many
+          allowBlank
+          title="Add shot"
+          onPick={addFromPatterns}
+          onClose={() => setPickPattern(false)}
+        />
+      )}
         </div>
 
         {/* Sidebar column: totals, attachments, sign-off (§4.7–4.9) */}

@@ -55,6 +55,18 @@ async (page, lib) => {
   }, lib.daysAgo(8));
   if (jobs.length < 1) throw new Error('need a free job');
   R.note(`job: ${jobs[0].name}`);
+  // a draft time card of mine left at this job today by an earlier run would make the tile read
+  // "Draft" instead of "Not filed" — cards are keyed by job + date and outlive a swept day
+  const staleCards = await PA.evaluate(async ({ jobId }) => {
+    const { db, deleteWithTombstone } = await import('/src/db/index.ts');
+    const { getSessionUser } = await import('/src/lib/session.ts');
+    const { todayISO } = await import('/src/lib/utils.ts');
+    const me = getSessionUser();
+    const mine = await db.timeCards.filter((c) => c.userId === me.id && c.jobId === jobId && c.date === todayISO() && c.status === 'draft').toArray();
+    for (const c of mine) await deleteWithTombstone('timeCards', c.id);
+    return mine.length;
+  }, { jobId: jobs[0].id });
+  if (staleCards) { R.note(`cleared ${staleCards} leftover draft card(s) of mine at ${jobs[0].name} today`); await waitForUpload(PA, 20000); }
 
   await R.section("The day opens on its tiles: each paper's real state per role, Start creates the paper, Up next, File this day at the bottom, the blasting log keeps the spine", async () => {
     dayId = await PA.evaluate(async ({ jobId, stamp }) => (await import('/src/hooks/useBlastDay.ts')).createBlastDay(jobId, undefined, undefined, { typeOfWork: 'drill_to_blast', name: `hub ${stamp}` }), { jobId: jobs[0].id, stamp });
@@ -62,6 +74,7 @@ async (page, lib) => {
     R.ok('the blaster lands on the tiles', (await PA.locator('[data-day-hub]').getAttribute('data-day-hub-role')) === 'field');
     R.ok('Blasting log: Not started · Start', (await tileState(PA, 'blast-log')) === 'Not started' && (await tileAction(PA, 'blast-log')) === 'Start');
     R.ok('Daily report: Not started · Start', (await tileState(PA, 'daily-report')) === 'Not started' && (await tileAction(PA, 'daily-report')) === 'Start');
+    R.note('time card tile: ' + JSON.stringify(await PA.evaluate(async (dayId) => { const { db } = await import('/src/db/index.ts'); const { getSessionUser } = await import('/src/lib/session.ts'); const me = getSessionUser(); const day = await db.blastDays.get(dayId); const cards = await db.timeCards.filter((c) => c.blastDayId === dayId || (c.jobId === day.jobId && c.date === day.date)).toArray(); return { tile: document.querySelector('[data-tile="time-card"]')?.getAttribute('data-tile-state'), action: document.querySelector('[data-tile="time-card"] [data-tile-action]')?.getAttribute('data-tile-action'), cards: cards.map((c) => ({ mine: c.userId === me.id, name: c.personName, status: c.status, day: c.blastDayId === dayId })) }; }, dayId)));
     R.ok('My time card: Not filed · Open', (await tileState(PA, 'time-card')) === 'Not filed' && (await tileAction(PA, 'time-card')) === 'Open');
     R.ok('Up next sits on the Blasting log', (await PA.locator('[data-tile="blast-log"][data-up-next]').count()) === 1);
     R.ok('no File row yet — nothing to file', (await PA.locator('[data-file-row]').getAttribute('data-file-row')) === 'none');

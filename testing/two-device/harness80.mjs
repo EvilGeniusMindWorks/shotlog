@@ -98,7 +98,8 @@ async (page, lib) => {
     await PB.locator('[data-phase="plan"]').waitFor({ timeout: 20000 });
     let ps = await phases(PB);
     R.ok(`six steps in order (${ps.map((p) => p.key).join(' → ')})`, ps.map((p) => p.key).join(',') === 'plan,drilling,review,fill,check,complete');
-    R.ok(`nothing yet: Drill plan "${ps[0].chip}", one ring, Continue "${await continueText(PB)}"`, ps[0].chip === 'To do' && rings(ps) === 1 && ps[0].ring === 'now' && (await continueText(PB)) === 'Next: build the drill plan');
+    // S23 push 2: the first step is the Pattern — a paper of the job; "build the drill plan" inside a shot is gone
+    R.ok(`nothing yet: Pattern "${ps[0].chip}", one ring, Continue "${await continueText(PB)}"`, ps[0].chip === 'To do' && rings(ps) === 1 && ps[0].ring === 'now' && (await continueText(PB)) === 'Next: pick the pattern');
     // lay a 2 × 3 pattern at 20 ft straight into the shot (harness53's way)
     await PB.evaluate(async (shotId) => {
       const { db } = await import('/src/db/index.ts');

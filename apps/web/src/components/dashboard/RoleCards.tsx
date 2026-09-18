@@ -75,7 +75,8 @@ export function TodayCard() {
       if (log) {
         const shots = await db.shots.where('blastLogId').equals(log.id).toArray();
         for (const shot of shots) {
-          if (!getShotPlan(shot)) continue;
+          // S23 push 2: a shot from a drilled pattern was drilled before it existed
+          if (shot.drillPlanId || !getShotPlan(shot)) continue;
           const logCount = await db.drillLogs.where('shotId').equals(shot.id).count();
           if (logCount === 0) unsentPlans++;
         }
@@ -607,8 +608,9 @@ export function DrillerHome() {
       // it lives under "Plans sent to you" until the first hole
       const onlySentPlans = myLogs.length > 0 && myLogs.every((l) => l.assignedBy) && holes === 0 && !card && !rigs.some((r) => r.checklist.drillerUserId === me?.id);
       if (onlySentPlans) continue;
-      // S23: a pattern at this job — the count crosses days and drillers
-      const part = myLogs.find((l) => l.drillPlanId);
+      // S23: a pattern at this job — the count crosses days and drillers; my OPEN
+      // part first, else the newest (an older pattern's accepted part must not hide it)
+      const part = [...myLogs.filter((l) => l.drillPlanId)].sort((a, b) => Number(b.status === 'open') - Number(a.status === 'open') || b.createdAt.localeCompare(a.createdAt))[0];
       const pattern = part?.drillPlanId ? await planProgress(part.drillPlanId) : undefined;
       const patternLine = pattern
         ? `${pattern.plan.name} · ${progressLine(pattern, me?.id)} · ${part!.status === 'open' ? 'drilling' : part!.status === 'complete' ? 'your part signed' : 'accepted'}${pattern.pace ? ` · at this pace, drilled ${pattern.pace.expectedWord}` : ''}`

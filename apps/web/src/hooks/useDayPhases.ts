@@ -96,12 +96,38 @@ export function useDayPhases(
     const phases: DayPhase[] = [];
     const push = (p: Omit<DayPhase, 'chipVariant'>) => phases.push({ ...p, chipVariant: VARIANT[p.state] });
 
-    if (drillingDay && firstShot) {
+    // S23 push 2 (Matthew's v3 item 7: one flow, a week or a day): the first step
+    // is the PATTERN — a paper of the job, drilled and accepted before the shot.
+    // "Next: build the drill plan" inside a shot is gone; a shot with no pattern
+    // is laid onto one from the job (Add shot › From a drilled pattern) or is
+    // drilled by others. Older shots with an inline plan keep their steps.
+    const patternShots = shots.filter((s) => s.drillPlanId);
+    const patternNames: string[] = [];
+    for (const s of patternShots) {
+      const p = s.drillPlanId ? await db.drillPlans.get(s.drillPlanId) : undefined;
+      if (p) patternNames.push(p.name);
+    }
+    if (drillingDay && firstShot && patternShots.length > 0) {
+      const planTo = `/jobs/${day.jobId}/drill-plan/${patternShots[0].drillPlanId}`;
+      push({ key: 'plan', label: 'Pattern', sub: `${patternNames.join(', ') || 'the pattern'} · drilled`, chip: 'Done', state: 'done', view: 'walkthrough', to: planTo });
+      if (!allComplete) push({ key: 'drilling', label: 'Drilling', sub: `${holesLine}${who ? ` · ${who}` : ''}${hazardCount ? ` · ${hazardCount} hazards` : ''}`, chip: 'Waiting', state: 'wait', view: 'drilling' });
+      else push({ key: 'drilling', label: 'Drilling', sub: `${holesLine}${who ? ` · ${who}` : ''}${hazardCount ? ` · ${hazardCount} hazards` : ''}`, chip: allAccepted ? 'Done' : 'Signed complete', state: 'done', view: 'drilling' });
+      if (!allComplete) push({ key: 'review', label: 'Review drilling', sub: 'accept, or send a part back with a note', chip: 'Later', state: 'later', view: 'drilling' });
+      else if (!allAccepted) push({ key: 'review', label: 'Review drilling', sub: `${counted.length} part${counted.length === 1 ? '' : 's'} signed`, chip: 'To do', state: 'now', view: 'drilling' });
+      else {
+        const at = counted.map((l) => l.acceptedAt ?? '').sort().pop();
+        push({ key: 'review', label: 'Review drilling', sub: `accepted${at ? ` ${hhmm(at)}` : ''}`, chip: 'Done', state: 'done', view: 'drilling' });
+      }
+    } else if (drillingDay && firstShot && !hasPlan && !hasDrilling) {
+      // no pattern on the shot and no inline plan: pick one from the job, or drilled by others
+      push({ key: 'plan', label: 'Pattern', sub: 'from a drilled pattern (Add shot), or drilled by others', chip: shotStarted ? 'Skipped' : 'To do', state: shotStarted ? 'later' : 'now', view: 'blast-log' });
+      push({ key: 'drilling', label: 'Drilling', sub: 'reads from the pattern', chip: 'Later', state: 'later', view: 'drilling' });
+      push({ key: 'review', label: 'Review drilling', sub: 'accept, or send a part back with a note', chip: 'Later', state: 'later', view: 'drilling' });
+    } else if (drillingDay && firstShot) {
       const planTo = `/blast-day/${day.id}/design/${firstShot.id}?mode=plan`;
-      // 1 · Drill plan
+      // 1 · Drill plan (an older shot's inline plan)
       if (hasDrilling) push({ key: 'plan', label: 'Drill plan', sub: `sent · ${plannedHoles} holes`, chip: 'Done', state: 'done', view: 'walkthrough', to: planTo });
-      else if (hasPlan) push({ key: 'plan', label: 'Drill plan', sub: `${plannedHoles} holes planned · not sent to a driller yet`, chip: shotStarted ? 'Skipped' : 'Built · not sent', state: shotStarted ? 'later' : 'now', view: 'walkthrough', to: planTo });
-      else push({ key: 'plan', label: 'Drill plan', sub: 'lay the pattern, then send it to the drillers', chip: shotStarted ? 'Skipped' : 'To do', state: shotStarted ? 'later' : 'now', view: 'walkthrough', to: planTo });
+      else push({ key: 'plan', label: 'Drill plan', sub: `${plannedHoles} holes planned · not sent to a driller yet`, chip: shotStarted ? 'Skipped' : 'Built · not sent', state: shotStarted ? 'later' : 'now', view: 'walkthrough', to: planTo });
       // 2 · Drilling — the drillers' logs; yours to watch, not to do
       if (!hasDrilling) push({ key: 'drilling', label: 'Drilling', sub: hasPlan ? 'starts when the plan is sent' : 'starts when the plan is sent', chip: 'Later', state: 'later', view: 'drilling' });
       else if (!allComplete) push({ key: 'drilling', label: 'Drilling', sub: `${holesLine}${who ? ` · ${who}` : ''}${hazardCount ? ` · ${hazardCount} hazards` : ''}`, chip: 'Waiting', state: 'wait', view: 'drilling' });
@@ -169,7 +195,7 @@ export function useDayPhases(
       : current.key === 'plan'
         ? hasPlan
           ? 'Next: send the plan to drillers'
-          : 'Next: build the drill plan'
+          : 'Next: pick the pattern'
         : current.key === 'drilling'
           ? who
             ? `Waiting: ${who} · ${holeCount}${plannedHoles ? ` of ${plannedHoles}` : ''}`

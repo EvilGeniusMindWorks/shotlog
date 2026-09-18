@@ -130,7 +130,8 @@
   "apps/web/src/components/forms/BlastLogForm.tsx": [
     69,
     75,
-    77
+    77,
+    85
   ],
   "apps/web/src/components/forms/BlastLogForm.tsx apps/web/src/components/forms/ShotForm.tsx apps/web/src/pages/admin/AdminCatalogPage.tsx apps/web/src/components/admin/AddPersonPanel.tsx apps/web/src/pages/admin/AdminEquipmentPage.tsx apps/web/src/components/forms/NewBlastDayDialog.tsx apps/web/src/components/dashboard/MonthDayList.tsx apps/web/src/main.tsx apps/web/src/components/layout/SyncChip.tsx apps/web/src/pages/BlastDayPage.tsx apps/web/src/components/day/DayHub.tsx apps/web/src/lib/dayHub.ts": [
     73
@@ -149,8 +150,12 @@
     81,
     84
   ],
+  "apps/web/src/components/forms/DrillPlanCard.tsx": [
+    85
+  ],
   "apps/web/src/components/forms/DrillingSection.tsx": [
-    77
+    77,
+    85
   ],
   "apps/web/src/components/forms/ExplosiveUsageForm.tsx": [
     69,
@@ -166,6 +171,9 @@
     55,
     69,
     83
+  ],
+  "apps/web/src/components/forms/PatternPickSheet.tsx": [
+    85
   ],
   "apps/web/src/components/forms/ShotForm.tsx": [
     77,
@@ -209,8 +217,12 @@
   "apps/web/src/components/records/BinderExport.tsx": [
     82
   ],
+  "apps/web/src/components/records/DocList.tsx": [
+    85
+  ],
   "apps/web/src/components/records/LifecycleMenu.tsx": [
-    79
+    79,
+    85
   ],
   "apps/web/src/components/records/RecordPreview.tsx": [
     82
@@ -218,10 +230,12 @@
   "apps/web/src/components/records/RecordsManager.tsx": [
     40,
     77,
-    82
+    82,
+    85
   ],
   "apps/web/src/components/records/RecordsTree.tsx": [
-    82
+    82,
+    85
   ],
   "apps/web/src/components/records/recRows.ts": [
     82,
@@ -259,7 +273,8 @@
   "apps/web/src/hooks/useDayPhases.ts": [
     53,
     66,
-    80
+    80,
+    85
   ],
   "apps/web/src/hooks/useDrillLogs.ts": [
     66,
@@ -483,7 +498,8 @@
   "apps/web/src/pages/PrintBlastLogPage.tsx": [
     64,
     69,
-    70
+    70,
+    85
   ],
   "apps/web/src/pages/PrintContactSheetPage.tsx": [
     83
@@ -496,6 +512,9 @@
     74,
     79,
     81
+  ],
+  "apps/web/src/pages/PrintDrillLogPage.tsx": [
+    85
   ],
   "apps/web/src/pages/PrintIncidentPage.tsx": [
     81
@@ -555,10 +574,14 @@
     64,
     69,
     70,
-    77
+    77,
+    85
   ],
   "apps/web/src/pdfdocs/dailyReport.tsx": [
     69
+  ],
+  "apps/web/src/pdfdocs/drillLog.tsx": [
+    85
   ],
   "apps/web/src/pdfdocs/incident.tsx": [
     81

@@ -257,6 +257,11 @@ export function useShotDrilling(shotId: string | undefined): ShotDrilling | unde
     if (!shotId) return undefined;
     const shot = await db.shots.get(shotId);
     const logs = await db.drillLogs.where('shotId').equals(shotId).toArray();
+    // S23 push 2: a shot made from a drilled pattern reads the pattern's parts
+    if (shot?.drillPlanId) {
+      const seen = new Set(logs.map((l) => l.id));
+      for (const p of await db.drillLogs.filter((l) => l.drillPlanId === shot.drillPlanId).toArray()) if (!seen.has(p.id)) logs.push(p);
+    }
     return aggregateDrilling(logs, getShotPlan(shot));
   }, [shotId]);
 }

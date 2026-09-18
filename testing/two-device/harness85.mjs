@@ -21,7 +21,7 @@ async (page, lib) => {
   const stamp = lib.stamp();
   const today = new Date().toISOString().slice(0, 10);
   browserErrors({ clear: true });
-  let dayId, planId, partId, partId2, jobA, meB, meD, rigs;
+  let dayId, planId, planId2, partId, partId2, shotId, jobA, meB, meD, rigs;
 
   const cB = await mkCtx(browser, { viewport: { width: 1280, height: 900 } });
   const PB = await cB.newPage();
@@ -39,7 +39,10 @@ async (page, lib) => {
   const picked = await PB.evaluate(async (today) => {
     const { db } = await import('/src/db/index.ts');
     const open = new Set((await db.blastDays.filter((d) => (d.status === 'draft' && !d.closed) || d.date === today).toArray()).map((d) => d.jobId));
-    const free = (await db.jobs.filter((j) => !j.archivedAt && j.isActive && !open.has(j.id) && j.siteId && !/^S1[124]/.test(j.name)).toArray()).sort((a, b) => b.name.localeCompare(a.name));
+    // a pattern with parts cannot be deleted (accepted logs are records), so earlier runs leave theirs
+    // behind — this run wants a job with no pattern at all
+    const planned = new Set((await db.drillPlans.filter((p) => !p.archivedAt).toArray()).map((p) => p.jobId));
+    const free = (await db.jobs.filter((j) => !j.archivedAt && j.isActive && !open.has(j.id) && !planned.has(j.id) && j.siteId && !/^S1[124]/.test(j.name)).toArray()).sort((a, b) => b.name.localeCompare(a.name));
     return free.slice(2, 3).map((j) => ({ id: j.id, name: j.name }));
   }, today);
   if (picked.length < 1) throw new Error('need a job with a site and no day today');
@@ -250,6 +253,7 @@ async (page, lib) => {
     // Dinis continues from his home card (door A) and drills the last hole — the pattern turns Drilled by itself
     await waitFor(() => PD.evaluate(async (id) => ((await (await import('/src/hooks/useDrillPlans.ts')).planProgress(id))?.drilling.totalHoles === 43 ? 1 : null), planId), 60000);
     await PD.goto(`${WEB}/`);
+    await PD.locator('[data-driller-home]').waitFor({ timeout: 30000 });
     const cont = PD.locator(`[data-job-day-continue="${partId}"]`);
     await cont.waitFor({ timeout: 30000 });
     R.ok('the home card offers Continue drilling straight into his part (door A)', true);
@@ -291,10 +295,94 @@ async (page, lib) => {
     await PB.locator('[data-plan-accept]').waitFor({ timeout: 15000 });
     R.ok('Accept the drill log is one tap for both signed parts', /2 parts signed/.test(await PB.locator('[data-plan-accept]').innerText()));
     await PB.locator('[data-plan-accept]').click();
-    const accepted = await waitFor(() => PB.evaluate(async (id) => { const { db } = await import('/src/db/index.ts'); const parts = await db.drillLogs.filter((l) => l.drillPlanId === id).toArray(); const subs = await db.submissions.filter((s) => s.type === 'drill_log' && parts.some((p) => p.id === s.sourceId)).toArray(); return parts.every((p) => p.status === 'accepted') && subs.length === 2 ? { parts: parts.length, subs: subs.length } : null; }, planId), 60000);
-    R.ok(`both parts accepted and their office copies filed with the pattern (${JSON.stringify(accepted)})`, accepted?.parts === 2 && accepted?.subs === 2);
-    R.ok('the pattern still reads Drilled — the word for Shot waits for the shot (push 2)', (await waitFor(async () => ((await PB.locator('[data-plan-page]').getAttribute('data-plan-word')) === 'Drilled' ? 'Drilled' : null), 10000)) === 'Drilled');
+    // push 2: ONE office copy per pattern — the sheet with every part's holes and signatures, under the first part
+    const accepted = await waitFor(() => PB.evaluate(async (id) => { const { db } = await import('/src/db/index.ts'); const parts = await db.drillLogs.filter((l) => l.drillPlanId === id).toArray(); const subs = await db.submissions.filter((s) => s.type === 'drill_log' && parts.some((p) => p.id === s.sourceId)).toArray(); return parts.every((p) => p.status === 'accepted') && subs.length === 1 ? { parts: parts.length, subs: subs.length, title: subs[0].title } : null; }, planId), 60000);
+    R.ok(`both parts accepted and ONE office copy filed with the pattern (${JSON.stringify(accepted)})`, accepted?.parts === 2 && accepted?.subs === 1 && /Bench 1/.test(accepted?.title ?? ''));
+    R.ok('the pattern still reads Drilled — Shot waits for the shot', (await waitFor(async () => ((await PB.locator('[data-plan-page]').getAttribute('data-plan-word')) === 'Drilled' ? 'Drilled' : null), 10000)) === 'Drilled');
     await waitForUpload(PB, 30000);
+  });
+
+  await R.section('Friday · the shot from one pattern or several · the three doors', async () => {
+    // door A: the day's tile offers the shot from the drilled, accepted pattern
+    await PB.goto(`${WEB}/blast-day/${dayId}`);
+    const makeShot = PB.locator(`[data-plan-make-shot="${planId}"]`);
+    await makeShot.waitFor({ timeout: 30000 });
+    R.ok(`the Drill plan tile offers the shot: "${((await makeShot.innerText()) || '').trim()}"`, /Make Shot 1 from Bench 1/.test((await makeShot.innerText()) || ''));
+    await makeShot.click();
+    await PB.locator('[data-shot-pattern-facts]').first().waitFor({ timeout: 30000 });
+    shotId = await PB.locator('[data-shot-pattern-facts]').first().evaluate((e) => e.closest('[data-shot-card]')?.getAttribute('data-shot-card') ?? '');
+    const made = await PB.evaluate(async (planId) => { const { db } = await import('/src/db/index.ts'); const s = await db.shots.filter((x) => x.drillPlanId === planId).first(); return s ? { holes: s.totals.numHoles, ft: s.totals.totalDrillFootage, avg: s.totals.avgDrillDepth, dia: s.drillParams.holeDiameter, b: s.drillParams.burden, sp: s.drillParams.spacing, src: s.totalsSource, hasDiagram: /"rows":4/.test(s.designPlan.shotDiagramData ?? '') } : null; }, planId);
+    R.ok(`the shot carries the pattern: ${JSON.stringify(made)}`, made && made.holes === 44 && made.ft === 880 && made.avg === 20 && made.dia === 3.5 && made.b === 6 && made.sp === 7 && made.src === 'drilling' && made.hasDiagram);
+    const word = await PB.evaluate(async (id) => (await (await import('/src/hooks/useDrillPlans.ts')).planProgress(id))?.word, planId);
+    R.ok(`one pattern, one shot: the pattern now reads ${word}`, word === 'Shot');
+    // door C is gone for a pattern already shot
+    await PB.goto(`${WEB}/jobs/${jobA.id}/drill-plan/${planId}`);
+    await PB.locator('[data-plan-page]').waitFor({ timeout: 20000 });
+    await waitFor(async () => ((await PB.locator('[data-plan-page]').getAttribute('data-plan-word')) === 'Shot' ? 1 : null), 15000);
+    R.ok('the pattern page has no Make the shot door once shot', (await PB.locator('[data-plan-make-shot-door]').count()) === 0 && (await PB.locator('[data-plan-page]').getAttribute('data-plan-word')) === 'Shot');
+    // door B: Add shot lists the job's patterns — a second, unsent one is listed but cannot be picked
+    planId2 = await PB.evaluate(async ({ jobId, stamp }) => { const { createDrillPlan } = await import('/src/hooks/useDrillPlans.ts'); return createDrillPlan(jobId, `Bench 2 ${stamp}`); }, { jobId: jobA.id, stamp });
+    await PB.goto(`${WEB}/blast-day/${dayId}?view=blast-log`);
+    await PB.locator('[data-add-shot]').waitFor({ timeout: 30000 });
+    await PB.locator('[data-add-shot]').click();
+    await PB.locator('[data-pattern-pick-sheet]').waitFor({ timeout: 10000 });
+    const row2 = PB.locator(`[data-pattern-pick="${planId2}"]`);
+    await row2.waitFor({ timeout: 10000 });
+    R.ok(`Add shot lists the second pattern, not pickable, with the reason ("${((await row2.innerText()) || '').replace(/\s+/g, ' ').slice(0, 60)}")`, (await row2.getAttribute('data-pattern-pick-ready')) === '0' && /draft/.test(await row2.innerText()) && (await PB.locator(`[data-pattern-pick="${planId}"]`).count()) === 0);
+    await PB.locator('[data-pattern-pick-blank]').click();
+    const two = await waitFor(() => PB.evaluate(async (dayId) => { const { db } = await import('/src/db/index.ts'); const log = await db.blastLogs.where('blastDayId').equals(dayId).first(); const n = log ? await db.shots.where('blastLogId').equals(log.id).count() : 0; return n === 2 ? n : null; }, dayId), 15000);
+    R.ok('Drilled by others adds a blank second shot', two === 2);
+    await waitForUpload(PB, 30000);
+  });
+
+  await R.section("The shot's drilling card · the blasting log's lines · the drill log sheet", async () => {
+    await PB.goto(`${WEB}/blast-day/${dayId}?view=blast-log`);
+    const facts = PB.locator(`[data-shot-pattern-facts="${planId}"]`);
+    await facts.waitFor({ timeout: 30000 });
+    const fact = async (k) => ((await facts.locator(`[data-shot-fact="${k}"]`).innerText()) || '').replace(/\s+/g, ' ');
+    R.ok(`the drilling card is facts: plan "${await fact('plan')}"`, /Bench 1/.test(await fact('plan')) && /Shot/.test(await fact('plan')));
+    R.ok(`…the drill log's parts with rigs and signed dates: "${(await fact('log')).slice(0, 90)}"`, new RegExp(`${meD.name.split(/\\s+/)[0]}.*\\(${rigs[0].asset}, ${rigs[1].asset}\\).*signed`).test(await fact('log')) && /Mark/.test(await fact('log')));
+    R.ok(`…the holes and footage: "${await fact('holes')}"`, /44 of 44 · 880 ft/.test(await fact('holes')));
+    R.ok(`…off-plan and water: "${await fact('flags')}"`, /0 off-plan · 1 wet/.test(await fact('flags')));
+    R.ok(`…who accepted: "${await fact('accepted')}"`, new RegExp(meB.name).test(await fact('accepted')));
+    R.ok('no "Build the drill plan" door inside the shot', (await PB.locator('[data-build-plan-shot]').count()) === 0);
+    // the second (blank) shot offers the job's patterns instead — open its card first
+    const toggle2 = PB.locator('[data-shot-toggle]').nth(1);
+    if ((await toggle2.getAttribute('data-shot-expanded')) === '0') await toggle2.click({ position: { x: 24, y: 16 } });
+    await waitFor(async () => ((await toggle2.getAttribute('data-shot-expanded')) === '1' ? 1 : null), 5000);
+    await PB.locator('[data-shot-from-pattern]').waitFor({ timeout: 10000 }).catch(() => undefined);
+    R.ok('the blank shot offers "From a drilled pattern…" (the job has a pattern)', (await PB.locator('[data-shot-from-pattern]').count()) === 1);
+    // the blasting log's printed drilling lines
+    await PB.goto(`${WEB}/blast-day/${dayId}/print`);
+    await PB.locator('[data-print-pattern-lines]').waitFor({ timeout: 30000 });
+    const printText = ((await PB.locator('.page').first().innerText()) || '').replace(/\s+/g, ' ');
+    R.ok('the printed blasting log carries the pattern lines: Drill plan, Drilled, Drill log, Holes drilled, Off-plan / water, Drilling accepted', /Drill plan:/.test(printText) && /Bench 1/.test(printText) && /Drill log:/.test(printText) && /Holes drilled:/.test(printText) && /44 of 44/.test(printText) && /Drilling accepted:/.test(printText));
+    // the drill log sheet: one sheet per pattern, every part, Driller and Rig columns, a signature per part
+    await PB.goto(`${WEB}/jobs/${jobA.id}/drill-plan/${planId}/log/${partId}/print`);
+    await PB.locator('[data-print-pattern]').waitFor({ timeout: 30000 });
+    await waitFor(async () => ((await PB.locator('[data-print-hole]').count()) === 44 ? 1 : null), 15000);
+    const hole4 = PB.locator('[data-print-hole="4"]');
+    R.ok('the sheet lists every hole of the pattern (44) with Driller and Rig columns', (await PB.locator('[data-print-hole]').count()) === 44 && (await PB.locator('[data-print-hole="1"] [data-print-hole-driller]').innerText()) === meD.name.split(/\s+/)[0] && (await hole4.locator('[data-print-hole-rig]').innerText()) === rigs[1].asset && (await PB.locator('[data-print-hole="5"] [data-print-hole-driller]').innerText()) === 'Mark');
+    R.ok('one signature block per part, and the blaster\'s acceptance', (await PB.locator('[data-print-signatures]').getAttribute('data-print-signatures')) === '2' && (await PB.locator('[data-print-part]').count()) === 2 && (await PB.locator('[data-print-part] img').count()) === 2);
+  });
+
+  await R.section('One flow · Records lines and the pattern node · older shots as filed', async () => {
+    await PB.goto(`${WEB}/blast-day/${dayId}?view=walkthrough`);
+    await PB.locator('[data-phase="plan"]').waitFor({ timeout: 30000 });
+    const phase = ((await PB.locator('[data-phase="plan"]').innerText()) || '').replace(/\s+/g, ' ');
+    R.ok(`the walkthrough's first step is the Pattern, done: "${phase.slice(0, 70)}"`, /Pattern/.test(phase) && /Bench 1/.test(phase) && /drilled/.test(phase));
+    const cont = ((await PB.locator('[data-day-continue]').innerText().catch(() => '')) || '').trim();
+    R.ok(`Continue never says "build the drill plan" ("${cont}")`, !/build the drill plan/i.test(cont));
+    // Records: the pattern's own dated line and the pattern node in the tree with the plan and its parts
+    await PB.goto(`${WEB}/records`);
+    await PB.locator('[data-records-tree]').waitFor({ timeout: 30000 });
+    const node = PB.locator(`[data-tree-node="p:${jobA.id}:${planId}"]`);
+    await node.waitFor({ timeout: 20000 });
+    R.ok(`the tree has a pattern node under the job: "${((await node.innerText()) || '').replace(/\s+/g, ' ')}"`, /Pattern · Bench 1/.test(await node.innerText()) && Number(await node.getAttribute('data-tree-count')) >= 3);
+    await node.click();
+    await PB.locator(`[data-records-row="dp-${planId}"]`).waitFor({ timeout: 20000 });
+    const planRow = ((await PB.locator(`[data-records-row="dp-${planId}"]`).innerText()) || '').replace(/\s+/g, ' ');
+    R.ok(`the pattern's own line, dated when sent, says Shot: "${planRow.slice(0, 90)}"`, /Bench 1/.test(planRow) && /Shot/.test(planRow) && (await PB.locator(`[data-records-row="dl-${partId}"]`).count()) === 1 && (await PB.locator(`[data-records-row="dl-${partId2}"]`).count()) === 1);
   });
 
   await R.section('the error spy saw nothing during this run', async () => {
@@ -304,7 +392,7 @@ async (page, lib) => {
 
   await R.section('cleanup', async () => {
     const chks = await PB.evaluate(async ({ ids, date }) => (await (await import('/src/db/index.ts')).db.drillChecklists.filter((c) => ids.includes(c.equipmentId) && c.date === date).toArray()).map((c) => c.id), { ids: rigs.map((r) => r.id), date: today }).catch(() => []);
-    const removed = await lib.cleanupAsAdmin(browser, { days: [dayId].filter(Boolean), drillLogs: [partId, partId2].filter(Boolean), drillPlans: [planId].filter(Boolean), checklists: chks }).catch(() => -1);
+    const removed = await lib.cleanupAsAdmin(browser, { days: [dayId].filter(Boolean), drillLogs: [partId, partId2].filter(Boolean), drillPlans: [planId, planId2].filter(Boolean), checklists: chks }).catch(() => -1);
     R.ok(`cleanup removed ${removed} day(s)`, removed >= 0);
     // the woken rig goes back to retired
     const cM = await mkCtx(browser);

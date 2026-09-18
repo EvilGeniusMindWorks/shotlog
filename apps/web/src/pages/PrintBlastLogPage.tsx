@@ -4,6 +4,7 @@ import { useBackHere } from '@/lib/nav';
 import { ArrowLeft, FileDown, Printer, TriangleAlert } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { useBlastDay } from '@/hooks/useBlastDay';
+import { patternLinesForShots } from '@/hooks/useDrillPlans';
 import { useFeedbackPaper } from '@/lib/feedbackPaper';
 import { blastMatsText } from '@/lib/blastMats';
 import { formatDate } from '@/lib/utils';
@@ -63,6 +64,8 @@ export function PrintBlastLogPage() {
   const [sigUrl, setSigUrl] = useState<string | null>(null);
   const company = useLiveQuery(() => db.companySettings.get('companySettings-singleton'));
   const companyName = company?.companyName || 'Baystate Blasting, Inc.';
+  // S23 push 2: the drilling lines from the pattern (a shot made from one)
+  const patternLines = useLiveQuery(() => patternLinesForShots(shots), [shots.map((s) => `${s.id}:${s.drillPlanId ?? ''}`).join(',')]) ?? [];
 
   useEffect(() => {
     if (!blastLog?.signatureImage) {
@@ -189,6 +192,17 @@ export function PrintBlastLogPage() {
                 <ShotRow label="Spacing:" shots={shots} get={(s) => dash(s.drillParams.spacing, "'")} />
                 <ShotRow label="Stemming:" shots={shots} get={(s) => dash(s.drillParams.stemming, "'")} />
                 <ShotRow label="Sub Drill:" shots={shots} get={(s) => dash(s.drillParams.subDrill, "'")} />
+                {patternLines.length > 0 && (
+                  <tr>
+                    <td></td>
+                    <td className="section-head" colSpan={shots.length} data-print-pattern-lines>
+                      Drilling
+                    </td>
+                  </tr>
+                )}
+                {patternLines.map((l) => (
+                  <ShotRow key={l.label} label={l.label} shots={shots} get={(s) => l.values[s.id] ?? '—'} />
+                ))}
                 <tr>
                   <td></td>
                   <td className="section-head" colSpan={shots.length}>

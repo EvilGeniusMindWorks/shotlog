@@ -64,6 +64,8 @@ interface Data {
   sigUrl: string | null;
   /** shotId → site-map snapshot data URL (when captured) */
   snapshotUrls: Record<string, string>;
+  /** S23 push 2: the drilling lines from the pattern, one value per shot */
+  patternLines?: { label: string; values: Record<string, string> }[];
 }
 
 /** Label column + one value cell per shot */
@@ -355,7 +357,7 @@ function ComplianceTable({ shot }: { shot: Shot }) {
 function BlastLogDoc(d: Data) {
   const {
     blastDay, job, blastLog, shots, explosiveUsage, typicalColumns, seismoReadings,
-    companyName, dealerNumber, sigUrl, snapshotUrls,
+    companyName, dealerNumber, sigUrl, snapshotUrls, patternLines,
   } = d;
   const holeCounts = shots.map((s) => ({ shotId: s.id, holes: s.totals.numHoles }));
   const products = explosiveUsage?.products ?? [];
@@ -441,6 +443,15 @@ function BlastLogDoc(d: Data) {
               <ShotRow label="Spacing:" shots={shots} get={(s) => dash(s.drillParams.spacing, "'")} />
               <ShotRow label="Stemming:" shots={shots} get={(s) => dash(s.drillParams.stemming, "'")} />
               <ShotRow label="Sub Drill:" shots={shots} get={(s) => dash(s.drillParams.subDrill, "'")} />
+              {(patternLines ?? []).length > 0 ? (
+                <TR>
+                  <TD w={92}> </TD>
+                  <TD textStyle={[K.bold, { fontSize: 7.5 }]}>Drilling</TD>
+                </TR>
+              ) : null}
+              {(patternLines ?? []).map((l) => (
+                <ShotRow key={l.label} label={l.label} shots={shots} get={(s) => l.values[s.id] ?? '—'} />
+              ))}
               <TR>
                 <TD w={92}> </TD>
                 <TD textStyle={sectionHead} style={{ backgroundColor: '#e8e8e8' }}>Totals</TD>
@@ -798,8 +809,11 @@ export async function buildBlastLogPdf(blastDayId: string): Promise<Blob> {
     const snap = s.designPlan.siteSketchImage;
     if (snap instanceof Blob && snap.size > 0) snapshotUrls[s.id] = await blobToDataUrl(snap);
   }
+  const { patternLinesForShots } = await import('@/hooks/useDrillPlans');
+  const patternLines = await patternLinesForShots(shots);
   return pdf(
     <BlastLogDoc
+      patternLines={patternLines}
       blastDay={blastDay}
       job={job}
       blastLog={blastLog}

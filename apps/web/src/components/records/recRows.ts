@@ -27,6 +27,9 @@ export interface RecRow {
   customerName?: string;
   siteId?: string;
   dayId?: string;
+  /** S23 push 2: the pattern node in the tree */
+  planId?: string;
+  planName?: string;
   person: string;
   status: RecStatus;
   statusLabel: string;
@@ -66,6 +69,12 @@ export function statusOf(doc: DocRow, filed: SubmissionSummary | undefined): { s
     return doc.status === 'resolved'
       ? { status: 'closed', label: 'Resolved', variant: 'approved' }
       : { status: 'open', label: 'Open', variant: 'draft' };
+  }
+  if (doc.kind === 'drill_plan') {
+    // the pattern's word, as the plan page shows it
+    if (doc.status === 'shot' || doc.status === 'drilled') return { status: 'closed', label: doc.status === 'shot' ? 'Shot' : 'Drilled', variant: 'approved' };
+    if (doc.status === 'drilling' || doc.status === 'sent') return { status: 'open', label: doc.status === 'drilling' ? 'Drilling' : 'Sent', variant: 'submitted' };
+    return { status: 'draft', label: 'Draft', variant: 'draft' };
   }
   if (doc.kind === 'service' || doc.kind === 'hour_correction') {
     return { status: 'closed', label: 'Logged', variant: 'approved' };
@@ -123,6 +132,8 @@ export function useRecRows(scope: 'mine' | 'company'): RecRow[] | undefined {
         customerName: d.customerName,
         siteId: d.siteId ?? filed?.siteId,
         dayId: d.dayId,
+        planId: d.planId,
+        planName: d.planName,
         person: d.person ?? filed?.submittedBy ?? '',
         status: st.status,
         statusLabel: st.label,

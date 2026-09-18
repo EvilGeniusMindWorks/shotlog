@@ -42,3 +42,7 @@ There is one **Blaster Signature** box, at the bottom of the log, not one per sh
 ## Related
 
 [Explosives, top-down](/help/blaster/explosives) · [Seismo readings](/help/blaster/seismo-readings) · [Sign-off and filing the day](/help/blaster/filing-the-day)
+
+## A shot from a drilled pattern
+
+When the job's pattern (the drill plan) is drilled and its drill log accepted, the shot comes from it: the day's **Drill plan** tile offers **Make Shot 1 from Bench 1**, **+ Add Shot** lists the job's patterns (one pattern, one shot — a pattern whose drill log is not accepted yet waits, with the reason), and the pattern's own page has **Make the shot**. The shot arrives with the pattern's layout, the header numbers and the totals from the accepted drilling; its Drilling card reads as facts — the pattern, the drill log's parts with their rigs and signed dates, the drilled dates, holes and footage, off-plan and water holes, who accepted. A job drilled by others gets a blank shot from the same sheet. There is no "build the drill plan" inside a shot any more; the pattern is a paper of the job.

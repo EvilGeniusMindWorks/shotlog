@@ -384,12 +384,18 @@ async (page, lib) => {
     await PB.goto(`${WEB}/blast-day/${dayId}?view=blast-log`);
     await PB.locator('button:has-text("Add Shot")').waitFor({ timeout: 20000 });
     await PB.locator('button:has-text("Add Shot")').click();
+    // S23 push 2: with a pattern on the job, Add shot asks — this shot is drilled by others (a blank shot)
+    const pick = PB.locator('[data-pattern-pick-sheet]');
+    if (await pick.waitFor({ timeout: 3000 }).then(() => true).catch(() => false)) await PB.locator('[data-pattern-pick-blank]').click();
     shot2Id = await waitFor(() => PB.evaluate(async (dayId) => { const { db } = await import('/src/db/index.ts'); const log = await db.blastLogs.where('blastDayId').equals(dayId).first(); const shots = (await db.shots.where('blastLogId').equals(log.id).toArray()).sort((a, b) => a.shotNumber - b.shotNumber); return shots[1]?.id; }, dayId));
-    await PB.locator(`[data-build-plan-shot="${shot2Id}"]`).waitFor({ timeout: 15000 });
-    R.ok('the new shot\'s Drilling row offers "Build the drill plan ›" and not "Send to drillers"', (await PB.locator(`[data-build-plan-shot="${shot2Id}"]`).count()) === 1);
-    await PB.locator(`[data-build-plan-shot="${shot2Id}"]`).click();
+    // S23 push 2: no "Build the drill plan" door inside a shot — the pattern is a paper of the job; with no
+    // pattern on this job the new shot's Drilling row says "drilled by others" and not "Send to drillers"
+    await PB.locator('[data-shot-drilled-by-others], [data-shot-from-pattern]').first().waitFor({ timeout: 15000 });
+    R.ok('the new shot\'s Drilling row says drilled by others (or offers the job\'s pattern) — no Build-the-drill-plan door', (await PB.locator(`[data-build-plan-shot="${shot2Id}"]`).count()) === 0 && (await PB.locator('[data-shot-drilled-by-others], [data-shot-from-pattern]').count()) >= 1);
+    // an older shot's inline plan is still readable and editable on its design page
+    await PB.goto(`${WEB}/blast-day/${dayId}/design/${shot2Id}?mode=plan`);
     await PB.locator('[data-shot-facts]').waitFor({ timeout: 20000 });
-    R.ok('it opens the plan builder for shot 2', new RegExp(`/design/${shot2Id}`).test(PB.url()) && /mode=plan/.test(PB.url()));
+    R.ok('the design page still opens shot 2 in plan mode (older shots keep their inline plan)', new RegExp(`/design/${shot2Id}`).test(PB.url()) && /mode=plan/.test(PB.url()));
     await setPlan(PB, shot2Id, 2, 5, 18); // five columns against shot 1's ten
     await PB.goto(`${WEB}/blast-day/${dayId}?view=blast-log`);
     await PB.locator('[data-shot-time-row]').nth(1).waitFor({ timeout: 20000 });

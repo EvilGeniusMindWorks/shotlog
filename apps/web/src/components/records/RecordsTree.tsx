@@ -11,10 +11,12 @@ import { cn, formatDate } from '@/lib/utils';
 import type { RecRow } from './recRows';
 
 export interface TreeNode {
-  level: 'all' | 'customer' | 'site' | 'job' | 'day' | 'nojob';
+  /** S23 push 2: a 'pattern' node sits under the job beside its days — the plan and its drill log's parts */
+  level: 'all' | 'customer' | 'site' | 'job' | 'pattern' | 'day' | 'nojob';
   customerId?: string;
   siteId?: string;
   jobId?: string;
+  planId?: string;
   date?: string;
   label: string;
 }
@@ -28,6 +30,7 @@ export function nodeKey(n: TreeNode): string {
     case 'customer': return `c:${n.customerId}`;
     case 'site': return `s:${n.siteId}`;
     case 'job': return `j:${n.jobId}`;
+    case 'pattern': return `p:${n.jobId}:${n.planId}`;
     case 'day': return `d:${n.jobId}:${n.date}`;
   }
 }
@@ -40,7 +43,8 @@ export function rowUnderNode(r: RecRow, n: TreeNode): boolean {
     case 'customer': return r.customerId === n.customerId;
     case 'site': return r.siteId === n.siteId;
     case 'job': return r.jobId === n.jobId;
-    case 'day': return r.jobId === n.jobId && r.date === n.date;
+    case 'pattern': return r.jobId === n.jobId && r.planId === n.planId;
+    case 'day': return r.jobId === n.jobId && r.date === n.date && !r.planId;
   }
 }
 
@@ -67,6 +71,8 @@ export function RecordsTree({ rows, names, selected, onSelect }: { rows: RecRow[
     // structure: customer → site → job → days, built from the rows AND the roster of jobs (a job with
     // nothing filed still shows, at 0, so the office can see the whole company at a glance)
     const daysByJob = new Map<string, Set<string>>();
+    // S23 push 2: the job's patterns, each a node with the plan and its parts
+    const plansByJob = new Map<string, Map<string, string>>();
     const jobIds = new Set<string>();
     for (const j of names.jobs) jobIds.add(j.id);
     let noJob = 0;
@@ -79,8 +85,14 @@ export function RecordsTree({ rows, names, selected, onSelect }: { rows: RecRow[
       if (customerId) bump(`c:${customerId}`);
       if (siteId) bump(`s:${siteId}`);
       bump(`j:${r.jobId}`);
-      bump(`d:${r.jobId}:${r.date}`);
       jobIds.add(r.jobId);
+      if (r.planId) {
+        bump(`p:${r.jobId}:${r.planId}`);
+        if (!plansByJob.has(r.jobId)) plansByJob.set(r.jobId, new Map());
+        if (!plansByJob.get(r.jobId)!.has(r.planId) || r.kind === 'drill_plan') plansByJob.get(r.jobId)!.set(r.planId, r.planName ?? 'Pattern');
+        continue;
+      }
+      bump(`d:${r.jobId}:${r.date}`);
       if (!daysByJob.has(r.jobId)) daysByJob.set(r.jobId, new Set());
       daysByJob.get(r.jobId)!.add(r.date);
     }
@@ -114,6 +126,7 @@ export function RecordsTree({ rows, names, selected, onSelect }: { rows: RecRow[
                 id: jid,
                 name: `${j?.jobNumber ? `${j.jobNumber} ` : ''}${j?.name ?? 'Job'}`,
                 n: count.get(`j:${jid}`) ?? 0,
+                patterns: [...(plansByJob.get(jid) ?? [])].map(([planId, name]) => ({ planId, name, n: count.get(`p:${jid}:${planId}`) ?? 0 })).sort((a, b) => byName(a.name, b.name)),
                 days: [...(daysByJob.get(jid) ?? [])].sort().reverse().map((d) => ({ date: d, n: count.get(`d:${jid}:${d}`) ?? 0 })),
               };
             }).sort((a, b) => b.n - a.n || byName(a.name, b.name)),
@@ -121,7 +134,7 @@ export function RecordsTree({ rows, names, selected, onSelect }: { rows: RecRow[
         }).sort((a, b) => b.n - a.n || byName(a.name, b.name)),
       }))
       .sort((a, b) => b.n - a.n || byName(a.name, b.name));
-    return { customers, orphanJobs: orphanJobs.map((jid) => { const j = jobById.get(jid); return { id: jid, name: `${j?.jobNumber ? `${j.jobNumber} ` : ''}${j?.name ?? 'Job'}`, n: count.get(`j:${jid}`) ?? 0, days: [...(daysByJob.get(jid) ?? [])].sort().reverse().map((d) => ({ date: d, n: count.get(`d:${jid}:${d}`) ?? 0 })) }; }), all: count.get('all') ?? 0, noJob };
+    return { customers, orphanJobs: orphanJobs.map((jid) => { const j = jobById.get(jid); return { id: jid, name: `${j?.jobNumber ? `${j.jobNumber} ` : ''}${j?.name ?? 'Job'}`, n: count.get(`j:${jid}`) ?? 0, patterns: [...(plansByJob.get(jid) ?? [])].map(([planId, name]) => ({ planId, name, n: count.get(`p:${jid}:${planId}`) ?? 0 })), days: [...(daysByJob.get(jid) ?? [])].sort().reverse().map((d) => ({ date: d, n: count.get(`d:${jid}:${d}`) ?? 0 })) }; }), all: count.get('all') ?? 0, noJob };
   }, [rows, names]);
 
   const sel = nodeKey(selected);
@@ -155,11 +168,15 @@ export function RecordsTree({ rows, names, selected, onSelect }: { rows: RecRow[
     );
   };
 
-  const Days = ({ jobId, days }: { jobId: string; days: { date: string; n: number }[] }) => {
+  const Days = ({ jobId, days, patterns }: { jobId: string; days: { date: string; n: number }[]; patterns?: { planId: string; name: string; n: number }[] }) => {
     const showAll = moreDays.has(jobId);
     const shown = showAll ? days : days.slice(0, DAYS_SHOWN);
     return (
       <>
+        {/* S23 push 2: the job's patterns sit beside its days — the plan and its drill log's parts under one node */}
+        {(patterns ?? []).map((p) => (
+          <Row key={p.planId} k={`p:${jobId}:${p.planId}`} depth={4} label={`Pattern · ${p.name}`} n={p.n} node={{ level: 'pattern', jobId, planId: p.planId, label: p.name }} leaf />
+        ))}
         {shown.map((d) => (
           <Row key={d.date} k={`d:${jobId}:${d.date}`} depth={4} label={formatDate(d.date)} n={d.n} node={{ level: 'day', jobId, date: d.date, label: formatDate(d.date) }} leaf />
         ))}
@@ -183,8 +200,8 @@ export function RecordsTree({ rows, names, selected, onSelect }: { rows: RecRow[
               <Row k={`s:${s.id}`} depth={2} label={s.name} n={s.n} node={{ level: 'site', customerId: c.id, siteId: s.id, label: s.name }} children />
               {!collapsed.has(`s:${s.id}`) && s.jobs.map((j) => (
                 <div key={j.id}>
-                  <Row k={`j:${j.id}`} depth={3} label={j.name} n={j.n} node={{ level: 'job', customerId: c.id, siteId: s.id, jobId: j.id, label: j.name }} children={j.days.length > 0} />
-                  {!collapsed.has(`j:${j.id}`) && <Days jobId={j.id} days={j.days} />}
+                  <Row k={`j:${j.id}`} depth={3} label={j.name} n={j.n} node={{ level: 'job', customerId: c.id, siteId: s.id, jobId: j.id, label: j.name }} children={j.days.length > 0 || j.patterns.length > 0} />
+                  {!collapsed.has(`j:${j.id}`) && <Days jobId={j.id} days={j.days} patterns={j.patterns} />}
                 </div>
               ))}
             </div>
@@ -196,8 +213,8 @@ export function RecordsTree({ rows, names, selected, onSelect }: { rows: RecRow[
           <p className="text-[10px] font-bold tracking-widest text-gray-400 uppercase mt-2 mb-1 pl-1">Jobs without a site</p>
           {model.orphanJobs.map((j) => (
             <div key={j.id}>
-              <Row k={`j:${j.id}`} depth={1} label={j.name} n={j.n} node={{ level: 'job', jobId: j.id, label: j.name }} children={j.days.length > 0} />
-              {!collapsed.has(`j:${j.id}`) && <Days jobId={j.id} days={j.days} />}
+              <Row k={`j:${j.id}`} depth={1} label={j.name} n={j.n} node={{ level: 'job', jobId: j.id, label: j.name }} children={j.days.length > 0 || j.patterns.length > 0} />
+              {!collapsed.has(`j:${j.id}`) && <Days jobId={j.id} days={j.days} patterns={j.patterns} />}
             </div>
           ))}
         </div>

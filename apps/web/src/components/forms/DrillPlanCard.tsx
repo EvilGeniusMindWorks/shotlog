@@ -102,10 +102,12 @@ function ShotPlanRow({
 
   const logs = drilling?.logs ?? [];
   const hasComplete = logs.some((l) => l.status === 'complete');
-  const unsent = Boolean(plan) && logs.length === 0;
-  const unplanned = !plan && logs.length === 0;
-  // Attention = something for the blaster to DO (plan, send, or review)
-  const needs = drilling !== undefined && !locked && (unsent || hasComplete || unplanned);
+  // S23 push 2: a shot from a drilled pattern needs nothing here — the pattern is the paper
+  const fromPattern = Boolean(shot.drillPlanId);
+  const unsent = !fromPattern && Boolean(plan) && logs.length === 0;
+  const unplanned = !fromPattern && !plan && logs.length === 0;
+  // Attention = something for the blaster to DO (send, or review)
+  const needs = drilling !== undefined && !locked && (unsent || hasComplete);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- parent callback is a stable-behavior setter
   useEffect(() => onAttention(needs), [needs]);
 
@@ -113,13 +115,15 @@ function ShotPlanRow({
     <div className="rounded-lg border border-gray-200 p-2.5 space-y-1.5">
       <div className="flex items-center gap-2 flex-wrap">
         <p className="text-sm font-semibold">Shot {shot.shotNumber}</p>
-        {plan ? (
+        {fromPattern ? (
+          <span className="text-xs text-gray-500" data-shot-plan-row="pattern">{plan?.length ?? 0} holes · from the pattern</span>
+        ) : plan ? (
           <span className="text-xs text-gray-500">{plan.length} holes planned</span>
         ) : (
-          <span className="text-xs text-gray-400">no per-hole plan</span>
+          <span className="text-xs text-gray-400">{unplanned ? 'drilled by others' : 'no per-hole plan'}</span>
         )}
         <span className="flex-1" />
-        {canSend && plan && (
+        {canSend && plan && !fromPattern && (
           <Button
             size="sm"
             variant={unsent ? 'safety' : 'outline'}
@@ -129,14 +133,20 @@ function ShotPlanRow({
             {unsent ? 'Send to drillers' : 'Send to more'}
           </Button>
         )}
-        <Button
-          size="sm"
-          variant="outline"
-          data-build-plan={shot.id}
-          onClick={() => navigate(`/blast-day/${blastDayId}/design/${shot.id}?mode=plan`)}
-        >
-          {plan ? 'Plan ›' : 'Build plan ›'}
-        </Button>
+        {fromPattern ? (
+          <Button size="sm" variant="outline" data-shot-pattern-door={shot.id} onClick={() => navigate(`/jobs/${jobId}/drill-plan/${shot.drillPlanId}`)}>
+            Pattern ›
+          </Button>
+        ) : plan ? (
+          <Button
+            size="sm"
+            variant="outline"
+            data-build-plan={shot.id}
+            onClick={() => navigate(`/blast-day/${blastDayId}/design/${shot.id}?mode=plan`)}
+          >
+            Plan ›
+          </Button>
+        ) : null}
       </div>
       {unsent && (
         <p className="text-xs font-medium text-safety-orange">

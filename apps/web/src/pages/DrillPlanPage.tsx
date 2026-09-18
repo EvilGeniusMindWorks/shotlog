@@ -23,6 +23,7 @@ import {
   drillLogRoute,
   finishPlanChange,
   getPlanHoles,
+  makeShotFromPlan,
   progressLine,
   reopenPlan,
   sendPlan,
@@ -30,6 +31,9 @@ import {
   usePlanProgress,
   type PlanWord,
 } from '@/hooks/useDrillPlans';
+import { addBlastLogToDay, createBlastDay } from '@/hooks/useBlastDay';
+import { findDayByDate } from '@/lib/dayCard';
+import { todayISO } from '@/lib/utils';
 import { canDrillLogTransition } from '@/lib/perms';
 import { DrillGridEditor, remapOverrides, GRID_MAX_ROWS, GRID_MAX_COLS } from '@/components/design/DrillGridEditor';
 import { getSessionUser } from '@/lib/session';
@@ -148,6 +152,9 @@ export function DrillPlanPage() {
   const [dispatching, setDispatching] = useState(false);
   const [changeNote, setChangeNote] = useState<string | null>(null);
   const [accepting, setAccepting] = useState(false);
+  // S23 push 2 (door C): Make the shot asks which day
+  const [makeShot, setMakeShot] = useState(false);
+  const todayDay = useLiveQuery(async () => (plan ? findDayByDate(plan.jobId, todayISO()) : undefined), [plan?.jobId]);
 
   if (!plan) return <div className="p-4 text-center text-gray-500">Loading…</div>;
 
@@ -159,6 +166,14 @@ export function DrillPlanPage() {
   const partsOpen = new Set((progress?.parts ?? []).filter((p) => p.log.status === 'open').map((p) => p.log.drillerUserId).filter(Boolean));
   const canAccept = canDrillLogTransition('complete', 'accepted') && (progress?.waiting ?? 0) > 0;
   const lastRevision = plan.revisions?.[plan.revisions.length - 1];
+  const readyForShot = Boolean(progress && progress.word === 'Drilled' && progress.waiting === 0 && progress.parts.length > 0 && progress.parts.every((p) => p.log.status === 'accepted') && progress.shotCount === 0);
+  const makeTheShot = async (dayId: string | 'new') => {
+    const id = dayId === 'new' ? await createBlastDay(plan.jobId, todayISO(), undefined, { typeOfWork: 'blasting', name: undefined }) : dayId;
+    const logId = await addBlastLogToDay(id);
+    await makeShotFromPlan(logId, plan.id);
+    setMakeShot(false);
+    navigate(`/blast-day/${id}?view=blast-log`);
+  };
 
   const accept = async () => {
     setAccepting(true);
@@ -198,6 +213,11 @@ export function DrillPlanPage() {
             {canEdit && plan.changingSince && (
               <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" data-plan-change-done onClick={() => void finishPlanChange(plan)}>
                 Done changing
+              </Button>
+            )}
+            {canEdit && readyForShot && can('shots', 'PUT') && (
+              <Button size="sm" className="bg-safety-orange hover:bg-safety-orange/90 text-white" data-plan-make-shot-door onClick={() => setMakeShot(true)}>
+                Make the shot ›
               </Button>
             )}
             {canEdit && plan.status === 'complete' && word !== 'Shot' && (
@@ -436,6 +456,26 @@ export function DrillPlanPage() {
 
       {dispatching && (
         <DispatchModal plan={plan} alreadyAssigned={partsOpen as Set<string>} onClose={() => setDispatching(false)} />
+      )}
+      {makeShot && (
+        <ConsequenceSheet onClose={() => setMakeShot(false)}>
+          <div data-plan-make-shot-sheet>
+            <h3 className="font-bold text-lg">Make the shot from {plan.name}</h3>
+            <p className="text-xs text-gray-500 mb-2">Which day is the blast day? The shot lands on that day's blasting log with the pattern, the header numbers and the drilled totals filled in.</p>
+            {todayDay ? (
+              <button type="button" className="w-full text-left rounded-lg border border-gray-200 bg-white px-3 py-3 mb-2 min-h-[48px]" data-plan-make-shot-day={todayDay.id} onClick={() => void makeTheShot(todayDay.id)}>
+                <span className="font-semibold">Today's day at {job?.name ?? 'the job'}</span>
+                <span className="block text-xs text-gray-500">{todayDay.name || formatDate(todayDay.date)} · {todayDay.typeOfWork.replace(/_/g, ' ')}</span>
+              </button>
+            ) : (
+              <button type="button" className="w-full text-left rounded-lg border border-gray-200 bg-white px-3 py-3 mb-2 min-h-[48px]" data-plan-make-shot-day="new" onClick={() => void makeTheShot('new')}>
+                <span className="font-semibold">Start today's blasting day</span>
+                <span className="block text-xs text-gray-500">{formatDate(todayISO())} at {job?.name ?? 'the job'} · no drilling on a blast day</span>
+              </button>
+            )}
+            <Button variant="outline" className="w-full mt-1" onClick={() => setMakeShot(false)}>Cancel</Button>
+          </div>
+        </ConsequenceSheet>
       )}
       {changeNote !== null && (
         <ConsequenceSheet onClose={() => setChangeNote(null)}>

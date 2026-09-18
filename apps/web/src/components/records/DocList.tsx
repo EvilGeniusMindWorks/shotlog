@@ -58,7 +58,7 @@ export function DocList({
 
   const kinds: { value: string; label: string }[] = [
     { value: 'all', label: 'All' },
-    ...(['blast_log', 'daily_report', 'drill_log', 'drill_checklist', 'incident'] as const)
+    ...(['blast_log', 'daily_report', 'drill_log', 'drill_plan', 'drill_checklist', 'incident'] as const)
       .filter((k) => (rows ?? []).some((r) => r.kind === k) || kindFilter === k)
       .map((k) => ({ value: k, label: DOC_KIND_LABEL[k] })),
   ];
