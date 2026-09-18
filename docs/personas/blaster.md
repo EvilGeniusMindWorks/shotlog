@@ -350,3 +350,23 @@ page · customer/site/job create (new) · contacts · My Records · reference
 - **The daily report's stop-hours Remind is gone** (his call): the rig row
   still reads "stop hours not entered yet · waiting on Driller Test" and
   Mark calls. Remind for a missing time card stays on the crew list.
+
+## Round S23 — Drilling over days (Sep 18 2026, plan artifact LT4fS1Wi3tQoKm8mqEGpsk v3, Go)
+
+- **The drill plan is a paper of the job**, drawn on Monday without a
+  blasting log, with its own state read from the facts: Draft → Sent →
+  Drilling → Drilled → Shot. The day's **Drill plan** tile reads that state
+  all week ("Drilling · 31 of 44 · at this pace, drilled Thursday") and the
+  + offers **Plan the drilling at a job**. Once a hole is drilled the
+  pattern is locked; **Change the plan** opens a new version with a note
+  the drillers see.
+- **One drill log per pattern** (Mark's C): the drillers Continue it over
+  days, every hole carrying its driller, rig, date and time; each driller
+  signs his own part once when he closes it. The plan turns **Drilled** by
+  itself at the full count (not-drilled holes with a reason count), or the
+  last driller closes it short with a reason; Mark can reopen it.
+- **Accept the drill log** is one tap on the plan page: it accepts every
+  signed part and files the office copies with the pattern. The review
+  names the off-plan and water holes first. No Set blast day button — Mark
+  reads the status, the count and the pace to schedule (Q4, his call).
+- No drilling on a blast day (Q5): shooting waits for the pattern.

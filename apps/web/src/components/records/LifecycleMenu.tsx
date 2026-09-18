@@ -245,7 +245,9 @@ function SheetFrame({ children, onClose }: { children: React.ReactNode; onClose:
   return (
     <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center" data-sheet>
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-md p-5 pb-8 sm:pb-5">
+      {/* S23 follow-up (harness81): a sheet taller than the screen — a long list of days,
+          many kinds — scrolls inside itself, so its Close is always reachable */}
+      <div className="relative bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-md p-5 pb-8 sm:pb-5 max-h-[92vh] overflow-y-auto">
         {children}
       </div>
     </div>

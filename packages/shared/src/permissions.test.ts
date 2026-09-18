@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   APPROVAL_LOCKED_TABLES,
   DAY_NUDGE_TABLES,
+  DRILL_PLAN_CLOSE_FIELDS,
   PARENT_CHAIN,
   ROLES,
   TABLE_PERMISSIONS,
@@ -163,6 +164,15 @@ describe('approval lock metadata', () => {
         expect(++hops).toBeLessThan(5);
       }
     }
+  });
+
+  it('a driller may close a drill plan (Drilled by itself, or short with a reason) but not reopen or redraw it (S23)', () => {
+    expect(canTransitionRecordStatus('drillPlans', 'open', 'complete', 'driller')).toBe(true);
+    expect(canTransitionRecordStatus('drillPlans', 'complete', 'open', 'driller')).toBe(false);
+    expect(canTransitionRecordStatus('drillPlans', 'complete', 'open', 'blaster')).toBe(true);
+    expect(canPerformOp('drillPlans', 'PATCH', 'driller')).toBe(false);
+    for (const f of ['status', 'drilledAt', 'closedShort']) expect(DRILL_PLAN_CLOSE_FIELDS.has(f), f).toBe(true);
+    for (const f of ['overrides', 'rows', 'cols', 'defaultDepth', 'name']) expect(DRILL_PLAN_CLOSE_FIELDS.has(f), f).toBe(false);
   });
 
   it('a reminder is a nudge, not a paper: it rides on the day but a filed day does not freeze it (S24)', () => {

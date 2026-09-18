@@ -113,10 +113,21 @@ export async function addHole(
 ): Promise<string> {
   const now = nowISO();
   const id = generateId();
+  // S23: every hole carries who drilled it and with what — a rig change
+  // mid-pattern shows hole by hole on the pattern's sheet. The rig is read
+  // from the stored log, so a rig picked a beat ago is on the hole even when
+  // the screen's copy of the log has not caught up yet.
+  const stored = (await db.drillLogs.get(log.id)) ?? log;
+  const rigId = stored.drillRigEquipmentId || log.drillRigEquipmentId || undefined;
+  const rigAsset = rigId ? (await db.equipment.get(rigId))?.assetNumber : undefined;
   const hole: DrillLogHole = {
     id,
     drillLogId: log.id,
     date: todayISO(),
+    drillerUserId: stored.drillerUserId || log.drillerUserId || undefined,
+    drillerName: stored.drillerName || log.drillerName || undefined,
+    rigEquipmentId: rigId,
+    rigAsset,
     holeNumber: values.holeNumber,
     angle: values.angle,
     actualDepth: values.actualDepth,

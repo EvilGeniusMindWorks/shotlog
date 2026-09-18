@@ -8,6 +8,18 @@ status: draft
 
 The drill plan is the pattern: rows and columns of holes with their depths. You build it once; the drillers log against it; the timing is built on it afterwards.
 
+## A paper of the job, drawn ahead of the shot
+
+You can draw the pattern on Monday with no blasting log at all: from the day's **Drill plan** tile (*Draw one*), from the job page, or from **+ › Plan the drilling at a job**. The plan then has a state of its own that the tile reads all week — **Draft** (nothing sent), **Sent** (the drillers have it), **Drilling** ("31 of 44 · you see who drilled what"), **Drilled** (every hole in, or closed short with a reason), **Shot**. While it is drilling the tile also says the pace — *at this pace, drilled Thursday* — so you can plan the blast day; there is no button to set one.
+
+Once a hole is drilled the pattern locks. **Change the plan** opens a new version with a note the drillers see on their log; holes already drilled stay as they were drilled.
+
+**Send to drillers** names who gets it. Every driller you name gets the same drill log — one per pattern — and continues it over as many days as it takes.
+
+## Accepting the drilling
+
+When the parts are signed, the plan page lists the holes that deserve a look first — drilled off the plan's depth, wet, void — and **Accept the drill log** accepts every signed part in one tap and files the office copies with the pattern. **Send back** still works per part, with a note.
+
 ## Building the pattern
 
 1. From the day, tap **Continue** (*Build the drill plan*) or the Drill plan phase.

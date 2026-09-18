@@ -30,7 +30,7 @@ In the morning, leave Stop empty and tap **Save checklist**. The walk-around is 
 
 ## The stop hours, when you park it
 
-At the end of the day, enter the stop hours and the checklist is complete: it files, with the office copy, and the hours used go to the shop's ledger and the daily report. Two doors take you there — the rig's row on the day's Rig checklists tile, and the rig's line on the daily report. Your home card says "stop hours missing" on the rig line until they are in. Filling the paper in all at once at the end of the day works too: enter Start and Stop together and the button reads **Complete and file checklist**.
+At the end of the day, open the same checklist again — the rig's row on the day's Rig checklists tile, the rig's line on the daily report, or the line on your drill log — put the stop hours in, sign, and tap **Complete and file checklist**. It is one screen: the same form you saved in the morning, with the stop hours and the signature added. Complete needs the start hours, the stop hours (or Out of service) and your signature; the paper files with its office copy, and the hours used go to the shop's ledger and the daily report. Your home card says "stop hours missing" on the rig line until then, and the drill log's Done for today and My part is done wait for it. Filling the paper in all at once at the end of the day works too.
 
 A stop reading below the start is refused. Until the stop hours are in, the blaster's daily report reads "stop hours not entered yet · waiting on you" — there is no reminder button for it; the blaster sees the open checklist and calls you. The day can still file over it with a note.
 

@@ -21,6 +21,8 @@ import { nowISO } from '@/lib/utils';
 import { fmtLbs } from '@/lib/format';
 import { workForceRows } from '@/lib/dailyReportView';
 import { dayChecklistsFor } from '@/lib/dayHub';
+import { checklistComplete, checklistMissing } from '@/hooks/useMaintenance';
+import { getSessionUser } from '@/lib/session';
 import { Button } from '@/components/ui/button';
 
 type Phase = 'init' | 'preflight' | 'blast_log' | 'daily_report';
@@ -112,9 +114,22 @@ export async function preflightDay(dayId: string): Promise<PreflightItem[]> {
   }
   // AMBER — S20 (Matthew): a rig on the day with no stop hours yet. The driller
   // enters them on the checklist; the day can file over it with a note.
+  // RED — S23 / feedback item 3: the filer's OWN checklist must be complete
+  // (start, stop or out of service, signature) before his day files
   const dayRec = await db.blastDays.get(dayId);
+  const meId = getSessionUser()?.id;
   if (dayRec) {
     for (const c of await dayChecklistsFor(dayRec, logs)) {
+      if (meId && c.checklist.drillerUserId === meId && !checklistComplete(c.checklist)) {
+        items.push({
+          key: `checklist-${c.checklist.id}`,
+          level: 'red',
+          text: `${c.asset}'s checklist is not complete — ${checklistMissing(c.checklist).join(', ')}`,
+          to: `/drill-checklist/${c.checklist.equipmentId}?job=${dayRec.jobId}&date=${dayRec.date}&day=${dayRec.id}`,
+          toLabel: 'Open the checklist',
+        });
+        continue;
+      }
       if (c.checklist.stopHours == null && !c.checklist.outOfService)
         items.push({ key: `rigstop-${c.checklist.id}`, level: 'amber', text: `${c.asset} has no stop hours yet · waiting on ${c.checklist.drillerName || 'the driller'}`, to: `/blast-day/${dayId}`, toLabel: 'Rig checklists' });
     }

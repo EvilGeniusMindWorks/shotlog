@@ -11,7 +11,11 @@ import { useBack } from '@/lib/nav';
 import { BackButton } from '@/components/layout/ScreenHeader';
 import { useLiveQuery, db, deleteWithTombstone } from '@/db';
 import { addHole, aggregateDrilling, drilledHoleNumbers, getShotPlan, nextHoleNumber } from '@/hooks/useDrillLogs';
-import { getPlanHoles, planDrilledHoleNumbers, planToDiagram } from '@/hooks/useDrillPlans';
+import { autoDrilled, closePlanShort, getPlanHoles, planDrilledHoleNumbers, planToDiagram, progressLine, usePlanProgress } from '@/hooks/useDrillPlans';
+import { initials } from '@/components/day/MergedDrillingView';
+import { ConsequenceSheet } from '@/components/records/LifecycleMenu';
+import { checklistComplete, checklistMissing, stopChecklist } from '@/hooks/useMaintenance';
+import { Textarea } from '@/components/ui/textarea';
 import { parseDiagram } from '@/lib/shotDiagram';
 import { PatternGrid } from '@/components/design/PatternGrid';
 import { AttachmentsCard } from '@/components/forms/AttachmentsCard';
@@ -19,7 +23,7 @@ import { useSubmissions } from '@/lib/archive';
 import { findCrewId } from '@/lib/personHistory';
 import { setupPath, useDayGate, type GateState } from '@/lib/dayCard';
 import { getSessionUser } from '@/lib/session';
-import { nowISO, formatDate } from '@/lib/utils';
+import { nowISO, formatDate, todayISO } from '@/lib/utils';
 import type { HoleCondition, HoleConditionCode, BlastDay } from '@/db/schema';
 import { Badge } from '@/components/ui/badge';
 import { showToast } from '@/components/ui/undo-toast';
@@ -125,7 +129,29 @@ export function DrillLogPage() {
         .toArray(),
     ) ?? [];
 
-  const todayChecklist = useTodayChecklist(log?.drillRigEquipmentId);
+  const todayChecklistNoJob = useTodayChecklist(log?.drillRigEquipmentId);
+  // S23: the rig's checklist at THIS job today (a checklist filed from a day
+  // carries the job; the rig-only lookup above misses it)
+  const todayChecklistAtJob = useTodayChecklist(log?.drillRigEquipmentId, log?.jobId);
+  const todayChecklist = todayChecklistAtJob ?? todayChecklistNoJob;
+  // S23: a plan log is one driller's PART of the pattern's one drill log —
+  // the count, the days and the drillers are the pattern's
+  const isPart = Boolean(log?.drillPlanId);
+  const planProgress = usePlanProgress(log?.drillPlanId ?? undefined);
+  // who drilled which hole, across every part, for the initials on the grid
+  const holeOwners =
+    useLiveQuery(async () => {
+      const out = new Map<string, string>();
+      if (!log?.drillPlanId) return out;
+      const parts = await db.drillLogs.filter((l) => l.drillPlanId === log.drillPlanId).toArray();
+      for (const p of parts) {
+        for (const h of await db.drillLogHoles.where('drillLogId').equals(p.id).toArray()) out.set(h.holeNumber.trim(), initials(h.drillerName || p.drillerName || ''));
+      }
+      return out;
+    }, [log?.drillPlanId]) ?? new Map<string, string>();
+  // S23: Change rig — the old rig's checklist takes its stop hours, the new rig's opens
+  const [rigChange, setRigChange] = useState<{ toRigId: string; stop: string; down: boolean; error: string | null } | null>(null);
+  const [closeShort, setCloseShort] = useState<string | null>(null);
 
   // The blaster's per-hole plan + the claim ledger: a hole drilled in ANY
   // log (any driller, any day) is off everyone's remaining list
@@ -188,6 +214,9 @@ export function DrillLogPage() {
 
   useEffect(() => {
     if (!log || holeNumber) return;
+    // S23: a pattern part waits for its plan to load — the log answers a beat
+    // before the plan, and "1" would stick (harness85: "Hole 1 is already logged")
+    if (log.drillPlanId && !drillPlan) return;
     if (plan) {
       if (drilled) {
         const next = plan.find((p) => !drilled.has(String(p.n)));
@@ -199,7 +228,7 @@ export function DrillLogPage() {
       setHoleNumber('1');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [log?.id, plan !== null, drilled !== undefined]);
+  }, [log?.id, plan !== null, drilled !== undefined, drillPlan?.id]);
 
   // Jumping to a different hole pulls in ITS planned angle
   useEffect(() => {
@@ -242,6 +271,36 @@ export function DrillLogPage() {
   const update = (changes: Record<string, unknown>) =>
     db.drillLogs.update(log.id, { ...changes, updatedAt: nowISO() });
 
+  // S23 / feedback item 3: the part's end-of-day buttons wait for today's rig
+  // checklist to be complete (start, stop or out of service, signature)
+  const checklistGate: { text: string; to: string; kind: 'none' | 'incomplete' } | null = (() => {
+    if (!isPart || !log.drillRigEquipmentId) return null;
+    const door = `/drill-checklist/${log.drillRigEquipmentId}?job=${log.jobId}&date=${todayISO()}`;
+    if (!todayChecklist) return { kind: 'none', text: `File ${rigs.find((r) => r.id === log.drillRigEquipmentId)?.assetNumber ?? 'the rig'}'s checklist first`, to: door };
+    if (!checklistComplete(todayChecklist)) return { kind: 'incomplete', text: `Complete ${rigs.find((r) => r.id === log.drillRigEquipmentId)?.assetNumber ?? 'the rig'}'s checklist first — ${checklistMissing(todayChecklist).join(' and ')}`, to: door };
+    return null;
+  })();
+  const afterHole = () => {
+    if (log.drillPlanId) void autoDrilled(log.drillPlanId);
+  };
+  const changeRig = async () => {
+    if (!rigChange || !rigChange.toRigId) return;
+    const oldRig = log.drillRigEquipmentId;
+    const now = nowISO();
+    if (oldRig && todayChecklist && todayChecklist.stopHours == null && !todayChecklist.outOfService) {
+      const v = parseFloat(rigChange.stop);
+      if (!Number.isFinite(v)) return setRigChange({ ...rigChange, error: 'Enter the old rig’s meter reading.' });
+      if (todayChecklist.startingHours != null && v < todayChecklist.startingHours) return setRigChange({ ...rigChange, error: `The stop reading can't be below the start reading (${todayChecklist.startingHours}).` });
+      await stopChecklist(todayChecklist, v, { outOfService: rigChange.down, note: rigChange.down ? `Out of service at ${v} h — rig changed on the drill log` : undefined });
+    }
+    await update({ drillRigEquipmentId: rigChange.toRigId, rigChanges: [...(log.rigChanges ?? []), { at: now, fromRigId: oldRig, toRigId: rigChange.toRigId }] });
+    void rememberUsualRig(rigChange.toRigId);
+    const to = rigChange.toRigId;
+    setRigChange(null);
+    // the new rig's checklist: its start hours and checks, then back here
+    navigate(`/drill-checklist/${to}?job=${log.jobId}&date=${todayISO()}`);
+  };
+
   const alreadyLogged = holes.some((h) => h.holeNumber.trim() === holeNumber.trim());
   const submitHole = async () => {
     const d = parseFloat(depth) || targetDepth;
@@ -278,6 +337,7 @@ export function DrillLogPage() {
       plannedKick: planHole?.kick,
       plannedKickDir: planHole?.kickDir,
     });
+    afterHole();
     if (plan && drilled) {
       // Advance to the next unclaimed plan hole (the one just drilled included)
       const nowDrilled = new Set(drilled);
@@ -333,6 +393,7 @@ export function DrillLogPage() {
       });
     }
     setSelected(new Set());
+    afterHole();
     showToast(`Logged ${picks.length} hole${picks.length === 1 ? '' : 's'} as planned`);
   };
 
@@ -352,6 +413,7 @@ export function DrillLogPage() {
       });
     }
     setSelected(new Set());
+    afterHole();
     showToast(`Marked ${picks.length} hole${picks.length === 1 ? '' : 's'} skipped`);
   };
 
@@ -373,9 +435,9 @@ export function DrillLogPage() {
           <BackButton back={back} />
           <div className="flex-1 min-w-0" data-tour="log-header">
             <h2 className="font-bold text-lg truncate leading-tight">
-              Drill Log — {contextTitle}
+              Drill Log — {contextTitle}{isPart && me?.id === log.drillerUserId ? ' · your part' : ''}
             </h2>
-            <p className="text-xs text-navy-200 truncate">
+            <p className="text-xs text-navy-200 truncate" data-log-header-line>
               {job?.name} ·{' '}
               {drillerCrewId ? (
                 <button className="underline" onClick={() => navigate(`/crew/${drillerCrewId}`)}>
@@ -385,6 +447,7 @@ export function DrillLogPage() {
                 log.drillerName || 'unassigned'
               )}{' '}
               · {holes.length} holes · {footage.toFixed(0)} ft
+              {isPart && planProgress && planProgress.planned > 0 ? ` · pattern ${progressLine(planProgress, me?.id)}` : ''}
             </p>
           </div>
           <div className="basis-full flex items-center gap-2 sm:contents" data-log-header-actions>
@@ -407,7 +470,7 @@ export function DrillLogPage() {
             onDeleted={() => navigate(log.blastDayId ? `/blast-day/${log.blastDayId}` : '/')}
             buttonClassName="h-9 w-9 rounded-lg bg-white/10 flex items-center justify-center text-white hover:bg-white/20"
           />
-          {log.status === 'open' && canDrillLogTransition('open', 'complete') && (
+          {log.status === 'open' && !isPart && canDrillLogTransition('open', 'complete') && (
             <Button size="sm" variant="secondary" disabled={holes.length === 0}
               data-tour="log-complete"
               onClick={() => { setNoteText(''); setNotePrompt('complete'); }}>
@@ -464,6 +527,18 @@ export function DrillLogPage() {
             ↩ Sent back by the blaster: “{log.reopenNote}”
           </p>
         )}
+        {/* S23: the pattern's own line — the plan's version note and who else is on it */}
+        {isPart && drillPlan && drillPlan.revisions && drillPlan.revisions.length > 0 && (
+          <p className="text-sm text-amber-800 border border-amber-200 bg-amber-50 rounded-lg px-3 py-2" data-log-plan-revision={drillPlan.version ?? 1}>
+            Plan v{drillPlan.version ?? 1} · changed {formatDate(drillPlan.revisions[drillPlan.revisions.length - 1].at.slice(0, 10))} by {drillPlan.revisions[drillPlan.revisions.length - 1].byName}
+            {drillPlan.revisions[drillPlan.revisions.length - 1].note ? `: “${drillPlan.revisions[drillPlan.revisions.length - 1].note}”` : ''}
+          </p>
+        )}
+        {isPart && drillPlan?.status === 'complete' && (
+          <p className="text-sm text-green-800 border border-green-200 bg-green-50 rounded-lg px-3 py-2" data-log-plan-drilled>
+            The pattern is drilled{drillPlan.closedShort ? ` — closed short by ${drillPlan.closedShort.byName}: “${drillPlan.closedShort.reason}”` : ''}.
+          </p>
+        )}
         {log.status !== 'open' && log.completionNote && (
           <p className="text-sm text-navy border border-gray-200 bg-navy-50 rounded-lg px-3 py-2">
             Driller's note: “{log.completionNote}”
@@ -475,7 +550,7 @@ export function DrillLogPage() {
         {log.status === 'complete' && drilling && drilling.planned !== null && (
           <div className="rounded-xl border border-gray-200 bg-white p-3 space-y-1">
             <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-              Review against plan — shot-wide
+              Review against plan — {isPart ? 'the whole pattern' : 'shot-wide'}
             </p>
             <p className="text-sm">
               {drilling.totalHoles} of {drilling.planned} plan holes drilled
@@ -551,15 +626,32 @@ export function DrillLogPage() {
           <div className="col-span-2">
             <div className="flex items-center justify-between">
               <Label className="text-xs">Drill rig</Label>
-              {log.drillRigEquipmentId && (
-                <button
-                  className="text-[11px] text-navy underline"
-                  onClick={() => navigate(`/equipment/${log.drillRigEquipmentId}`)}
-                >
-                  rig history
-                </button>
-              )}
+              <span className="flex items-center gap-3">
+                {isPart && editable && log.drillRigEquipmentId && (
+                  <button
+                    type="button"
+                    className="text-[11px] text-safety-orange font-semibold underline"
+                    data-log-change-rig
+                    onClick={() => setRigChange({ toRigId: '', stop: '', down: false, error: null })}
+                  >
+                    Change rig…
+                  </button>
+                )}
+                {log.drillRigEquipmentId && (
+                  <button
+                    className="text-[11px] text-navy underline"
+                    onClick={() => navigate(`/equipment/${log.drillRigEquipmentId}`)}
+                  >
+                    rig history
+                  </button>
+                )}
+              </span>
             </div>
+            {isPart && (log.rigChanges ?? []).length > 0 && (
+              <p className="text-[11px] text-gray-500 mb-1" data-log-rig-changes={(log.rigChanges ?? []).length}>
+                {(log.rigChanges ?? []).map((c) => `${rigs.find((r) => r.id === c.fromRigId)?.assetNumber ?? '—'} → ${rigs.find((r) => r.id === c.toRigId)?.assetNumber ?? '—'} ${formatDate(c.at.slice(0, 10))}`).join(' · ')}
+              </p>
+            )}
             <Select value={log.drillRigEquipmentId ?? ''} disabled={!editable}
               data-log-rig
               onChange={(e) => {
@@ -656,7 +748,8 @@ export function DrillLogPage() {
                           const hasHazard = holes.some((h) => h.holeNumber.trim() === n && h.conditions.length > 0);
                           const depth = +(p.holeLength || p.depth).toFixed(1);
                           return {
-                            sub: isOpen ? `${depth}` : undefined,
+                            // S23: a drilled hole on a pattern part wears its driller's initials
+                            sub: isOpen ? `${depth}` : isPart && !isSkipped ? holeOwners.get(n) : undefined,
                             title: `H-${n} · plan ${depth} ft${isSkipped ? ' — skipped' : ''}`,
                             disabled: !isOpen,
                             className: isSkipped
@@ -988,7 +1081,18 @@ export function DrillLogPage() {
                         reopenNote: undefined,
                         sentBackAt: undefined,
                         sentBackByName: undefined,
-                      }).then(() => {
+                      }).then(async () => {
+                        // S23: the last driller to close his part may close the pattern
+                        // short when holes remain — the pattern turns Drilled by itself
+                        // only at the full count
+                        if (isPart && drillPlan && drillPlan.status === 'open') {
+                          const others = await db.drillLogs.filter((l) => l.drillPlanId === drillPlan.id && l.id !== log.id && l.status === 'open').count();
+                          const p = await (await import('@/hooks/useDrillPlans')).planProgress(drillPlan.id);
+                          if (others === 0 && p && p.notDrilled > 0 && p.plan.status === 'open') {
+                            setCloseShort('');
+                            return;
+                          }
+                        }
                         if (back) back.go();
                         else navigate(log.blastDayId ? `/blast-day/${log.blastDayId}` : `/jobs/${log.jobId}/drill-plan/${log.drillPlanId}`, { replace: true });
                       });
@@ -1002,8 +1106,8 @@ export function DrillLogPage() {
                     ? !log.drillRigEquipmentId
                       ? 'Pick the rig first'
                       : log.signatureImage
-                        ? 'Complete'
-                        : 'Sign and complete'
+                        ? isPart ? 'My part is done' : 'Complete'
+                        : isPart ? 'Sign — my part is done' : 'Sign and complete'
                     : 'Send back'}
                 </Button>
               </div>
@@ -1021,7 +1125,7 @@ export function DrillLogPage() {
               onChange={(blob) => void update({ signatureImage: blob })}
             />
           </div>
-          {log.status === 'open' && canDrillLogTransition('open', 'complete') && (
+          {log.status === 'open' && !isPart && canDrillLogTransition('open', 'complete') && (
             <Button
               className="w-full"
               size="lg"
@@ -1032,10 +1136,107 @@ export function DrillLogPage() {
               <Check className="h-4 w-4 mr-1" /> Mark complete{holes.length > 0 ? ` · ${holes.length} holes` : ''}
             </Button>
           )}
+          {/* S23: the end of a drilling day on a pattern — Done for today leaves the part
+              open, My part is done signs it once; both wait for today's rig checklist */}
+          {log.status === 'open' && isPart && canDrillLogTransition('open', 'complete') && (
+            <div className="space-y-2" data-log-end-of-day>
+              {checklistGate && (
+                <button
+                  type="button"
+                  className="w-full text-left text-sm text-amber-900 border border-amber-300 bg-amber-50 rounded-lg px-3 py-2"
+                  data-log-checklist-gate={checklistGate.kind}
+                  onClick={() => navigate(checklistGate.to)}
+                >
+                  {checklistGate.text} · <span className="font-semibold underline">Open the checklist ›</span>
+                </button>
+              )}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 min-h-[48px]"
+                  disabled={Boolean(checklistGate)}
+                  data-log-done-today
+                  onClick={() => {
+                    if (back) back.go();
+                    else navigate(`/jobs/${log.jobId}/drill-plan/${log.drillPlanId}`, { replace: true });
+                  }}
+                >
+                  Done for today
+                </Button>
+                <Button
+                  className="flex-[2] min-h-[48px]"
+                  size="lg"
+                  disabled={holes.length === 0 || Boolean(checklistGate)}
+                  data-log-part-done
+                  onClick={() => { setNoteText(''); setNotePrompt('complete'); }}
+                >
+                  <Check className="h-4 w-4 mr-1" /> My part is done{holes.length > 0 ? ` · ${holes.length} holes` : ''}
+                </Button>
+              </div>
+            </div>
+          )}
           {log.status === 'complete' && (
-            <p className="text-sm text-green-700 text-center" data-log-complete-done>✓ Marked complete — the blaster reviews it from the day.</p>
+            <p className="text-sm text-green-700 text-center" data-log-complete-done>
+              {isPart ? '✓ Your part is signed — the blaster accepts the drill log from the pattern.' : '✓ Marked complete — the blaster reviews it from the day.'}
+            </p>
           )}
         </div>
+
+        {rigChange && (
+          <ConsequenceSheet onClose={() => setRigChange(null)}>
+            <div data-log-rig-change-sheet>
+              <h3 className="font-bold text-lg">Change rig</h3>
+              <p className="text-xs text-gray-500 mb-2">
+                {rigs.find((r) => r.id === log.drillRigEquipmentId)?.assetNumber ?? 'The old rig'}'s checklist takes its stop hours now; the new rig's checklist opens for its start hours, and every hole from here on carries the new rig.
+              </p>
+              {todayChecklist && todayChecklist.stopHours == null && !todayChecklist.outOfService && (
+                <div className="mb-2">
+                  <Label className="text-xs">{rigs.find((r) => r.id === log.drillRigEquipmentId)?.assetNumber} — stop hours (started at {todayChecklist.startingHours ?? '—'})</Label>
+                  <Input type="number" inputMode="decimal" className="font-mono" value={rigChange.stop} data-log-rig-change-stop placeholder="read the gauge" onChange={(e) => setRigChange({ ...rigChange, stop: e.target.value, error: null })} />
+                  <label className="flex items-center gap-2 text-sm mt-2 cursor-pointer">
+                    <input type="checkbox" checked={rigChange.down} data-log-rig-change-down onChange={(e) => setRigChange({ ...rigChange, down: e.target.checked })} />
+                    <span className={rigChange.down ? 'font-semibold text-safety-orange' : ''}>It is out of service — open a ticket for the shop</span>
+                  </label>
+                </div>
+              )}
+              <Label className="text-xs">The new rig</Label>
+              <Select
+                value={rigChange.toRigId}
+                data-log-rig-change-to
+                onChange={(e) => setRigChange({ ...rigChange, toRigId: e.target.value })}
+                options={[{ value: '', label: 'Pick the rig…' }, ...rigs.filter((r) => r.id !== log.drillRigEquipmentId).map((r) => ({ value: r.id, label: `${r.assetNumber} — ${r.description}` }))]}
+              />
+              {rigChange.error && <p className="text-xs text-red-700 mt-1" data-log-rig-change-error>{rigChange.error}</p>}
+              <Button className="w-full mt-3 min-h-[48px]" disabled={!rigChange.toRigId} data-log-rig-change-go onClick={() => void changeRig()}>
+                Change rig and open its checklist
+              </Button>
+              <Button variant="outline" className="w-full mt-2" onClick={() => setRigChange(null)}>Cancel</Button>
+            </div>
+          </ConsequenceSheet>
+        )}
+
+        {closeShort !== null && drillPlan && (
+          <ConsequenceSheet onClose={() => setCloseShort(null)}>
+            <div data-log-close-short-sheet>
+              <h3 className="font-bold text-lg">Close the pattern short?</h3>
+              <p className="text-xs text-gray-500 mb-2">
+                Your part is signed and nobody else has an open part, but {planProgress?.notDrilled ?? 'some'} planned hole{(planProgress?.notDrilled ?? 2) === 1 ? '' : 's'} {(planProgress?.notDrilled ?? 2) === 1 ? 'is' : 'are'} not drilled. Close it with the reason, or leave it open for another day.
+              </p>
+              <Textarea rows={2} value={closeShort} data-log-close-short-reason placeholder="e.g. the ledge ends at row 4 — the last row is not rock" onChange={(e) => setCloseShort(e.target.value)} />
+              <Button
+                className="w-full mt-3 min-h-[48px]"
+                disabled={!closeShort.trim()}
+                data-log-close-short-go
+                onClick={() => void closePlanShort(drillPlan, closeShort).then(() => { setCloseShort(null); navigate(`/jobs/${log.jobId}/drill-plan/${log.drillPlanId}`, { replace: true }); })}
+              >
+                Close the pattern short
+              </Button>
+              <Button variant="outline" className="w-full mt-2" data-log-close-short-leave onClick={() => { setCloseShort(null); navigate(`/jobs/${log.jobId}/drill-plan/${log.drillPlanId}`, { replace: true }); }}>
+                Leave it open
+              </Button>
+            </div>
+          </ConsequenceSheet>
+        )}
       </div>
     </div>
   );

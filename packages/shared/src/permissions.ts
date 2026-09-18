@@ -231,9 +231,12 @@ const SENSITIVE_STATUS_TRANSITIONS: Record<
     in_shop: { retired: ['admin', 'supervisor'] },
     retired: { active: ['admin', 'supervisor'], in_shop: ['admin', 'supervisor'] },
   },
-  // Completing/reopening a drill plan is the blast side's call
+  // Reopening a drill plan is the blast side's call. Completing one is
+  // also the drillers' (S23, Sep 18 2026): the pattern turns Drilled by
+  // itself on the device that logs the last hole, and the last driller may
+  // close it short with a reason.
   drillPlans: {
-    open: { complete: BLAST_FAMILY as Role[] },
+    open: { complete: [...BLAST_FAMILY, 'driller'] as Role[] },
     complete: { open: BLAST_FAMILY as Role[] },
   },
   // Time cards: filing your own card is open; APPROVING one (or pulling an
@@ -246,6 +249,12 @@ const SENSITIVE_STATUS_TRANSITIONS: Record<
     approved: { filed: APPROVERS as Role[], draft: APPROVERS as Role[] },
   },
 };
+
+/** S23 (Sep 18 2026): the one thing a driller may write on a drill plan —
+ *  closing it. The pattern turns Drilled by itself on the device that logs
+ *  the last hole, or the last driller closes it short with a reason; the
+ *  pattern itself (grid, depths, numbers) stays the blast side's. */
+export const DRILL_PLAN_CLOSE_FIELDS: ReadonlySet<string> = new Set(['status', 'drilledAt', 'closedShort', 'updatedAt', 'syncStatus']);
 
 /** True when a status change on `tableName` is allowed for `role`.
  *  Same-status and unlisted transitions pass (PATCH rights still apply). */

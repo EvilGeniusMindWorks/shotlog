@@ -283,3 +283,22 @@ report (solo submit) · My Records · jobs list
   button and the daily report's Remind are gone; the rig line reads "stop
   hours missing" and the checklist is the one paper (S23 makes it one
   screen). The time-card Remind on the crew list stays.
+
+## Round S23 — Drilling over days (Sep 18 2026, plan artifact LT4fS1Wi3tQoKm8mqEGpsk v3, Go)
+
+- **Continue, not Start.** A pattern sent to Joe is one drill log he
+  continues over days from three doors — his home card ("Bench 1 · 31 of
+  44 · you 20 · Dinis 11 · Continue drilling ›"), the Drilling page, and the
+  pattern's own page. The log's next hole skips every hole anyone drilled on
+  any day; his part carries his holes with the rig, the date and the time.
+- **End of day: Done for today or My part is done.** Done for today leaves
+  the part open; My part is done signs it once. Both wait for today's rig
+  checklist to be complete — a line names it and opens it.
+- **Change rig** on the log: the old rig's checklist takes its stop hours
+  (out of service opens the shop's ticket), the new rig's checklist opens
+  with its start hours, and the holes from then on carry the new rig.
+- **The rig checklist is one screen** (Matthew, Sep 18): start hours and the
+  checks in the morning, saved open; open it again, put the stop hours in,
+  sign, and Complete — no separate stop-hours screen or button. Complete
+  needs start, stop (or out of service) and the signature; File this day
+  waits for it too.

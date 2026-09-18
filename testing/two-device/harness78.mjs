@@ -95,6 +95,7 @@ async (page, lib) => {
     R.ok('the header shows that day, not today', header.includes(fmt(yday)));
     await PD.locator('[data-chk-hours]').fill('1400');
     await PD.locator('[data-chk-stop-hours]').fill('1405'); // S20: start AND stop → complete and file in one go
+    await lib.signPad(PD); // S23 / feedback item 3: Complete needs the signature too
     await PD.locator('[data-chk-file]').click();
     await PD.waitForURL(/\/drill-checklist-file\//, { timeout: 15000 });
     const id = PD.url().match(/drill-checklist-file\/([^/?]+)/)?.[1];

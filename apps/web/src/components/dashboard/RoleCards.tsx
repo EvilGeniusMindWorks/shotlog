@@ -8,7 +8,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, ClipboardCheck, Wrench, X } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
-import { createDrillPlanLog, drillLogRoute, getPlanHoles, usePlanDrilling } from '@/hooks/useDrillPlans';
+import { continuePart, drillLogRoute, getPlanHoles, planProgress, progressLine, usePlanDrilling } from '@/hooks/useDrillPlans';
 import { createDrillLog, getShotPlan } from '@/hooks/useDrillLogs';
 import { useMyChecklistsToday, useOpenTickets } from '@/hooks/useMaintenance';
 import { getSessionUser, getRealSessionUser, setViewRole } from '@/lib/session';
@@ -337,6 +337,19 @@ export function DrillingWork() {
     return out;
   }, [me?.id]);
 
+  // S23: the patterns I am drilling — my open part with holes on it — with
+  // Continue (door B); a plan where I have no open part is under Open drill plans
+  const myParts = useLiveQuery(async () => {
+    const counts = await holeCountsByLog();
+    const parts = (await projectDrillLogs()).filter((l) => l.drillPlanId && l.status === 'open' && l.drillerUserId === me?.id && (counts.get(l.id) ?? 0) > 0);
+    const out = [];
+    for (const part of parts) {
+      const p = await planProgress(part.drillPlanId!);
+      if (!p || p.plan.status !== 'open') continue;
+      out.push({ part, plan: p.plan, jobName: (await db.jobs.get(part.jobId))?.name, line: `${progressLine(p, me?.id)}${p.pace ? ` · at this pace, drilled ${p.pace.expectedWord}` : ''}` });
+    }
+    return out;
+  }, [me?.id]);
   const openPlans = useLiveQuery(async () => {
     const plans = await db.drillPlans.filter((p) => p.status === 'open' && !p.archivedAt).toArray();
     const allLogs = await projectDrillLogs();
@@ -347,13 +360,12 @@ export function DrillingWork() {
       if (!holes || holes.length === 0) continue;
       const logs = allLogs.filter((l) => l.drillPlanId === plan.id);
       let drilled = 0;
-      let mineOpenToday = false;
+      let mineOpen = false;
       for (const dl of logs) {
         drilled += counts.get(dl.id) ?? 0;
-        if (dl.status === 'open' && dl.drillerUserId === me?.id && dl.date === todayISO())
-          mineOpenToday = true;
+        if (dl.status === 'open' && dl.drillerUserId === me?.id) mineOpen = true;
       }
-      if (drilled >= holes.length || mineOpenToday) continue;
+      if (drilled >= holes.length || mineOpen) continue;
       const jobName = (await db.jobs.get(plan.jobId))?.name;
       out.push({ plan, jobName, target: holes.length, drilled });
     }
@@ -452,8 +464,30 @@ export function DrillingWork() {
         </div>
       )}
 
+      {(myParts ?? []).length > 0 && (
+        <div className="rounded-xl border-2 border-safety-orange/60 bg-white p-3" data-drilling-continue>
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
+            Drilling · continue
+          </p>
+          {(myParts ?? []).map(({ part, plan, jobName, line }) => (
+            <button
+              key={part.id}
+              className="w-full flex items-center gap-2 py-2 text-left hover:bg-gray-50 rounded-lg"
+              data-drilling-part={part.id}
+              onClick={() => navigate(drillLogRoute(part))}
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold truncate">{plan.name} · {jobName ?? '—'}</p>
+                <p className="text-xs text-gray-500">{line}</p>
+              </div>
+              <span className="text-sm text-safety-orange font-semibold shrink-0">Continue ›</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {(openPlans ?? []).length > 0 && (
-        <div className="rounded-xl border border-gray-200 bg-white p-3">
+        <div className="rounded-xl border border-gray-200 bg-white p-3" data-open-plans>
           <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
             Open drill plans
           </p>
@@ -461,8 +495,10 @@ export function DrillingWork() {
             <button
               key={plan.id}
               className="w-full flex items-center gap-2 py-2 text-left hover:bg-gray-50 rounded-lg"
+              data-open-plan={plan.id}
               onClick={() => {
-                void createDrillPlanLog(plan).then((logId) =>
+                // S23: Continue — my part of the pattern's one drill log
+                void continuePart(plan).then((logId) =>
                   navigate(`/jobs/${plan.jobId}/drill-plan/${plan.id}/log/${logId}`),
                 );
               }}
@@ -474,7 +510,7 @@ export function DrillingWork() {
                 </p>
               </div>
               <span className="text-sm text-safety-orange font-semibold shrink-0">
-                Today's log ›
+                Continue ›
               </span>
             </button>
           ))}
@@ -513,7 +549,7 @@ export function DrillingWork() {
         </div>
       )}
 
-      {(assigned ?? []).length === 0 && (openPlans ?? []).length === 0 && (sentBack ?? []).length === 0 &&
+      {(assigned ?? []).length === 0 && (openPlans ?? []).length === 0 && (sentBack ?? []).length === 0 && (myParts ?? []).length === 0 &&
         (readyToDrill ?? []).length === 0 && assigned !== undefined && (
         <div className="rounded-xl border border-gray-200 bg-white p-3">
           <p className="text-sm text-gray-400">
@@ -535,6 +571,8 @@ interface JobDayCard {
   cardLine: string;
   coverage: Coverage;
   myLog?: DrillLog;
+  /** S23: my open part of a pattern at this job — Continue drilling opens it */
+  part?: DrillLog;
 }
 
 const fmtH = (n: number | null | undefined) => (n == null ? '—' : `${n.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} h`);
@@ -569,6 +607,12 @@ export function DrillerHome() {
       // it lives under "Plans sent to you" until the first hole
       const onlySentPlans = myLogs.length > 0 && myLogs.every((l) => l.assignedBy) && holes === 0 && !card && !rigs.some((r) => r.checklist.drillerUserId === me?.id);
       if (onlySentPlans) continue;
+      // S23: a pattern at this job — the count crosses days and drillers
+      const part = myLogs.find((l) => l.drillPlanId);
+      const pattern = part?.drillPlanId ? await planProgress(part.drillPlanId) : undefined;
+      const patternLine = pattern
+        ? `${pattern.plan.name} · ${progressLine(pattern, me?.id)} · ${part!.status === 'open' ? 'drilling' : part!.status === 'complete' ? 'your part signed' : 'accepted'}${pattern.pace ? ` · at this pace, drilled ${pattern.pace.expectedWord}` : ''}`
+        : undefined;
       out.push({
         day,
         jobName: day.name || job?.name || 'Job',
@@ -583,8 +627,9 @@ export function DrillerHome() {
           : 'No rig checklist yet',
         // S24 (Matthew, Sep 18 2026): no "Enter R1021's stop hours" prompt here — the
         // rig line above says "stop hours missing" and the checklist is the one paper
-        logLine:
-          myLogs.length === 0
+        logLine: patternLine
+          ? patternLine
+          : myLogs.length === 0
             ? planned > 0
               ? `Drill log · not started · plan sent, ${planned} holes`
               : 'Drill log · not started'
@@ -592,6 +637,7 @@ export function DrillerHome() {
         cardLine: card ? `My time card · ${card.status}` : 'My time card · not filed',
         coverage: await dayCoverage(day),
         myLog: open,
+        part: part && part.status === 'open' ? part : undefined,
       });
     }
     return out;
@@ -649,7 +695,23 @@ export function DrillerHome() {
       <p className="text-xs text-gray-600 mt-0.5">{c.rigLine}</p>
       <p className="text-xs text-gray-600">{c.logLine}</p>
       <p className="text-xs text-gray-600">{c.cardLine}</p>
-      <p className="text-[11px] font-semibold text-safety-orange mt-1">{c.myLog && c.myLog.status === 'open' ? 'Continue drilling ›' : 'Open the day ›'}</p>
+      {c.part ? (
+        // S23 (door A): Continue opens the pattern's log — my part — straight from the card
+        <span
+          role="button"
+          tabIndex={0}
+          className="mt-2 inline-flex items-center rounded-lg bg-safety-orange text-white text-xs font-semibold px-3 py-1.5"
+          data-job-day-continue={c.part.id}
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(drillLogRoute(c.part!));
+          }}
+        >
+          Continue drilling ›
+        </span>
+      ) : (
+        <p className="text-[11px] font-semibold text-safety-orange mt-1">{c.myLog && c.myLog.status === 'open' ? 'Continue drilling ›' : 'Open the day ›'}</p>
+      )}
     </button>
   );
 

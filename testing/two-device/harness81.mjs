@@ -331,12 +331,14 @@ async (page, lib) => {
     const door = PD.locator(`[data-rig-stop-door="${rigs[0].asset}"]`);
     await door.waitFor({ timeout: 30000 });
     await door.click();
-    await PD.locator('[data-chk-complete-panel]').waitFor({ timeout: 20000 });
+    // S23 / feedback item 3: the morning checklist opens as the one form again
+    await PD.locator('[data-chk-continuing]').waitFor({ timeout: 20000 });
     await PD.locator('[data-chk-stop-hours]').fill('1499');
     await PD.locator('[data-chk-complete]').click();
     await PD.locator('[data-chk-stop-error]').waitFor({ timeout: 5000 });
     R.ok('a stop below the start is refused', /can't be below/.test((await PD.locator('[data-chk-stop-error]').innerText()) || ''));
     await PD.locator('[data-chk-stop-hours]').fill('1507.5');
+    await lib.signPad(PD);
     await PD.locator('[data-chk-complete]').click();
     await PD.waitForURL(/\/drill-checklist-file\//, { timeout: 20000 });
     await PD.locator('button:has-text("Done")').first().waitFor({ timeout: 30000 });

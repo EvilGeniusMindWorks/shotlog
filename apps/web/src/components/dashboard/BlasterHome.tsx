@@ -8,8 +8,9 @@ import { db, useLiveQuery } from '@/db';
 import type { BlastDay } from '@/db/schema';
 import { createBlastDay, useBlastDay } from '@/hooks/useBlastDay';
 import { useDayPhases } from '@/hooks/useDayPhases';
-import { getPlanHoles, planDrilledHoleNumbers } from '@/hooks/useDrillPlans';
+import { getPlanHoles, planDrilledHoleNumbers, planProgress, progressLine, type PlanProgress } from '@/hooks/useDrillPlans';
 import { formatDate, todayISO } from '@/lib/utils';
+import { getSessionUser } from '@/lib/session';
 import { homeIsMineFirst, isMyPlan, myDayIds, onlyMine } from '@/lib/mine';
 import { Badge } from '@/components/ui/badge';
 import { NewBlastDayDialog } from '@/components/forms/NewBlastDayDialog';
@@ -164,6 +165,53 @@ function TodayDayRow({ day, jobLabel }: { day: BlastDay; jobLabel: string }) {
   );
 }
 
+// ── Drilling (S23): my patterns being drilled, with the pace ───────────────
+
+function DrillingBand() {
+  const navigate = useNavigate();
+  const me = getSessionUser()?.id;
+  const rows = useLiveQuery(async () => {
+    const mineFirst = homeIsMineFirst();
+    const plans = (await db.drillPlans.filter((p) => !p.archivedAt).toArray()).filter((p) => !mineFirst || isMyPlan(p));
+    const out: { p: PlanProgress; jobName: string }[] = [];
+    for (const plan of plans) {
+      const p = await planProgress(plan.id);
+      if (!p || p.word === 'Draft' || p.word === 'Shot') continue;
+      if (p.word === 'Drilled' && p.waiting === 0) continue;
+      out.push({ p, jobName: (await db.jobs.get(plan.jobId))?.name ?? 'Unknown job' });
+    }
+    return out.sort((a, b) => (a.p.word === 'Drilled' ? 0 : 1) - (b.p.word === 'Drilled' ? 0 : 1) || b.p.plan.updatedAt.localeCompare(a.p.plan.updatedAt));
+  }, []);
+  if (!rows || rows.length === 0) return null;
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl px-3 py-2" data-drilling-band>
+      <p className="text-[10px] font-bold tracking-widest text-gray-400 uppercase mb-1">Drilling · {rows.length}</p>
+      {rows.map(({ p, jobName }) => (
+        <button
+          key={p.plan.id}
+          className="w-full flex items-center gap-2 py-1.5 border-t border-gray-100 first:border-t-0 text-left hover:bg-gray-50"
+          data-drilling-row={p.plan.id}
+          data-drilling-word={p.word}
+          onClick={() => navigate(`/jobs/${p.plan.jobId}/drill-plan/${p.plan.id}`)}
+        >
+          <Badge variant={p.word === 'Drilled' ? 'warning' : p.word === 'Drilling' ? 'submitted' : 'secondary'}>
+            {p.word === 'Drilled' ? 'Drilled and waiting' : p.word === 'Drilling' ? 'Drilling now' : 'Sent'}
+          </Badge>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm truncate">{p.plan.name} · {jobName}</p>
+            <p className="text-xs text-gray-400 truncate">
+              {p.word === 'Sent'
+                ? `${p.planned} holes · ${p.plan.sentTo?.map((d) => d.name.split(/\s+/)[0]).join(', ') || 'sent'}`
+                : `${progressLine(p, me)} · ${Math.round(p.drilling.totalFootage)} ft${p.pace ? ` · at this pace, drilled ${p.pace.expectedWord}` : ''}${p.word === 'Drilled' ? ` · ${p.waiting} part${p.waiting === 1 ? '' : 's'} to accept` : ''}`}
+            </p>
+          </div>
+          <span className="text-gray-300">›</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function AttentionRowButton({ row }: { row: AttentionRow }) {
   const navigate = useNavigate();
   return (
@@ -285,6 +333,9 @@ export function BlasterHome() {
           {(todayDays ?? []).length > 0 ? 'Start a day at another job' : 'Start a day at a job'}
         </button>
       </div>
+
+      {/* S23 — the patterns being drilled, with the pace */}
+      <DrillingBand />
 
       {/* Band 3 — months, current open, older collapsed (shared list); on a
           field home only MY days — search still finds everyone's */}

@@ -5,7 +5,8 @@
 // rigs. File this day sits at the bottom when a paper exists to file.
 import { useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, ClipboardList, FileText, Timer, Drill } from 'lucide-react';
+import { AlertTriangle, ClipboardList, FileText, Timer, Drill, Grid3x3 } from 'lucide-react';
+import { continuePart, createDrillPlan } from '@/hooks/useDrillPlans';
 import { ReportIncidentSheet } from '@/components/incident/ReportIncidentSheet';
 import { INCIDENT_LABEL } from '@/lib/incidentDoNow';
 import type { BlastDay, BlastLog, DailyReport, DrillLog, Job, Shot } from '@/db/schema';
@@ -22,6 +23,7 @@ import {
   dailyReportTile,
   dayChecklistsFor,
   dayDrillLogsFor,
+  dayDrillPlanTile,
   dayFiledAt,
   drillLogTile,
   fileState,
@@ -143,9 +145,25 @@ export function DayHub({ day, job, blastLog, shots, dailyReport, locked, owner, 
 
   const blasting = isBlastingWork(day.typeOfWork) || Boolean(blastLog);
   const planned = plannedHoles(shots);
+  // S23: the Drill plan tile — the pattern as a paper of the job, its state all week
+  const canDraw = !readOnly && can('drillPlans', 'PUT');
+  const planTile = useLiveQuery(() => dayDrillPlanTile(day, canDraw, isDriller), [day.id, day.jobId, canDraw, isDriller]);
+  const myOpenPart = myLogs.find((l) => l.drillPlanId && l.status === 'open');
 
   // ── the tiles, in role order ──
   const tiles: { id: string; icon: ReactNode; name: string; state: TileState; onAction: () => void }[] = [];
+  if (planTile && !isOffice) {
+    tiles.push({
+      id: 'drill-plan',
+      icon: <Grid3x3 className="h-5 w-5" />,
+      name: 'Drill plan',
+      state: planTile.state,
+      onAction: () => {
+        if (planTile.planId) navigate(`/jobs/${day.jobId}/drill-plan/${planTile.planId}`);
+        else if (planTile.state.action === 'Start') void createDrillPlan(day.jobId).then((id) => navigate(`/jobs/${day.jobId}/drill-plan/${id}`));
+      },
+    });
+  }
   const logState = isDriller ? null : blastLogTile(day, blastLog, shots, filedAt ?? undefined, !readOnly && can('blastLogs', 'PUT'));
   if (logState) {
     tiles.push({
@@ -162,8 +180,23 @@ export function DayHub({ day, job, blastLog, shots, dailyReport, locked, owner, 
   }
   if (isDriller) {
     const startable = shots.length > 0 && !readOnly && can('drillLogs', 'PUT');
-    const planInfo = planned > 0 ? `plan sent · ${planned} holes` : blastLog ? 'no plan yet — ask the blaster' : 'no blasting log on this day';
-    if (myLogs.length === 0) {
+    const planInfo = planned > 0 ? `plan sent · ${planned} holes` : blastLog ? 'no plan yet — ask the blaster' : planTile?.planId ? 'the pattern is on the Drill plan tile' : 'no blasting log on this day';
+    // S23: a pattern being drilled at this job — my part, continued over days
+    if (planTile?.planId && planTile.word !== 'Shot' && planTile.word !== 'Draft' && shots.length === 0 && !readOnly) {
+      const open = myOpenPart;
+      tiles.push({
+        id: 'drill-log',
+        icon: <Drill className="h-5 w-5" />,
+        name: 'Drill log',
+        state: open
+          ? { title: `${holes.get(open.id) ?? 0} holes · your part`, sub: planTile.state.sub, action: 'Open', tone: 'next' }
+          : { title: planTile.word === 'Drilled' ? 'The pattern is drilled' : 'Continue the pattern', sub: planTile.state.sub, action: planTile.word === 'Drilled' ? 'View' : 'Open', tone: planTile.word === 'Drilled' ? 'done' : 'next' },
+        onAction: () => {
+          if (open) navigate(`/jobs/${day.jobId}/drill-plan/${planTile.planId}/log/${open.id}`);
+          else void db.drillPlans.get(planTile.planId!).then((p) => p && (planTile.word === 'Drilled' ? navigate(`/jobs/${day.jobId}/drill-plan/${p.id}`) : continuePart(p).then((id) => navigate(`/jobs/${day.jobId}/drill-plan/${p.id}/log/${id}`))));
+        },
+      });
+    } else if (myLogs.length === 0) {
       tiles.push({
         id: 'drill-log',
         icon: <Drill className="h-5 w-5" />,
@@ -176,7 +209,7 @@ export function DayHub({ day, job, blastLog, shots, dailyReport, locked, owner, 
         },
       });
     }
-    for (const l of myLogs) {
+    for (const l of myLogs.filter((x) => !x.drillPlanId)) {
       tiles.push({
         id: `drill-log`,
         icon: <Drill className="h-5 w-5" />,
@@ -241,9 +274,11 @@ export function DayHub({ day, job, blastLog, shots, dailyReport, locked, owner, 
       },
     });
   }
-  const upNextIndex = readOnly ? -1 : tiles.findIndex((t) => t.state.tone !== 'done' && (t.state.action === 'Start' || t.state.action === 'Open'));
+  // S23: the Drill plan tile reads the pattern's state all week; it never wears
+  // "Up next" — the day's own papers do (harness72: Up next sits on the Blasting log)
+  const upNextIndex = readOnly ? -1 : tiles.findIndex((t) => t.id !== 'drill-plan' && t.state.tone !== 'done' && (t.state.action === 'Start' || t.state.action === 'Open'));
 
-  const file = fileState(day, blastLog, shots, dailyReport, dayLogs.length);
+  const file = fileState(day, blastLog, shots, dailyReport, dayLogs.filter((l) => !l.drillPlanId).length, rigRows.length);
   const showFile = !isOffice && !(isDriller && blasting);
 
   return (

@@ -19,6 +19,7 @@ import {
   canTransitionStatusAs,
   diffPayloads,
   APPROVAL_LOCKED_TABLES,
+  DRILL_PLAN_CLOSE_FIELDS,
   LIFECYCLE_CHILDREN,
   LOCKED_DAY_STATUSES,
   NEVER_USED_DELETE_TABLES,
@@ -398,7 +399,21 @@ powersyncRouter.post('/upload', requireAuth, async (req: AuthedRequest, res) => 
           op.op === 'PATCH' &&
           Boolean(stored) &&
           diffPayloads(stored!.payload, effective).every((c) => STORAGE_POINTER_FIELDS.has(c.field));
-        if (!canPerformOpAs(tableName, op.op, role, roleDefs) && !(storagePointerOnly && canPerformOpAs(tableName, 'PUT', role, roleDefs))) {
+        // S23 (Sep 18 2026): a driller may close the pattern — the plan turns
+        // Drilled by itself on the device that logs the last hole, or the last
+        // driller closes it short with a reason — but never change the pattern
+        // itself. A PATCH that touches only the closing fields is allowed to
+        // whoever may write drill logs; the status rule below still applies.
+        const planCloseOnly =
+          tableName === 'drillPlans' &&
+          op.op === 'PATCH' &&
+          Boolean(stored) &&
+          diffPayloads(stored!.payload, effective).every((c) => DRILL_PLAN_CLOSE_FIELDS.has(c.field));
+        if (
+          !canPerformOpAs(tableName, op.op, role, roleDefs) &&
+          !(storagePointerOnly && canPerformOpAs(tableName, 'PUT', role, roleDefs)) &&
+          !(planCloseOnly && canPerformOpAs('drillLogs', 'PATCH', role, roleDefs))
+        ) {
           discard(op, tableName, 'role denied');
           continue;
         }

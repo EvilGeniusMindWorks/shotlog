@@ -232,3 +232,20 @@ export function useEarlierChecklistToday(equipmentId: string | undefined, jobId?
     [equipmentId, jobId ?? '', on],
   );
 }
+
+/** S23 / feedback item 3 (Matthew, Sep 18 2026): a checklist is complete
+ *  with its start hours, its stop hours (or the rig out of service) and the
+ *  driller's signature — one screen, one paper; the drill log's end-of-day
+ *  buttons and File this day wait for it */
+export function checklistComplete(c: Pick<DrillChecklist, 'startingHours' | 'stopHours' | 'outOfService' | 'signatureImage'>): boolean {
+  return c.startingHours != null && (c.stopHours != null || Boolean(c.outOfService)) && Boolean(c.signatureImage);
+}
+
+/** What a checklist still needs before it is complete, in the crew's words */
+export function checklistMissing(c: Pick<DrillChecklist, 'startingHours' | 'stopHours' | 'outOfService' | 'signatureImage'>): string[] {
+  const out: string[] = [];
+  if (c.startingHours == null) out.push('start hours');
+  if (c.stopHours == null && !c.outOfService) out.push('stop hours');
+  if (!c.signatureImage) out.push('signature');
+  return out;
+}

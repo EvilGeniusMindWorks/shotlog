@@ -14,7 +14,7 @@ import { useBack } from '@/lib/nav';
 import { BackButton } from '@/components/layout/ScreenHeader';
 import { Search, Wrench } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
-import { completeChecklist, emptyChecklist, fileChecklist, useEarlierChecklistToday, useTodayChecklist } from '@/hooks/useMaintenance';
+import { checklistComplete, checklistMissing, emptyChecklist, fileChecklist, useEarlierChecklistToday, useTodayChecklist } from '@/hooks/useMaintenance';
 import { can } from '@/lib/perms';
 import { hhmm } from '@/lib/dayCard';
 import { useJobs } from '@/hooks/useBlastDay';
@@ -354,32 +354,47 @@ export function DrillChecklistPage() {
     async () => (existing ? (await db.submissions.filter((s) => s.type === 'drill_checklist' && s.sourceId === existing.id).toArray()) : []),
     [existing?.id],
   );
-  // S20: a saved checklist without its stop hours is completed here, not refiled
-  const completing = Boolean(existing && !existing.filedAt);
-  const readOnly = Boolean(existing) || Boolean(saved);
-  const canComplete = Boolean(existing && (me?.id === existing.drillerUserId || can('drillChecklists', 'PATCH')));
-  const [stopDraft, setStopDraft] = useState('');
+  // S23 / feedback item 3 (Matthew, Sep 18 2026: "one screen for the rig
+  // checklist; start and stop hours live inside it; no separate or special
+  // enter-stop-hours buttons or screens; open it, put the stop hours in, sign
+  // and complete"): a checklist saved in the morning opens as THE form again —
+  // the stop hours, the signature, a changed answer — and Complete needs the
+  // start, the stop (or out of service) and the signature. A filed one is
+  // read-only.
+  const continuing = Boolean(existing && !existing.filedAt && (me?.id === existing.drillerUserId || can('drillChecklists', 'PATCH')));
+  const [loadedExisting, setLoadedExisting] = useState<string | null>(null);
+  useEffect(() => {
+    if (!existing || !continuing || loadedExisting === existing.id) return;
+    setDraft({ ...existing });
+    setLoadedExisting(existing.id);
+  }, [existing?.id, continuing]);
+  const readOnly = Boolean(existing && !continuing) || Boolean(saved);
   const [stopError, setStopError] = useState<string | null>(null);
-  const complete = async () => {
-    if (!existing) return;
-    const v = parseFloat(stopDraft);
-    if (!Number.isFinite(v)) return setStopError('Enter the meter reading.');
-    if (existing.startingHours != null && v < existing.startingHours) return setStopError(`The stop reading can't be below the start reading (${existing.startingHours}).`);
-    await completeChecklist(existing, v);
-    // the archive route files the office copy and shows the outcome
-    navigate(`/drill-checklist-file/${existing.id}`, { replace: true });
-  };
+  const [signError, setSignError] = useState<string | null>(null);
   const carriedLine =
     carriedFrom && earlier
       ? `Answers carried from ${draft.date === todayISO() ? "this morning's" : 'the earlier'} checklist${earlierJob?.name ? ` at ${earlierJob.name}` : ''} — change what changed.`
       : null;
   const set = (patch: Partial<typeof draft>) => setDraft({ ...draft, ...patch });
+  const completeNow = draft.stopHours != null || draft.outOfService;
+  const missing = checklistMissing(draft);
 
   const submit = async () => {
     if (!rigId) return;
+    setStopError(null);
+    setSignError(null);
     // S20: with the stop hours (or a rig out of service from the start) the paper is
     // complete and files now; without them it is saved for the end of the day
-    const completeNow = draft.stopHours != null || draft.outOfService;
+    if (completeNow) {
+      if (draft.stopHours != null && draft.startingHours != null && draft.stopHours < draft.startingHours) {
+        setStopError(`The stop reading can't be below the start reading (${draft.startingHours}).`);
+        return;
+      }
+      if (!checklistComplete(draft)) {
+        setSignError(`Sign it to complete the checklist${missing.length ? ` — still missing: ${missing.join(', ')}` : ''}.`);
+        return;
+      }
+    }
     const result = await fileChecklist({ ...draft, equipmentId: rigId, jobId });
     // Filing is what makes a rig "usual" — browsing never does
     void rememberUsualRig(rigId);
@@ -419,40 +434,13 @@ export function DrillChecklistPage() {
           </p>
         )}
 
-        {rigId && existing && completing && (
-          <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 space-y-3" data-chk-complete-panel>
-            <p className="text-sm">
-              <b>{rig?.assetNumber}</b> · walk-around saved {hhmm(existing.walkAroundAt ?? existing.createdAt)} by {existing.drillerName}
-              {existing.startingHours != null ? ` · start ${existing.startingHours}` : ''} —{' '}
-              <button type="button" className="underline" data-chk-open-checks onClick={() => navigate(`/drill-checklist-print/${existing.id}`)}>
-                open the checks
-              </button>
-            </p>
-            {canComplete ? (
-              <>
-                <div>
-                  <Label className="text-xs">Stop hours — the meter when you park it</Label>
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    className="max-w-[12rem] font-mono text-base"
-                    placeholder="read the gauge"
-                    value={stopDraft}
-                    onChange={(e) => { setStopDraft(e.target.value); setStopError(null); }}
-                    data-chk-stop-hours
-                  />
-                  {stopError && <p className="text-xs text-red-700 mt-1" data-chk-stop-error>{stopError}</p>}
-                </div>
-                <Button className="w-full" size="lg" data-chk-complete onClick={() => void complete()}>
-                  Complete and file checklist for {rig?.assetNumber}
-                </Button>
-              </>
-            ) : (
-              <p className="text-xs text-gray-600" data-chk-waiting-driller>Waiting on {existing.drillerName} for the stop hours.</p>
-            )}
-          </div>
+        {rigId && existing && continuing && loadedExisting === existing.id && (
+          <p className="text-sm text-amber-900 border border-amber-300 bg-amber-50 rounded-lg px-3 py-2" data-chk-continuing>
+            <b>{rig?.assetNumber}</b> · walk-around saved {hhmm(existing.walkAroundAt ?? existing.createdAt)} by {existing.drillerName}
+            {existing.startingHours != null ? ` · start ${existing.startingHours}` : ''} — put the stop hours in, sign, and complete it.
+          </p>
         )}
-        {rigId && existing && !completing && (
+        {rigId && existing && !continuing && (
           <div className="text-sm text-green-800 border border-green-200 bg-green-50 rounded-lg px-3 py-2 space-y-1" data-chk-existing>
             <p>
               <b>{rig?.assetNumber}</b> already has {draft.date === todayISO() ? "today's checklist" : `a checklist for ${formatDate(draft.date)}`} at this job — filed by {existing.drillerName}
@@ -516,9 +504,10 @@ export function DrillChecklistPage() {
                     className="font-mono text-base"
                     placeholder="later"
                     value={draft.stopHours ?? ''}
-                    onChange={(e) => set({ stopHours: e.target.value ? parseFloat(e.target.value) : null })}
+                    onChange={(e) => { setStopError(null); set({ stopHours: e.target.value ? parseFloat(e.target.value) : null }); }}
                     data-chk-stop-hours
                   />
+                  {stopError && <p className="text-xs text-red-700 mt-1" data-chk-stop-error>{stopError}</p>}
                 </div>
               </div>
               <p className="text-xs text-gray-400" data-chk-hours-source>
@@ -585,13 +574,19 @@ export function DrillChecklistPage() {
                 <span className={draft.outOfService ? 'font-semibold text-safety-orange' : ''}>Rig is OUT OF SERVICE — don't send it back out</span>
               </label>
               <div>
-                <Label className="text-xs">Driller signature</Label>
-                <SignatureField value={draft.signatureImage} onChange={(blob) => set({ signatureImage: blob })} />
+                <Label className="text-xs">Driller signature{completeNow ? ' — completes the paper' : ' — at the end of the day'}</Label>
+                <SignatureField value={draft.signatureImage} onChange={(blob) => { setSignError(null); set({ signatureImage: blob }); }} />
+                {signError && <p className="text-xs text-red-700 mt-1" data-chk-sign-error>{signError}</p>}
               </div>
             </div>
 
-            <Button className="w-full" size="lg" onClick={() => void submit()} data-chk-file data-chk-file-mode={draft.stopHours != null || draft.outOfService ? 'complete' : 'save'}>
-              {draft.stopHours != null || draft.outOfService ? `Complete and file checklist for ${rig.assetNumber}` : `Save checklist for ${rig.assetNumber} · stop hours later`}
+            {completeNow && missing.length > 0 && (
+              <p className="text-xs text-amber-800" data-chk-missing={missing.join(',')}>
+                To complete it: {missing.join(', ')}.
+              </p>
+            )}
+            <Button className="w-full" size="lg" onClick={() => void submit()} data-chk-file data-chk-file-mode={completeNow ? 'complete' : 'save'} {...(existing ? { 'data-chk-complete': '' } : {})}>
+              {completeNow ? `Complete and file checklist for ${rig.assetNumber}` : `Save checklist for ${rig.assetNumber} · stop hours later`}
             </Button>
           </>
         )}

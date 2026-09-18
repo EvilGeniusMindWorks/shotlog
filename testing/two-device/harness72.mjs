@@ -283,12 +283,18 @@ async (page, lib) => {
     R.ok('the rig sheet offers Enter the stop hours and Out of service', (await PB.locator('[data-rig-stop]').count()) === 1 && /Enter the stop hours/.test(await PB.locator('[data-rig-stop]').innerText()) && (await PB.locator('[data-rig-down]').count()) === 1);
     // S20: the stop hours go on the checklist itself — one paper, completed and filed then
     await PB.locator('[data-rig-stop]').click();
-    await PB.locator('[data-chk-complete-panel]').waitFor({ timeout: 15000 });
+    // S23 / feedback item 3: the morning checklist opens as the one form again — stop hours, signature, Complete
+    await PB.locator('[data-chk-continuing]').waitFor({ timeout: 15000 });
+    R.ok('the checklist opens as the one screen it was saved from (no separate stop-hours panel)', (await PB.locator('[data-chk-complete-panel]').count()) === 0 && (await PB.locator('[data-chk-hours-box]').count()) === 1);
     await PB.locator('[data-chk-stop-hours]').fill(String(start1 - 1));
     await PB.locator('[data-chk-complete]').click();
     await PB.locator('[data-chk-stop-error]').waitFor({ timeout: 5000 });
     R.ok('a stop reading below the start is refused', /can't be below/.test(await PB.locator('[data-chk-stop-error]').innerText()));
     await PB.locator('[data-chk-stop-hours]').fill(String(start1 + 6.4));
+    await PB.locator('[data-chk-complete]').click();
+    await PB.locator('[data-chk-sign-error]').waitFor({ timeout: 5000 });
+    R.ok('Complete waits for the signature', /Sign it/.test(await PB.locator('[data-chk-sign-error]').innerText()));
+    await lib.signPad(PB);
     await PB.locator('[data-chk-complete]').click();
     await PB.waitForURL(/\/drill-checklist-file\//, { timeout: 20000 });
     await PB.locator('button:has-text("Done")').first().waitFor({ timeout: 30000 });

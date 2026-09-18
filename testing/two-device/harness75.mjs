@@ -185,9 +185,9 @@ async (page, lib) => {
     }, { jobA: jobs[1].id });
     chkA = m.chkId;
     await PD.goto(`${WEB}/drill-checklist/${m.rigId}?job=${jobs[1].id}`);
-    // S20: saved with its start hours only, the morning checklist waits for its stop hours — the page opens on its Complete panel
-    await PD.locator('[data-chk-complete-panel]').waitFor({ timeout: 15000 });
-    R.ok('at the morning job the rig already has today’s checklist, waiting for its stop hours', /walk-around saved/.test(await PD.locator('[data-chk-complete-panel]').innerText()) && (await PD.locator('[data-chk-hours-box]').count()) === 0);
+    // S20: saved with its start hours only, the morning checklist waits for its stop hours — S23: the page opens as the same form again
+    await PD.locator('[data-chk-continuing]').waitFor({ timeout: 15000 });
+    R.ok('at the morning job the rig already has today’s checklist, waiting for its stop hours — the one screen', /walk-around saved/.test(await PD.locator('[data-chk-continuing]').innerText()) && (await PD.locator('[data-chk-hours-box]').count()) === 1 && Number(await PD.locator('[data-chk-hours]').inputValue()) === m.start);
     await PD.goto(`${WEB}/drill-checklist/${m.rigId}?job=${jobs[2].id}`);
     await PD.locator('[data-chk-hours]').waitFor({ timeout: 15000 });
     await sleep(800);

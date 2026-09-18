@@ -110,7 +110,7 @@ export interface FileState {
   note?: string;
 }
 
-export function fileState(day: BlastDay, log: BlastLog | undefined, shots: Shot[], report: DailyReport | undefined, drillLogs: number): FileState {
+export function fileState(day: BlastDay, log: BlastLog | undefined, shots: Shot[], report: DailyReport | undefined, drillLogs: number, checklists = 0): FileState {
   if (day.closed) return { kind: 'closed', label: `Closed · ${day.closed.reason || 'nothing to file'}`, note: `${day.closed.byName} · ${hhmm(day.closed.at)}` };
   // S21: a paper the office sent back from its review screen is named here
   // ("1 paper sent back · Time card · Lisa Vital") until it is refiled
@@ -129,8 +129,10 @@ export function fileState(day: BlastDay, log: BlastLog | undefined, shots: Shot[
     if (report && !report.doneAt) return { kind: 'blocked', label: 'The daily report is not marked done' };
     return { kind: 'ready', label: 'File this day', note: report ? undefined : 'files with the note “No daily report”' };
   }
-  if (!report && drillLogs === 0) return { kind: 'none', label: '' };
-  return { kind: 'ready', label: 'File this day', note: report ? undefined : 'files the drill logs with the note “No daily report”' };
+  // S23: a drilling day files with its checklists and cards; the pattern's
+  // drill log files with the pattern when the blaster accepts it
+  if (!report && drillLogs === 0 && checklists === 0) return { kind: 'none', label: '' };
+  return { kind: 'ready', label: 'File this day', note: report ? undefined : 'files with the note “No daily report”' };
 }
 
 // ── The crew on a day ──────────────────────────────────────────────────────
@@ -161,10 +163,77 @@ export interface CrewModel {
 export async function dayDrillLogsFor(day: BlastDay): Promise<DrillLog[]> {
   const byDay = await db.drillLogs.where('blastDayId').equals(day.id).toArray();
   const seen = new Set(byDay.map((l) => l.id));
-  const byJob = (await db.drillLogs.where('jobId').equals(day.jobId).toArray()).filter(
-    (l) => !seen.has(l.id) && (l.date ?? l.createdAt.slice(0, 10)) === day.date,
-  );
-  return [...byDay, ...byJob];
+  const atJob = (await db.drillLogs.where('jobId').equals(day.jobId).toArray()).filter((l) => !seen.has(l.id));
+  const byJob = atJob.filter((l) => (l.date ?? l.createdAt.slice(0, 10)) === day.date);
+  for (const l of byJob) seen.add(l.id);
+  // S23: a pattern's part is continued over days — it is on this day when a
+  // hole was drilled on it that day, or (today) while it is open
+  const parts: DrillLog[] = [];
+  for (const l of atJob) {
+    if (seen.has(l.id) || !l.drillPlanId) continue;
+    if (l.status === 'open' && day.date === todayISO()) {
+      parts.push(l);
+      continue;
+    }
+    const holes = await db.drillLogHoles.where('drillLogId').equals(l.id).toArray();
+    if (holes.some((h) => h.date === day.date)) parts.push(l);
+  }
+  return [...byDay, ...byJob, ...parts];
+}
+
+// ── The Drill plan tile (S23) ──────────────────────────────────────────────
+// The pattern is a paper of the job; the day's tile reads its state all week
+// — Draft · Sent · Drilling (with the pace) · Drilled · Shot — and opens it.
+
+export interface PlanTileModel {
+  planId?: string;
+  word?: string;
+  state: TileState;
+}
+
+export async function dayDrillPlanTile(day: BlastDay, canDraw: boolean, isDriller: boolean): Promise<PlanTileModel> {
+  const { planProgress } = await import('@/hooks/useDrillPlans');
+  const plans = (await db.drillPlans.where('jobId').equals(day.jobId).toArray()).filter((p) => !p.archivedAt).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  // the newest pattern that is not shot yet; else the newest
+  let pick: Awaited<ReturnType<typeof planProgress>> | undefined;
+  for (const p of plans) {
+    const prog = await planProgress(p.id);
+    if (!prog) continue;
+    if (prog.word !== 'Shot') {
+      pick = prog;
+      break;
+    }
+    pick = pick ?? prog;
+  }
+  if (!pick) {
+    return {
+      state: {
+        title: 'None yet',
+        sub: isDriller ? 'the blaster draws the pattern' : 'draw the pattern, then send it to the drillers',
+        action: canDraw ? 'Start' : 'None',
+        tone: 'plain',
+      },
+    };
+  }
+  const { plan, word } = pick;
+  const count = `${pick.drilling.totalHoles} of ${pick.planned}`;
+  const sentTo = plan.sentTo && plan.sentTo.length ? ` · to ${plan.sentTo.map((d) => d.name.split(/\s+/)[0]).join(', ')}` : '';
+  const state: TileState =
+    word === 'Draft'
+      ? { title: `${plan.name} · Draft`, sub: `${pick.planned} holes · not sent yet`, action: 'Open', tone: 'next' }
+      : word === 'Sent'
+        ? { title: `${plan.name} · Sent${plan.sentAt ? ` ${hhmm(plan.sentAt)}` : ''}`, sub: `${pick.planned} holes${sentTo}`, action: 'Open', tone: 'done' }
+        : word === 'Drilling'
+          ? { title: `${plan.name} · Drilling`, sub: `${count}${pick.pace ? ` · at this pace, drilled ${pick.pace.expectedWord}` : ''}`, action: 'Open', tone: 'next' }
+          : word === 'Drilled'
+            ? { title: `${plan.name} · Drilled${plan.drilledAt ? ` ${formatDateShort(plan.drilledAt)}` : ''}`, sub: `${count}${pick.waiting ? ` · ${pick.waiting} part${pick.waiting === 1 ? '' : 's'} to accept` : ' · accepted'}`, action: 'Open', tone: pick.waiting ? 'warn' : 'done' }
+            : { title: `${plan.name} · Shot`, sub: count, action: 'View', tone: 'done' };
+  return { planId: plan.id, word, state };
+}
+
+function formatDateShort(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined, { weekday: 'short' });
 }
 
 export async function dayChecklistsFor(day: BlastDay, logs: DrillLog[]): Promise<{ checklist: DrillChecklist; asset: string }[]> {

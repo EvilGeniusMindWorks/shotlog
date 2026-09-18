@@ -25,6 +25,10 @@ Diameter, burden, spacing and depth at the top arrive **filled in from the blast
 
 Drilled an extra hole? Type its number and log it. It sits below the pattern as **off-plan** so the blaster knows.
 
+## Changing rigs mid-pattern
+
+A rig goes down, you move to another: tap **Change rig** on the log. The old rig's checklist takes its stop hours (and Out of service, which opens the shop's ticket), the new rig's checklist opens for its start hours, and every hole from then on carries the new rig.
+
 ## Your rig
 
 Pick the rig at the top of the log. It ties the day's hours to the machine, and the shop's clock reads it.

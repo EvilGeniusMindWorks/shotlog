@@ -949,7 +949,22 @@ export interface DrillPlanHoleOverride {
 export interface DrillPlanRecord extends BaseRecord, Archivable {
   jobId: string;
   name: string;
+  /** Stored as open | complete; the word the crew reads (Draft · Sent ·
+   *  Drilling · Drilled · Shot) is derived from the facts — see planWord() */
   status: 'open' | 'complete';
+  /** S23 (Sep 18 2026): the pattern is a paper of the job — sent on a date to
+   *  named drillers, Drilled by itself at the full count or closed short by
+   *  the last driller with a reason, and locked once a hole is drilled: a
+   *  change after that is a new version with a note the drillers see */
+  sentAt?: string;
+  sentBy?: string;
+  sentTo?: { userId: string; name: string }[];
+  drilledAt?: string;
+  closedShort?: { by: string; byName: string; at: string; reason: string };
+  version?: number;
+  /** set while the blaster is changing a drilled pattern (the grid unlocks) */
+  changingSince?: string;
+  revisions?: { version: number; at: string; byName: string; note: string }[];
   rows: number;
   cols: number;
   /** Depth every hole inherits unless overridden */
@@ -986,8 +1001,13 @@ export interface DrillLog extends BaseRecord {
   shotId?: string;
   /** Plan-parented logs: the standalone drill plan this log works against */
   drillPlanId?: string;
-  /** Plan logs are per driller per DAY — this is that day (ISO date) */
+  /** Plan logs (before S23) were per driller per DAY — this is that day.
+   *  S23: a plan log is one driller's PART of the pattern's one drill log,
+   *  continued over days; `date` is the day the part was opened and every
+   *  hole carries its own date, rig and time */
   date?: string;
+  /** S23: the rigs the part was drilled with, in order */
+  rigChanges?: { at: string; fromRigId?: string; toRigId: string }[];
   /** Equipment id of the rig, when picked */
   drillRigEquipmentId?: string;
   status: 'open' | 'complete' | 'accepted';
@@ -1024,6 +1044,12 @@ export interface DrillLog extends BaseRecord {
 export interface DrillLogHole extends BaseRecord {
   drillLogId: string;
   date: string; // ISO date drilled
+  /** S23: who drilled it and with what — stamped from the log's part when
+   *  the hole is added, so a rig change mid-pattern shows hole by hole */
+  drillerUserId?: string;
+  drillerName?: string;
+  rigEquipmentId?: string;
+  rigAsset?: string;
   holeNumber: string; // free-form: "12" or station "A-3"
   angle: number;
   actualDepth: number;

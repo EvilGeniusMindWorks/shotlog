@@ -8,6 +8,7 @@ import { getDaysScope, homeIsMineFirst, myDayIds, onlyMine, setDaysScope, type D
 import { useLiveQuery, db } from '@/db';
 import { getPowerSync } from '@/db/powersync/client';
 import { createBlastDay } from '@/hooks/useBlastDay';
+import { createDrillPlan } from '@/hooks/useDrillPlans';
 import { powderFactor } from '@shotlog/shared';
 import type { BlastDay, Job } from '@/db/schema';
 import { Button } from '@/components/ui/button';
@@ -265,6 +266,44 @@ export function Dashboard() {
   );
 }
 
+/** S23: "Plan the drilling at a job" — pick the job, get a new pattern */
+function PlanDrillingSheet({ onClose }: { onClose: () => void }) {
+  const navigate = useNavigate();
+  const [q, setQ] = useState('');
+  const jobs = useLiveQuery(async () => {
+    const all = (await db.jobs.filter((j) => j.isActive && !j.archivedAt).toArray()).sort((a, b) => a.name.localeCompare(b.name));
+    const customers = new Map((await db.customers.toArray()).map((c) => [c.id, c.name]));
+    return all.map((j) => ({ id: j.id, name: j.name, jobNumber: j.jobNumber, customer: (j.customerId && customers.get(j.customerId)) || '' }));
+  }) ?? [];
+  const query = q.trim().toLowerCase();
+  const listed = jobs.filter((j) => !query || j.name.toLowerCase().includes(query) || (j.jobNumber ?? '').toLowerCase().includes(query) || j.customer.toLowerCase().includes(query));
+  return (
+    <ConsequenceSheet onClose={onClose}>
+      <div data-plan-drilling-sheet>
+        <h3 className="font-bold text-lg">Plan the drilling at a job</h3>
+        <p className="text-xs text-gray-500 mb-2">The pattern becomes a paper of the job: draw it now, send it to the drillers, and the day's Drill plan tile reads its state until it is shot.</p>
+        <Input placeholder="Search a job or customer" value={q} onChange={(e) => setQ(e.target.value)} data-plan-drilling-search />
+        <div className="mt-2 max-h-[50vh] overflow-auto space-y-1">
+          {listed.slice(0, 40).map((j) => (
+            <button
+              key={j.id}
+              type="button"
+              className="w-full text-left rounded-lg border border-gray-200 bg-white px-3 py-2.5 min-h-[48px]"
+              data-plan-drilling-job={j.id}
+              onClick={() => void createDrillPlan(j.id).then((id) => { onClose(); navigate(`/jobs/${j.id}/drill-plan/${id}`); })}
+            >
+              <span className="block font-semibold text-sm">{j.jobNumber ? `${j.jobNumber} · ` : ''}{j.name}</span>
+              {j.customer && <span className="block text-xs text-gray-500">{j.customer}</span>}
+            </button>
+          ))}
+          {listed.length === 0 && <p className="text-sm text-gray-400 py-2">No job matches.</p>}
+        </div>
+        <Button variant="outline" className="w-full mt-2" onClick={onClose}>Close</Button>
+      </div>
+    </ConsequenceSheet>
+  );
+}
+
 /** The + button and its dialog — shared by every home that can create work days */
 function NewWorkDayFab({ defaultTypeOfWork }: { defaultTypeOfWork?: WorkType }) {
   const navigate = useNavigate();
@@ -272,17 +311,21 @@ function NewWorkDayFab({ defaultTypeOfWork }: { defaultTypeOfWork?: WorkType }) 
   // S20 (Matthew): the + offers two things — Start a day · Report an incident
   const [menu, setMenu] = useState(false);
   const [report, setReport] = useState(false);
+  // S23: the + also plans the drilling at a job — the pattern as a paper of the job
+  const [planJob, setPlanJob] = useState(false);
   const canReport = can('incidents', 'PUT');
+  const canPlan = can('drillPlans', 'PUT');
   return (
     <>
       <button
         data-tour="fab"
         className="fixed bottom-[calc(6rem+var(--sab))] right-[calc(1rem+var(--sar))] sm:bottom-8 sm:right-8 h-14 w-14 rounded-full bg-safety-orange text-white shadow-lg flex items-center justify-center active:scale-95 transition-transform z-20"
-        title="Start a day · Report an incident"
-        onClick={() => (canReport ? setMenu(true) : setShowNewDialog(true))}
+        title="Start a day · Plan the drilling · Report an incident"
+        onClick={() => (canReport || canPlan ? setMenu(true) : setShowNewDialog(true))}
       >
         <Plus className="h-7 w-7" />
       </button>
+      {planJob && <PlanDrillingSheet onClose={() => setPlanJob(false)} />}
       {menu && (
         <ConsequenceSheet onClose={() => setMenu(false)}>
           <div data-fab-menu>
@@ -295,6 +338,17 @@ function NewWorkDayFab({ defaultTypeOfWork }: { defaultTypeOfWork?: WorkType }) 
               <span className="font-semibold">Start a day at a job</span>
               <span className="block text-xs text-gray-500">a work day with its papers</span>
             </button>
+            {canPlan && (
+              <button
+                type="button"
+                className="w-full text-left rounded-lg border border-gray-200 bg-white px-3 py-3 mb-2 min-h-[48px]"
+                data-fab-plan-drilling
+                onClick={() => { setMenu(false); setPlanJob(true); }}
+              >
+                <span className="font-semibold">Plan the drilling at a job</span>
+                <span className="block text-xs text-gray-500">the pattern as a paper of the job — drawn today, drilled over days, shot later</span>
+              </button>
+            )}
             <button
               type="button"
               className="w-full text-left rounded-lg border border-red-200 bg-red-50 px-3 py-3 mb-2 min-h-[48px] flex items-center gap-2"

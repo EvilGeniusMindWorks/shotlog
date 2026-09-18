@@ -16,9 +16,15 @@ The blaster lays out the pattern — rows, columns, depths — and sends it to t
 
 ![The Drilling tab](drilling.png)
 
+## One drill log, continued over days
+
+A pattern is one drill log, however many days it takes. Three doors reach it: your home card for the job ("Bench 1 · 31 of 44 · you 20 · Dinis 11 · **Continue drilling ›**"), the Drilling page's row, and the pattern's own page. The next hole skips every hole anyone has already drilled, on any day. Each hole you add carries you, your rig, the date and the time.
+
+At the end of the day, **Done for today** leaves your part open for tomorrow; **My part is done** signs it once — your signature covers the holes you drilled. Both wait for today's rig checklist to be complete: a line on the log names the rig and opens the checklist.
+
 ## More than one driller
 
-Every driller on the job sees the same plan. You split the pattern between you the way you always have — on the ground. Each of you logs the holes you drilled; the blaster sees all of them on one grid with your initials.
+Every driller on the job sees the same plan. You split the pattern between you the way you always have — on the ground. Each of you logs the holes you drilled and signs your own part; the blaster sees all of them on one grid with your initials. The pattern turns **Drilled** by itself when the last hole is in; if some holes will never be drilled, the last driller closes it short with a reason.
 
 ## No plan here
 

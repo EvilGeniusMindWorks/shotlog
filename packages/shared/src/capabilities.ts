@@ -184,8 +184,9 @@ export const CAPABILITIES: readonly CapabilityDef[] = [
   },
   {
     key: 'complete_drill_plans',
-    label: 'Complete drill plans',
-    description: 'Mark a standalone drill plan complete, or reopen it.',
+    label: 'Reopen drill plans',
+    description:
+      'Reopen a drilled pattern (a drill plan) for more drilling. A pattern turns Drilled by itself when its last hole is logged, and whoever may complete drill logs may close it short with a reason — this is the way back.',
     group: 'workflow',
   },
   {
@@ -480,8 +481,11 @@ const SENSITIVE_TRANSITION_CAPS: Record<string, Record<string, Record<string, st
     in_shop: { retired: 'retire_equipment' },
     retired: { active: 'retire_equipment', in_shop: 'retire_equipment' },
   },
+  // S23 (Sep 18 2026): a pattern turns Drilled on the device that logs the
+  // last hole, and the last driller may close it short — the same people who
+  // complete drill logs. Reopening stays the blast side's.
   drillPlans: {
-    open: { complete: 'complete_drill_plans' },
+    open: { complete: 'complete_drill_logs' },
     complete: { open: 'complete_drill_plans' },
   },
   // S21: approving a time card (or pulling an approved one back) is its own

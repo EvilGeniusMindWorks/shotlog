@@ -367,3 +367,24 @@ export async function storageStandIn(P, { tag = 'standin', bins } = {}) {
     for (const pattern of ['**/files/presign-upload', `**/__${tag}_put`, ...(bins ? ['**/files/presign-download', `**/__${tag}/**`] : [])]) await P.unroute(pattern).catch(() => undefined);
   };
 }
+
+// ── Signing a signature field (S23) ────────────────────────────────────────
+/** Draw a stroke on the first open signature pad inside `within` (a locator
+ *  or the page) and save it — the way a driller signs a checklist or his
+ *  part of the drill log. A field that is already signed is left alone. */
+export async function signPad(P, within) {
+  const scope = within ?? P;
+  const open = scope.getByRole('button', { name: /Tap to sign/ });
+  if (!(await open.count())) return false;
+  await open.first().click();
+  const canvas = scope.locator('canvas').first();
+  await canvas.waitFor({ timeout: 5000 });
+  const box = await canvas.boundingBox();
+  await P.mouse.move(box.x + 30, box.y + 40);
+  await P.mouse.down();
+  for (let i = 1; i <= 20; i++) await P.mouse.move(box.x + 30 + i * 8, box.y + 40 + Math.sin(i / 2) * 15);
+  await P.mouse.up();
+  await scope.getByRole('button', { name: /Save Signature/ }).first().click().catch(() => undefined);
+  await sleep(400);
+  return true;
+}
