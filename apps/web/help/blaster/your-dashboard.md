@@ -19,7 +19,7 @@ The Dashboard is your day. It shows what you are working on, what is waiting for
 
 ## Yours first
 
-Unasked, ShotLog shows you only what you authored. Everyone's days are one tap away: **Work days › Everyone**. The switch is remembered on the device.
+Unasked, ShotLog shows you only what you authored. Everyone's days are one tap away: **Work days › Everyone**. The switch is remembered on the device. Every row there names the blaster in charge and, once the day is filed, who filed it and when — "filed by Blaster Test 3:12 pm" — so a day is never just a date and a job.
 
 ## The first-week card
 

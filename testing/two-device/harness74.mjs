@@ -49,8 +49,9 @@ async (page, lib) => {
       const { db } = await import('/src/db/index.ts');
       const { createBlastDayWithPapers } = await import('/src/hooks/useBlastDay.ts');
       const { serializeDiagram, emptyDiagram } = await import('/src/lib/shotDiagram.ts');
-      const { nowISO } = await import('/src/lib/utils.ts');
-      const busy = new Set((await db.blastDays.toArray()).filter((d) => d.status === 'draft').map((d) => d.jobId));
+      const { nowISO, todayISO } = await import('/src/lib/utils.ts');
+      // one day per job per date: a job with ANY day today (a filed one cannot be deleted) is taken
+      const busy = new Set((await db.blastDays.toArray()).filter((d) => d.status === 'draft' || d.date === todayISO()).map((d) => d.jobId));
       const jobs = (await db.jobs.filter((j) => !j.archivedAt && j.isActive && !busy.has(j.id) && !/^S1[124]/.test(j.name)).toArray()).sort((a, b) => a.name.localeCompare(b.name));
       const id = await createBlastDayWithPapers(jobs[0].id, undefined, undefined, { typeOfWork: 'drill_to_blast', name: `diagram ${stamp}` });
       const log = await db.blastLogs.where('blastDayId').equals(id).first();
@@ -211,7 +212,8 @@ async (page, lib) => {
       const { db } = await import('/src/db/index.ts');
       const { createBlastDayWithPapers } = await import('/src/hooks/useBlastDay.ts');
       const { createDrillLog } = await import('/src/hooks/useDrillLogs.ts');
-      const busy = new Set((await db.blastDays.toArray()).filter((d) => d.status === 'draft').map((d) => d.jobId));
+      const { todayISO } = await import('/src/lib/utils.ts');
+      const busy = new Set((await db.blastDays.toArray()).filter((d) => d.status === 'draft' || d.date === todayISO()).map((d) => d.jobId));
       const jobs = (await db.jobs.filter((j) => !j.archivedAt && j.isActive && !busy.has(j.id) && j.id !== skipJob && !/^S1[124]/.test(j.name)).toArray()).sort((a, b) => a.name.localeCompare(b.name));
       const id = await createBlastDayWithPapers(jobs[0].id, undefined, undefined, { typeOfWork: 'drill_to_blast', name: `holes ${stamp}` });
       const log = await db.blastLogs.where('blastDayId').equals(id).first();

@@ -263,3 +263,23 @@ report (solo submit) · My Records · jobs list
 - **Sent back to you** is the first band on Drilling and on the home: the job, the shot, the holes, who sent it and the note, until the log is marked complete again (Driller Test: "I should see the drill plan that was sent back to me here — but I don't"; the old queue listed only logs with no holes yet).
 - **Mark complete needs a rig.** The sheet asks "Which rig drilled it?" when the log has none and the button waits ("Pick the rig first") — the hours, the checklist and the billing tie to it.
 - **Hours on the checklist, one paper** (push 2): Start hours and Stop hours in a Hours box at the top; the checklist is complete only with both and files at the end of the day; the walk-around is stamped when done. No "running" rig anywhere, no Stop-for-the-day button on the day's rig row — "stop hours missing" opens the checklist. The home card says "Enter R1021's stop hours" at the end of the day. The daily report reads the hours from the checklist; the blaster is never asked.
+
+## Round S24 — the open feedback (Sep 18 2026, plan artifact U52a39MRbsLCGBw3a2zXLL)
+
+- **Reminders are resolved on read.** The line on Joe's home ("Mark asked
+  for your time card") shows only while the paper it asks for is missing;
+  the list never writes, the × writes once, and a filed day does not lock a
+  reminder (it is a nudge, not a paper). The Sep 16–18 toasts — "Not saved
+  — a change your role can't make was undone", once a second — came from
+  the old list trying to clear a send-back reminder on a day filed since
+  Sep 7.
+- **The sent-back line is the log's own.** A drill log the blaster sends
+  back shows as its band on the home and on Drilling, read from the log
+  (who, when, the note), until he marks it complete again. No reminder row
+  is written for it any more, so a second send-back is still one line.
+- **No stop-hours nudge** (Matthew: "I don't like the remind feature from
+  the daily log — leave it off; the blaster sees the unfiled rig checklist
+  and calls the driller"). The home card's "Enter R1021's stop hours"
+  button and the daily report's Remind are gone; the rig line reads "stop
+  hours missing" and the checklist is the one paper (S23 makes it one
+  screen). The time-card Remind on the crew list stays.

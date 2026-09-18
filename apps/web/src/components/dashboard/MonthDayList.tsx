@@ -10,6 +10,7 @@ import { Search } from 'lucide-react';
 import type { DaySummary } from '@/pages/Dashboard';
 import { formatDate, todayISO } from '@/lib/utils';
 import { fmtLbs } from '@/lib/format';
+import { hhmm } from '@/lib/dayCard';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 
@@ -40,6 +41,28 @@ export function summaryDots(s: DaySummary): { log: Dot; report: Dot; drilling: D
   };
 }
 
+/** S24 (Matthew, Sep 18 2026, Work days · Everyone: "who filed what"): the
+ *  blaster in charge and who filed the day, as person chips on the row */
+function PeopleLine({ s }: { s: DaySummary }) {
+  if (!s.blasterName && !s.filedBy) return null;
+  const chip = 'inline-flex items-center rounded-full bg-gray-100 text-gray-700 px-2 py-0.5 text-[11px] font-medium max-w-[12rem] truncate';
+  return (
+    <p className="flex flex-wrap items-center gap-1 mt-0.5" data-day-people>
+      {s.blasterName && (
+        <span className={chip} data-day-blaster={s.blasterName} title="Blaster in charge">
+          {s.blasterName}
+        </span>
+      )}
+      {s.filedBy && (
+        <span className="text-[11px] text-gray-500 inline-flex items-center gap-1" data-day-filer={s.filedBy}>
+          filed by <span className={chip}>{s.filedBy}</span>
+          {s.filedAt && <span>{hhmm(s.filedAt)}</span>}
+        </span>
+      )}
+    </p>
+  );
+}
+
 function DayRow({ s, navigate }: { s: DaySummary; navigate: (to: string) => void }) {
   const sentBack = s.day.status === 'draft' && Boolean(s.day.sendBackNote);
   return (
@@ -56,6 +79,7 @@ function DayRow({ s, navigate }: { s: DaySummary; navigate: (to: string) => void
           {dayLine(s)}
           {s.totalLbs > 0 && ` · ${fmtLbs(s.totalLbs)} lbs`}
         </p>
+        <PeopleLine s={s} />
       </div>
       {/* S15 (Matthew): the dots and the status pill sit in fixed columns so every row lines up */}
       <span className="inline-flex items-center gap-3 shrink-0">

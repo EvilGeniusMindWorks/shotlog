@@ -422,7 +422,13 @@ export interface WorkDayConfirmation extends BaseRecord {
 }
 
 /** S14: "Remind" — a blaster asks a person for a paper on a day. One line
- *  on that person's home until the paper exists or they dismiss it. */
+ *  on that person's home until the paper exists or they dismiss it.
+ *  S24 (Sep 18 2026): a nudge, not a paper — resolved on READ (the list
+ *  never writes), the × writes once, and a filed day does not lock it.
+ *  'sentback' and 'rigstop' are no longer written: the sent-back line
+ *  comes from the drill log itself, and the daily report's stop-hours
+ *  Remind is gone (Matthew: "the blaster sees the unfiled rig checklist
+ *  and calls the driller"). Old rows of those kinds fall silent. */
 export interface DayReminder extends BaseRecord {
   blastDayId: string;
   jobId: string;

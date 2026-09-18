@@ -9,7 +9,7 @@ import type { BlastDay, DrillLog, DrillLogHole, Shot } from '@/db/schema';
 import { dayDrillLogs } from '@/hooks/useDayPhases';
 import { canDrillLogTransition } from '@/lib/perms';
 import { getSessionUser } from '@/lib/session';
-import { formatDate, generateId, nowISO } from '@/lib/utils';
+import { formatDate, nowISO } from '@/lib/utils';
 import { hhmm } from '@/lib/dayCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -151,24 +151,9 @@ export function MergedDrillingView({
         updatedAt: now,
       });
       names.push(l.drillerName || 'the driller');
-      if (l.drillerUserId && l.drillerUserId !== me?.id) {
-        await db.dayReminders.add({
-          id: generateId(),
-          blastDayId: day.id,
-          jobId: day.jobId,
-          date: day.date,
-          toUserId: l.drillerUserId,
-          toName: l.drillerName || '',
-          fromUserId: me?.id ?? '',
-          fromName: me?.name ?? '',
-          what: 'sentback',
-          text: `sent your drill log back${note ? `: “${note}”` : ''}`,
-          at: now,
-          createdAt: now,
-          updatedAt: now,
-          syncStatus: 'local',
-        });
-      }
+      // S24: the log itself carries the send-back (sentBackAt, the note, who) and
+      // the driller's home and Drilling read it from there — no reminder row, so
+      // a second send-back is still one line, and nothing is left to clear.
     }
     setSendBack(null);
     showToast(`Sent back to ${names.join(', ')}`);

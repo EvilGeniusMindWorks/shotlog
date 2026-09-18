@@ -320,8 +320,9 @@ async (page, lib) => {
     R.ok('the Send back door is gone while nothing is complete', doorGone === 1);
     await waitForUpload(PB, 30000);
     await PD.goto(`${WEB}/`);
-    const line = await waitFor(async () => { const n = await PD.locator('[data-reminder-kind="sentback"]').count(); return n ? (await PD.locator('[data-reminder-kind="sentback"]').first().textContent()) : undefined; }, 30000);
-    R.ok(`the driller's home says who sent it back and why: "${(line || '').trim()}"`, /sent your drill log back/.test(line || '') && /Row 2/.test(line || ''));
+    // S24: the line comes from the log itself (the Sent back to you band), not a reminder row
+    const line = await waitFor(async () => { const n = await PD.locator('[data-driller-home] [data-sent-back-band]').count(); return n ? (await PD.locator('[data-sent-back-band]').first().textContent()) : undefined; }, 30000);
+    R.ok(`the driller's home says who sent it back and why: "${(line || '').replace(/\s+/g, ' ').trim().slice(0, 90)}"`, /Sent back to you/.test(line || '') && /Row 2/.test(line || '') && (await PD.locator('[data-reminder-kind="sentback"]').count()) === 0);
     await PD.goto(`${WEB}/blast-day/${dayId}/drill-log/${logId}`);
     await PD.getByText('Sent back by the blaster').first().waitFor({ timeout: 20000 });
     R.ok('the log itself shows the sent-back note on top', true);
@@ -329,7 +330,7 @@ async (page, lib) => {
     await PD.evaluate(async (id) => { const { db } = await import('/src/db/index.ts'); const { nowISO } = await import('/src/lib/utils.ts'); await db.drillLogs.update(id, { status: 'complete', completedAt: nowISO(), reopenNote: undefined, updatedAt: nowISO() }); }, logId);
     await PD.goto(`${WEB}/`);
     await PD.locator('[data-driller-home]').waitFor({ timeout: 20000 });
-    const cleared = await waitFor(() => PD.locator('[data-reminder-kind="sentback"]').count().then((n) => (n === 0 ? 1 : 0)), 15000);
+    const cleared = await waitFor(() => PD.locator('[data-sent-back-band]').count().then((n) => (n === 0 ? 1 : 0)), 15000);
     R.ok('signed complete again, the sent-back line leaves the home on its own', cleared === 1);
     await waitForUpload(PD, 30000);
   });

@@ -4,6 +4,33 @@ Items Matthew has agreed to that wait for their round. Source: the Sep 9 2026
 retrospective (artifact a4bb3fdc). Bucket A shipped as round S10. When an item
 is built, move its line to docs/decisions.md with the round that shipped it.
 
+## Customer, site and job screens — their own planning round (tabled Sep 18 2026)
+
+Matthew, on the feedback plan page (artifact U52a39MRbsLCGBw3a2zXLL): "This
+area of the site needs a huge retooling that will require its own separate
+plan. Let's table this, address the other items, get them in the backlog, and
+then work on the overhaul for these sections." The round starts from this list
+plus whatever the office adds; it comes after S23 push 2.
+
+- The job page: the Overview renders the Setup section in full (customer and
+  site, where the work is, the whole configuration form) inside a one-third
+  card, so the four-column form S22 built only appears on the Setup tab; the
+  fields squish (Office Test rows 3730b994, 6e55d7fb; ff3f1ee2 "details not
+  populating" is mostly filled since S22 — activity and days show).
+- Back from a job's tab goes to the site, not the job (fec3cbb4): the record
+  shell's tabs are local state; the arrow always goes to the parent. Same on
+  customer, site, equipment and crew pages. Tabs as URL steps is the fix.
+- New job, site step: the site name copies the address's first keystroke and
+  stops following ("7"); no ZIP on the site step or the site page (4ae2f30b).
+- The customer and site display screens: the key information without the
+  clicking (0a8ac816, c8b4437a) — the office's list of what "key" means on
+  each screen is the first question of the round; the Sep 18 plan page item 8
+  has a first guess (main contact, COI, sites with open jobs, last day; site:
+  address with ZIP, map point, K, the town rows with numbers, permits).
+- The initial setup process for a customer, its sites and its jobs, from the
+  office's chair: "quick and simple and guided; many jobs are single customer
+  and site" (Matthew, Sep 16). S22's three-step New job is the starting point.
+
 ## B — the two weeks after Mark's first day
 
 - Crash reporting on the live app and the API (Sentry, free tier), with the

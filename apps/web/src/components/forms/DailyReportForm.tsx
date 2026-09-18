@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { useLiveQuery, db, deleteWithTombstone } from '@/db';
-import { derivedRigHours, type DerivedRig } from '@/lib/dailyReportView';
+import { derivedRigHours } from '@/lib/dailyReportView';
 import { generateId, nowISO } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import type { BlastDay, BlastLog, DailyReport, Shot, WorkForceEntry, EquipmentEntry, MaterialEntry, SubcontractorEntry } from '@/db/schema';
@@ -251,31 +251,9 @@ function EquipmentSection({
     return Boolean(me && (me.id === ownerId || can('drillLogs', 'PATCH')));
   };
   const navigate = useNavigate();
-  const [reminded, setReminded] = useState<Set<string>>(new Set());
   // S20 (Matthew): the stop hours are the driller's, on the checklist — the report
-  // only waits, and Remind puts a line on the driller's home
-  const remindStop = async (d: DerivedRig) => {
-    const me = getSessionUser();
-    if (!d.chkOwnerId) return;
-    const now = nowISO();
-    await db.dayReminders.add({
-      id: generateId(),
-      blastDayId: blastDay.id,
-      jobId: blastDay.jobId,
-      date: blastDay.date,
-      toUserId: d.chkOwnerId,
-      toName: d.who ?? '',
-      fromUserId: me?.id ?? '',
-      fromName: me?.name ?? '',
-      what: 'rigstop',
-      text: `asked for ${d.asset}'s stop hours`,
-      at: now,
-      createdAt: now,
-      updatedAt: now,
-      syncStatus: 'local',
-    });
-    setReminded((prev) => new Set(prev).add(d.rigId));
-  };
+  // only waits. S24 (Matthew, Sep 18 2026): no Remind here — "the blaster sees the
+  // unfiled rig checklist and calls the driller".
   const saveMeter = async (d: { rigId: string; logId?: string; chkId?: string }) => {
     const v = parseFloat(meterValue);
     if (!Number.isFinite(v)) return;
@@ -397,15 +375,6 @@ function EquipmentSection({
                     ) : (
                       <span className="text-gray-500" data-rig-stop-waiting={d.asset}>
                         — · stop hours not entered yet{d.who ? ` · waiting on ${d.who}` : ''}
-                        {d.chkOwnerId && !locked && (
-                          reminded.has(d.rigId) ? (
-                            <span className="ml-2 text-green-700" data-rig-stop-reminded={d.asset}>reminded ✓</span>
-                          ) : (
-                            <button type="button" className="ml-2 underline text-navy" data-rig-stop-remind={d.asset} onClick={() => void remindStop(d)}>
-                              Remind
-                            </button>
-                          )
-                        )}
                       </span>
                     )
                   ) : d.end == null && d.logId && !d.chkId && blastDay.status === 'draft' && canEnterMeter(d.logOwnerId) ? (

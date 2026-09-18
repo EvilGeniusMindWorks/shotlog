@@ -337,3 +337,16 @@ page · customer/site/job create (new) · contacts · My Records · reference
 
 - **New job is one sheet in three steps** on the Jobs page, a customer's page or a site's page: the customer (type a few letters; a new one is made from the name alone), the site (the customer's address, one of its sites, or a typed address), the job (the name filled from the site, the number automatic). The job opens with "Still to set: contacts · permits · work spot", each a door.
 - **The job page holds its facts** in the header and shows the last five days, the drill plans and the recent activity on the Overview; the Jobs page's customer row expands in place to its sites and jobs.
+
+## Round S24 — the open feedback (Sep 18 2026, plan artifact U52a39MRbsLCGBw3a2zXLL)
+
+- **The timing grid follows the pattern.** A position the plan leaves out —
+  ⌀ No hole, or unpainted on a plan Mark painted hole by hole — is not a
+  hole in the timing view either: it cannot be tapped, it draws as unused,
+  and a wire into it from an older diagram is ignored. "44 of 44 · 47 timed"
+  reads 44 timed.
+- **Work days · Everyone says who.** Every row names the blaster in charge
+  and, once the day is filed, who filed it and when, as person chips.
+- **The daily report's stop-hours Remind is gone** (his call): the rig row
+  still reads "stop hours not entered yet · waiting on Driller Test" and
+  Mark calls. Remind for a missing time card stays on the crew list.

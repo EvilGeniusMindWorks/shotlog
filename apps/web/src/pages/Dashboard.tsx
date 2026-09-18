@@ -44,6 +44,11 @@ export interface DaySummary {
   hasLog: boolean;
   drilling: 'none' | 'started' | 'accepted';
   cardsState: 'none' | 'draft' | 'filed' | 'approved';
+  /** S24 (Matthew: "who filed what" on Work days · Everyone): the blaster in
+   *  charge (the day's author) and the person who filed its last office copy */
+  blasterName?: string;
+  filedBy?: string;
+  filedAt?: string;
 }
 
 /** Assemble per-day stats + the site-map snapshot for the hero image */
@@ -106,6 +111,16 @@ export function useDaySummaries(): DaySummary[] | undefined {
        FROM records WHERE table_name = 'explosiveUsages'`,
     );
     const lbsByLog = new Map(usageRows.map((r) => [r.logId, r.lbs ?? 0]));
+    // S24: who filed the day — the newest office copy of one of its papers
+    // (a checklist or an incident copy is that person's own paper, not the day's)
+    const filedByDay = new Map<string, { by: string; at: string }>();
+    for (const r of await sql.getAll<{ dayId: string | null; by: string | null; at: string | null; type: string | null }>(
+      `SELECT json_extract(payload,'$.blastDayId') AS dayId, json_extract(payload,'$.submittedBy') AS by, json_extract(payload,'$.createdAt') AS at, json_extract(payload,'$.type') AS type FROM records WHERE table_name = 'submissions'`,
+    )) {
+      if (!r.dayId || !r.at || !['blast_log', 'daily_report', 'drill_log'].includes(r.type ?? '')) continue;
+      const cur = filedByDay.get(r.dayId);
+      if (!cur || r.at > cur.at) filedByDay.set(r.dayId, { by: r.by ?? '', at: r.at });
+    }
     for (const day of days) {
       const logId = logByDay.get(day.id);
       let shots = 0;
@@ -147,6 +162,9 @@ export function useDaySummaries(): DaySummary[] | undefined {
           if (st.every((x) => x === 'approved')) return 'approved';
           return st.every((x) => x !== 'draft') ? 'filed' : 'draft';
         })(),
+        blasterName: day.authorName || undefined,
+        filedBy: filedByDay.get(day.id)?.by || undefined,
+        filedAt: filedByDay.get(day.id)?.at,
       });
     }
     return summaries;

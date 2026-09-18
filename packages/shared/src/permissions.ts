@@ -335,8 +335,16 @@ export const PARENT_CHAIN: Record<string, { parentIdField: string; parentTable: 
   subcontractorEntries: { parentIdField: 'dailyReportId', parentTable: 'dailyReports' },
 };
 
+/** S24 (Sep 18 2026): nudges, not papers. A reminder rides on a day so it
+ *  can be found and moved with it, but a filed day does not freeze it — the
+ *  audit showed a driller's device refused once a second while it tried to
+ *  clear a reminder on a day filed since Sep 7. */
+export const DAY_NUDGE_TABLES: ReadonlySet<string> = new Set(['dayReminders']);
+
 /** Tables whose writes are frozen while the owning blastDay is approved. */
-export const APPROVAL_LOCKED_TABLES: ReadonlySet<string> = new Set(Object.keys(PARENT_CHAIN));
+export const APPROVAL_LOCKED_TABLES: ReadonlySet<string> = new Set(
+  Object.keys(PARENT_CHAIN).filter((t) => !DAY_NUDGE_TABLES.has(t)),
+);
 
 /** Roles that may edit records under an APPROVED blast day. */
 export function canEditApproved(role: Role): boolean {

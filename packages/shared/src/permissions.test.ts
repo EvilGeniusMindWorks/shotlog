@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   APPROVAL_LOCKED_TABLES,
+  DAY_NUDGE_TABLES,
   PARENT_CHAIN,
   ROLES,
   TABLE_PERMISSIONS,
@@ -162,6 +163,14 @@ describe('approval lock metadata', () => {
         expect(++hops).toBeLessThan(5);
       }
     }
+  });
+
+  it('a reminder is a nudge, not a paper: it rides on the day but a filed day does not freeze it (S24)', () => {
+    for (const table of DAY_NUDGE_TABLES) {
+      expect(PARENT_CHAIN[table], `${table} still hangs on its day`).toBeDefined();
+      expect(APPROVAL_LOCKED_TABLES.has(table), `${table} must not be locked`).toBe(false);
+    }
+    expect(APPROVAL_LOCKED_TABLES.has('drillLogs')).toBe(true);
   });
 
   it('only approvers may edit approved records (supervisor, admin, and the office since S21)', () => {

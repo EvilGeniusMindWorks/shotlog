@@ -1,4 +1,7 @@
 {
+  "apps/server/data/hospitals-ne.json": [
+    83
+  ],
   "apps/server/src/admin.ts": [
     61,
     82
@@ -16,11 +19,16 @@
     68,
     69
   ],
+  "apps/server/src/places.ts": [
+    83
+  ],
   "apps/server/src/powersync.ts": [
     30,
     53,
     71,
-    75
+    75,
+    84,
+    85
   ],
   "apps/server/src/rateLimit.ts": [
     68
@@ -34,14 +42,29 @@
   "apps/web/src/App.tsx": [
     77
   ],
+  "apps/web/src/components/admin/ApprovalsMatrix.tsx": [
+    82
+  ],
+  "apps/web/src/components/dashboard/BlasterHome.tsx": [
+    81,
+    82
+  ],
+  "apps/web/src/components/dashboard/MonthDayList.tsx": [
+    84
+  ],
   "apps/web/src/components/dashboard/RoleCards.tsx": [
     53,
     66,
     76,
-    81
+    81,
+    84,
+    85
   ],
   "apps/web/src/components/dashboard/StartGrid.tsx": [
     69
+  ],
+  "apps/web/src/components/day/CheckAndSign.tsx": [
+    80
   ],
   "apps/web/src/components/day/CrewList.tsx": [
     74
@@ -52,11 +75,25 @@
   "apps/web/src/components/day/DayCardForm.tsx": [
     71
   ],
+  "apps/web/src/components/day/DayHub.tsx": [
+    80,
+    81,
+    85
+  ],
   "apps/web/src/components/day/MergedDrillingView.tsx": [
-    77
+    77,
+    84
+  ],
+  "apps/web/src/components/day/PhaseSpine.tsx": [
+    80
   ],
   "apps/web/src/components/day/ReminderCard.tsx": [
     77,
+    81,
+    84
+  ],
+  "apps/web/src/components/day/RigList.tsx": [
+    78,
     81
   ],
   "apps/web/src/components/design/DrillGridEditor.tsx": [
@@ -70,7 +107,9 @@
     62,
     74,
     76,
-    77
+    77,
+    84,
+    85
   ],
   "apps/web/src/components/design/SiteDiagramEditor.tsx": [
     67,
@@ -95,6 +134,9 @@
   "apps/web/src/components/forms/BlastLogForm.tsx apps/web/src/components/forms/ShotForm.tsx apps/web/src/pages/admin/AdminCatalogPage.tsx apps/web/src/components/admin/AddPersonPanel.tsx apps/web/src/pages/admin/AdminEquipmentPage.tsx apps/web/src/components/forms/NewBlastDayDialog.tsx apps/web/src/components/dashboard/MonthDayList.tsx apps/web/src/main.tsx apps/web/src/components/layout/SyncChip.tsx apps/web/src/pages/BlastDayPage.tsx apps/web/src/components/day/DayHub.tsx apps/web/src/lib/dayHub.ts": [
     73
   ],
+  "apps/web/src/components/forms/ContactSheetCard.tsx": [
+    83
+  ],
   "apps/web/src/components/forms/CustomerSitePicker.tsx": [
     69
   ],
@@ -103,7 +145,8 @@
     65,
     77,
     79,
-    81
+    81,
+    84
   ],
   "apps/web/src/components/forms/DrillingSection.tsx": [
     77
@@ -111,6 +154,9 @@
   "apps/web/src/components/forms/ExplosiveUsageForm.tsx": [
     69,
     77
+  ],
+  "apps/web/src/components/forms/JobContactsCard.tsx": [
+    83
   ],
   "apps/web/src/components/forms/NewBlastDayDialog.tsx": [
     75
@@ -122,7 +168,8 @@
   ],
   "apps/web/src/components/forms/ShotForm.tsx": [
     77,
-    78
+    78,
+    85
   ],
   "apps/web/src/components/forms/TimeCardsCard.tsx": [
     65,
@@ -133,12 +180,56 @@
   "apps/web/src/components/guidance/FirstWeekCard.tsx": [
     69
   ],
+  "apps/web/src/components/help/HelpMenu.tsx": [
+    81
+  ],
+  "apps/web/src/components/incident/DoNowStrip.tsx": [
+    81
+  ],
+  "apps/web/src/components/incident/ReportIncidentSheet.tsx": [
+    81
+  ],
   "apps/web/src/components/layout/AppShell.tsx": [
     57
+  ],
+  "apps/web/src/components/layout/NavTrail.tsx": [
+    79
+  ],
+  "apps/web/src/components/layout/RecordShell.tsx": [
+    79,
+    83
+  ],
+  "apps/web/src/components/layout/ScreenHeader.tsx": [
+    79
+  ],
+  "apps/web/src/components/records/AttachmentStrip.tsx": [
+    82
+  ],
+  "apps/web/src/components/records/BinderExport.tsx": [
+    82
+  ],
+  "apps/web/src/components/records/LifecycleMenu.tsx": [
+    79
+  ],
+  "apps/web/src/components/records/RecordPreview.tsx": [
+    82
   ],
   "apps/web/src/components/records/RecordsManager.tsx": [
     40,
     77,
+    82
+  ],
+  "apps/web/src/components/records/RecordsTree.tsx": [
+    82
+  ],
+  "apps/web/src/components/records/recRows.ts": [
+    82,
+    85
+  ],
+  "apps/web/src/components/records/recordsView.ts": [
+    82
+  ],
+  "apps/web/src/components/records/useFillHeight.ts": [
     82
   ],
   "apps/web/src/components/ui/ask-sheet.tsx": [
@@ -147,9 +238,18 @@
   "apps/web/src/components/ui/draft-input.tsx": [
     77
   ],
+  "apps/web/src/db/powersync/useLiveQuery.ts": [
+    81
+  ],
+  "apps/web/src/db/projections.ts": [
+    68,
+    82
+  ],
   "apps/web/src/db/schema.ts": [
     71,
-    77
+    77,
+    84,
+    85
   ],
   "apps/web/src/hooks/useBlastDay.ts": [
     69,
@@ -161,7 +261,14 @@
     80
   ],
   "apps/web/src/hooks/useDrillLogs.ts": [
-    66
+    66,
+    85
+  ],
+  "apps/web/src/hooks/useDrillPlans.ts": [
+    85
+  ],
+  "apps/web/src/hooks/useIncidents.ts": [
+    81
   ],
   "apps/web/src/hooks/useLauncher.ts": [
     71
@@ -171,11 +278,27 @@
     78,
     81
   ],
+  "apps/web/src/hooks/useNeedsAttention.ts": [
+    81
+  ],
+  "apps/web/src/hooks/useTimeCards.ts": [
+    82
+  ],
+  "apps/web/src/lib/approvals.ts": [
+    82
+  ],
+  "apps/web/src/lib/archive.ts": [
+    81,
+    82
+  ],
   "apps/web/src/lib/blastMats.ts": [
     77
   ],
   "apps/web/src/lib/complianceAdvisory.tsx": [
     64
+  ],
+  "apps/web/src/lib/contactSheet.ts": [
+    83
   ],
   "apps/web/src/lib/crash.ts": [
     69
@@ -194,12 +317,18 @@
     78,
     80,
     81,
-    82
+    82,
+    84,
+    85
   ],
   "apps/web/src/lib/docRows.ts": [
     40,
     68,
-    82
+    82,
+    85
+  ],
+  "apps/web/src/lib/drillingDeviations.ts": [
+    81
   ],
   "apps/web/src/lib/feedback.ts": [
     77,
@@ -208,14 +337,25 @@
   "apps/web/src/lib/feedbackPaper.ts": [
     77
   ],
+  "apps/web/src/lib/fileUploader.ts": [
+    81
+  ],
   "apps/web/src/lib/format.ts": [
     69
   ],
   "apps/web/src/lib/geo.ts": [
     67
   ],
+  "apps/web/src/lib/incidentDoNow.ts": [
+    81,
+    83
+  ],
   "apps/web/src/lib/jobContext.ts": [
     69
+  ],
+  "apps/web/src/lib/logChecks.ts": [
+    80,
+    81
   ],
   "apps/web/src/lib/mapProviders.ts": [
     64,
@@ -223,6 +363,15 @@
   ],
   "apps/web/src/lib/mine.ts": [
     76
+  ],
+  "apps/web/src/lib/nav.ts": [
+    79
+  ],
+  "apps/web/src/lib/places.ts": [
+    83
+  ],
+  "apps/web/src/lib/screenName.ts": [
+    78
   ],
   "apps/web/src/lib/shotDiagram.ts": [
     76
@@ -233,6 +382,9 @@
   ],
   "apps/web/src/lib/siteDiagram.ts": [
     70
+  ],
+  "apps/web/src/lib/siteGeo.ts": [
+    83
   ],
   "apps/web/src/lib/weather.ts": [
     71
@@ -254,6 +406,19 @@
   "apps/web/src/pages/BlastDayPage.tsx apps/web/src/components/day/DayHub.tsx apps/web/src/components/day/CrewList.tsx apps/web/src/components/day/RigList.tsx apps/web/src/components/dashboard/OfficeHome.tsx apps/web/src/components/dashboard/RoleCards.tsx apps/web/src/pages/DrillChecklistPage.tsx apps/web/src/pages/DrillLogPage.tsx apps/web/src/hooks/useMaintenance.ts apps/web/src/lib/hourLedger.ts apps/web/src/pages/SitePage.tsx apps/web/src/components/forms/CustomerSitePicker.tsx apps/web/src/components/forms/NewJobForm.tsx": [
     72
   ],
+  "apps/web/src/pages/CompanyRecordsPage.tsx": [
+    82
+  ],
+  "apps/web/src/pages/CustomerPage.tsx": [
+    83
+  ],
+  "apps/web/src/pages/Dashboard.tsx": [
+    81,
+    84
+  ],
+  "apps/web/src/pages/DaySetupPage.tsx": [
+    79
+  ],
   "apps/web/src/pages/DesignPlanPage.tsx": [
     62,
     64,
@@ -271,7 +436,8 @@
     75,
     78,
     79,
-    81
+    81,
+    85
   ],
   "apps/web/src/pages/DrillLogPage.tsx": [
     60,
@@ -282,26 +448,42 @@
     77,
     78,
     79,
-    81
+    81,
+    85
   ],
   "apps/web/src/pages/DrillPlanPage.tsx": [
     77,
-    79
+    79,
+    85
   ],
   "apps/web/src/pages/DrillingPage.tsx": [
-    76
+    76,
+    85
   ],
   "apps/web/src/pages/EquipmentLocatorPage.tsx": [
     68
   ],
+  "apps/web/src/pages/IncidentPage.tsx": [
+    81
+  ],
   "apps/web/src/pages/JobDetailPage.tsx": [
     69,
+    83,
+    85
+  ],
+  "apps/web/src/pages/JobsPage.tsx": [
     83
+  ],
+  "apps/web/src/pages/MyRecordsPage.tsx": [
+    82
   ],
   "apps/web/src/pages/PrintBlastLogPage.tsx": [
     64,
     69,
     70
+  ],
+  "apps/web/src/pages/PrintContactSheetPage.tsx": [
+    83
   ],
   "apps/web/src/pages/PrintDailyReportPage.tsx": [
     68,
@@ -311,6 +493,12 @@
     74,
     79,
     81
+  ],
+  "apps/web/src/pages/PrintIncidentPage.tsx": [
+    81
+  ],
+  "apps/web/src/pages/RecordPreviewWindowPage.tsx": [
+    82
   ],
   "apps/web/src/pages/RepairTicketPage.tsx": [
     60
@@ -323,6 +511,9 @@
   "apps/web/src/pages/SettingsPage.tsx": [
     77
   ],
+  "apps/web/src/pages/SitePage.tsx": [
+    83
+  ],
   "apps/web/src/pages/SubmitDayPage.tsx": [
     60,
     71,
@@ -331,13 +522,30 @@
     80,
     81
   ],
+  "apps/web/src/pages/SubmitDrillLogPage.tsx": [
+    79
+  ],
   "apps/web/src/pages/admin/AdminApprovalsPage.tsx": [
     61,
     82
   ],
+  "apps/web/src/pages/admin/AdminCompanyPage.tsx": [
+    81,
+    82,
+    83
+  ],
   "apps/web/src/pages/admin/AdminFeedbackPage.tsx": [
     77,
     78
+  ],
+  "apps/web/src/pages/admin/AdminIncidentsPage.tsx": [
+    81
+  ],
+  "apps/web/src/pages/admin/ApprovalPrintPackPage.tsx": [
+    82
+  ],
+  "apps/web/src/pages/admin/ApprovalReviewPage.tsx": [
+    82
   ],
   "apps/web/src/pdfdocs/blastLog.tsx": [
     64,
@@ -348,8 +556,14 @@
   "apps/web/src/pdfdocs/dailyReport.tsx": [
     69
   ],
+  "apps/web/src/pdfdocs/incident.tsx": [
+    81
+  ],
   "infra/powersync/sync_rules.yaml": [
     71
+  ],
+  "packages/shared/src/calculations.ts": [
+    78
   ],
   "packages/shared/src/capabilities.ts": [
     30,
@@ -360,196 +574,13 @@
     30,
     71,
     81,
-    82
+    82,
+    84
   ],
   "packages/shared/src/timing.ts": [
     74
   ],
-  "apps/web/src/components/day/RigList.tsx": [
-    78,
-    81
-  ],
-  "packages/shared/src/calculations.ts": [
-    78
-  ],
-  "apps/web/src/lib/screenName.ts": [
-    78
-  ],
-  "apps/web/src/lib/nav.ts": [
-    79
-  ],
-  "apps/web/src/components/layout/ScreenHeader.tsx": [
-    79
-  ],
-  "apps/web/src/components/layout/NavTrail.tsx": [
-    79
-  ],
-  "apps/web/src/components/records/LifecycleMenu.tsx": [
-    79
-  ],
-  "apps/web/src/pages/DaySetupPage.tsx": [
-    79
-  ],
-  "apps/web/src/pages/SubmitDrillLogPage.tsx": [
-    79
-  ],
-  "apps/web/src/components/layout/RecordShell.tsx": [
-    79,
-    83
-  ],
-  "apps/web/src/lib/logChecks.ts": [
-    80,
-    81
-  ],
-  "apps/web/src/components/day/CheckAndSign.tsx": [
-    80
-  ],
-  "apps/web/src/components/day/PhaseSpine.tsx": [
-    80
-  ],
-  "apps/web/src/components/day/DayHub.tsx": [
-    80,
-    81
-  ],
-  "apps/web/src/lib/fileUploader.ts": [
-    81
-  ],
-  "apps/web/src/lib/archive.ts": [
-    81,
-    82
-  ],
-  "apps/web/src/hooks/useNeedsAttention.ts": [
-    81
-  ],
-  "apps/web/src/components/help/HelpMenu.tsx": [
-    81
-  ],
-  "apps/web/src/pages/IncidentPage.tsx": [
-    81
-  ],
-  "apps/web/src/pages/PrintIncidentPage.tsx": [
-    81
-  ],
-  "apps/web/src/lib/drillingDeviations.ts": [
-    81
-  ],
-  "apps/web/src/db/powersync/useLiveQuery.ts": [
-    81
-  ],
-  "apps/web/src/lib/incidentDoNow.ts": [
-    81,
-    83
-  ],
-  "apps/web/src/hooks/useIncidents.ts": [
-    81
-  ],
-  "apps/web/src/components/incident/DoNowStrip.tsx": [
-    81
-  ],
-  "apps/web/src/components/incident/ReportIncidentSheet.tsx": [
-    81
-  ],
-  "apps/web/src/pdfdocs/incident.tsx": [
-    81
-  ],
-  "apps/web/src/pages/admin/AdminIncidentsPage.tsx": [
-    81
-  ],
-  "apps/web/src/pages/Dashboard.tsx": [
-    81
-  ],
-  "apps/web/src/pages/CompanyRecordsPage.tsx": [
-    82
-  ],
-  "apps/web/src/pages/admin/AdminCompanyPage.tsx": [
-    81,
-    82,
-    83
-  ],
-  "apps/web/src/components/records/BinderExport.tsx": [
-    82
-  ],
-  "apps/web/src/components/records/RecordsTree.tsx": [
-    82
-  ],
-  "apps/web/src/components/records/AttachmentStrip.tsx": [
-    82
-  ],
-  "apps/web/src/components/records/RecordPreview.tsx": [
-    82
-  ],
-  "apps/web/src/components/records/recRows.ts": [
-    82
-  ],
-  "apps/web/src/components/records/recordsView.ts": [
-    82
-  ],
-  "apps/web/src/components/records/useFillHeight.ts": [
-    82
-  ],
-  "apps/web/src/pages/RecordPreviewWindowPage.tsx": [
-    82
-  ],
-  "apps/web/src/pages/MyRecordsPage.tsx": [
-    82
-  ],
-  "apps/web/src/db/projections.ts": [
-    68,
-    82
-  ],
-  "apps/web/src/lib/approvals.ts": [
-    82
-  ],
-  "apps/web/src/components/admin/ApprovalsMatrix.tsx": [
-    82
-  ],
-  "apps/web/src/pages/admin/ApprovalReviewPage.tsx": [
-    82
-  ],
-  "apps/web/src/pages/admin/ApprovalPrintPackPage.tsx": [
-    82
-  ],
-  "apps/web/src/components/dashboard/BlasterHome.tsx": [
-    81,
-    82
-  ],
-  "apps/web/src/hooks/useTimeCards.ts": [
-    82
-  ],
-  "apps/web/src/pages/CustomerPage.tsx": [
-    83
-  ],
-  "apps/web/src/pages/SitePage.tsx": [
-    83
-  ],
-  "apps/web/src/pages/JobsPage.tsx": [
-    83
-  ],
-  "apps/web/src/lib/contactSheet.ts": [
-    83
-  ],
-  "apps/web/src/components/forms/ContactSheetCard.tsx": [
-    83
-  ],
-  "apps/web/src/pages/PrintContactSheetPage.tsx": [
-    83
-  ],
-  "apps/web/src/components/forms/JobContactsCard.tsx": [
-    83
-  ],
-  "apps/server/src/places.ts": [
-    83
-  ],
-  "apps/web/src/lib/places.ts": [
-    83
-  ],
   "scripts/build-places.mjs": [
-    83
-  ],
-  "apps/server/data/hospitals-ne.json": [
-    83
-  ],
-  "apps/web/src/lib/siteGeo.ts": [
     83
   ]
 }

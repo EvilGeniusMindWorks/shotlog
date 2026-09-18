@@ -306,35 +306,27 @@ async (page, lib) => {
     await PD.locator('[data-rig-sheet]').waitFor({ timeout: 10000 });
     R.ok('the rig sheet offers "Enter the stop hours", not Stop for the day', /Enter the stop hours/.test((await PD.locator('[data-rig-stop]').innerText()) || '') && !/Stop for the day/.test((await PD.locator('[data-rig-sheet]').innerText()) || ''));
     await PD.keyboard.press('Escape');
-    // the driller's home: his log is complete, so the end-of-day prompt shows
+    // the driller's home (S24): the rig line says "stop hours missing"; no "Enter … stop hours" button
     await PD.goto(`${WEB}/`);
     await PD.locator('[data-driller-home]').waitFor({ timeout: 30000 });
     await waitForUpload(PD, 20000);
-    const prompt = PD.locator(`[data-rig-stop-prompt="${rigs[0].asset}"]`);
-    await prompt.waitFor({ timeout: 20000 });
-    R.ok(`the home card prompts "Enter ${rigs[0].asset}'s stop hours"`, new RegExp(`Enter ${rigs[0].asset}'s stop hours`).test((await prompt.innerText()) || ''));
-    await prompt.click();
-    await PD.locator('[data-chk-complete-panel]').waitFor({ timeout: 20000 });
-    R.ok('the prompt opens the checklist on its Complete panel', /walk-around saved/.test((await PD.locator('[data-chk-complete-panel]').innerText()) || ''));
+    const card = PD.locator(`[data-job-day="${drillDayId}"]`);
+    await card.waitFor({ timeout: 20000 });
+    R.ok(`the home card's rig line reads "stop hours missing", with no stop-hours button (S24)`, /stop hours missing/.test((await card.innerText()) || '') && (await PD.locator('[data-rig-stop-prompt]').count()) === 0);
   });
 
-  await R.section('The daily report waits on the driller for the stop hours; Remind; File this day waits; then the row reads the hours', async () => {
+  await R.section('The daily report waits on the driller for the stop hours (no Remind since S24); File this day waits; then the row reads the hours', async () => {
     await waitFor(() => PB.evaluate(async ({ rigId, date }) => { const { db } = await import('/src/db/index.ts'); return (await db.drillChecklists.filter((c) => c.equipmentId === rigId && c.date === date).toArray()).length ? 1 : null; }, { rigId: rigs[0].id, date: today }), 30000);
     await PB.goto(`${WEB}/blast-day/${drillDayId}?view=daily-report`);
     const waiting = PB.locator(`[data-rig-stop-waiting="${rigs[0].asset}"]`);
     await waiting.waitFor({ timeout: 30000 });
     R.ok(`the blaster's report row waits: "${((await waiting.innerText()) || '').replace(/\s+/g, ' ').slice(0, 70)}"`, /stop hours not entered yet/.test(await waiting.innerText()) && /waiting on/.test(await waiting.innerText()) && (await PB.locator('[data-rig-meter-enter]').count()) === 0);
-    await PB.locator(`[data-rig-stop-remind="${rigs[0].asset}"]`).click();
-    await PB.locator(`[data-rig-stop-reminded="${rigs[0].asset}"]`).waitFor({ timeout: 5000 });
-    await waitForUpload(PB, 20000);
+    R.ok('the row has no Remind (S24: the blaster sees it and calls)', (await PB.locator('[data-rig-stop-remind]').count()) === 0);
     await PB.goto(`${WEB}/blast-day/${drillDayId}/submit`);
     await PB.locator('[data-preflight-item]').first().waitFor({ timeout: 30000 });
     const amber = PB.locator('[data-preflight-item^="rigstop-"]');
     R.ok(`File this day carries an amber line: "${((await amber.first().innerText().catch(() => '')) || '').replace(/\s+/g, ' ').slice(0, 60)}"`, (await amber.count()) === 1 && (await amber.first().getAttribute('data-preflight-level')) === 'amber');
-    // the driller hears the reminder and completes the paper through the report's own door
-    await PD.goto(`${WEB}/`);
-    await PD.locator('[data-reminder-kind="rigstop"]').waitFor({ timeout: 30000 });
-    R.ok('the reminder reads on the driller\'s home', new RegExp(`asked for ${rigs[0].asset}'s stop hours`).test((await PD.locator('[data-reminder-kind="rigstop"]').innerText()) || ''));
+    // the driller completes the paper through the report's own door
     await PD.goto(`${WEB}/blast-day/${drillDayId}?view=daily-report`);
     const door = PD.locator(`[data-rig-stop-door="${rigs[0].asset}"]`);
     await door.waitFor({ timeout: 30000 });

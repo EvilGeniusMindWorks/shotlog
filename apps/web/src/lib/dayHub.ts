@@ -271,13 +271,29 @@ export async function remindForCard(day: BlastDay, toUserId: string, toName: str
   return id;
 }
 
+/** The × on a reminder line — one write, by the person it was for. */
 export async function dismissReminder(id: string): Promise<void> {
   const now = nowISO();
   await db.dayReminders.update(id, { clearedAt: now, updatedAt: now });
 }
 
-/** My open reminders, with the job name; a reminder whose card has since
- *  been filed is cleared on the way through */
+/** S24: a reminder is satisfied when the paper it asked for exists — read
+ *  from the papers, never written. A 'sentback' or 'rigstop' row (no longer
+ *  written since S24) is always satisfied: the drill log carries its own
+ *  sent-back line, and the stop-hours nudge is gone. */
+export async function reminderSatisfied(r: DayReminder, me: string): Promise<boolean> {
+  if (r.what === 'timecard') {
+    return (await db.timeCards.filter((c) => c.userId === me && c.jobId === r.jobId && c.date === r.date && c.status !== 'draft').count()) > 0;
+  }
+  if (r.what === 'sentback' || r.what === 'rigstop') return true;
+  return false; // 'moved': the person closes it with the ×
+}
+
+/** My open reminders, with the job name. Resolved on READ: a reminder whose
+ *  paper has since been filed simply does not show — nothing here writes.
+ *  (Sep 18 2026, the audit: a driller's device tried to clear a reminder on
+ *  a filed day on every render, was refused every time, and showed a toast
+ *  per refusal.) One line per day and kind — the newest retires the older. */
 export function useMyReminders(): { reminder: DayReminder; jobName: string }[] {
   const me = getSessionUser()?.id;
   return (
@@ -285,21 +301,12 @@ export function useMyReminders(): { reminder: DayReminder; jobName: string }[] {
       if (!me) return [];
       const rows = (await db.dayReminders.filter((r) => r.toUserId === me && !r.clearedAt).toArray()).sort((a, b) => b.at.localeCompare(a.at));
       const out: { reminder: DayReminder; jobName: string }[] = [];
+      const seen = new Set<string>();
       for (const r of rows) {
-        const filed = r.what === 'timecard'
-          ? await db.timeCards
-              .filter((c) => c.userId === me && c.jobId === r.jobId && c.date === r.date && c.status !== 'draft')
-              .count()
-          : r.what === 'sentback'
-            ? // S18: a sent-back log signed complete again clears the line
-              await db.drillLogs
-                .filter((l) => l.drillerUserId === me && (l.blastDayId === r.blastDayId || (l.jobId === r.jobId && l.date === r.date)) && l.status !== 'open' && l.updatedAt > r.at)
-                .count()
-            : 0;
-        if (filed > 0) {
-          await dismissReminder(r.id);
-          continue;
-        }
+        const key = `${r.blastDayId}|${r.what}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        if (await reminderSatisfied(r, me)) continue;
         out.push({ reminder: r, jobName: (await db.jobs.get(r.jobId))?.name ?? 'the job' });
       }
       return out;

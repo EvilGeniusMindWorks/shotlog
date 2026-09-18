@@ -84,7 +84,22 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
 
   const { rows, cols, delays, wires, start, interHoleMs } = diagram;
   const holeCount = rows * cols;
-  const times = computeFiringTimes(diagram);
+  // S24 (Matthew, Sep 18 2026: "44 of 44 · 47 timed"): the timing view follows
+  // the pattern. A position the plan leaves out — painted ⌀ No hole, or unpainted
+  // on a painted-only plan (the Sep 17 rule) — is not a hole: it cannot be tapped,
+  // it draws as unused, and a wire into it from an older diagram is ignored.
+  const patternPlan = diagram.plan;
+  const patternPainted = patternPlan ? Object.values(patternPlan.overrides).filter((o) => o.depth !== 0).length : 0;
+  const patternPaintedOnly = Boolean(patternPlan) && patternPlan!.defaultDepth === undefined && patternPainted > 0 && patternPainted < holeCount;
+  const notAHole = (idx: number) => Boolean(patternPlan) && (patternPlan!.overrides[idx]?.depth === 0 || (patternPaintedOnly && !patternPlan!.overrides[idx]));
+  const timingDiagram: ShotDiagram = patternPlan
+    ? {
+        ...diagram,
+        start: start && notAHole(start.hole) ? undefined : start,
+        wires: wires.filter((w) => !notAHole(w.from) && !notAHole(w.to)),
+      }
+    : diagram;
+  const times = computeFiringTimes(timingDiagram);
   const windows = delayWindowSizes(times);
   const maxWindow = Math.max(0, ...windows);
   // Pattern check (Matthew, Sep 15 2026 + S17): holes within 8 ms of each
@@ -114,8 +129,6 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
   const effDepth = (idx: number) => plan.overrides[idx]?.depth ?? plan.defaultDepth ?? (plan.overrides[idx] ? (designDepth ?? 0) : 0);
   const paintedCount = Object.values(plan.overrides).filter((o) => o.depth !== 0).length;
   const paintedOnly = plan.defaultDepth === undefined && paintedCount > 0 && paintedCount < rows * cols;
-  /** A grid position the plan leaves out ("⌀ No hole") — nothing to wire */
-  const leftOut = (idx: number) => plan.overrides[idx]?.depth === 0;
   const effAngle = (idx: number) => plan.overrides[idx]?.angle ?? 0;
   const setPlan = (next: DrillPlan) => onChange({ ...diagram, plan: next });
 
@@ -170,8 +183,9 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
       return;
     }
     // S8: a position the drillers did not put a hole in cannot be wired;
-    // neither can one the plan left out (Matthew, Sep 15 2026)
-    if (drilled?.undrilled.has(idx) || leftOut(idx)) return;
+    // neither can one the plan left out (Matthew, Sep 15 2026) or never
+    // painted on a painted-only plan (S24)
+    if (drilled?.undrilled.has(idx) || notAHole(idx)) return;
     // No start yet: first tap sets the initiation hole with the chosen lead.
     // Legacy painted delays are cleared — the timing tree replaces them.
     if (!start) {
@@ -701,9 +715,9 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
             const label = t ?? legacyMs;
             const undrilled = drilled?.undrilled.has(idx) ?? false;
             const conds = drilled?.conditions.get(idx);
-            if (leftOut(idx) && !undrilled) {
+            if (notAHole(idx)) {
               return (
-                <g key={idx} data-left-out={idx + 1} aria-label={`Hole ${idx + 1} — left out of the plan`}>
+                <g key={idx} data-left-out={idx + 1} aria-label={`Position ${idx + 1} — not in the pattern`}>
                   <circle cx={cx(idx)} cy={cy(idx)} r={HOLE_RADIUS - 5} fill="transparent" stroke="#d8dde3" strokeWidth={1.5} strokeDasharray="3,3" />
                 </g>
               );
@@ -769,7 +783,7 @@ export function ShotDiagramEditor({ diagram, onChange, cloneTargets, onClone, de
       {/* Timing summary */}
       {!planMode && times.size > 0 && (
         <div className="px-1 space-y-1">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500" data-timing-summary={times.size}>
             {times.size} hole{times.size === 1 ? '' : 's'} timed · first {start!.leadMs}ms · last{' '}
             {lastFire}ms · max <b>{maxWindow}</b> hole{maxWindow === 1 ? '' : 's'} in any 8ms window
           </p>

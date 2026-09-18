@@ -535,7 +535,6 @@ interface JobDayCard {
   cardLine: string;
   coverage: Coverage;
   myLog?: DrillLog;
-  stopPrompt?: { rigId: string; asset: string };
 }
 
 const fmtH = (n: number | null | undefined) => (n == null ? '—' : `${n.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} h`);
@@ -582,12 +581,8 @@ export function DrillerHome() {
                   : `walk-around ${hhmm(myRig.checklist.walkAroundAt ?? myRig.checklist.createdAt)} · stop hours missing`
             }`
           : 'No rig checklist yet',
-        // S20 (Matthew): the end-of-day prompt — my checklist has no stop hours and my
-        // log is complete (or it is mid-afternoon): "Enter R1021's stop hours"
-        stopPrompt:
-          myRig && myRig.checklist.stopHours == null && !myRig.checklist.outOfService && myRig.checklist.drillerUserId === me?.id && (open?.status === 'complete' || new Date().getHours() >= 15)
-            ? { rigId: myRig.checklist.equipmentId, asset: myRig.asset }
-            : undefined,
+        // S24 (Matthew, Sep 18 2026): no "Enter R1021's stop hours" prompt here — the
+        // rig line above says "stop hours missing" and the checklist is the one paper
         logLine:
           myLogs.length === 0
             ? planned > 0
@@ -654,20 +649,6 @@ export function DrillerHome() {
       <p className="text-xs text-gray-600 mt-0.5">{c.rigLine}</p>
       <p className="text-xs text-gray-600">{c.logLine}</p>
       <p className="text-xs text-gray-600">{c.cardLine}</p>
-      {c.stopPrompt && (
-        <span
-          role="button"
-          tabIndex={0}
-          className="mt-2 inline-flex items-center rounded-lg bg-safety-orange text-white text-xs font-semibold px-3 py-1.5"
-          data-rig-stop-prompt={c.stopPrompt.asset}
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate(`/drill-checklist/${c.stopPrompt!.rigId}?job=${c.day.jobId}&date=${c.day.date}&day=${c.day.id}`);
-          }}
-        >
-          Enter {c.stopPrompt.asset}'s stop hours ›
-        </span>
-      )}
       <p className="text-[11px] font-semibold text-safety-orange mt-1">{c.myLog && c.myLog.status === 'open' ? 'Continue drilling ›' : 'Open the day ›'}</p>
     </button>
   );
