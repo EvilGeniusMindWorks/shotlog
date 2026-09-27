@@ -241,6 +241,14 @@ pushed (docs only); push them first when the freeze lifts, then /round S11.
 
 ## Brochure round follow-ups (Sep 27 2026)
 
+- **The brochure's address does not exist yet.** The page, its PDF and the executive summary
+  all say `shotlog.evilgenius.io/brochure`, the address Matthew agreed to on the plan page —
+  but `shotlog.evilgenius.io` has no DNS record; the web app lives at
+  `shotlog-app.vercel.app` (the email domain is the only evilgenius.io name in use). Either
+  add the domain to the Vercel project (Settings › Domains, then the CNAME at the registrar)
+  or change the address in `apps/web/src/brochure/content.ts` and reprint the PDF. Until one
+  of those happens the working link is `shotlog-app.vercel.app/brochure`.
+
 - **An office alert when an incident is filed.** Matthew's first safety copy said incident
   reports "immediately inform the required personnel and the office"; today the Do-now list
   dials them one tap at a time and the office sees the report when it syncs. He chose the
