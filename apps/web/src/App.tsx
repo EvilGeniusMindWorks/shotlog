@@ -1,5 +1,10 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AskHost } from '@/components/ui/ask-sheet';
+// S25: the public product page and its printed twin — loaded only on /brochure,
+// so the crew's app bundle carries none of it
+const BrochurePage = lazy(() => import('@/pages/BrochurePage').then((m) => ({ default: m.BrochurePage })));
+const BrochurePrintPage = lazy(() => import('@/pages/BrochurePrintPage').then((m) => ({ default: m.BrochurePrintPage })));
 import { AppShell } from '@/components/layout/AppShell';
 import { AuthGate } from '@/components/layout/AuthGate';
 import { Dashboard, WorkDaysPage } from '@/pages/Dashboard';
@@ -99,6 +104,22 @@ export function App() {
           <Route path="/reset/:token" element={<ResetPage />} />
           <Route path="*" element={<EnrollPage />} />
         </Routes>
+      </BrowserRouter>
+    );
+  }
+  // S25 (Sep 27 2026): the brochure — the product page for people who are not
+  // customers yet — is public and unlisted: nothing inside the app links to it,
+  // and it never touches the session or the local database.
+  if (path === '/brochure' || path.startsWith('/brochure/')) {
+    return (
+      <BrowserRouter>
+        <Suspense fallback={null}>
+          <Routes>
+            <Route path="/brochure" element={<BrochurePage />} />
+            <Route path="/brochure/print" element={<BrochurePrintPage />} />
+            <Route path="*" element={<BrochurePage />} />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     );
   }

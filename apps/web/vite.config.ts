@@ -59,6 +59,9 @@ export default defineConfig({
         // app shell instead of a browser error page. API is cross-origin, so
         // no denylist is needed.
         navigateFallback: 'index.html',
+        // The brochure's own files (its PDF and frames) are served as files, never
+        // as the app shell; the page itself still falls back like any route.
+        navigateFallbackDenylist: [/^\/brochure\/.+\.(pdf|webp|png|jpe?g)$/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/api\.weather\.gov\/.*/i,

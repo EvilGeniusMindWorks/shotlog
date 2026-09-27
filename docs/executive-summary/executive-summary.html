@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ShotLog — Executive Summary</title>
+<style>
+  @page { size: Letter; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #fff; }
+  body {
+    width: 8.5in; height: 11in;
+    font-family: -apple-system, "Helvetica Neue", Inter, Arial, sans-serif;
+    color: #1b2430; font-size: 9.5pt; line-height: 1.38;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .page { width: 8.5in; height: 11in; padding: 0.42in 0.5in 0.38in; display: flex; flex-direction: column; overflow: hidden; }
+
+  header { display: flex; align-items: flex-end; justify-content: space-between; border-bottom: 3px solid #EE7A2E; padding-bottom: 10px; }
+  header svg { height: 42px; width: auto; display: block; }
+  .kicker { text-transform: uppercase; letter-spacing: .14em; font-size: 7.4pt; color: #5b6470; font-weight: 600; text-align: right; line-height: 1.5; }
+  .kicker b { color: #1C3859; }
+
+  h1 { font-size: 16.5pt; line-height: 1.22; color: #1C3859; margin: 13px 0 6px; font-weight: 700; letter-spacing: -.012em; max-width: 6.9in; }
+  .lede { font-size: 10.1pt; color: #2b3542; margin: 0 0 11px; max-width: 7.3in; }
+
+  .cols { display: grid; grid-template-columns: 1fr 2.35in; gap: 0.22in; flex: 1; min-height: 0; }
+  h2 { font-size: 7.8pt; text-transform: uppercase; letter-spacing: .13em; color: #C9481E; margin: 11px 0 5px; font-weight: 700; }
+  h2:first-child { margin-top: 0; }
+  p { margin: 0 0 6px; }
+  ul { margin: 0; padding: 0; list-style: none; }
+  li { position: relative; padding-left: 13px; margin-bottom: 5px; }
+  li::before { content: ""; position: absolute; left: 0; top: .52em; width: 6px; height: 6px; border-radius: 50%; background: #EE7A2E; }
+  li b, p b { color: #1C3859; }
+
+  .flow { display: flex; align-items: center; flex-wrap: wrap; gap: 3px 4px; margin: 4px 0 4px; }
+  .step { font-size: 7.6pt; font-weight: 600; color: #1C3859; background: #FFF4D8; border: 1px solid #f3d6a3; border-radius: 5px; padding: 2px 6px; white-space: nowrap; }
+  .chev { color: #EE7A2E; font-weight: 700; font-size: 9pt; line-height: 1; }
+
+  aside { background: #F3F6FA; border-radius: 10px; padding: 12px 13px 10px; align-self: start; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 9px 8px; margin: 2px 0 2px; }
+  .stat .n { font-size: 16.5pt; font-weight: 700; color: #1C3859; line-height: 1; letter-spacing: -.02em; }
+  .stat .n small { font-size: 9pt; font-weight: 700; color: #EE7A2E; margin-left: 1px; }
+  .stat .l { font-size: 7.4pt; color: #5b6470; margin-top: 3px; line-height: 1.22; }
+  .roles { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 5px; }
+  .role { font-size: 7.6pt; padding: 2px 7px; border-radius: 999px; background: #fff; border: 1px solid #d3dbe6; color: #1C3859; font-weight: 600; }
+  aside p, aside li { font-size: 8.7pt; }
+  aside li { margin-bottom: 4px; }
+
+  footer { border-top: 1px solid #d3dbe6; margin-top: 9px; padding-top: 6px; display: flex; justify-content: space-between; font-size: 7.4pt; color: #5b6470; }
+  footer b { color: #1C3859; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    {{LOCKUP}}
+    <div class="kicker"><b>Executive summary</b><br>September 2026</div>
+  </header>
+
+  <h1>The blasting company's working day on one device, and the legal record it leaves behind.</h1>
+
+  <p class="lede">ShotLog is an offline-first app for licensed commercial blasting companies. Crews run the day in the field on a phone or tablet: the drill plan, the drill log, the blasting log, the daily report, rig checklists, time cards and incidents. The office receives the filed papers, reviews them and keeps the record. It is built with Baystate Blasting, Inc. of Massachusetts and is in field use with their crews.</p>
+
+  <div class="cols">
+    <main>
+      <h2>The problem</h2>
+      <p>A blast day produces a stack of paper. The blasting log, the daily report, each driller's log, the rig checklist and the time cards all restate the same job, crew, equipment and product. The figures inspectors ask for, such as charge per delay, scaled distance and peak particle velocity, are worked by hand at the end of a long day. Papers reach the office days later, and a missing signature or seismograph record is found long after the shot.</p>
+      <p>Each of those papers is a legal record. ATF explosives records, OSHA and MSHA safety rules, DOT transport rules, Massachusetts 527 CMR and every town's blasting permit rest on them. A blasting company's license depends on getting them right, every day.</p>
+
+      <h2>What ShotLog does</h2>
+      <ul>
+        <li><b>Enter it once.</b> The job, customer, crew, equipment and product are typed once and flow to every paper of the day. Explosives are entered the way blasters count them, by the case and the cartridge, and the app works out the weights from a catalog of more than 60 products.</li>
+        <li><b>The day is a walkthrough.</b>
+          <div class="flow"><span class="step">Drill plan</span><span class="chev">›</span><span class="step">Drilled pattern</span><span class="chev">›</span><span class="step">Shot</span><span class="chev">›</span><span class="step">Check and sign</span><span class="chev">›</span><span class="step">File this day</span></div>
+          Each screen says what comes next and what is still missing, so a day cannot be filed with an unsigned log or no seismograph reading.</li>
+        <li><b>The math is built in.</b> Charge per delay, scaled distance, peak particle velocity and the site's K factor are calculated as the shot is entered and checked against the USBM RI 8507 and OSM limits. The site map shows the 250 ft ring and the nearest structures.</li>
+        <li><b>It works with no signal.</b> Everything works offline on an Android tablet, a phone or a PC. Changes sync when a connection returns, and two people can work the same day without overwriting each other.</li>
+        <li><b>Filed papers are records.</b> A filed copy is write-once. A correction is a new version with the old one kept. Every filing is audited on the server and kept for the retention periods the regulators require.</li>
+        <li><b>The office sees the whole company.</b> Today's jobs, who has checked in, what is filed and what needs a decision. Review with send-back notes, approvals, and Records by job, day and drill pattern, with office copies as PDFs.</li>
+        <li><b>Safety lives on the job, not in a binder.</b> A jobsite contact sheet with the fire chief, the police and the nearest hospital and urgent care. Incident reports with a do-now list and a call log. Rig checklists with start and stop hours.</li>
+      </ul>
+    </main>
+
+    <aside>
+      <h2>By the numbers</h2>
+      <div class="stats">
+        <div class="stat"><div class="n">6</div><div class="l">roles, each with its own home screen</div></div>
+        <div class="stat"><div class="n">60<small>+</small></div><div class="l">explosive products from four manufacturers</div></div>
+        <div class="stat"><div class="n">62</div><div class="l">pages of help inside the app</div></div>
+        <div class="stat"><div class="n">0</div><div class="l">bars of signal needed to work a day</div></div>
+      </div>
+
+      <h2>Who uses it</h2>
+      <div class="roles"><span class="role">Blaster</span><span class="role">Driller</span><span class="role">Supervisor</span><span class="role">Mechanic</span><span class="role">Office</span><span class="role">Admin</span></div>
+      <p>Roles are bundles of permissions the company can adjust. The server enforces every one of them.</p>
+
+      <h2>Where it stands</h2>
+      <p>In field testing with Baystate Blasting's crews since September 2026, after twenty-four build rounds since July. Feedback arrives through a bubble on every screen with a picture of that screen, and crash reports land in the company's own inbox. It installs from the browser, with no app store.</p>
+
+      <h2>Next</h2>
+      <ul>
+        <li>Set up a new customer, site and job in minutes, with the jobsite contact sheet built as you go.</li>
+        <li>Roll out across all of Baystate's crews.</li>
+        <li>Built for one company first and structured for many: each company keeps its own people, catalog and records.</li>
+      </ul>
+
+      <h2>Under the hood</h2>
+      <p>A progressive web app backed by a Node and PostgreSQL service, hosted on Vercel and Railway, with filed copies in object storage.</p>
+    </aside>
+  </div>
+
+  <footer>
+    <span><b>ShotLog</b> · shotlog.evilgenius.io</span>
+    <span>Prepared by Matthew Bulmer · September 2026</span>
+  </footer>
+
+</div>
+</body>
+</html>

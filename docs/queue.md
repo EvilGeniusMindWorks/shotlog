@@ -238,3 +238,32 @@ Matthew's reactions (all Build; overall "Go when the freeze lifts"; order agreed
 
 Freeze stays until Matthew lifts it in a new session. Local commits on main are not
 pushed (docs only); push them first when the freeze lifts, then /round S11.
+
+## Brochure round follow-ups (Sep 27 2026)
+
+- **An office alert when an incident is filed.** Matthew's first safety copy said incident
+  reports "immediately inform the required personnel and the office"; today the Do-now list
+  dials them one tap at a time and the office sees the report when it syncs. He chose the
+  accurate wording for now; an email to the office contact on filing (about half a day plus
+  a decision on who receives it) stays available.
+- **Pricing on the page.** "Ask us" until pricing is thought through.
+- **The executive summary still names Baystate** (docs/executive-summary); the brochure and
+  the product page do not, by his decision. Align the summary when it is next sent out.
+- **A brochure company on production?** The shoot runs on the local stack only. If he wants
+  the satellite hero on Esri imagery, set VITE_ARCGIS_KEY locally for one run.
+
+## Found on the way — brochure round (Sep 27 2026)
+
+- **Seismo reading card overlaps at phone width.** On the seismograph readings page at 390 px,
+  a saved reading's card draws the PPV max, frequency and air overpressure values on top of
+  their labels ("PPV max Freq Air" and "0.240 in/s 28 Hz 118 dB" collide) and the T/V/L
+  row runs into its labels. Seen in the brochure screenshots of the seeded job; the tablet
+  width is fine. Small layout fix; not part of the brochure work.
+- **The environment tag overlaps the help icon at phone width.** In an alpha or beta company
+  the header's ALPHA/BETA pill sits on top of the ? button at 390 px (seen on every phone
+  frame of the brochure shoot before the fictional company was moved to production).
+- **The sample printout in testing/eval/assets does not scan.** Attaching printout.jpg (a
+  synthetic image) ends in "Couldn't read the printout"; a photo of a real Instantel tape
+  scans fine under Playwright (17 values read, headless included). The eval asset is the
+  problem, not the scanner: replace it with a real-tape photo carrying invented values
+  (the brochure shoot has one) so a harness can cover the scan.

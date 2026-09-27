@@ -40,7 +40,8 @@
     57
   ],
   "apps/web/src/App.tsx": [
-    77
+    77,
+    86
   ],
   "apps/web/src/components/admin/ApprovalsMatrix.tsx": [
     82
@@ -611,5 +612,14 @@
   ],
   "scripts/build-places.mjs": [
     83
+  ],
+  "apps/web/src/pages/BrochurePage.tsx": [
+    86
+  ],
+  "apps/web/vite.config.ts": [
+    86
+  ],
+  "testing/brochure-shots.mjs": [
+    86
   ]
 }
