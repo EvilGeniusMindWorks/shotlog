@@ -262,6 +262,8 @@ pushed (docs only); push them first when the freeze lifts, then /round S11.
 
 ## Found on the way — brochure round (Sep 27 2026)
 
+- **Harness71's day-list line is stale.** "Time cards only · drill only" no longer appears on the Work days list for a drill-only day that carries only time cards (the label changed in a later round); the check fails on main before S26. Refresh the harness to the current wording.
+
 - **Seismo reading card overlaps at phone width.** On the seismograph readings page at 390 px,
   a saved reading's card draws the PPV max, frequency and air overpressure values on top of
   their labels ("PPV max Freq Air" and "0.240 in/s 28 Hz 118 dB" collide) and the T/V/L
