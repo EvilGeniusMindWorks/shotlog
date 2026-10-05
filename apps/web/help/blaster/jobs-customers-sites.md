@@ -6,7 +6,7 @@ updated: September 2026
 status: draft
 ---
 
-A job lives under a site, and a site under a customer. **Jobs** opens on the customers; tap a customer for its sites, a site for its jobs. Everything a day needs — address, state, K factor, permits, contacts — lives on the site, and every job there inherits it.
+A job lives under a site, and a site under a customer. **Jobs** is the work, one line per job; **Customers** is who pays, and drills down to their sites and jobs. Everything a day needs — address, state, K factor, permits, contacts — lives on the site, and every job there inherits it.
 
 ## Finding a job
 
@@ -15,6 +15,10 @@ A job lives under a site, and a site under a customer. **Jobs** opens on the cus
 - Or drill down: customer › site › job.
 
 ![Jobs](jobs.png)
+
+## A day at a new job, from the field
+
+Tap **+** and **Start a day at a new job**. Four questions: who the job is for (type a name — a customer you have is offered), where (**Use where I am**, or the address), what you are doing, and who is onsite. That is enough to start. The job is marked *set up from the field*; the office sees it on its home and finishes the rest — permit, hospital, PO — from its chair. A blasting type still waits for the site's permit, fire chief and hospital; a drilling type starts at once.
 
 ## Setting one up yourself
 

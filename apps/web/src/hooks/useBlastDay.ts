@@ -454,7 +454,16 @@ export async function addBlastLogToDay(blastDayId: string): Promise<string> {
 }
 
 export async function createJob(
-  data: Partial<Job> & { name: string; customer: string; siteName?: string; siteZip?: string },
+  data: Partial<Job> & {
+    name: string;
+    customer: string;
+    siteName?: string;
+    siteZip?: string;
+    /** S26: a permit typed at setup lands on the new site */
+    sitePermit?: { number: string; expiresAt?: string };
+    /** S26: an insurance expiry typed at setup lands on the new customer */
+    customerCoiExpires?: string;
+  },
 ): Promise<string> {
   const now = nowISO();
   const id = generateId();
@@ -488,8 +497,16 @@ export async function createJob(
     siteId = siteId ?? ensured.siteId;
     // S26: the ZIP typed on the site step lands on the site
     if (data.siteZip?.trim() && !data.siteId) await db.sites.update(siteId, { zip: data.siteZip.trim(), updatedAt: now });
+    if (data.customerCoiExpires?.trim()) await db.customers.update(customerId, { coiExpires: data.customerCoiExpires.trim(), updatedAt: now });
   } else if (!siteId) {
     siteId = await createSite(customerId, { name: typedSite.siteName, address: typedSite.address, city: typedSite.city, state: typedSite.state, kFactor: data.kFactor, ...(data.siteZip?.trim() ? { zip: data.siteZip.trim() } : {}) });
+  }
+  // S26: a permit typed at setup lands on a site that was just made (never on a picked one)
+  if (data.sitePermit?.number?.trim() && !data.siteId) {
+    const s = await db.sites.get(siteId);
+    if (s && !(s.permits ?? []).some((p) => p.number === data.sitePermit!.number.trim())) {
+      await db.sites.update(siteId, { permits: [...(s.permits ?? []), { id: generateId(), name: 'Blasting permit', number: data.sitePermit.number.trim(), ...(data.sitePermit.expiresAt ? { expiresAt: data.sitePermit.expiresAt } : {}) }], updatedAt: now });
+    }
   }
   // Legacy mirror fields come from the PICKED records when selected
   const site = await db.sites.get(siteId);
@@ -511,6 +528,8 @@ export async function createJob(
     typeOfTerrain: data.typeOfTerrain ?? '',
     defaultHazards: data.defaultHazards ?? '',
     defaultPrecautions: data.defaultPrecautions ?? '',
+    ...(data.contacts?.length ? { contacts: data.contacts } : {}),
+    ...(data.setupFromField ? { setupFromField: data.setupFromField } : {}),
     isActive: true,
     // legacy mirrors (readers fall back here for un-backfilled jobs)
     customer: customer?.name ?? data.customer,

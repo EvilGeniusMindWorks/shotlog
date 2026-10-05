@@ -2,6 +2,7 @@
 // and attachment types. People (roster + logins) live on Admin › People.
 import { useEffect, useState } from 'react';
 import { ApprovalsMatrix } from '@/components/admin/ApprovalsMatrix';
+import { SetupFieldsSection } from '@/components/admin/SetupFieldsSection';
 import { SHEET_ROWS } from '@/lib/contactSheet';
 import { useOutletContext } from 'react-router-dom';
 import { useLiveQuery, db } from '@/db';
@@ -336,6 +337,7 @@ export function AdminCompanyPage() {
       <HomeSettingsSection settings={settings} online={online} />
       <AttachmentTypesSection settings={settings} />
       <PreBlastChecklistSection settings={settings} />
+      <SetupFieldsSection online={online} />
     </div>
   );
 }

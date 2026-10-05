@@ -229,6 +229,10 @@ export interface Job extends BaseRecord, Archivable {
   contactNotes?: string;
   /** S22: the job's own complete contact sheet (see ContactSheet) */
   contactSheet?: ContactSheet;
+  /** S26: set up from the field (a blaster's four questions) — the office finishes it */
+  setupFromField?: { userId?: string; name: string; at: string };
+  /** S26: the office confirmed a field setup */
+  setupConfirmedAt?: string;
 }
 
 export type JobContactRole =
@@ -1247,6 +1251,8 @@ export interface CompanySettings extends BaseRecord {
   /** Pre-blast ritual placeholder (Round 2): editable language, one item
    *  per line. Nothing enforced — a checklist slot for future inclusion. */
   preBlastChecklist?: string[];
+  /** S26: Admin › Setup fields — when each setup fact is asked, and whether it gates a blasting day */
+  setupFields?: { key: string; when?: 'setup' | 'later' | 'rare'; gate?: boolean }[];
 }
 
 /** Explosive manufacturer — first-class, admin-managed (id: mfr-<slug>) */

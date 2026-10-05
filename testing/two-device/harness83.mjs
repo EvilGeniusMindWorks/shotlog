@@ -97,12 +97,12 @@ async (page, lib) => {
     newSiteId = made?.siteId;
     newCustomerId = made?.customerId;
     R.ok(`the job exists under a new customer and site (${made?.number})`, Boolean(made?.siteId) && Boolean(made?.customerId));
-    await PB.locator('[data-job-setup-line]').waitFor({ timeout: 15000 });
-    // the site's facts (permits) and the customer arrive with the job's context a beat later
-    await waitFor(async () => ((await PB.locator('[data-setup-item="permits"]').count()) === 1 ? 1 : null), 10000);
+    // S26: the setup line became the setup tiles — the permit tile reads red (a site with no permit holds a blasting day)
+    await PB.locator('[data-setup-tiles]').waitFor({ timeout: 15000 });
+    await waitFor(async () => ((await PB.locator('[data-setup-tile="permit"][data-setup-tone="gate"]').count()) === 1 ? 1 : null), 10000);
     await waitFor(async () => ((await PB.locator('[data-record-facts]').innerText()).includes(`S22 Cust ${stamp}`) ? 1 : null), 10000);
-    const setup = (await PB.locator('[data-job-setup-line]').innerText()).replace(/\s+/g, ' ');
-    R.ok(`the job page opens with the setup line ("${setup}")`, /Still to set/.test(setup) && (await PB.locator('[data-setup-item="contacts"]').count()) === 1 && (await PB.locator('[data-setup-item="permits"]').count()) === 1 && (await PB.locator('[data-setup-item="work-spot"]').count()) === 1);
+    const setup = (await PB.locator('[data-setup-tiles]').innerText()).replace(/\s+/g, ' ');
+    R.ok(`the job page opens on its setup tiles: the permit and the town rows red, the address in ("${setup.slice(0, 90)}")`, /Setup · \d of 9/i.test(setup) && (await PB.locator('[data-setup-tile="permit"][data-setup-tone="gate"]').count()) === 1 && (await PB.locator('[data-setup-tile="town"][data-setup-tone="gate"]').count()) === 1 && (await PB.locator('[data-setup-tile="address"]').count()) === 1);
     const facts = (await PB.locator('[data-record-facts]').innerText()).replace(/\s+/g, ' ');
     R.ok('the header names the new customer and site', facts.includes(`S22 Cust ${stamp}`) && /Lexington/.test(facts));
     await waitForUpload(PB, 20000).catch(() => undefined);
@@ -194,7 +194,7 @@ async (page, lib) => {
     await PB.locator('[data-sheet-change="fire_chief"]').waitFor({ timeout: 15000 });
     const offer = (await PB.locator('[data-sheet-change="fire_chief"]').innerText()).replace(/\s+/g, ' ');
     R.ok('a later site change is offered to the job, not applied ("' + offer.slice(0, 80) + '")', /Chief Jones/.test(offer) && /Chief Smith/.test(await PB.locator('[data-sheet-row="fire_chief"]').innerText()));
-    R.ok('the job page names it in the setup line', (await PB.locator('[data-setup-item="site-changes"]').count()) === 1);
+    R.ok('the job page names it on the setup tiles', /the site changed 1 row/.test((await PB.locator('[data-setup-tiles]').innerText().catch(() => '')) || ''));
     await PB.locator('[data-sheet-change="fire_chief"] [data-sheet-use-change]').click();
     await waitFor(async () => (/Chief Jones/.test(await PB.locator('[data-sheet-row="fire_chief"]').innerText()) ? 1 : null), 10000);
     await sleep(500);
@@ -206,12 +206,14 @@ async (page, lib) => {
     await PB.locator('[data-sheet-editor="town_hall"] [data-sheet-phone]').fill('781-698-4500');
     await PB.locator('[data-sheet-editor="town_hall"] [data-sheet-make-site]').click();
     const siteHall = await waitFor(() => PB.evaluate(async (siteId) => { const { db } = await import('/src/db/index.ts'); const c = (await db.sites.get(siteId))?.contacts?.find((x) => x.role === 'town_hall'); return c?.phone === '781-698-4500' ? c.name : null; }, newSiteId), 10000);
-    R.ok("Make this the site's too writes the row to the site for every job here (" + siteHall + ')', siteHall === 'Bldg Insp. Ortiz' && (await PB.locator('[data-sheet-row="town_hall"]').getAttribute('data-sheet-source')) === 'site');
+    // the site row lands first, the job's own sheet re-renders a beat later — wait for the row to read 'site'
+    const hallSource = await waitFor(async () => ((await PB.locator('[data-sheet-row="town_hall"]').getAttribute('data-sheet-source')) === 'site' ? 'site' : null), 10000).catch(async () => PB.locator('[data-sheet-row="town_hall"]').getAttribute('data-sheet-source'));
+    R.ok("Make this the site's too writes the row to the site for every job here (" + siteHall + ' · ' + hallSource + ')', siteHall === 'Bldg Insp. Ortiz' && hallSource === 'site');
     await PB.locator('[data-sheet-accept]').click();
     await waitFor(async () => (/accepted/.test(await PB.locator('[data-sheet-version-line]').innerText()) ? 1 : null), 10000);
     const versionLine = (await PB.locator('[data-sheet-version-line]').innerText()).replace(/\s+/g, ' ');
     R.ok('every save is a dated version; Accept all confirms it ("' + versionLine + '")', /Sheet v\d+/.test(versionLine) && /accepted/.test(versionLine));
-    R.ok('the setup line no longer asks for the contact sheet', (await PB.locator('[data-setup-item="contacts"]').count()) === 0);
+    R.ok('the town rows the sheet now carries turn the town tile green', (await PB.locator('[data-setup-tile="town"][data-setup-tone="done"]').count()) === 1 || (await PB.locator('[data-setup-tile="town"]').count()) === 0);
     await PB.locator('[data-sheet-print]').click();
     await PB.waitForURL(new RegExp('/jobs/' + newJobId + '/contact-sheet'), { timeout: 10000 });
     await PB.locator('[data-print-contact-sheet]').waitFor({ timeout: 15000 });

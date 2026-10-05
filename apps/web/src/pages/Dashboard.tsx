@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertTriangle, ArrowDown, ArrowUp, LayoutGrid, Plus, Search, Table2 } from 'lucide-react';
 import { ConsequenceSheet } from '@/components/records/LifecycleMenu';
 import { ReportIncidentSheet } from '@/components/incident/ReportIncidentSheet';
+import { FieldSetupSheet } from '@/components/forms/FieldSetupSheet';
 import { can } from '@/lib/perms';
 import { getDaysScope, homeIsMineFirst, myDayIds, onlyMine, setDaysScope, type DaysScope } from '@/lib/mine';
 import { useLiveQuery, db } from '@/db';
@@ -315,13 +316,17 @@ function NewWorkDayFab({ defaultTypeOfWork }: { defaultTypeOfWork?: WorkType }) 
   const [planJob, setPlanJob] = useState(false);
   const canReport = can('incidents', 'PUT');
   const canPlan = can('drillPlans', 'PUT');
+  // S26 push 2: a day at a NEW job, from the field, in four questions
+  const canSetUp = can('jobs', 'PUT');
+  const [fieldSetup, setFieldSetup] = useState(false);
+  const [startJobId, setStartJobId] = useState<string | undefined>();
   return (
     <>
       <button
         data-tour="fab"
         className="fixed bottom-[calc(6rem+var(--sab))] right-[calc(1rem+var(--sar))] sm:bottom-8 sm:right-8 h-14 w-14 rounded-full bg-safety-orange text-white shadow-lg flex items-center justify-center active:scale-95 transition-transform z-20"
         title="Start a day · Plan the drilling · Report an incident"
-        onClick={() => (canReport || canPlan ? setMenu(true) : setShowNewDialog(true))}
+        onClick={() => (canReport || canPlan || canSetUp ? setMenu(true) : setShowNewDialog(true))}
       >
         <Plus className="h-7 w-7" />
       </button>
@@ -338,6 +343,17 @@ function NewWorkDayFab({ defaultTypeOfWork }: { defaultTypeOfWork?: WorkType }) 
               <span className="font-semibold">Start a day at a job</span>
               <span className="block text-xs text-gray-500">a work day with its papers</span>
             </button>
+            {canSetUp && (
+              <button
+                type="button"
+                className="w-full text-left rounded-lg border border-gray-200 bg-white px-3 py-3 mb-2 min-h-[48px]"
+                data-fab-new-job
+                onClick={() => { setMenu(false); setFieldSetup(true); }}
+              >
+                <span className="font-semibold">Start a day at a new job</span>
+                <span className="block text-xs text-gray-500">four questions — who for, where, what, who is onsite; the office finishes the rest</span>
+              </button>
+            )}
             {canPlan && (
               <button
                 type="button"
@@ -366,17 +382,20 @@ function NewWorkDayFab({ defaultTypeOfWork }: { defaultTypeOfWork?: WorkType }) 
         </ConsequenceSheet>
       )}
       {report && <ReportIncidentSheet onClose={() => setReport(false)} />}
+      {fieldSetup && <FieldSetupSheet onClose={() => setFieldSetup(false)} onCreated={(jobId) => { setFieldSetup(false); setStartJobId(jobId); setShowNewDialog(true); }} />}
       {showNewDialog && (
         <NewBlastDayDialog
+          initialJobId={startJobId}
           defaultTypeOfWork={defaultTypeOfWork}
           onOpenExisting={(id) => {
             setShowNewDialog(false);
             navigate(`/blast-day/${id}`);
           }}
-          onClose={() => setShowNewDialog(false)}
+          onClose={() => { setShowNewDialog(false); setStartJobId(undefined); }}
           onCreate={async (jobId, date, copy, opts) => {
             const id = await createBlastDay(jobId, date, copy, opts);
             setShowNewDialog(false);
+            setStartJobId(undefined);
             navigate(`/blast-day/${id}`);
           }}
         />

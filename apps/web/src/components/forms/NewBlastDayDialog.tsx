@@ -13,6 +13,7 @@ import type { CopyFromPrevious, CreateWorkDayOptions } from '@/hooks/useBlastDay
 import type { BlastDay, Job, WorkType } from '@/db/schema';
 import { isBlastingWork } from '@/db/schema';
 import { blastingGate, gateHolds } from '@/lib/dayGate';
+import { gateKeys, useSetupFields } from '@/lib/setupFields';
 import {
   COPY_SECTIONS,
   getCopySections,
@@ -46,6 +47,8 @@ interface Props {
   defaultTypeOfWork?: WorkType;
   /** S7d: today's day at that job already exists — open it instead */
   onOpenExisting?: (dayId: string) => void;
+  /** S26: open with this job already picked (a job just set up from the field) */
+  initialJobId?: string;
 }
 
 const NEW_JOB = '__new';
@@ -57,7 +60,7 @@ function daysAgo(n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork, onOpenExisting }: Props) {
+export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork, onOpenExisting, initialJobId }: Props) {
   // NOTE: boolean fields can't be indexed in IndexedDB — use filter(), not where()
   const jobs: Job[] =
     useLiveQuery(async () => getJobViews(await db.jobs.filter((j) => j.isActive).toArray())) ?? [];
@@ -77,7 +80,7 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork, onOpen
   const [dayName, setDayName] = useState('');
   const [customerId, setCustomerId] = useState('');
   const [siteId, setSiteId] = useState('');
-  const [jobId, setJobId] = useState('');
+  const [jobId, setJobId] = useState(initialJobId ?? '');
   const [showNewJob, setShowNewJob] = useState(false);
   const [date, setDate] = useState(todayISO());
   const [dateSheet, setDateSheet] = useState(false);
@@ -191,8 +194,9 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork, onOpen
   // S26 (Matthew, Oct 5 2026): before a BLASTING day the site must carry a live
   // permit, the fire chief and the nearest hospital. Red lines hold the day;
   // a drilling day is never held. The lines point at the site, where the fix is.
+  const setupFields = useSetupFields();
   const jobSite = sites.find((s) => s.id === job?.siteId);
-  const gate = jobId && isBlastingWork(typeOfWork) ? blastingGate(jobSite) : [];
+  const gate = jobId && isBlastingWork(typeOfWork) ? blastingGate(jobSite, gateKeys(setupFields)) : [];
   const held = gateHolds(gate);
 
   const handleCreate = () => {

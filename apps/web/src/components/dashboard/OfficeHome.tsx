@@ -6,6 +6,7 @@
 // three days. Provisional until the Evette walkthrough resumes; the
 // sections are the ones her charter already names.
 import { TodaysJobs } from './TodaysJobs';
+import { FieldSetupCards } from './FieldSetupCards';
 import { useMemo, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, CheckCircle2, Clock, FileWarning, ShieldAlert, Undo2 } from 'lucide-react';
@@ -270,6 +271,7 @@ export function OfficeHome() {
         <p className="text-xs text-gray-500">{formatDate(todayISO())} · what needs your hands today, in order</p>
       </div>
 
+      <FieldSetupCards />
       <TodaysJobs />
 
       <div className="flex gap-2 flex-wrap">

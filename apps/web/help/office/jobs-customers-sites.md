@@ -20,6 +20,14 @@ Every day at a job inherits all of it, so a blaster never types an address or a 
 
 **Customers** is who pays and who to call; each customer owns its sites and each site its jobs, and the page drills down that way. **Jobs** is the work: one line per job, last worked first. You can start from whichever is new. **New customer** on Customers needs only a name and a contact. **New site** on a customer's page needs an address with its ZIP; if another site in the same town already carries the fire chief, police, fire and town hall rows, the new site starts with copies and says so. **Set up…** on Jobs asks what you are setting up — a customer, a site for a customer you have, a job at a site you have, or all three in one pass — and opens the right form.
 
+## The job's setup tiles
+
+A job opens on its setup as tiles, one per fact: address and map, town contacts, hospital and urgent care, onsite contact, type of work, blasting permit, K factor, structures, PO and insurance. Green is in, grey can wait, red holds a blasting day. Tap a tile and it opens the place the fact lives — the site's tab, the job's setup, the contact sheet. A job a blaster set up from the field carries a banner naming them; it sits on the office home until **Confirm the setup**.
+
+## What setup asks for
+
+**Admin › Company › Setup fields** is the table behind all of it: where each fact lives, whether it is asked at setup, later or rarely, and whether a missing one holds a blasting day. Move Customer PO to At setup and the New job sheet asks for it; move the permit to At setup and the site step asks for its number and expiry. Changes reach every device on the next sync.
+
 ## Before a blasting day
 
 Start work checks the site when the type of work is a blasting type: a permit on file that has not expired, the fire chief on the site's rows, the nearest hospital set. A red line holds the blasting day and links to the site, where the fix is. A drilling day is never held.

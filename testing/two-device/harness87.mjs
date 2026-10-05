@@ -179,6 +179,113 @@ async (page, lib) => {
     R.ok(`and once more to Overview, still on the job (${active2})`, active2 === 'overview' && /\/jobs\//.test(P.url()));
   });
 
+  // ── push 2 ──
+  let fieldJobId, fieldCustomerName = `Field Customer ${stamp}`;
+
+  await R.section('§4 The job’s setup as tiles: in, can wait, or holds a blasting day', async () => {
+    // a fresh job at site1 (town rows, no permit, no hospital) shows the red tiles
+    const j2 = await P.evaluate(async ({ siteId, customerId, stamp }) => {
+      const { createJob } = await import('/src/hooks/useBlastDay.ts');
+      return createJob({ name: `S26 Tiles ${stamp}`, customer: 'x', customerId, siteId });
+    }, { siteId: site1, customerId, stamp });
+    await P.goto(`${WEB}/jobs/${j2}`);
+    await P.locator('[data-setup-tiles]').waitFor({ timeout: 30000 });
+    const tones = await P.locator('[data-setup-tile]').evaluateAll((els) => Object.fromEntries(els.map((e) => [e.getAttribute('data-setup-tile'), e.getAttribute('data-setup-tone')])));
+    R.ok(`nine tiles, the town rows and K green, the permit and the hospital red, the rest can wait (${JSON.stringify(tones)})`, Object.keys(tones).length === 9 && tones.town === 'done' && tones.k === 'done' && tones.permit === 'gate' && tones.hospital === 'gate' && tones.structures === 'later');
+    const head = ((await P.locator('[data-setup-tiles]').innerText()) || '').replace(/\s+/g, ' ').slice(0, 120); R.ok(`the header counts them and says what holds a blasting day ("${head}")`, /Setup · \d of 9/i.test(head) && /2 red · holds a blasting day/.test(head));
+    await P.locator('[data-setup-tile="permit"]').click();
+    await P.waitForURL(new RegExp(`/sites/${site1}\\?tab=jurisdiction`), { timeout: 10000 });
+    R.ok('the permit tile opens the site on its permits tab', true);
+    await P.evaluate(async ({ id }) => { const { db } = await import('/src/db/index.ts'); const { nowISO } = await import('/src/lib/utils.ts'); await db.sites.update(id, { permits: [{ id: crypto.randomUUID(), name: 'Blasting permit', number: `BP-${Date.now().toString(36)}`, authority: 'Harnessville FD', expiresAt: new Date(Date.now() + 90 * 864e5).toISOString().slice(0, 10) }], updatedAt: nowISO() }); }, { id: site1 });
+    await P.goto(`${WEB}/jobs/${j2}`);
+    await P.locator('[data-setup-tiles]').waitFor({ timeout: 30000 });
+    await waitFor(async () => ((await P.locator('[data-setup-tile="permit"]').getAttribute('data-setup-tone')) === 'done' ? 1 : null), 10000);
+    R.ok('with the permit on the site the tile turns green and one red remains', (await P.locator('[data-setup-tile="permit"]').getAttribute('data-setup-tone')) === 'done' && (await P.locator('[data-setup-tiles]').getAttribute('data-setup-held')) === '1');
+    await P.evaluate(async ({ id }) => { const { db } = await import('/src/db/index.ts'); const { nowISO } = await import('/src/lib/utils.ts'); await db.jobs.update(id, { archivedAt: nowISO(), isActive: false, updatedAt: nowISO() }); }, { id: j2 });
+  });
+
+  await R.section('§5 Admin › Setup fields drives what the New job sheet asks', async () => {
+    const cM = await mkCtx(browser, { viewport: { width: 1280, height: 900 } });
+    const M = await cM.newPage();
+    await signIn(M, 'mark');
+    await skipTours(M);
+    await M.goto(`${WEB}/admin/company`);
+    await M.locator('[data-setup-fields]').waitFor({ timeout: 30000 });
+    const rows = await M.locator('[data-setup-field]').count();
+    R.ok(`the table lists the setup fields with where they live, when they are asked and whether they hold a blasting day (${rows} rows)`, rows === 9);
+    R.ok('Customer PO is asked Later by default', (await M.locator('[data-setup-field="po"]').getAttribute('data-setup-when')) === 'later');
+    await M.locator('[data-setup-field="po"] [data-setup-when-pick="setup"]').click();
+    await waitFor(async () => ((await M.locator('[data-setup-field="po"]').getAttribute('data-setup-when')) === 'setup' ? 1 : null), 10000);
+    R.ok('one tap moves Customer PO to At setup', (await M.locator('[data-setup-field="po"]').getAttribute('data-setup-when')) === 'setup');
+    await lib.waitForUpload(M, 30000).catch(() => undefined);
+    // the office's New job sheet (all three) now asks for the PO on the job step
+    await waitFor(() => P.evaluate(async () => ((await (await import('/src/db/index.ts')).db.companySettings.get('companySettings-singleton'))?.setupFields ?? []).some((f) => f.key === 'po' && f.when === 'setup') ? 1 : null), 40000);
+    await P.goto(`${WEB}/jobs`);
+    await P.locator('[data-jobs-setup]').click();
+    await P.locator('[data-setup-door="all"]').click();
+    await P.locator('[data-new-job-form][data-new-job-step="1"]').waitFor({ timeout: 10000 });
+    await P.locator('[data-new-job-customer-search]').fill(`S26 Customer ${stamp}`);
+    await P.locator(`[data-new-job-customer="${customerId}"]`).click();
+    await P.locator(`[data-new-job-site="${site1}"]`).click();
+    await P.locator('[data-new-job-form][data-new-job-step="3"]').waitFor({ timeout: 10000 });
+    R.ok('the job step now asks for the Customer PO', (await P.locator('[data-new-job-po]').count()) === 1);
+    // back to Later: the field is gone
+    await M.locator('[data-setup-field="po"] [data-setup-when-pick="later"]').click();
+    await lib.waitForUpload(M, 30000).catch(() => undefined);
+    await waitFor(() => P.evaluate(async () => ((await (await import('/src/db/index.ts')).db.companySettings.get('companySettings-singleton'))?.setupFields ?? []).some((f) => f.key === 'po' && f.when === 'later') ? 1 : null), 40000);
+    await waitFor(async () => ((await P.locator('[data-new-job-po]').count()) === 0 ? 1 : null), 10000);
+    R.ok('set back to Later, the sheet stops asking', (await P.locator('[data-new-job-po]').count()) === 0);
+    await cM.close();
+  });
+
+  await R.section('§6 Sam’s four questions: a day at a new job from the field, and the office finishes it', async () => {
+    await B.goto(`${WEB}/`);
+    await B.locator('[data-tour="fab"]').waitFor({ timeout: 30000 });
+    await B.locator('[data-tour="fab"]').click();
+    await B.locator('[data-fab-new-job]').waitFor({ timeout: 10000 });
+    R.ok('the + offers "Start a day at a new job"', /Start a day at a new job/.test(await B.locator('[data-fab-new-job]').innerText()));
+    await B.locator('[data-fab-new-job]').click();
+    await B.locator('[data-field-setup][data-field-step="1"]').waitFor({ timeout: 10000 });
+    await B.locator('[data-field-customer]').fill(fieldCustomerName);
+    await B.locator('[data-field-next]').click();
+    await B.locator('[data-field-setup][data-field-step="2"]').waitFor({ timeout: 10000 });
+    await B.locator('[data-field-street]').fill(`${stamp} Hilltop Road`);
+    await B.locator('[data-field-city]').fill(TOWN);
+    await B.locator('[data-field-state]').fill('MA');
+    await B.locator('[data-field-next]').click();
+    await B.locator('[data-field-setup][data-field-step="3"]').waitFor({ timeout: 10000 });
+    await B.locator('[data-field-work="drill_only"]').click();
+    await B.locator('[data-field-next]').click();
+    await B.locator('[data-field-setup][data-field-step="4"]').waitFor({ timeout: 10000 });
+    await B.locator('[data-field-onsite-name]').fill('Nina Field');
+    await B.locator('[data-field-onsite-phone]').fill('(978) 555-0188');
+    await B.locator('[data-field-create]').click();
+    await B.locator('[data-new-day-dialog]').waitFor({ timeout: 20000 });
+    fieldJobId = await waitFor(async () => (await B.locator('[data-day-job-id]').getAttribute('data-day-job-id')) || null, 10000);
+    const made = await waitFor(() => B.evaluate(async ({ id, town }) => { const { db } = await import('/src/db/index.ts'); const j = await db.jobs.get(id); if (!j) return null; const s = await db.sites.get(j.siteId); const c = await db.customers.get(j.customerId); return { from: j.setupFromField?.name, town: s?.city, rows: (s?.contacts ?? []).filter((x) => x.role === 'fire_chief').length, customer: c?.name, work: j.defaultTypeOfWork, onsite: j.contacts?.[0]?.name }; }, { id: fieldJobId, town: TOWN }), 15000);
+    R.ok(`four questions made the customer, the site in ${TOWN} (town rows copied) and the job, marked set up from the field, and Start work opened on it (${JSON.stringify(made)})`, made && made.customer === fieldCustomerName && made.town === TOWN && made.rows === 1 && made.from && made.work === 'drill_only' && made.onsite === 'Nina Field');
+    R.ok('a drilling type: Start work is live', !(await B.locator('[data-day-start]').isDisabled()));
+    await B.keyboard.press('Escape').catch(() => undefined);
+    await B.locator('[data-new-day-dialog] button:has-text("Cancel")').first().click().catch(() => undefined);
+    // the office home carries the card until the setup is confirmed
+    await P.goto(`${WEB}/`);
+    await P.locator('[data-office-home]').waitFor({ timeout: 30000 });
+    await waitFor(async () => ((await P.locator(`[data-field-setup-card="${fieldJobId}"]`).count()) ? 1 : null), 40000);
+    const card = ((await P.locator(`[data-field-setup-card="${fieldJobId}"]`).innerText().catch(() => '')) || '').replace(/\s+/g, ' ');
+    R.ok(`the office home says "Set up from the field", who, and what is missing ("${card.slice(0, 110)}")`, /Set up from the field/.test(card) && /missing: .*permit/i.test(card));
+    await P.locator(`[data-field-setup-card="${fieldJobId}"] [data-field-setup-finish]`).click();
+    await P.waitForURL(new RegExp(`/jobs/${fieldJobId}`), { timeout: 10000 });
+    await P.locator('[data-setup-from-field]').waitFor({ timeout: 15000 });
+    R.ok('the job page carries the banner with Confirm the setup', (await P.locator('[data-setup-confirm]').count()) === 1);
+    await P.locator('[data-setup-confirm]').click();
+    await waitFor(async () => ((await P.locator('[data-setup-from-field]').count()) === 0 ? 1 : null), 10000);
+    R.ok('Confirm clears the banner', (await P.locator('[data-setup-from-field]').count()) === 0);
+    await P.goto(`${WEB}/`);
+    await P.locator('[data-office-home]').waitFor({ timeout: 30000 });
+    await waitFor(async () => ((await P.locator(`[data-field-setup-card="${fieldJobId}"]`).count()) === 0 ? 1 : null), 15000);
+    R.ok('and the card leaves the office home', (await P.locator(`[data-field-setup-card="${fieldJobId}"]`).count()) === 0);
+  });
+
   await R.section('the error spy saw nothing during this run', async () => {
     const errs = browserErrors();
     R.ok(`no browser errors (${errs.length})${errs[0] ? ` — first: ${errs[0].text.slice(0, 120)}` : ''}`, errs.length === 0);
@@ -186,14 +293,18 @@ async (page, lib) => {
 
   await R.section('cleanup', async () => {
     // the customer, its two sites and the job were never used on a day: archive them so the dev lists stay tidy
-    const n = await P.evaluate(async ({ customerId, sites, jobId }) => {
+    const n = await P.evaluate(async ({ customerId, sites, jobId, fieldJobId, fieldCustomerName }) => {
       const { db } = await import('/src/db/index.ts'); const { nowISO } = await import('/src/lib/utils.ts');
       const at = nowISO(); let n = 0;
-      if (jobId && await db.jobs.get(jobId)) { await db.jobs.update(jobId, { archivedAt: at, isActive: false, updatedAt: at }); n++; }
+      const archiveJob = async (id) => { const j = id && await db.jobs.get(id); if (!j) return; await db.jobs.update(id, { archivedAt: at, isActive: false, updatedAt: at }); n++; if (j.siteId && await db.sites.get(j.siteId)) { await db.sites.update(j.siteId, { archivedAt: at, isActive: false, updatedAt: at }); n++; } };
+      await archiveJob(jobId);
+      await archiveJob(fieldJobId);
       for (const id of sites.filter(Boolean)) if (await db.sites.get(id)) { await db.sites.update(id, { archivedAt: at, isActive: false, updatedAt: at }); n++; }
       if (customerId && await db.customers.get(customerId)) { await db.customers.update(customerId, { archivedAt: at, isActive: false, updatedAt: at }); n++; }
+      const fc = (await db.customers.toArray()).find((c) => c.name === fieldCustomerName);
+      if (fc) { await db.customers.update(fc.id, { archivedAt: at, isActive: false, updatedAt: at }); n++; }
       return n;
-    }, { customerId, sites: [site1, site2], jobId }).catch(() => -1);
+    }, { customerId, sites: [site1, site2], jobId, fieldJobId, fieldCustomerName }).catch(() => -1);
     R.ok(`cleanup archived ${n} record(s)`, n >= 0);
     await lib.waitForUpload(P).catch(() => undefined);
   });

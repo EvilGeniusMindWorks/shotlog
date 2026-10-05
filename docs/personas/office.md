@@ -13,7 +13,11 @@ three in one pass — and "Set up…" on Jobs asks which before anything else.
 Every inherited fact on a job says where it lives ("K 160 · from the site").
 Before a blasting day the site must carry a live permit, the fire chief and the
 nearest hospital; the Start-work sheet shows the red lines and holds the
-blasting day only. Back walks the tabs on every record page.
+blasting day only. Back walks the tabs on every record page. Push 2: a job
+opens on its setup as tiles (green in, grey can wait, red holds a blasting
+day), Admin › Company › Setup fields is the table behind what setup asks and
+what gates, and a job a blaster set up from the field (four questions on the
+phone) sits on her home until she confirms the setup.
 
 ## Who they are (updated 2026-08-17)
 

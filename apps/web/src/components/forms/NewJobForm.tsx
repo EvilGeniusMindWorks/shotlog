@@ -14,6 +14,7 @@ import { nextJobNumber } from '@/lib/jobContext';
 import { townOf } from '@/lib/siteFacts';
 import type { WorkType } from '@/db/schema';
 import { WORK_TYPES, WORK_TYPE_LABEL } from '@/lib/prefs';
+import { asksAtSetup, useSetupFields } from '@/lib/setupFields';
 import { pickWhyNot, type CustomerSitePick } from './CustomerSitePicker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -56,6 +57,9 @@ export function NewJobForm({
   const [site, setSite] = useState({ siteName: initial?.siteName ?? '', address: initial?.address ?? '', city: initial?.city ?? '', state: initial?.state ?? '', zip: '', kFactor: initial?.kFactor ?? 180 });
   // S26: the site name follows the address until the person types a name of their own
   const [nameTouched, setNameTouched] = useState(false);
+  // S26 push 2: Admin › Setup fields decides what the sheet asks for at setup
+  const fields = useSetupFields();
+  const [extra, setExtra] = useState({ permit: '', permitExp: '', coi: '' });
   const [form, setForm] = useState({ name: '', operation: 'construction' as Operation, customerPO: '', defaultTypeOfWork: '' as WorkType | '' });
   const [nextNumber, setNextNumber] = useState<string>('');
   const [busy, setBusy] = useState(false);
@@ -118,6 +122,8 @@ export function NewJobForm({
         kFactor: pickedSite?.kFactor ?? site.kFactor,
         siteName: pickedSite?.name ?? site.siteName,
         siteZip: pickedSite ? undefined : site.zip,
+        ...(extra.permit.trim() && !pickedSite ? { sitePermit: { number: extra.permit, ...(extra.permitExp ? { expiresAt: extra.permitExp } : {}) } } : {}),
+        ...(extra.coi && !customerId ? { customerCoiExpires: extra.coi } : {}),
       });
       onCreated(id);
     } catch (e) {
@@ -242,10 +248,30 @@ export function NewJobForm({
                 <Label className="text-xs">Site name <span className="text-gray-400 font-normal">— follows the address until you change it</span></Label>
                 <Input value={site.siteName} onChange={(e) => { setNameTouched(true); setSite({ ...site, siteName: e.target.value }); }} data-new-job-site-name />
               </div>
-              <div>
-                <Label className="text-xs">Site K</Label>
-                <Input type="number" value={site.kFactor} onChange={(e) => setSite({ ...site, kFactor: Number(e.target.value) || 180 })} />
-              </div>
+              {asksAtSetup(fields, 'k') && (
+                <div>
+                  <Label className="text-xs">Site K</Label>
+                  <Input type="number" value={site.kFactor} onChange={(e) => setSite({ ...site, kFactor: Number(e.target.value) || 180 })} data-new-job-site-k />
+                </div>
+              )}
+              {asksAtSetup(fields, 'permit') && (
+                <>
+                  <div>
+                    <Label className="text-xs">Blasting permit #</Label>
+                    <Input value={extra.permit} onChange={(e) => setExtra({ ...extra, permit: e.target.value })} placeholder="BP-2026-0147" data-new-job-permit />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Permit expires</Label>
+                    <Input type="date" value={extra.permitExp} onChange={(e) => setExtra({ ...extra, permitExp: e.target.value })} data-new-job-permit-exp />
+                  </div>
+                </>
+              )}
+              {!customerId && customerName && asksAtSetup(fields, 'coi') && (
+                <div>
+                  <Label className="text-xs">Insurance certificate expires</Label>
+                  <Input type="date" value={extra.coi} onChange={(e) => setExtra({ ...extra, coi: e.target.value })} data-new-job-coi />
+                </div>
+              )}
               {customerSites.length > 0 && (
                 <button type="button" className="text-xs text-navy underline text-left" onClick={() => setTyping(false)}>Pick one of {customer?.name}'s sites instead</button>
               )}
@@ -279,17 +305,19 @@ export function NewJobForm({
                 options={[{ value: '', label: 'Follow the role default' }, ...WORK_TYPES.map((t) => ({ value: t, label: WORK_TYPE_LABEL[t] }))]}
               />
             </div>
-            <div>
-              <Label>Customer PO <span className="text-gray-400 font-normal">· optional</span></Label>
-              <Input value={form.customerPO} onChange={(e) => setForm({ ...form, customerPO: e.target.value })} />
-            </div>
+            {asksAtSetup(fields, 'po') && (
+              <div>
+                <Label>Customer PO</Label>
+                <Input value={form.customerPO} onChange={(e) => setForm({ ...form, customerPO: e.target.value })} data-new-job-po />
+              </div>
+            )}
             <div>
               <Label>Operation</Label>
               <Select value={form.operation} onChange={(e) => setForm({ ...form, operation: e.target.value as Operation })} options={OPERATION_OPTIONS} />
             </div>
           </div>
           <p className="text-xs text-gray-400">
-            Rock, terrain, hazards and the rest live on the job page; the job opens with a setup line for what is still to set.
+            Rock, terrain, hazards and the rest live on the job page; the job opens with its setup tiles — what is in, what can wait, what holds a blasting day.
           </p>
           <div className="flex items-center justify-end gap-3">
             {(whyNot || error) && (

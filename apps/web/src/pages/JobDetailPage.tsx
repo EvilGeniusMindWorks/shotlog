@@ -20,6 +20,7 @@ import { can } from '@/lib/perms';
 import { LifecycleMenu } from '@/components/records/LifecycleMenu';
 import { MoveJobButton } from '@/components/forms/MoveJobSheet';
 import { JobLocationCard } from '@/components/forms/JobLocationCard';
+import { SetupTiles } from '@/components/jobs/SetupTiles';
 import { createDrillPlan, getPlanHoles } from '@/hooks/useDrillPlans';
 import { useJobContext, type JobContext } from '@/lib/jobContext';
 import { nowISO } from '@/lib/utils';
@@ -114,13 +115,6 @@ export function JobDetailPage() {
     stats.totalLbs ? `${fmtLbs(stats.totalLbs)} lbs` : undefined,
     nextDay ? `next: ${formatDate(nextDay.date)}` : 'next: none scheduled',
   ];
-  // S22: the setup line — what is still to set, each a door, gone when done
-  const setupItems: { key: string; label: string; go: () => void }[] = [];
-  if (!job.contactSheet?.acceptedAt && sheet.stats.printNeeds.length > 0) setupItems.push({ key: 'contacts', label: `contact sheet · ${sheet.stats.filled} of ${sheet.stats.total} rows`, go: () => document.querySelector<HTMLButtonElement>('[data-open-section="contact-sheet"]')?.click() });
-  if (sheet.stats.changes > 0) setupItems.push({ key: 'site-changes', label: `the site changed ${sheet.stats.changes} row${sheet.stats.changes === 1 ? '' : 's'} · review`, go: () => document.querySelector<HTMLButtonElement>('[data-open-section="contact-sheet"]')?.click() });
-  if (ctx?.site && permits.length === 0) setupItems.push({ key: 'permits', label: 'permits', go: () => navigate(`/sites/${ctx.site!.id}`) });
-  if (!job.workSpot) setupItems.push({ key: 'work-spot', label: 'work spot', go: () => document.querySelector<HTMLButtonElement>('[data-open-section="setup"]')?.click() });
-
   return (
     <RecordShell
       breadcrumb={[
@@ -151,18 +145,7 @@ export function JobDetailPage() {
       }
       facts={facts}
       initialTab={openSection}
-      notice={
-        setupItems.length > 0 && isAdmin ? (
-          <div className="px-4 pt-3">
-            <div className="max-w-6xl mx-auto rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 flex items-center gap-2 flex-wrap" data-job-setup-line>
-              <span className="font-medium">Still to set:</span>
-              {setupItems.map((it) => (
-                <button key={it.key} type="button" className="underline underline-offset-2" onClick={it.go} data-setup-item={it.key}>{it.label}</button>
-              ))}
-            </div>
-          </div>
-        ) : null
-      }
+      notice={<SetupTiles job={job} site={ctx?.site} customer={ctx?.customer} sheet={{ filled: sheet.stats.filled, total: sheet.stats.total, changes: sheet.stats.changes }} isAdmin={isAdmin} />}
       stats={[
         { label: 'Work days', value: String(blastDays.length) },
         { label: 'Total Shots', value: String(stats.shots) },

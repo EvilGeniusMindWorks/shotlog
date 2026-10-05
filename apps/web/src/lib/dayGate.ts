@@ -12,8 +12,14 @@ export interface GateLine {
   text: string;
 }
 
-export function blastingGate(site: Pick<Site, 'permits' | 'contacts'> | undefined | null): GateLine[] {
+/** `keys`: which rows gate (Admin › Setup fields); every row when omitted */
+export function blastingGate(site: Pick<Site, 'permits' | 'contacts'> | undefined | null, keys?: Set<string>): GateLine[] {
   if (!site) return [];
+  const all = gateLines(site);
+  return keys ? all.filter((l) => keys.has(l.key)) : all;
+}
+
+function gateLines(site: Pick<Site, 'permits' | 'contacts'>): GateLine[] {
   const today = todayISO();
   const permits = (site.permits ?? []).filter((p) => (p.number ?? '').trim());
   const live = permits.filter((p) => !p.expiresAt || p.expiresAt >= today);
