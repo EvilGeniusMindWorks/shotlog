@@ -210,13 +210,13 @@ async (page, lib) => {
     await signIn(M, 'mark');
     await skipTours(M);
     await M.goto(`${WEB}/admin/company`);
-    await M.locator('[data-setup-fields-card]').waitFor({ timeout: 30000 });
+    await M.locator('[data-company-settings]').waitFor({ timeout: 30000 });
     // push 3: the admin tab strip has no stray scrollbar (the links used to hang 1 px below the box)
     const strip = await M.locator('[data-admin-tabs]').evaluate((e) => ({ sh: e.scrollHeight, ch: e.clientHeight }));
     R.ok(`the admin tab strip does not scroll vertically (${strip.sh} vs ${strip.ch})`, strip.sh <= strip.ch);
-    const gist = (await M.locator('[data-setup-fields-gist]').innerText()).replace(/\s+/g, ' ');
-    R.ok(`Company carries a Setup fields card with the counts ("${gist}")`, /\d+ fields · \d+ asked at setup · \d+ hold a blasting day/.test(gist));
-    await M.locator('[data-setup-fields-open]').click();
+    const gist = (await M.locator('[data-company-setting="setup-fields"] [data-company-gist]').innerText()).replace(/\s+/g, ' ');
+    R.ok(`the Company list carries a Setup fields row with the counts ("${gist}")`, /\d+ fields · \d+ asked at setup · \d+ hold a blasting day/.test(gist));
+    await M.locator('[data-company-setting="setup-fields"]').click();
     await M.waitForURL(/\/admin\/company\/setup-fields/, { timeout: 10000 });
     await M.locator('[data-setup-fields]').waitFor({ timeout: 30000 });
     const rows = await M.locator('[data-setup-field]').count();

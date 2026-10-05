@@ -6,11 +6,15 @@ updated: September 2026
 status: draft
 ---
 
-**Admin › Company** holds what goes on every form: company name, dealer number, address, phone. Change it here and every new PDF carries it.
+**Admin › Company** opens on a list of the company's settings, one row each with what it is set to right now. Tap a row and that setting opens on its own screen, with **Company** at the top to go back; on a desktop the list stays on the left and the setting opens on the right. The rows:
 
-## Also here
-
-The company's list of **reasons** and **document types** used in the field (for example a permit or a pre-blast survey as an attachment type), and the costing table the admin home shows.
+- **Company details** — name, dealer number, address, phone. Change it here and every new PDF carries it.
+- **Approvals** — which role approves which paper, and whether a day is approved as one.
+- **Office routing** — the office rows of every job's contact sheet (change in scope, incident, injury, equipment trouble, direct contractor).
+- **The home screen** — how many days old a draft is before a blaster's home counts it as unfiled.
+- **Attachment types** — the company's own kinds of attachment (a permit, a pre-blast survey…) on top of the built-in ones.
+- **Pre-blast checklist** — the reference list shown on a blasting day's hub, one item per line.
+- **Setup fields** — below.
 
 ## Setup fields
 

@@ -41,7 +41,8 @@
   ],
   "apps/web/src/App.tsx": [
     77,
-    86
+    86,
+    88
   ],
   "apps/web/src/components/admin/ApprovalsMatrix.tsx": [
     82
@@ -563,7 +564,8 @@
   "apps/web/src/pages/admin/AdminCompanyPage.tsx": [
     81,
     82,
-    83
+    83,
+    88
   ],
   "apps/web/src/pages/admin/AdminFeedbackPage.tsx": [
     77,
@@ -640,5 +642,8 @@
   ],
   "apps/web/src/lib/dayGate.ts": [
     87
+  ],
+  "apps/web/src/pages/admin/AdminSetupFieldsPage.tsx": [
+    88
   ]
 }

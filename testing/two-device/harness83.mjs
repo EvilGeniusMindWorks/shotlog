@@ -135,7 +135,7 @@ async (page, lib) => {
 
   await R.section("The Jobsite Contact Sheet is a paper of the job: prefilled rows with source chips, override on the job only, Use the site's again", async () => {
     // Baystate's office rows, from Admin › Company (the admin types them; the blur saves)
-    await PA.goto(WEB + '/admin/company');
+    await PA.goto(WEB + '/admin/company/routing');
     await PA.locator('[data-office-rows]').waitFor({ timeout: 20000 });
     prevOffice = await PA.evaluate(async () => { const { db } = await import('/src/db/index.ts'); return (await db.companySettings.get('companySettings-singleton'))?.officeContacts ?? []; });
     for (const [key, name, phone] of [['incident', 'Evette', '413-583-4440'], ['injury', 'Evette', '413-583-4440'], ['change_scope', 'Tony', '413-315-0371']]) {
@@ -248,9 +248,9 @@ async (page, lib) => {
   });
 
   await R.section("Admin › Company: the BBI Office rows and Direct Contractor prefill every sheet", async () => {
-    await PA.goto(WEB + '/admin/company');
+    await PA.goto(WEB + '/admin/company/routing');
     await PA.locator('[data-office-rows]').waitFor({ timeout: 20000 });
-    R.ok('the five fixed rows sit on the company page', (await PA.locator('[data-office-row]').count()) === 5 && (await PA.locator('[data-office-row="direct_contractor"]').count()) === 1);
+    R.ok('the five fixed rows sit on the Office routing screen', (await PA.locator('[data-office-row]').count()) === 5 && (await PA.locator('[data-office-row="direct_contractor"]').count()) === 1);
     R.ok('an incident on this job would call the sheet\'s Incident row', await PB.evaluate(async (jobId) => {
       const { db } = await import('/src/db/index.ts');
       const { resolveIncidentContacts } = await import('/src/lib/incidentDoNow.ts');

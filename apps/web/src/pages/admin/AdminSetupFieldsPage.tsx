@@ -59,7 +59,7 @@ export function AdminSetupFieldsPage() {
   return (
     <div className="space-y-4" data-setup-fields data-setup-fields-rows={counts.rows}>
       <div className="flex items-start gap-3 flex-wrap">
-        <Link to="/admin/company" className="inline-flex items-center gap-1 text-sm text-navy underline mt-0.5" data-setup-fields-back>
+        <Link to="/admin/company" className="inline-flex items-center gap-1 text-sm text-navy underline mt-0.5 md:hidden" data-setup-fields-back>
           <ArrowLeft className="h-4 w-4" /> Company
         </Link>
         <div className="min-w-0 flex-1">

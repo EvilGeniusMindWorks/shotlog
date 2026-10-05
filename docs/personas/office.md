@@ -19,6 +19,10 @@ day), Admin › Company › Setup fields is the table behind what setup asks and
 what gates, and a job a blaster set up from the field (four questions on the
 phone) sits on her home until she confirms the setup. Push 3: Setup fields is the whole list on its own page — every fact a customer, site or job can carry, in six groups — so she can move any of them to "at setup" and the New job sheet and the job's tiles follow at once.
 
+## Round S27 — settings as a menu (Matthew, Oct 5 2026)
+
+Admin › Company opens on a list of its settings, each with a gist of its value; a row opens that setting alone, with Back; on a desktop the list stays beside the open setting. No more scrolling a long page to find the one card you came for.
+
 ## Who they are (updated 2026-08-17)
 
 Evette handles **compliance** — including responding to **ATF audits** —

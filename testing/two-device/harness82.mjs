@@ -281,7 +281,7 @@ async (page, lib) => {
       return id;
     }, { dayId, jobId: jobA.id, today });
     await waitForUpload(PB, 30000);
-    await PO.goto(WEB + '/admin/company');
+    await PO.goto(WEB + '/admin/company/approvals');
     await PO.locator('[data-approvals-matrix]').waitFor({ timeout: 20000 });
     const cell = (k) => PO.locator('[data-matrix-cell="' + k + '"]');
     const officeTicked = (await cell('time_card:office').isChecked()) && (await cell('blast_log:office').isChecked()) && (await cell('drill_log:office').isChecked());
@@ -302,7 +302,7 @@ async (page, lib) => {
       return false;
     });
     await waitForUpload(PA, 20000).catch(() => undefined);
-    await PA.goto(WEB + '/admin/company');
+    await PA.goto(WEB + '/admin/company/approvals');
     await PA.locator('[data-matrix-cell="time_card:blaster"]').waitFor({ timeout: 20000 });
     await PA.locator('[data-matrix-cell="time_card:blaster"]').click();
     const granted = await waitFor(() => PA.evaluate(async () => { const { db } = await import('/src/db/index.ts'); const r = (await db.roleDefinitions.toArray()).find((x) => x.key === 'blaster'); return r?.capabilities.includes('approve_time_cards') ? 1 : null; }), 10000);

@@ -217,7 +217,7 @@ async (page, lib) => {
     await signIn(PA, 'mark');
     await skipTours(PA);
     const setStale = async (n) => {
-      await PA.goto(`${WEB}/admin/company`);
+      await PA.goto(`${WEB}/admin/company/home`);
       await PA.locator('[data-home-stale-days]').waitFor({ timeout: 30000 });
       await PA.locator('[data-home-stale-days]').fill(String(n));
       await PA.locator('[data-home-stale-days]').press('Tab');
