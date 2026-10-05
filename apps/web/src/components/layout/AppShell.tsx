@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   Users,
   Wrench,
+  Building2,
 } from 'lucide-react';
 import { useLiveQuery, db } from '@/db';
 import { cn } from '@/lib/utils';
@@ -52,6 +53,8 @@ function CrashProbe() {
 const baseNavItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/records', icon: FolderArchive, label: 'Records' },
+  // S26 (shape A): Customers and Jobs are two doors — who pays, and the work
+  { to: '/customers', icon: Building2, label: 'Customers' },
   { to: '/jobs', icon: Briefcase, label: 'Jobs' },
   { to: '/reference', icon: BookOpen, label: 'Reference' },
   { to: '/settings', icon: Settings, label: 'Settings' },
@@ -99,6 +102,7 @@ function navItemsForRole() {
     return [
       { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
       { to: '/records', icon: FolderArchive, label: 'Records' },
+      { to: '/customers', icon: Building2, label: 'Customers' },
       { to: '/jobs', icon: Briefcase, label: 'Jobs' },
       { to: '/admin/incidents', icon: AlertTriangle, label: 'Incidents' },
       // S4 (office study): a read-only roster so Evette can look up a
@@ -112,6 +116,7 @@ function navItemsForRole() {
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/days', icon: CalendarDays, label: 'Work days' },
     { to: '/jobs', icon: Briefcase, label: 'Jobs' },
+    { to: '/customers', icon: Building2, label: 'Customers' },
     { to: '/records', icon: FolderArchive, label: hasCap('approve_days') ? 'Records' : 'My records' },
     ...(hasCap('approve_days') ? [{ to: '/admin/approvals', icon: CheckCircle2, label: 'Approvals' }] : []),
     { to: '/reference', icon: BookOpen, label: 'Reference' },

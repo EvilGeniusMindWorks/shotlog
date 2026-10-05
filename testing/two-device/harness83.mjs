@@ -69,7 +69,7 @@ async (page, lib) => {
   });
 
   await R.section('New job in one sheet: customer, site, job, then the contact sheet; Jobs rows expand in place; the setup line', async () => {
-    await PB.goto(`${WEB}/jobs`);
+    await PB.goto(`${WEB}/customers`);
     await PB.locator('[data-jobs-new-job]').waitFor({ timeout: 20000 });
     await PB.locator('[data-jobs-new-job]').click();
     await PB.locator('[data-new-job-form][data-new-job-step="1"]').waitFor({ timeout: 5000 });
@@ -107,7 +107,7 @@ async (page, lib) => {
     R.ok('the header names the new customer and site', facts.includes(`S22 Cust ${stamp}`) && /Lexington/.test(facts));
     await waitForUpload(PB, 20000).catch(() => undefined);
     // the Jobs page: the customer's row expands in place
-    await PB.goto(`${WEB}/jobs`);
+    await PB.goto(`${WEB}/customers`);
     await PB.locator('[data-customers-list] [data-list-row]').first().waitFor({ timeout: 20000 });
     // a never-worked customer sits past the first fifteen
     if (await PB.locator('[data-customers-more]').count()) await PB.locator('[data-customers-more]').click();

@@ -53,7 +53,9 @@ export function NewJobForm({
   const [search, setSearch] = useState('');
   const [siteId, setSiteId] = useState<string | undefined>(initial?.siteId);
   const [typing, setTyping] = useState(false);
-  const [site, setSite] = useState({ siteName: initial?.siteName ?? '', address: initial?.address ?? '', city: initial?.city ?? '', state: initial?.state ?? '', kFactor: initial?.kFactor ?? 180 });
+  const [site, setSite] = useState({ siteName: initial?.siteName ?? '', address: initial?.address ?? '', city: initial?.city ?? '', state: initial?.state ?? '', zip: '', kFactor: initial?.kFactor ?? 180 });
+  // S26: the site name follows the address until the person types a name of their own
+  const [nameTouched, setNameTouched] = useState(false);
   const [form, setForm] = useState({ name: '', operation: 'construction' as Operation, customerPO: '', defaultTypeOfWork: '' as WorkType | '' });
   const [nextNumber, setNextNumber] = useState<string>('');
   const [busy, setBusy] = useState(false);
@@ -93,7 +95,7 @@ export function NewJobForm({
     if (!b) return;
     setSiteId(undefined);
     setTyping(true);
-    setSite({ siteName: b.street1 || customer?.name || '', address: b.street1 || '', city: b.city || '', state: b.state || '', kFactor: 180 });
+    setSite({ siteName: b.street1 || customer?.name || '', address: b.street1 || '', city: b.city || '', state: b.state || '', zip: b.zip || '', kFactor: 180 });
   };
 
   const create = async () => {
@@ -115,6 +117,7 @@ export function NewJobForm({
         state: pickedSite?.state ?? site.state,
         kFactor: pickedSite?.kFactor ?? site.kFactor,
         siteName: pickedSite?.name ?? site.siteName,
+        siteZip: pickedSite ? undefined : site.zip,
       });
       onCreated(id);
     } catch (e) {
@@ -221,7 +224,7 @@ export function NewJobForm({
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="sm:col-span-2 lg:col-span-2">
                 <Label className="text-xs">Address *</Label>
-                <Input value={site.address} onChange={(e) => setSite({ ...site, address: e.target.value, siteName: site.siteName || e.target.value })} placeholder="287 Waltham Street" data-new-job-site-address />
+                <Input value={site.address} onChange={(e) => setSite({ ...site, address: e.target.value, siteName: nameTouched ? site.siteName : e.target.value })} placeholder="287 Waltham Street" data-new-job-site-address />
               </div>
               <div>
                 <Label className="text-xs">City</Label>
@@ -231,9 +234,13 @@ export function NewJobForm({
                 <Label className="text-xs">State *</Label>
                 <Input value={site.state} maxLength={2} onChange={(e) => setSite({ ...site, state: e.target.value.toUpperCase().slice(0, 2) })} placeholder="MA" data-new-job-site-state />
               </div>
-              <div className="sm:col-span-2 lg:col-span-3">
-                <Label className="text-xs">Site name <span className="text-gray-400 font-normal">— defaults to the address</span></Label>
-                <Input value={site.siteName} onChange={(e) => setSite({ ...site, siteName: e.target.value })} data-new-job-site-name />
+              <div>
+                <Label className="text-xs">ZIP</Label>
+                <Input value={site.zip} inputMode="numeric" maxLength={10} onChange={(e) => setSite({ ...site, zip: e.target.value })} placeholder="01886" data-new-job-site-zip />
+              </div>
+              <div className="sm:col-span-2 lg:col-span-2">
+                <Label className="text-xs">Site name <span className="text-gray-400 font-normal">— follows the address until you change it</span></Label>
+                <Input value={site.siteName} onChange={(e) => { setNameTouched(true); setSite({ ...site, siteName: e.target.value }); }} data-new-job-site-name />
               </div>
               <div>
                 <Label className="text-xs">Site K</Label>

@@ -16,6 +16,14 @@ The hierarchy is Customer › Site › Job, and the office keeps it true: contac
 
 Every day at a job inherits all of it, so a blaster never types an address or a K factor.
 
+## Two doors on the rail
+
+**Customers** is who pays and who to call; each customer owns its sites and each site its jobs, and the page drills down that way. **Jobs** is the work: one line per job, last worked first. You can start from whichever is new. **New customer** on Customers needs only a name and a contact. **New site** on a customer's page needs an address with its ZIP; if another site in the same town already carries the fire chief, police, fire and town hall rows, the new site starts with copies and says so. **Set up…** on Jobs asks what you are setting up — a customer, a site for a customer you have, a job at a site you have, or all three in one pass — and opens the right form.
+
+## Before a blasting day
+
+Start work checks the site when the type of work is a blasting type: a permit on file that has not expired, the fire chief on the site's rows, the nearest hospital set. A red line holds the blasting day and links to the site, where the fix is. A drilling day is never held.
+
 ## A job in one minute
 
 **New job** on the Jobs page is one sheet in three steps: the customer (type a few letters — an existing customer is picked, or a new one is made from the name alone; billing can wait), the site (the customer's address, one of its sites, or a typed address), the job (the name filled from the site, the number automatic, the type of work). From a customer's page the sheet opens on the site; from a site's page, on the job.

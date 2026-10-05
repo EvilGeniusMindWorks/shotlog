@@ -49,7 +49,7 @@ async (page, lib) => {
     const P1 = await c1.newPage();
     await P1.goto(`${WEB}/help/blaster/filing-the-day`);
     await P1.locator('[data-help-article="filing-the-day"]').waitFor({ timeout: 15000 });
-    R.ok('the TOC lists every section, with only the current one open', (await P1.locator('[data-help-toc-section]').count()) === 9 && (await P1.locator('[data-help-toc-section][data-open="1"]').count()) === 1 && (await P1.locator('[data-help-toc-section="blaster"] a').count()) === 14);
+    R.ok('the TOC lists every section, with only the current one open', (await P1.locator('[data-help-toc-section]').count()) === 9 && (await P1.locator('[data-help-toc-section][data-open="1"]').count()) === 1 && (await P1.locator('[data-help-toc-section="blaster"] a').count()) === 15);
     await P1.locator('[data-help-toc-section="shop"] button').click();
     await sleep(200);
     R.ok('tapping another section opens it and closes the current one', (await P1.locator('[data-help-toc-section="shop"][data-open="1"]').count()) === 1 && (await P1.locator('[data-help-toc-section="blaster"][data-open="1"]').count()) === 0);
@@ -64,7 +64,7 @@ async (page, lib) => {
     await signIn(P2, 'blaster');
     await skipTours(P2);
     await P2.goto(`${WEB}/jobs`);
-    await P2.locator('[data-customers-list]').waitFor({ timeout: 15000 });
+    await P2.locator('[data-jobs-list-page]').waitFor({ timeout: 15000 });
     // wide: the sidebar row expands an inline sub-menu (like the old Jobs
     // sub-items): About this screen · Help guide · Walkthrough · Send feedback
     await P2.locator('aside [data-help-button]').click();
@@ -86,7 +86,7 @@ async (page, lib) => {
     await signIn(P3, 'blaster');
     await skipTours(P3);
     await P3.goto(`${WEB}/jobs`);
-    await P3.locator('[data-customers-list]').waitFor({ timeout: 15000 });
+    await P3.locator('[data-jobs-list-page]').waitFor({ timeout: 15000 });
     await P3.locator('header [data-help-button]').click();
     await P3.locator('[data-help-menu]').waitFor({ timeout: 3000 });
     R.ok('phone: the ? menu has a Help guide entry', (await P3.locator('[data-help-guide]').count()) === 1);

@@ -34,7 +34,7 @@ export function AddressFields({
     <>
       <div className="sm:col-span-2">
         <Label className="text-xs">{p}Street</Label>
-        <Input value={value.street1} onChange={(e) => set({ street1: e.target.value })} />
+        <Input value={value.street1} onChange={(e) => set({ street1: e.target.value })} data-address-street1 />
       </div>
       <div className="sm:col-span-2">
         <Label className="text-xs">{p}Street 2</Label>
@@ -46,7 +46,7 @@ export function AddressFields({
       </div>
       <div>
         <Label className="text-xs">City</Label>
-        <Input value={value.city} onChange={(e) => set({ city: e.target.value })} />
+        <Input value={value.city} onChange={(e) => set({ city: e.target.value })} data-address-city />
       </div>
       <div className="flex gap-2">
         <div className="w-16">
@@ -55,6 +55,7 @@ export function AddressFields({
             value={value.state}
             maxLength={2}
             onChange={(e) => set({ state: e.target.value.toUpperCase().slice(0, 2) })}
+            data-address-state
           />
         </div>
         <div className="flex-1">
@@ -64,6 +65,7 @@ export function AddressFields({
             inputMode="numeric"
             maxLength={10}
             onChange={(e) => set({ zip: e.target.value })}
+            data-address-zip
           />
         </div>
       </div>

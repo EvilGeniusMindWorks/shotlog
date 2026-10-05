@@ -12,6 +12,7 @@ import { NewJobForm } from '@/components/forms/NewJobForm';
 import type { CopyFromPrevious, CreateWorkDayOptions } from '@/hooks/useBlastDay';
 import type { BlastDay, Job, WorkType } from '@/db/schema';
 import { isBlastingWork } from '@/db/schema';
+import { blastingGate, gateHolds } from '@/lib/dayGate';
 import {
   COPY_SECTIONS,
   getCopySections,
@@ -187,8 +188,15 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork, onOpen
   const existingSameDate = previousDays.find((d) => d.date === date);
   const sameDateExists = Boolean(existingSameDate);
 
+  // S26 (Matthew, Oct 5 2026): before a BLASTING day the site must carry a live
+  // permit, the fire chief and the nearest hospital. Red lines hold the day;
+  // a drilling day is never held. The lines point at the site, where the fix is.
+  const jobSite = sites.find((s) => s.id === job?.siteId);
+  const gate = jobId && isBlastingWork(typeOfWork) ? blastingGate(jobSite) : [];
+  const held = gateHolds(gate);
+
   const handleCreate = () => {
-    if (!jobId) return;
+    if (!jobId || held) return;
     const blasting = isBlastingWork(typeOfWork);
     const copy: CopyFromPrevious | undefined = copySourceId
       ? {
@@ -449,6 +457,20 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork, onOpen
                 No blasting log for this type — just the daily report. You can add a blasting log later if the day turns into a shot.
               </p>
             )}
+            {gate.length > 0 && (
+              <div className={`mt-2 rounded-lg border px-3 py-2 space-y-1 ${held ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'}`} data-day-gate={held ? 'held' : 'clear'}>
+                <p className="text-[11px] font-bold tracking-widest uppercase text-gray-600">Before a blasting day</p>
+                {gate.map((l) => (
+                  <p key={l.key} className={`text-xs ${l.ok ? 'text-green-800' : 'text-red-700'}`} data-day-gate-line={l.key} data-day-gate-ok={l.ok ? 'yes' : 'no'}>
+                    {l.ok ? '✓' : '✗'} {l.text}
+                    {!l.ok && jobSite && (
+                      <> · <a className="underline" href={`/sites/${jobSite.id}?tab=${l.key === 'permit' ? 'jurisdiction' : 'contacts'}`} data-day-gate-fix={l.key}>fix on the site</a></>
+                    )}
+                  </p>
+                ))}
+                {held && <p className="text-xs text-gray-600">Red lines hold a blasting day only. A drilling type can start now.</p>}
+              </div>
+            )}
           </div>
 
           {previousDays.length > 0 && (
@@ -491,7 +513,7 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork, onOpen
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="safety" disabled={!jobId} onClick={handleCreate} data-day-start>
+          <Button variant="safety" disabled={!jobId || held} onClick={handleCreate} data-day-start title={held ? 'Fix the red lines on the site, or pick a drilling type' : undefined}>
             Start work
           </Button>
         </CardFooter>

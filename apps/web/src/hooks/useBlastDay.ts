@@ -454,7 +454,7 @@ export async function addBlastLogToDay(blastDayId: string): Promise<string> {
 }
 
 export async function createJob(
-  data: Partial<Job> & { name: string; customer: string; siteName?: string },
+  data: Partial<Job> & { name: string; customer: string; siteName?: string; siteZip?: string },
 ): Promise<string> {
   const now = nowISO();
   const id = generateId();
@@ -486,8 +486,10 @@ export async function createJob(
     });
     customerId = ensured.customerId;
     siteId = siteId ?? ensured.siteId;
+    // S26: the ZIP typed on the site step lands on the site
+    if (data.siteZip?.trim() && !data.siteId) await db.sites.update(siteId, { zip: data.siteZip.trim(), updatedAt: now });
   } else if (!siteId) {
-    siteId = await createSite(customerId, { name: typedSite.siteName, address: typedSite.address, city: typedSite.city, state: typedSite.state, kFactor: data.kFactor });
+    siteId = await createSite(customerId, { name: typedSite.siteName, address: typedSite.address, city: typedSite.city, state: typedSite.state, kFactor: data.kFactor, ...(data.siteZip?.trim() ? { zip: data.siteZip.trim() } : {}) });
   }
   // Legacy mirror fields come from the PICKED records when selected
   const site = await db.sites.get(siteId);

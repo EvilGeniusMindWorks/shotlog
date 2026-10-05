@@ -49,7 +49,7 @@ async (page, lib) => {
   });
 
   await R.section('phone: Jobs lands on customers, windowed; one search finds all three kinds', async () => {
-    await P1.goto(`${WEB}/jobs`);
+    await P1.goto(`${WEB}/customers`);
     await P1.locator('[data-customers-list]').waitFor({ timeout: 10000 });
     await sleep(400);
     const rows = await P1.locator('[data-customers-list] [data-list-row]').count();
@@ -64,7 +64,7 @@ async (page, lib) => {
     await P1.locator(`[data-jobs-results] [data-list-row="${made.siteId}"]`).click();
     await P1.waitForURL(/\/sites\//, { timeout: 5000 });
     R.ok('tapping a site hit opens the site page', P1.url().includes(`/sites/${made.siteId}`));
-    await P1.goto(`${WEB}/jobs?lens=customers`);
+    await P1.goto(`${WEB}/customers?lens=customers`);
     await P1.locator('[data-customers-list]').waitFor({ timeout: 10000 });
     R.ok('an old ?lens= link still lands on the customers list', (await P1.locator('[data-customers-list]').count()) === 1);
   });
@@ -122,7 +122,7 @@ async (page, lib) => {
     const P2 = await c2.newPage();
     await signIn(P2, 'blaster');
     await skipTours(P2);
-    await P2.goto(`${WEB}/jobs`);
+    await P2.goto(`${WEB}/customers`);
     await P2.locator('[data-customers-list]').waitFor({ timeout: 10000 });
     R.ok('the sidebar has no All jobs / Customers / Sites sub-items', (await P2.locator('aside').getByRole('link', { name: 'All jobs' }).count()) === 0 && (await P2.locator('aside').getByRole('link', { name: 'Sites', exact: true }).count()) === 0);
     await P2.goto(`${WEB}/customers/${made.customerId}`);

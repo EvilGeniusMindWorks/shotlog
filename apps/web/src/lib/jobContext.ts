@@ -5,7 +5,7 @@
 // Writers NEVER write the legacy fields — only sites/customers records.
 import { useLiveQuery, db } from '@/db';
 import { generateId, nowISO } from '@/lib/utils';
-import type { Customer, Job, JobContact, KFactorHistoryEntry, Site } from '@/db/schema';
+import type { Customer, Job, JobContact, JobContactRole, KFactorHistoryEntry, Site } from '@/db/schema';
 import { ensureSiteGeo } from '@/lib/siteGeo';
 
 export interface JobContext {
@@ -156,6 +156,29 @@ export async function createCustomer(
 }
 
 /** Direct site creation (Customer screen) — dedupes by address+city. */
+/** S26 town memory (Matthew, Oct 5 2026, "offer it"): the town's rows — fire chief,
+ *  police, fire, town hall, detail dispatch — belong to the town, not the site.
+ *  Another site in the same town that already carries them is the memory;
+ *  a new site there starts with copies (its own ids) and says where they came from. */
+const TOWN_ROLES = new Set<JobContactRole>(['fire_chief', 'police', 'fire', 'town_hall', 'detail_dispatch']);
+export function townContactsFrom(
+  sites: Site[],
+  at: { city?: string; state?: string },
+  exceptSiteId?: string,
+): { fromSiteName: string; fromSiteId: string; contacts: JobContact[] } | null {
+  const city = norm(at.city ?? '');
+  const state = (at.state ?? '').trim().toUpperCase();
+  if (!city || !state) return null;
+  const candidates = sites
+    .filter((s) => s.id !== exceptSiteId && !s.archivedAt && norm(s.city) === city && (s.state ?? '').toUpperCase() === state)
+    .map((s) => ({ s, rows: (s.contacts ?? []).filter((c) => TOWN_ROLES.has(c.role) && (c.name || c.phone)) }))
+    .filter((x) => x.rows.length > 0)
+    .sort((a, b) => b.rows.length - a.rows.length || (b.s.updatedAt ?? '').localeCompare(a.s.updatedAt ?? ''));
+  const best = candidates[0];
+  if (!best) return null;
+  return { fromSiteName: best.s.name, fromSiteId: best.s.id, contacts: best.rows.map((c) => ({ ...c, id: generateId() })) };
+}
+
 export async function createSite(
   customerId: string,
   data: {
@@ -176,8 +199,11 @@ export async function createSite(
   if (existing) return existing.id;
   const now = nowISO();
   const id = generateId();
+  // S26 town memory: a site with no rows of its own starts with the town's
+  const memory = data.contacts?.length ? null : townContactsFrom(await db.sites.toArray(), { city: data.city, state: data.state });
   await db.sites.add({
     ...data,
+    ...(memory ? { contacts: memory.contacts, contactNotes: [data.contactNotes, `Town rows copied from ${memory.fromSiteName}`].filter(Boolean).join(' · ') } : {}),
     id,
     customerId,
     name: data.name?.trim() || [data.address, data.city].filter(Boolean).join(', ') || 'Site',

@@ -11,6 +11,7 @@ import { Dashboard, WorkDaysPage } from '@/pages/Dashboard';
 import { BlastDayPage } from '@/pages/BlastDayPage';
 import { DaySetupPage } from '@/pages/DaySetupPage';
 import { JobsPage } from '@/pages/JobsPage';
+import { CustomersPage } from '@/pages/CustomersPage';
 import { JobDetailPage } from '@/pages/JobDetailPage';
 import { CustomerPage } from '@/pages/CustomerPage';
 import { SitePage } from '@/pages/SitePage';
@@ -153,6 +154,7 @@ export function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/days" element={<WorkDaysPage />} />
           <Route path="/jobs" element={<JobsPage />} />
+          <Route path="/customers" element={<CustomersPage />} />
           <Route path="/jobs/:id" element={<JobDetailPage />} />
           <Route path="/customers/:id" element={<CustomerPage />} />
           <Route path="/sites/:id" element={<SitePage />} />

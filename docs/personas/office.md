@@ -3,6 +3,18 @@
 Status: **DRAFT — awaiting Matthew**
 Real person: **Evette** (Baystate)
 
+## Round S26 — setting up customers, sites and jobs (Matthew, Oct 5 2026)
+
+Shape A from the prototype: Customers and Jobs are two doors on the rail. The
+office sets up from whichever level is new — a customer (who they are, who to
+call), a site for a customer she has (the ground: address with ZIP, town rows
+copied from another site in the same town, K), a job at a site she has, or all
+three in one pass — and "Set up…" on Jobs asks which before anything else.
+Every inherited fact on a job says where it lives ("K 160 · from the site").
+Before a blasting day the site must carry a live permit, the fire chief and the
+nearest hospital; the Start-work sheet shows the red lines and holds the
+blasting day only. Back walks the tabs on every record page.
+
 ## Who they are (updated 2026-08-17)
 
 Evette handles **compliance** — including responding to **ATF audits** —

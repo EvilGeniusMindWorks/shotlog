@@ -105,8 +105,9 @@ export function JobDetailPage() {
   const facts = [
     ctx?.customerName,
     ctx?.site ? `${ctx.siteName}${ctx.city ? ` · ${ctx.city}${ctx.state ? `, ${ctx.state}` : ''}` : ''}` : [ctx?.address, ctx?.city, ctx?.state].filter(Boolean).join(', '),
-    `K ${ctx?.kFactor ?? job.kFactor ?? '—'}`,
-    permits.length ? `${permits.length === 1 ? `permit ${permits[0].number || permits[0].name}` : `${permits.length} permits`}${permitLine?.text ? ` · ${permitLine.text}` : ''}` : 'no permits on file',
+    // S26: inherited facts say where they live
+    `K ${ctx?.kFactor ?? job.kFactor ?? '—'}${ctx?.site ? ' · from the site' : ''}`,
+    permits.length ? `${permits.length === 1 ? `permit ${permits[0].number || permits[0].name}` : `${permits.length} permits`}${permitLine?.text ? ` · ${permitLine.text}` : ''} · from the site` : 'no permit on file · from the site',
     `${contactCount} contact${contactCount === 1 ? '' : 's'}`,
     `${blastDays.length} day${blastDays.length === 1 ? '' : 's'}${unfiled ? ` · ${unfiled} unfiled` : ''}`,
     `${stats.shots} shot${stats.shots === 1 ? '' : 's'}`,
@@ -173,6 +174,16 @@ export function JobDetailPage() {
           id: 'setup',
           label: 'Setup',
           summary: [job.jobNumber, ctx?.customerName, job.operation].filter(Boolean).join(' · '),
+          // S26 (Office Test rows 3730b994, 6e55d7fb): the Overview shows the gist,
+          // never the whole four-column form squeezed into a third of the page
+          preview: () => (
+            <div className="text-sm space-y-1" data-job-overview-setup>
+              <p><span className="text-gray-500">Customer</span> · {ctx?.customerName ?? job.customer ?? '—'}</p>
+              <p><span className="text-gray-500">Site</span> · {ctx?.site ? `${ctx.siteName} · ${[ctx.address, ctx.city, ctx.state].filter(Boolean).join(', ')}` : [job.address, job.city, job.state].filter(Boolean).join(', ') || '—'}</p>
+              <p><span className="text-gray-500">Work</span> · {job.operation}{job.defaultTypeOfWork ? ` · ${job.defaultTypeOfWork.replace(/_/g, ' ')}` : ''}{job.customerPO ? ` · PO ${job.customerPO}` : ''}</p>
+              <p data-job-location><span className="text-gray-500">Where the work is</span> · {job.workSpot ? `work spot set${job.workSpot.setByName ? ` by ${job.workSpot.setByName}` : ''}` : ctx?.site?.geo ? 'the site’s address point · no work spot yet' : 'no map point yet'}</p>
+            </div>
+          ),
           render: () => (
             <div className="space-y-4">
               <CustomerSiteCard job={job} ctx={ctx} />

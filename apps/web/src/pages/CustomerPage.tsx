@@ -21,6 +21,7 @@ import type { Customer, CustomerContact, CustomerStatus, Job, Site } from '@/db/
 import { AddressFields, emptyAddress } from '@/components/forms/AddressFields';
 import { RecordShell } from '@/components/layout/RecordShell';
 import { NewJobForm } from '@/components/forms/NewJobForm';
+import { NewSiteForm } from '@/components/forms/NewSiteForm';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -259,62 +260,7 @@ function SitesList({
     .filter((s) => !s.archivedAt)
     .map((s) => ({ s, a: rollUp(activity, jobsAt(s.id).map((j) => j.id)) }))
     .sort((x, y) => (y.a.lastWorked ?? '').localeCompare(x.a.lastWorked ?? '') || x.s.name.localeCompare(y.s.name));
-  const form = adding ? (
-    <div className="rounded-xl border border-gray-200 bg-white p-3 space-y-3" data-new-site-form>
-      <p className="text-sm font-semibold">New site for {customer.name}</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="sm:col-span-2">
-          <Label className="text-xs">Site name</Label>
-          <Input
-            value={site.name}
-            placeholder="defaults to address"
-            onChange={(e) => setSite({ ...site, name: e.target.value })}
-            data-new-site-name
-          />
-        </div>
-        <div className="sm:col-span-2">
-          <UseCustomerAddress
-            customer={customer}
-            value={{ address: site.addr.street1, city: site.addr.city, state: site.addr.state, zip: site.addr.zip }}
-            onUse={(a) => setSite({ ...site, addr: { ...site.addr, street1: a.address, city: a.city, state: a.state, zip: a.zip ?? '' } })}
-          />
-        </div>
-        <AddressFields value={site.addr} onChange={(addr) => setSite({ ...site, addr })} />
-        <div>
-          <Label className="text-xs">Site K</Label>
-          <Input
-            type="number"
-            inputMode="decimal"
-            value={site.kFactor || ''}
-            onChange={(e) => setSite({ ...site, kFactor: parseFloat(e.target.value) || 0 })}
-          />
-        </div>
-      </div>
-      <div className="flex justify-end gap-2">
-        <Button size="sm" variant="outline" onClick={() => setAdding(false)}>
-          Cancel
-        </Button>
-        <Button
-          size="sm"
-          disabled={!site.addr.street1.trim() && !site.name.trim()}
-          data-new-site-create
-          onClick={() =>
-            void createSite(customer.id, {
-              name: site.name,
-              address: site.addr.street1,
-              street2: site.addr.street2?.trim() || undefined,
-              city: site.addr.city,
-              state: site.addr.state,
-              zip: site.addr.zip?.trim() || undefined,
-              kFactor: site.kFactor,
-            }).then((sid) => navigate(`/sites/${sid}`))
-          }
-        >
-          Create site
-        </Button>
-      </div>
-    </div>
-  ) : undefined;
+  const form = adding ? <NewSiteForm customer={customer} onCreated={(sid) => navigate(`/sites/${sid}`)} onCancel={() => setAdding(false)} /> : undefined;
   return (
     <div className="space-y-3" data-customer-sites>
       <WindowedList

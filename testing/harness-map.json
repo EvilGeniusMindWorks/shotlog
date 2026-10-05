@@ -166,12 +166,14 @@
     83
   ],
   "apps/web/src/components/forms/NewBlastDayDialog.tsx": [
-    75
+    75,
+    87
   ],
   "apps/web/src/components/forms/NewJobForm.tsx": [
     55,
     69,
-    83
+    83,
+    87
   ],
   "apps/web/src/components/forms/PatternPickSheet.tsx": [
     85
@@ -200,14 +202,16 @@
     81
   ],
   "apps/web/src/components/layout/AppShell.tsx": [
-    57
+    57,
+    87
   ],
   "apps/web/src/components/layout/NavTrail.tsx": [
     79
   ],
   "apps/web/src/components/layout/RecordShell.tsx": [
     79,
-    83
+    83,
+    87
   ],
   "apps/web/src/components/layout/ScreenHeader.tsx": [
     79
@@ -369,7 +373,8 @@
     83
   ],
   "apps/web/src/lib/jobContext.ts": [
-    69
+    69,
+    87
   ],
   "apps/web/src/lib/logChecks.ts": [
     80,
@@ -488,10 +493,12 @@
   "apps/web/src/pages/JobDetailPage.tsx": [
     69,
     83,
-    85
+    85,
+    87
   ],
   "apps/web/src/pages/JobsPage.tsx": [
-    83
+    83,
+    87
   ],
   "apps/web/src/pages/MyRecordsPage.tsx": [
     82
@@ -621,5 +628,17 @@
   ],
   "testing/brochure-shots.mjs": [
     86
+  ],
+  "apps/web/src/pages/CustomersPage.tsx": [
+    87
+  ],
+  "apps/web/src/components/forms/NewSiteForm.tsx": [
+    87
+  ],
+  "apps/web/src/components/forms/SetupChooser.tsx": [
+    87
+  ],
+  "apps/web/src/lib/dayGate.ts": [
+    87
   ]
 }

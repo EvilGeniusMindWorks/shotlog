@@ -115,16 +115,28 @@ const RULES: CoachRule[] = [
       ask: 'No plan here? The blaster has not sent one yet — ask them, or start a drill-only day from +.',
     },
   },
-  // ── Jobs ──
+  // ── Customers and Jobs (S26: two doors) ──
+  {
+    pattern: '/customers',
+    entry: {
+      title: 'Customers',
+      what: 'Who pays and who to call. Each customer owns its sites, and each site its jobs — the site carries the ground (address, K, permits, the town’s rows) that every job there inherits.',
+      steps: [
+        'Tap a customer to see its sites; tap a site to see its jobs. The About cards on each page come first — tap one to open that section.',
+        'New customer needs only a name and a contact. New site lives on the customer’s page; a site in a town you already work in starts with the town’s rows.',
+        'The search box finds any customer, site or job by name, town or job number.',
+      ],
+    },
+  },
   {
     pattern: '/jobs',
     entry: {
       title: 'Jobs',
-      what: 'Customers › sites › jobs. A job carries its customer, site, K factor and defaults — so days never re-type them.',
+      what: 'The work: one line per job, last worked first. A job carries its customer and site, so days never re-type an address or a K factor.',
       steps: [
-        'Tap a customer to see its sites; tap a site to see its jobs. The About cards on each page come first — tap one to open that section.',
-        'Recent jobs sit on top as chips; the search box finds any customer, site or job by name, town or job number.',
-        'Small job with no office setup yet? New customer here, then New site and New job on their pages.',
+        'Set up… asks what you are setting up — a customer, a site for a customer you have, a job at a site you have, or all three at once — and opens the right form.',
+        'Tap a job to open it. The facts under its name say where each one lives: "K 160 · from the site".',
+        'Looking for a customer or a site? They have their own page: Customers.',
       ],
     },
   },

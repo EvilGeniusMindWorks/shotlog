@@ -6,7 +6,7 @@
 //                       collapsible cards whose closed headers show a summary
 // The mode is width + orientation with a per-device override in Settings.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useBack } from '@/lib/nav';
 import { BackButton } from '@/components/layout/ScreenHeader';
 import { ChevronDown, ChevronRight } from 'lucide-react';
@@ -98,7 +98,20 @@ interface Props {
 export function RecordShell({ breadcrumb, title, badge, subline, facts, notice, stats, actions, sections, aboutCards, list, initialTab }: Props) {
   const navigate = useNavigate();
   const mode = useLayoutMode();
-  const [tab, setTab] = useState(initialTab && sections.some((s) => s.id === initialTab) ? initialTab : 'overview');
+  // S26 (Matthew, Oct 5 2026: "shouldn't our arrow walk back through the
+  // navigation?"): the open tab is part of the address (?tab=…), so Back
+  // walks the tabs before it leaves the page, on every record page.
+  const [params, setParams] = useSearchParams();
+  const urlTab = params.get('tab');
+  const wanted = urlTab && sections.some((s) => s.id === urlTab) ? urlTab : initialTab && sections.some((s) => s.id === initialTab) ? initialTab : 'overview';
+  const [tab, setTabState] = useState(wanted);
+  useEffect(() => { setTabState(wanted); }, [wanted]);
+  const setTab = (id: string) => {
+    setTabState(id);
+    const next = new URLSearchParams(params);
+    if (id === 'overview') next.delete('tab'); else next.set('tab', id);
+    setParams(next);
+  };
   const [open, setOpen] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(sections.map((s) => [s.id, s.id === initialTab ? true : (s.defaultOpen ?? !aboutCards)])),
   );
