@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AskHost } from '@/components/ui/ask-sheet';
 // S25: the public product page and its printed twin — loaded only on /brochure,
@@ -52,7 +52,7 @@ import { DrillChecklistPage } from '@/pages/DrillChecklistPage';
 import { IncidentPage } from '@/pages/IncidentPage';
 import { AdminIncidentsPage } from '@/pages/admin/AdminIncidentsPage';
 import { Navigate } from 'react-router-dom';
-import { getSessionUser } from '@/lib/session';
+import { getSessionUser, VIEW_ROLE_EVENT } from '@/lib/session';
 import { hasCap } from '@/lib/perms';
 import { AdminRolesPage } from '@/pages/admin/AdminRolesPage';
 import { UndoToastHost } from '@/components/ui/undo-toast';
@@ -93,6 +93,14 @@ function RecordsRouter() {
 }
 
 export function App() {
+  // View as (Oct 5 2026): the signed-in tree remounts on the home screen when
+  // the admin switches role — no page reload, so the sync stream stays up
+  const [viewRoleVersion, setViewRoleVersion] = useState(0);
+  useEffect(() => {
+    const bump = () => setViewRoleVersion((v) => v + 1);
+    window.addEventListener(VIEW_ROLE_EVENT, bump);
+    return () => window.removeEventListener(VIEW_ROLE_EVENT, bump);
+  }, []);
   // Public routes — the ONLY pages outside the auth gate: a crew member with
   // an invite link has no account yet, and someone resetting a password
   // has no session by definition
@@ -146,7 +154,7 @@ export function App() {
     <UndoToastHost />
     <AskHost />
     <FeedbackHost />
-    <BrowserRouter>
+    <BrowserRouter key={viewRoleVersion}>
       <FeedbackFab />
       <NavTrail />
       <Routes>

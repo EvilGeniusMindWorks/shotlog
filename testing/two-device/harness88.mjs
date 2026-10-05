@@ -106,6 +106,25 @@ async (page, lib) => {
     })());
   });
 
+  await R.section('§4 View as switches the role in place: no reload, the sync connection stays up (Oct 5 2026)', async () => {
+    await PM.goto(`${WEB}/`);
+    await PM.getByRole('button', { name: /Work in the field/ }).waitFor({ timeout: 30000 });
+    await waitFor(async () => (['synced', 'syncing'].includes(await PM.locator('[data-sync-kind]').first().getAttribute('data-sync-kind')) ? 1 : null), 30000);
+    await PM.evaluate(() => { window.__viewAsProbe = 'same page'; });
+    await PM.getByRole('button', { name: /Work in the field/ }).click();
+    await PM.getByText(/^Viewing as$/).waitFor({ timeout: 15000 });
+    const probe = await PM.evaluate(() => window.__viewAsProbe ?? null);
+    R.ok(`Work in the field switches to the blaster's home without reloading the page (${probe})`, probe === 'same page' && new URL(PM.url()).pathname === '/');
+    await sleep(2500);
+    const kind = await PM.locator('[data-sync-kind]').first().getAttribute('data-sync-kind');
+    R.ok(`the sync connection is still up after the switch (${kind})`, kind === 'synced' || kind === 'syncing');
+    R.ok('the blaster home is on screen, not the admin one', (await PM.getByRole('button', { name: /Work in the field/ }).count()) === 0 && (await PM.locator('[data-tour="fab"]').count()) === 1);
+    await PM.getByRole('button', { name: /Back to admin/ }).click();
+    await PM.getByRole('button', { name: /Work in the field/ }).waitFor({ timeout: 15000 });
+    const probe2 = await PM.evaluate(() => window.__viewAsProbe ?? null);
+    R.ok(`Back to admin returns the same way (${probe2}, ${await PM.locator('[data-sync-kind]').first().getAttribute('data-sync-kind')})`, probe2 === 'same page' && (await PM.getByText(/^Viewing as$/).count()) === 0);
+  });
+
   await R.section('the error spy saw nothing during this run', async () => {
     const errs = browserErrors();
     R.ok(`no browser errors (${errs.length})${errs[0] ? ` — first: ${errs[0].text.slice(0, 120)}` : ''}`, errs.length === 0);

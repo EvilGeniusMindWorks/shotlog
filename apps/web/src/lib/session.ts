@@ -124,11 +124,21 @@ export function getViewRole(): string | null {
   return getRealSessionUser()?.role === 'admin' ? localStorage.getItem(VIEW_ROLE_KEY) : null;
 }
 
-/** Set (or clear with null) the admin's view-as role. Reload to apply. */
+/** Fired on window when the view-as role changes; the app remounts its signed-in tree on it */
+export const VIEW_ROLE_EVENT = 'shotlog-view-role';
+
+/** Set (or clear with null) the admin's view-as role. Applies IN PLACE: the
+ *  app lands on the home screen and remounts every screen for the new role.
+ *  It used to reload the page (Oct 5 2026, Matthew: View as "disconnects and
+ *  doesn't like to reconnect"; the same report on Sep 15) — a reload tears
+ *  the sync stream down and, on Safari, can leave the old page's database
+ *  handle alive while the new page waits on it. Nothing about the role lives
+ *  in the sync connection, so the stream now stays up across the switch. */
 export function setViewRole(role: string | null): void {
   if (role && role !== 'admin') localStorage.setItem(VIEW_ROLE_KEY, role);
   else localStorage.removeItem(VIEW_ROLE_KEY);
-  window.location.assign('/');
+  window.history.pushState(null, '', '/');
+  window.dispatchEvent(new Event(VIEW_ROLE_EVENT));
 }
 
 /** The company this session belongs to — the `cid` claim of the access

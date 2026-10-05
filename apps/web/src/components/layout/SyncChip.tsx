@@ -41,6 +41,7 @@ export function SyncChip({ variant }: { variant: 'sidebar' | 'badge' }) {
       <button
         onClick={() => setOpen(true)}
         title="Sync status — tap for details"
+        data-sync-kind={state.kind}
         className={cn(
           'inline-flex items-center gap-1.5 rounded-full text-left',
           variant === 'sidebar'
