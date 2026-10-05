@@ -6,6 +6,8 @@ import type {
   DailyReport,
   ExplosiveUsage,
   Job,
+  Customer,
+  Site,
   WorkForceEntry,
   EquipmentEntry,
   WorkType,
@@ -463,6 +465,9 @@ export async function createJob(
     sitePermit?: { number: string; expiresAt?: string };
     /** S26: an insurance expiry typed at setup lands on the new customer */
     customerCoiExpires?: string;
+    /** S26 push 3: the generic setup rows typed for a NEW customer / site (Admin › Setup fields) */
+    customerExtra?: Partial<Customer>;
+    siteExtra?: Partial<Site>;
   },
 ): Promise<string> {
   const now = nowISO();
@@ -498,9 +503,12 @@ export async function createJob(
     // S26: the ZIP typed on the site step lands on the site
     if (data.siteZip?.trim() && !data.siteId) await db.sites.update(siteId, { zip: data.siteZip.trim(), updatedAt: now });
     if (data.customerCoiExpires?.trim()) await db.customers.update(customerId, { coiExpires: data.customerCoiExpires.trim(), updatedAt: now });
+    if (data.customerExtra && Object.keys(data.customerExtra).length) await db.customers.update(customerId, { ...data.customerExtra, updatedAt: now });
   } else if (!siteId) {
     siteId = await createSite(customerId, { name: typedSite.siteName, address: typedSite.address, city: typedSite.city, state: typedSite.state, kFactor: data.kFactor, ...(data.siteZip?.trim() ? { zip: data.siteZip.trim() } : {}) });
   }
+  // S26 push 3: the generic site rows typed at setup land on a site that was just made
+  if (data.siteExtra && Object.keys(data.siteExtra).length && !data.siteId) await db.sites.update(siteId, { ...data.siteExtra, updatedAt: now });
   // S26: a permit typed at setup lands on a site that was just made (never on a picked one)
   if (data.sitePermit?.number?.trim() && !data.siteId) {
     const s = await db.sites.get(siteId);
@@ -530,6 +538,13 @@ export async function createJob(
     defaultPrecautions: data.defaultPrecautions ?? '',
     ...(data.contacts?.length ? { contacts: data.contacts } : {}),
     ...(data.setupFromField ? { setupFromField: data.setupFromField } : {}),
+    // S26 push 3: the generic job rows typed at setup
+    ...(data.owner ? { owner: data.owner } : {}),
+    ...(data.generalContractor ? { generalContractor: data.generalContractor } : {}),
+    ...(data.engineerOfRecord ? { engineerOfRecord: data.engineerOfRecord } : {}),
+    ...(data.quoteRef ? { quoteRef: data.quoteRef } : {}),
+    ...(data.startDate ? { startDate: data.startDate } : {}),
+    ...(data.targetDate ? { targetDate: data.targetDate } : {}),
     isActive: true,
     // legacy mirrors (readers fall back here for un-backfilled jobs)
     customer: customer?.name ?? data.customer,

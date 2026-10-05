@@ -191,8 +191,8 @@ async (page, lib) => {
     await P.goto(`${WEB}/jobs/${j2}`);
     await P.locator('[data-setup-tiles]').waitFor({ timeout: 30000 });
     const tones = await P.locator('[data-setup-tile]').evaluateAll((els) => Object.fromEntries(els.map((e) => [e.getAttribute('data-setup-tile'), e.getAttribute('data-setup-tone')])));
-    R.ok(`nine tiles, the town rows and K green, the permit and the hospital red, the rest can wait (${JSON.stringify(tones)})`, Object.keys(tones).length === 9 && tones.town === 'done' && tones.k === 'done' && tones.permit === 'gate' && tones.hospital === 'gate' && tones.structures === 'later');
-    const head = ((await P.locator('[data-setup-tiles]').innerText()) || '').replace(/\s+/g, ' ').slice(0, 120); R.ok(`the header counts them and says what holds a blasting day ("${head}")`, /Setup · \d of 9/i.test(head) && /2 red · holds a blasting day/.test(head));
+    R.ok(`ten tiles (nine plus Jurisdiction, asked at setup), the town rows and K green, the permit and the hospital red, the rest can wait (${JSON.stringify(tones)})`, Object.keys(tones).length === 10 && tones.jurisdiction === 'later' && tones.town === 'done' && tones.k === 'done' && tones.permit === 'gate' && tones.hospital === 'gate' && tones.structures === 'later');
+    const head = ((await P.locator('[data-setup-tiles]').innerText()) || '').replace(/\s+/g, ' ').slice(0, 120); R.ok(`the header counts them and says what holds a blasting day ("${head}")`, /Setup · \d+ of 10/i.test(head) && /2 red · holds a blasting day/.test(head));
     await P.locator('[data-setup-tile="permit"]').click();
     await P.waitForURL(new RegExp(`/sites/${site1}\\?tab=jurisdiction`), { timeout: 10000 });
     R.ok('the permit tile opens the site on its permits tab', true);
@@ -210,9 +210,20 @@ async (page, lib) => {
     await signIn(M, 'mark');
     await skipTours(M);
     await M.goto(`${WEB}/admin/company`);
+    await M.locator('[data-setup-fields-card]').waitFor({ timeout: 30000 });
+    // push 3: the admin tab strip has no stray scrollbar (the links used to hang 1 px below the box)
+    const strip = await M.locator('[data-admin-tabs]').evaluate((e) => ({ sh: e.scrollHeight, ch: e.clientHeight }));
+    R.ok(`the admin tab strip does not scroll vertically (${strip.sh} vs ${strip.ch})`, strip.sh <= strip.ch);
+    const gist = (await M.locator('[data-setup-fields-gist]').innerText()).replace(/\s+/g, ' ');
+    R.ok(`Company carries a Setup fields card with the counts ("${gist}")`, /\d+ fields · \d+ asked at setup · \d+ hold a blasting day/.test(gist));
+    await M.locator('[data-setup-fields-open]').click();
+    await M.waitForURL(/\/admin\/company\/setup-fields/, { timeout: 10000 });
     await M.locator('[data-setup-fields]').waitFor({ timeout: 30000 });
     const rows = await M.locator('[data-setup-field]').count();
-    R.ok(`the table lists the setup fields with where they live, when they are asked and whether they hold a blasting day (${rows} rows)`, rows === 9);
+    const groups = await M.locator('[data-setup-group]').count();
+    const fixed = await M.locator('[data-setup-fixed]').count();
+    R.ok(`the page is the whole sort: ${rows} rows in ${groups} groups, ${fixed} of them fixed (always asked, automatic, from the town)`, rows >= 40 && groups === 6 && fixed >= 15);
+    R.ok('Company stays the lit tab on the subpage', (await M.locator('a.border-safety-orange').innerText()).trim() === 'Company');
     R.ok('Customer PO is asked Later by default', (await M.locator('[data-setup-field="po"]').getAttribute('data-setup-when')) === 'later');
     await M.locator('[data-setup-field="po"] [data-setup-when-pick="setup"]').click();
     await waitFor(async () => ((await M.locator('[data-setup-field="po"]').getAttribute('data-setup-when')) === 'setup' ? 1 : null), 10000);
@@ -229,6 +240,33 @@ async (page, lib) => {
     await P.locator(`[data-new-job-site="${site1}"]`).click();
     await P.locator('[data-new-job-form][data-new-job-step="3"]').waitFor({ timeout: 10000 });
     R.ok('the job step now asks for the Customer PO', (await P.locator('[data-new-job-po]').count()) === 1);
+    // push 3: a generic row — Quote reference — moved to At setup is asked on the job step, lands on the job and gets a tile
+    await M.locator('[data-setup-field="quote"] [data-setup-when-pick="setup"]').click();
+    await lib.waitForUpload(M, 30000).catch(() => undefined);
+    await waitFor(() => P.evaluate(async () => ((await (await import('/src/db/index.ts')).db.companySettings.get('companySettings-singleton'))?.setupFields ?? []).some((f) => f.key === 'quote' && f.when === 'setup') ? 1 : null), 40000);
+    await waitFor(async () => ((await P.locator('[data-new-job-extra="quote"]').count()) === 1 ? 1 : null), 10000);
+    R.ok('Quote reference moved to At setup appears on the job step at once', (await P.locator('[data-new-job-extra="quote"]').count()) === 1);
+    await P.locator('[data-new-job-name]').fill(`S26 Quote ${stamp}`);
+    await P.locator('[data-new-job-extra="quote"] [data-new-job-extra-input]').fill('Q-2026-041');
+    await P.locator('[data-new-job-create]').click();
+    await P.waitForURL(/\/jobs\/[A-Za-z0-9_-]+/, { timeout: 15000 });
+    await P.locator('[data-setup-tiles]').waitFor({ timeout: 30000 });
+    const quoteJobId = P.url().match(/\/jobs\/([A-Za-z0-9_-]+)/)[1];
+    const quoteRef = await P.evaluate(async (id) => (await (await import('/src/db/index.ts')).db.jobs.get(id))?.quoteRef ?? null, quoteJobId);
+    await waitFor(async () => ((await P.locator('[data-setup-tile="quote"]').count()) === 1 ? 1 : null), 10000);
+    R.ok(`the quote lands on the job (${quoteRef}) and the job carries a green Quote reference tile`, quoteRef === 'Q-2026-041' && (await P.locator('[data-setup-tile="quote"]').getAttribute('data-setup-tone')) === 'done');
+    await P.evaluate(async ({ id }) => { const { db } = await import('/src/db/index.ts'); const { nowISO } = await import('/src/lib/utils.ts'); await db.jobs.update(id, { archivedAt: nowISO(), isActive: false, updatedAt: nowISO() }); }, { id: quoteJobId });
+    await M.locator('[data-setup-field="quote"] [data-setup-when-pick="later"]').click();
+    await lib.waitForUpload(M, 30000).catch(() => undefined);
+    // back on the sheet for the PO check below
+    await P.goto(`${WEB}/jobs`);
+    await P.locator('[data-jobs-setup]').click();
+    await P.locator('[data-setup-door="all"]').click();
+    await P.locator('[data-new-job-form][data-new-job-step="1"]').waitFor({ timeout: 10000 });
+    await P.locator('[data-new-job-customer-search]').fill(`S26 Customer ${stamp}`);
+    await P.locator(`[data-new-job-customer="${customerId}"]`).click();
+    await P.locator(`[data-new-job-site="${site1}"]`).click();
+    await P.locator('[data-new-job-form][data-new-job-step="3"]').waitFor({ timeout: 10000 });
     // back to Later: the field is gone
     await M.locator('[data-setup-field="po"] [data-setup-when-pick="later"]').click();
     await lib.waitForUpload(M, 30000).catch(() => undefined);

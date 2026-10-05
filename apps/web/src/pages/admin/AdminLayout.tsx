@@ -48,14 +48,14 @@ export function AdminLayout() {
       <div className="flex items-center justify-between mb-1">
         <h2 className="text-xl font-bold text-gray-900">Admin</h2>
       </div>
-      <div className="flex gap-1 border-b border-gray-200 mb-4 overflow-x-auto">
+      <div className="flex gap-1 mb-4 overflow-x-auto shadow-[inset_0_-1px_0_#e5e7eb] [scrollbar-width:thin]" data-admin-tabs>
         {tabs.map((tab) => (
           <NavLink
             key={tab.to}
             to={tab.to}
             className={({ isActive }) =>
               cn(
-                'px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors',
+                'px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors',
                 isActive
                   ? 'border-safety-orange text-safety-orange'
                   : 'border-transparent text-gray-500 hover:text-gray-800',

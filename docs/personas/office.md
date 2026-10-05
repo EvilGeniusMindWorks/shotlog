@@ -17,7 +17,7 @@ blasting day only. Back walks the tabs on every record page. Push 2: a job
 opens on its setup as tiles (green in, grey can wait, red holds a blasting
 day), Admin › Company › Setup fields is the table behind what setup asks and
 what gates, and a job a blaster set up from the field (four questions on the
-phone) sits on her home until she confirms the setup.
+phone) sits on her home until she confirms the setup. Push 3: Setup fields is the whole list on its own page — every fact a customer, site or job can carry, in six groups — so she can move any of them to "at setup" and the New job sheet and the job's tiles follow at once.
 
 ## Who they are (updated 2026-08-17)
 

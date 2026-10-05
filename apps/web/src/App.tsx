@@ -30,6 +30,7 @@ import { ApprovalReviewPage } from '@/pages/admin/ApprovalReviewPage';
 import { ApprovalPrintPackPage } from '@/pages/admin/ApprovalPrintPackPage';
 import { AdminCatalogPage } from '@/pages/admin/AdminCatalogPage';
 import { AdminCompanyPage } from '@/pages/admin/AdminCompanyPage';
+import { AdminSetupFieldsPage } from '@/pages/admin/AdminSetupFieldsPage';
 import { AdminEquipmentPage } from '@/pages/admin/AdminEquipmentPage';
 import { EnrollPage } from '@/pages/EnrollPage';
 import { HelpPage } from '@/pages/HelpPage';
@@ -191,6 +192,7 @@ export function App() {
             <Route path="incidents" element={<AdminIncidentsPage />} />
             <Route path="roles" element={<AdminRolesPage />} />
             <Route path="company" element={<AdminCompanyPage />} />
+            <Route path="company/setup-fields" element={<AdminSetupFieldsPage />} />
             <Route path="feedback" element={<AdminFeedbackPage />} />
             <Route path="companies" element={<AdminCompaniesPage />} />
           </Route>

@@ -337,7 +337,7 @@ export function AdminCompanyPage() {
       <HomeSettingsSection settings={settings} online={online} />
       <AttachmentTypesSection settings={settings} />
       <PreBlastChecklistSection settings={settings} />
-      <SetupFieldsSection online={online} />
+      <SetupFieldsSection />
     </div>
   );
 }

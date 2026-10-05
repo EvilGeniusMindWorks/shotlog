@@ -26,7 +26,7 @@ A job opens on its setup as tiles, one per fact: address and map, town contacts,
 
 ## What setup asks for
 
-**Admin › Company › Setup fields** is the table behind all of it: where each fact lives, whether it is asked at setup, later or rarely, and whether a missing one holds a blasting day. Move Customer PO to At setup and the New job sheet asks for it; move the permit to At setup and the site step asks for its number and expiry. Changes reach every device on the next sync.
+**Admin › Company › Setup fields** is the table behind all of it, on a page of its own: every fact a customer, a site or a job can carry — forty-odd rows in six groups (who, money, compliance, the ground, emergency, the job) — with where it lives, whether it is asked at setup, later or rarely, and whether a missing one holds a blasting day. Move Customer PO or Quote reference to At setup and the New job sheet asks for it and the job gets a tile for it; move the permit to At setup and the site step asks for its number and expiry; turn Police on under Holds a blasting day and Start work waits for the police row. Rows that are always asked, automatic, or copied from the town say so instead of a switch. Changes reach every device on the next sync.
 
 ## Before a blasting day
 

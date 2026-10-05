@@ -19,7 +19,7 @@ export function FieldSetupCards() {
   return (
     <section className="space-y-2" data-field-setup-cards data-field-setup-count={rows.length}>
       {rows.map(({ j, site, customer }) => {
-        const missing = blastingGate(site, keys).filter((l) => !l.ok).map((l) => l.text.split(' · ')[0].toLowerCase());
+        const missing = blastingGate(site, keys, customer).filter((l) => !l.ok).map((l) => l.text.split(' · ')[0].toLowerCase());
         return (
           <div key={j.id} className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm flex items-center gap-3 flex-wrap" data-field-setup-card={j.id}>
             <div className="min-w-0 flex-1">

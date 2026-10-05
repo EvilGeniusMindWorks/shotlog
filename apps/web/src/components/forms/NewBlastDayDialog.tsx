@@ -196,7 +196,8 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork, onOpen
   // a drilling day is never held. The lines point at the site, where the fix is.
   const setupFields = useSetupFields();
   const jobSite = sites.find((s) => s.id === job?.siteId);
-  const gate = jobId && isBlastingWork(typeOfWork) ? blastingGate(jobSite, gateKeys(setupFields)) : [];
+  const jobCustomer = customers.find((c) => c.id === job?.customerId);
+  const gate = jobId && isBlastingWork(typeOfWork) ? blastingGate(jobSite, gateKeys(setupFields), jobCustomer) : [];
   const held = gateHolds(gate);
 
   const handleCreate = () => {
@@ -467,7 +468,10 @@ export function NewBlastDayDialog({ onClose, onCreate, defaultTypeOfWork, onOpen
                 {gate.map((l) => (
                   <p key={l.key} className={`text-xs ${l.ok ? 'text-green-800' : 'text-red-700'}`} data-day-gate-line={l.key} data-day-gate-ok={l.ok ? 'yes' : 'no'}>
                     {l.ok ? '✓' : '✗'} {l.text}
-                    {!l.ok && jobSite && (
+                    {!l.ok && l.key === 'coi' && jobCustomer && (
+                      <> · <a className="underline" href={`/customers/${jobCustomer.id}?tab=compliance`} data-day-gate-fix={l.key}>fix on the customer</a></>
+                    )}
+                    {!l.ok && l.key !== 'coi' && jobSite && (
                       <> · <a className="underline" href={`/sites/${jobSite.id}?tab=${l.key === 'permit' ? 'jurisdiction' : 'contacts'}`} data-day-gate-fix={l.key}>fix on the site</a></>
                     )}
                   </p>

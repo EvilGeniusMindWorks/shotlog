@@ -263,6 +263,7 @@ pushed (docs only); push them first when the freeze lifts, then /round S11.
 ## Found on the way — brochure round (Sep 27 2026)
 
 - **Harness71's day-list line is stale.** "Time cards only · drill only" no longer appears on the Work days list for a drill-only day that carries only time cards (the label changed in a later round); the check fails on main before S26. Refresh the harness to the current wording.
+- **Harness73 is stale since S18 (found Oct 5 2026 running the S26 push 3 regressions).** Its §1 taps a per-shot Blast mats Yes and waits for the count field, but S18 push 2 made Blast Mats one answer for the whole log under Detonators & Lead; two later checks (Jobsite contacts from the More sheet, Reopen on a closed day) cascade from it. 73 was not in S18's regression list. Refresh it to the one-answer row.
 
 - **Seismo reading card overlaps at phone width.** On the seismograph readings page at 390 px,
   a saved reading's card draws the PPV max, frequency and air overpressure values on top of

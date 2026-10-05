@@ -7,7 +7,7 @@ import { Check, CircleAlert, Clock } from 'lucide-react';
 import { db } from '@/db';
 import { nowISO } from '@/lib/utils';
 import { blastingGate } from '@/lib/dayGate';
-import { gateKeys, useSetupFields } from '@/lib/setupFields';
+import { gateKeys, genericSetupInputs, readSetupValue, useSetupFields, type SetupFieldDef } from '@/lib/setupFields';
 import { townContactsFrom } from '@/lib/jobContext';
 import { useLiveQuery } from '@/db';
 import type { Customer, Job, Site } from '@/db/schema';
@@ -45,7 +45,7 @@ export function SetupTiles({
   const navigate = useNavigate();
   const fields = useSetupFields();
   const sites = useLiveQuery(() => db.sites.toArray()) ?? [];
-  const gate = blastingGate(site, gateKeys(fields));
+  const gate = blastingGate(site, gateKeys(fields), customer);
   const gateOk = (key: string) => gate.find((l) => l.key === key)?.ok;
   const memory = site ? townContactsFrom(sites, { city: site.city, state: site.state }, site.id) : null;
   const chief = site?.contacts?.find((c) => c.role === 'fire_chief' && (c.name || c.phone));
@@ -67,6 +67,24 @@ export function SetupTiles({
     { key: 'structures', title: 'Structures', text: site?.nearbyStructures?.length ? `${site.nearbyStructures.length} on the site` : 'Pinned on the shot map, or listed on the site', tone: site?.nearbyStructures?.length ? 'done' : 'later', go: toSite('ground') },
     { key: 'po', title: 'PO · insurance', text: [job.customerPO ? `PO ${job.customerPO}` : null, customer?.coiExpires ? `COI to ${customer.coiExpires}` : null].filter(Boolean).join(' · ') || 'Whenever the office has them', tone: job.customerPO || customer?.coiExpires ? 'done' : 'later', go: toTab('setup') },
   ];
+  // S26 push 3: the police, fire and insurance rows when the table makes them hold a blasting day
+  const police = site?.contacts?.find((c) => c.role === 'police' && (c.name || c.phone));
+  const fire = site?.contacts?.find((c) => c.role === 'fire' && (c.name || c.phone));
+  if (gate.some((l) => l.key === 'police' || l.key === 'fire')) {
+    tiles.splice(2, 0, { key: 'police_fire', title: 'Police · fire', text: [police ? police.name || police.phone : null, fire ? fire.name || fire.phone : null].filter(Boolean).join(' · ') || (memory ? `Not set · copy from ${memory.fromSiteName}` : 'Not set · type them or Suggest'), tone: gate.filter((l) => l.key === 'police' || l.key === 'fire').every((l) => l.ok) ? 'done' : 'gate', go: toSite('contacts') });
+  }
+  if (gate.some((l) => l.key === 'coi')) {
+    const coi = gate.find((l) => l.key === 'coi')!;
+    tiles.push({ key: 'coi', title: 'Insurance certificate', text: coi.text.replace(/^Insurance certificate · /, ''), tone: coi.ok ? 'done' : 'gate', go: () => customer && navigate(`/customers/${customer.id}?tab=compliance`) });
+  }
+  // S26 push 3: a tile for every other row Admin › Setup fields asks for at setup
+  const covered = new Set(['onsite']);
+  const goFor = (f: SetupFieldDef) => (f.lives === 'customer' ? () => customer && navigate(`/customers/${customer.id}?tab=${f.group === 'money' || f.group === 'compliance' ? 'compliance' : 'company'}`) : f.lives === 'site' ? toSite(f.group === 'compliance' ? 'jurisdiction' : f.key === 'access' || f.key === 'hazards' ? 'access' : 'ground') : toTab('setup'));
+  for (const f of [...genericSetupInputs(fields, 'customer'), ...genericSetupInputs(fields, 'site'), ...genericSetupInputs(fields, 'job')]) {
+    if (covered.has(f.key)) continue;
+    const v = readSetupValue(f, { customer, site, job });
+    tiles.push({ key: f.key, title: f.label, text: v ?? 'Not set · asked at setup', tone: v ? 'done' : 'later', go: goFor(f) });
+  }
   const done = tiles.filter((t) => t.tone === 'done').length;
   const held = tiles.filter((t) => t.tone === 'gate').length;
 

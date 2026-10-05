@@ -102,7 +102,7 @@ async (page, lib) => {
     await waitFor(async () => ((await PB.locator('[data-setup-tile="permit"][data-setup-tone="gate"]').count()) === 1 ? 1 : null), 10000);
     await waitFor(async () => ((await PB.locator('[data-record-facts]').innerText()).includes(`S22 Cust ${stamp}`) ? 1 : null), 10000);
     const setup = (await PB.locator('[data-setup-tiles]').innerText()).replace(/\s+/g, ' ');
-    R.ok(`the job page opens on its setup tiles: the permit and the town rows red, the address in ("${setup.slice(0, 90)}")`, /Setup · \d of 9/i.test(setup) && (await PB.locator('[data-setup-tile="permit"][data-setup-tone="gate"]').count()) === 1 && (await PB.locator('[data-setup-tile="town"][data-setup-tone="gate"]').count()) === 1 && (await PB.locator('[data-setup-tile="address"]').count()) === 1);
+    R.ok(`the job page opens on its setup tiles: the permit and the town rows red, the address in ("${setup.slice(0, 90)}")`, /Setup · \d+ of \d+/i.test(setup) && (await PB.locator('[data-setup-tile="permit"][data-setup-tone="gate"]').count()) === 1 && (await PB.locator('[data-setup-tile="town"][data-setup-tone="gate"]').count()) === 1 && (await PB.locator('[data-setup-tile="address"]').count()) === 1);
     const facts = (await PB.locator('[data-record-facts]').innerText()).replace(/\s+/g, ' ');
     R.ok('the header names the new customer and site', facts.includes(`S22 Cust ${stamp}`) && /Lexington/.test(facts));
     await waitForUpload(PB, 20000).catch(() => undefined);

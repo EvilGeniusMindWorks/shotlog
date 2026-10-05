@@ -14,7 +14,9 @@ import { nextJobNumber } from '@/lib/jobContext';
 import { townOf } from '@/lib/siteFacts';
 import type { WorkType } from '@/db/schema';
 import { WORK_TYPES, WORK_TYPE_LABEL } from '@/lib/prefs';
-import { asksAtSetup, useSetupFields } from '@/lib/setupFields';
+import { asksAtSetup, buildSetupExtras, genericSetupInputs, useSetupFields, type SetupExtraValues } from '@/lib/setupFields';
+import { generateId } from '@/lib/utils';
+import { SetupExtraInputs } from './SetupExtraInputs';
 import { pickWhyNot, type CustomerSitePick } from './CustomerSitePicker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -60,6 +62,11 @@ export function NewJobForm({
   // S26 push 2: Admin › Setup fields decides what the sheet asks for at setup
   const fields = useSetupFields();
   const [extra, setExtra] = useState({ permit: '', permitExp: '', coi: '' });
+  // S26 push 3: every other row the table asks for at setup, by its key
+  const [more, setMore] = useState<SetupExtraValues>({});
+  const customerInputs = genericSetupInputs(fields, 'customer');
+  const siteInputs = genericSetupInputs(fields, 'site');
+  const jobInputs = genericSetupInputs(fields, 'job');
   const [form, setForm] = useState({ name: '', operation: 'construction' as Operation, customerPO: '', defaultTypeOfWork: '' as WorkType | '' });
   const [nextNumber, setNextNumber] = useState<string>('');
   const [busy, setBusy] = useState(false);
@@ -106,7 +113,11 @@ export function NewJobForm({
     setBusy(true);
     setError(null);
     try {
+      const extras = buildSetupExtras(fields, more, generateId);
       const id = await createJob({
+        ...extras.job,
+        ...(!customerId && Object.keys(extras.customer).length ? { customerExtra: extras.customer } : {}),
+        ...(!pickedSite && Object.keys(extras.site).length ? { siteExtra: extras.site } : {}),
         name: form.name.trim(),
         operation: form.operation,
         typeOfRock: '',
@@ -266,6 +277,11 @@ export function NewJobForm({
                   </div>
                 </>
               )}
+              <SetupExtraInputs fields={siteInputs} values={more} onChange={setMore} />
+              {!customerId && customerName && customerInputs.length > 0 && (
+                <div className="sm:col-span-2 lg:col-span-4 pt-1 border-t border-gray-100"><p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider" data-new-job-about-customer>About {customerName}</p></div>
+              )}
+              {!customerId && customerName && <SetupExtraInputs fields={customerInputs} values={more} onChange={setMore} />}
               {!customerId && customerName && asksAtSetup(fields, 'coi') && (
                 <div>
                   <Label className="text-xs">Insurance certificate expires</Label>
@@ -315,6 +331,7 @@ export function NewJobForm({
               <Label>Operation</Label>
               <Select value={form.operation} onChange={(e) => setForm({ ...form, operation: e.target.value as Operation })} options={OPERATION_OPTIONS} />
             </div>
+            <SetupExtraInputs fields={jobInputs} values={more} onChange={setMore} />
           </div>
           <p className="text-xs text-gray-400">
             Rock, terrain, hazards and the rest live on the job page; the job opens with its setup tiles — what is in, what can wait, what holds a blasting day.
