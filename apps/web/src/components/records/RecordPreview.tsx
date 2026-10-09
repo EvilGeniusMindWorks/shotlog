@@ -3,9 +3,9 @@
 // context. Rendered inside the Records drawer (a tap on a row), in the
 // phone's sheet, and in its own browser window (Open in a window — a second
 // monitor, as Matthew asked).
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ExternalLink, FileDown, X, AppWindow } from 'lucide-react';
+import { ExternalLink, FileDown, X, AppWindow, Paperclip } from 'lucide-react';
 import { db } from '@/db';
 import { DOC_KIND_LABEL } from '@/lib/docRows';
 import {
@@ -137,6 +137,7 @@ export function RecordPreview({ row, onClose, inWindow, compact }: { row: RecRow
     };
   }, [filed?.id]);
 
+  const stripRef = useRef<HTMLDivElement>(null);
   const stillOnDevice = useMemo(() => (items ?? []).filter((i) => !i.load && !i.mimeType.startsWith('video/') && !i.clipNote).length, [items]);
 
   return (
@@ -148,6 +149,16 @@ export function RecordPreview({ row, onClose, inWindow, compact }: { row: RecRow
           <p className="text-xs text-gray-400">{formatDate(row.date)} · {row.jobName}{row.person ? ` · ${row.person}` : ''}</p>
         </div>
         <div className="flex items-center gap-1 shrink-0">
+          {(items?.length ?? 0) > 0 && (
+            <button
+              className="h-8 px-2 rounded-md text-xs text-gray-600 hover:bg-gray-100 flex items-center gap-1"
+              onClick={() => stripRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+              title="Jump to the attachments"
+              data-records-attachments-jump={items?.length ?? 0}
+            >
+              <Paperclip className="h-4 w-4" /> {items?.length}
+            </button>
+          )}
           {filed && !inWindow && (
             <button className="h-8 px-2 rounded-md text-xs text-gray-600 hover:bg-gray-100 flex items-center gap-1" onClick={() => openPreviewWindow(filed.id)} title="Open the preview in its own window" data-records-open-window>
               <AppWindow className="h-4 w-4" /> <span className="hidden sm:inline">Open in a window</span>
@@ -161,7 +172,9 @@ export function RecordPreview({ row, onClose, inWindow, compact }: { row: RecRow
         </div>
       </div>
 
-      <div className={cn('bg-gray-100 flex items-center justify-center shrink-0', compact ? 'h-[50vh]' : inWindow ? 'h-[62vh]' : 'h-[56vh]')}>
+      {/* Oct 9 2026 (Matthew: "I have to scroll all the way to the bottom to access the attachments"): the
+          PDF keeps about half the drawer and the filmstrip comes straight after it, before the facts */}
+      <div className={cn('bg-gray-100 flex items-center justify-center shrink-0', compact ? 'h-[46vh]' : inWindow ? 'h-[62vh]' : 'h-[48vh]')}>
         {filed ? (
           state === 'loading' ? (
             <p className="text-xs text-gray-400">Loading the filed PDF…</p>
@@ -182,6 +195,13 @@ export function RecordPreview({ row, onClose, inWindow, compact }: { row: RecRow
       </div>
 
       <div className="p-3 space-y-3 text-xs">
+        <div ref={stripRef} className="scroll-mt-16">
+          <AttachmentStrip
+            items={items ?? []}
+            title={filed ? 'Attachments on this copy' : 'Attachments on the live paper'}
+            emptyText={items === undefined ? 'Reading the attachments…' : filed ? 'No attachments on this copy.' : 'Nothing attached yet.'}
+          />
+        </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Badge variant={row.statusVariant}>{row.statusLabel}</Badge>
           {row.facts.approvedBy && <span className="text-gray-500" data-records-approved-by>Approved by {row.facts.approvedBy}{row.facts.approvedAt ? ` · ${new Date(row.facts.approvedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}` : ''}</span>}
@@ -228,11 +248,6 @@ export function RecordPreview({ row, onClose, inWindow, compact }: { row: RecRow
             </Button>
           )}
         </div>
-        <AttachmentStrip
-          items={items ?? []}
-          title={filed ? 'Attachments on this copy' : 'Attachments on the live paper'}
-          emptyText={items === undefined ? 'Reading the attachments…' : filed ? 'No attachments on this copy.' : 'Nothing attached yet.'}
-        />
       </div>
     </div>
   );

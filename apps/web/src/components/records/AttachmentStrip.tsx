@@ -6,6 +6,7 @@
 // File, Prev / Next / Download). Viewer B's chips and search with A's
 // lightbox, as he chose on the plan page.
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, Download, FileText, Film, Search, X } from 'lucide-react';
 import { kindLabel } from '@/lib/attachments';
 import { cn } from '@/lib/utils';
@@ -179,8 +180,10 @@ export function AttachmentStrip({ items, title = 'Attachments', emptyText = 'No 
         })}
       </div>
 
-      {open && (
-        <div className="fixed inset-0 z-[95] bg-black/85 flex flex-col" onClick={() => setOpenIdx(null)} data-records-lightbox>
+      {/* Oct 9 2026 (Matthew: the photo opened too big for the preview pane, the buttons out of reach): the
+          lightbox is portalled onto the document so it fills the WINDOW, not the drawer it was opened from */}
+      {open && createPortal(
+        <div className="fixed inset-0 z-[95] bg-black/85 flex flex-col" style={{ height: '100dvh' }} onClick={() => setOpenIdx(null)} data-records-lightbox>
           <div className="flex items-center gap-2 px-3 py-2 text-white/90 text-sm" onClick={(e) => e.stopPropagation()}>
             <p className="flex-1 min-w-0 truncate font-medium" data-lightbox-title>{open.hangsOn || kindLabel(open.kind)}</p>
             <span className="text-white/60 text-xs">{(openIdx ?? 0) + 1} of {shown.length}</span>
@@ -216,7 +219,8 @@ export function AttachmentStrip({ items, title = 'Attachments', emptyText = 'No 
             <button className="h-9 px-3 rounded-lg bg-white/10 text-white text-sm flex items-center gap-1 disabled:opacity-40" disabled={!open.load} onClick={() => void download(open)} data-lightbox-download><Download className="h-4 w-4" /> Download</button>
             <button className="h-9 px-3 rounded-lg bg-white text-navy text-sm font-medium" onClick={() => setOpenIdx(null)}>Close</button>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

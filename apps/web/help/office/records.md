@@ -28,7 +28,7 @@ Tap a row: the preview slides over the right half — the filed PDF, who filed i
 
 ## Attachments
 
-Under the PDF, the filmstrip lists every attachment on the copy with its context as the heading — "Shot 1 › Seismo reading 2 · pump house · PPV 0.18 in/s · 31 Hz", "Explosives usage › Delivery · BOL 88-4471" — who took it and when. The kind chips (Seismo · Mats · Video · Bills · Other) and the search narrow it. Tap one: the lightbox shows the photo full size with **Hangs on**, **Taken by** and **File**, and Prev / Next / Download. A video stays a clip; the full video is on the device that shot it.
+Straight under the PDF, before the filing facts, the filmstrip lists every attachment on the copy with its context as the heading (the paper-clip count in the preview's header jumps to it) — "Shot 1 › Seismo reading 2 · pump house · PPV 0.18 in/s · 31 Hz", "Explosives usage › Delivery · BOL 88-4471" — who took it and when. The kind chips (Seismo · Mats · Video · Bills · Other) and the search narrow it. Tap one: the lightbox shows the photo full size with **Hangs on**, **Taken by** and **File**, and Prev / Next / Download. A video stays a clip; the full video is on the device that shot it.
 
 ## Getting records out
 

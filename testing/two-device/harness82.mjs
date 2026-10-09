@@ -231,8 +231,20 @@ async (page, lib) => {
     R.ok('the kind chip reads Seismo 1', /Seismo\s*1/.test(await PO.locator('[data-strip-chip="seismo"]').innerText()));
     const thumb = await PO.locator(`[data-strip-item="${attId}"] img`).waitFor({ timeout: 15000 }).then(() => true).catch(() => false);
     R.ok('the thumbnail loads from storage', thumb);
+    // Oct 9 2026: the filmstrip sits right under the PDF — on screen without scrolling the drawer
+    const drawerBox = await PO.locator('[data-records-drawer]').boundingBox();
+    const stripBox = await strip.boundingBox();
+    const scrolled = await PO.locator('[data-records-drawer]').evaluate((e) => e.scrollTop);
+    R.ok(`the filmstrip is on screen under the PDF without scrolling (strip top ${Math.round(stripBox.y)} of drawer ${Math.round(drawerBox.y)}–${Math.round(drawerBox.y + drawerBox.height)}, scrolled ${scrolled})`, scrolled === 0 && stripBox.y + 120 < drawerBox.y + drawerBox.height);
+    R.ok('the drawer header counts the attachments and jumps to them', (await PO.locator('[data-records-attachments-jump]').getAttribute('data-records-attachments-jump')) === '1');
     await PO.locator(`[data-strip-item="${attId}"]`).click();
     await PO.locator('[data-records-lightbox]').waitFor({ timeout: 5000 });
+    const vp = PO.viewportSize();
+    const lb = await PO.locator('[data-records-lightbox]').boundingBox();
+    const dl = await PO.locator('[data-lightbox-download]').boundingBox();
+    const img = await PO.locator('[data-lightbox-image]').boundingBox().catch(() => null);
+    R.ok(`the lightbox fills the window, not the drawer (${Math.round(lb.x)},${Math.round(lb.y)} ${Math.round(lb.width)}×${Math.round(lb.height)} of ${vp.width}×${vp.height})`, Math.abs(lb.x) < 2 && Math.abs(lb.y) < 2 && Math.abs(lb.width - vp.width) < 2 && Math.abs(lb.height - vp.height) < 2);
+    R.ok(`the photo fits and the buttons are on screen (Download at y ${Math.round(dl.y + dl.height)} of ${vp.height})`, dl.y + dl.height <= vp.height && (!img || (img.y >= 0 && img.y + img.height <= vp.height)));
     const facts = await PO.locator('[data-lightbox-facts]').innerText();
     R.ok(`the lightbox shows the photo with Hangs on, Taken by and File ("${facts.replace(/\s+/g, ' ').trim().slice(0, 110)}")`, (await PO.locator('[data-lightbox-image]').count()) === 1 && /Seismo reading 2/.test(facts) && /IMG_3911/.test(facts) && /Taken by/.test(facts));
     R.ok('Prev is off on the first, Next off on the last (one photo)', (await PO.locator('[data-lightbox-prev]').isDisabled()) && (await PO.locator('[data-lightbox-next]').isDisabled()));
